@@ -1,0 +1,76 @@
+// src/components/common/Table/AppTable.tsx
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Box, Skeleton } from "@mui/material";
+import { ReactNode } from "react";
+
+interface Column<T = Record<string, unknown>> {
+  field: string;
+  label: string;
+  align?: "left" | "right" | "center";
+  render?: (value: unknown, row: T) => ReactNode;
+}
+
+interface AppTableProps<T extends Record<string, unknown> = Record<string, unknown>> {
+  columns?: Column<T>[];
+  rows?: T[];
+  loading?: boolean;
+  emptyMessage?: string;
+}
+
+export default function AppTable<T extends Record<string, unknown>>({
+  columns = [],
+  rows = [],
+  loading = false,
+  emptyMessage = "No data found.",
+}: AppTableProps<T>) {
+  return (
+    <TableContainer component={Paper} sx={{ borderRadius: "12px", border: "1px solid", borderColor: "divider", boxShadow: "none" }}>
+      <Table>
+        <TableHead>
+          <TableRow sx={{ bgcolor: "#f0f7fd" }}>
+            {columns.map((col) => (
+              <TableCell
+                key={col.field}
+                align={col.align || "left"}
+                sx={{ fontWeight: 700, color: "text.secondary", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: "2px solid", borderColor: "divider", py: 1.5 }}
+              >
+                {col.label}
+              </TableCell>
+            ))}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <TableRow key={i}>
+                {columns.map((col) => (
+                  <TableCell key={col.field}><Skeleton variant="text" width="80%" /></TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : rows.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={columns.length}>
+                <Box sx={{ py: 5, textAlign: "center" }}>
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>{emptyMessage}</Typography>
+                </Box>
+              </TableCell>
+            </TableRow>
+          ) : (
+            rows.map((row, i) => (
+              <TableRow
+                key={(row.id as string | number) ?? i}
+                sx={{ "&:last-child td": { border: 0 }, "&:hover": { bgcolor: "#f8fbff" }, transition: "background 0.15s" }}
+              >
+                {columns.map((col) => (
+                  <TableCell key={col.field} align={col.align || "left"} sx={{ color: "text.primary", fontSize: "0.875rem", py: 1.75 }}>
+                    {col.render ? col.render(row[col.field], row) : (row[col.field] as ReactNode)}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+}
