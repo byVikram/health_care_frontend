@@ -1,7 +1,6 @@
-﻿// src/features/doctor/DoctorPortalPage.tsx
 import { Box, Typography, Container, Grid, Chip, Divider, InputAdornment, TextField } from '@mui/material'
 import { useState, useEffect } from 'react'
-import { getAppointments } from './doctorService'
+import { getAppointments } from '../doctor/doctorService'
 import { Appointment } from '../../types/appointment'
 import MicIcon from '@mui/icons-material/Mic'
 import GridViewIcon from '@mui/icons-material/GridView'
@@ -20,6 +19,9 @@ import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
 import HomeIcon from '@mui/icons-material/Home'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AppButton from '../../components/common/Button/AppButton'
+import { DoctorAppointments } from '../doctor/DoctorAppointments'
+// import { PatientAppointments } from '../patient/patient/PatientAppointments'
+import { useAuth } from '../../hooks/useAuth'
 
 import drImage from '../../assets/Services/doctors-service.png'
 import videoImage from '../../assets/blog-and-community/video-image.png'
@@ -44,6 +46,8 @@ import RejectIcon from '../../assets/icons/reject.svg'
 import RescheduleIcon from '../../assets/icons/reschedule.svg'
 import ReferIcon from '../../assets/icons/refer.svg'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
+import { PatientAppointments } from '../patient/PatientAppointments'
+import { USER_ROLES } from '../../constants/constants'
 
 const buildWeekDays = () => {
 	const today = new Date()
@@ -160,7 +164,8 @@ const actionButtons = [
 	},
 ]
 
-export default function DoctorPortalPage() {
+export default function PortalPage() {
+	const { role } = useAuth()
 	const [activeSlide, setActiveSlide] = useState(0)
 	const totalSlides = 4
 	const [selectedDate, setSelectedDate] = useState(0)
@@ -183,9 +188,11 @@ export default function DoctorPortalPage() {
 		const fetchAppointments = async () => {
 			try {
 				setApptLoading(true)
-				const res = await getAppointments({ appointment_date: getSelectedAppointmentDate() })
+				setApptError('')
+				const dateStr = formatDateForApi(weekDays[selectedDate]?.dateObj ?? new Date())
+				const res = await getAppointments({ appointment_date: dateStr })
 				if (res.success) setAppointments(res.data)
-				else setApptError(res.message)
+				else setApptError(res.message ?? 'Failed to load appointments')
 			} catch {
 				setApptError('Failed to load appointments')
 			} finally {
@@ -194,14 +201,13 @@ export default function DoctorPortalPage() {
 		}
 		fetchAppointments()
 	}, [selectedDate])
-
 	return (
 		<Box sx={{ bgcolor: '#f5f7fa' }}>
 			<Container maxWidth="lg" sx={{ py: 3 }}>
 				{/* TOP 50/50: Welcome+Services | Search+Appointments */}
 				<Grid container spacing={3} alignItems="stretch">
 					{/* LEFT */}
-					<Grid size={{ xs: 12, md: 6 }}>
+					<Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
 						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
 							<Box
 								sx={{
@@ -235,7 +241,7 @@ export default function DoctorPortalPage() {
 												Welcome
 											</Typography>
 											<Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '17px' }}>
-												Dr. Ashika Rao
+												Dr. Arjun Sharma 
 											</Typography>
 										</Box>
 										<Box
@@ -286,88 +292,133 @@ export default function DoctorPortalPage() {
 										))}
 									</Box>
 								</Box>
+						</Box>
+					</Box>
+						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%', flex: 1, mt: 2 }}>
+							{/* Video + Right Services row */}
+							<Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+								{/* Video Image with dots */}
+								<Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+									<Box sx={{ borderRadius: '16px', overflow: 'hidden' }}>
+										<Box
+											component="img"
+											src={videoImage}
+											alt="Video"
+											sx={{
+												width: '100%',
+												display: 'block',
+												objectFit: 'cover',
+												maxHeight: '480px',
+												minHeight: '400px',
+											}}
+										/>
+									</Box>
+									{/* Slider dots */}
+									<Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, pt: 1.5 }}>
+										{Array.from({ length: 5 }).map((_, i) => (
+											<Box
+												key={i}
+												sx={{
+													width: i === 0 ? 20 : 10,
+													height: 10,
+													borderRadius: '5px',
+													bgcolor: i === 0 ? '#0c7c7c' : '#d0d0d0',
+													transition: 'all 0.3s ease',
+												}}
+											/>
+										))}
+									</Box>
+								</Box>
+
+								{/* Right vertical services: Emergency, Ambulance, Blood Bank, ICU */}
+								<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 1 }}>
+									{[
+										{ title: 'Emergency', image: EmergencyIcon },
+										{ title: 'Ambulance', image: AmbulanceIcon },
+										{ title: 'Blood Bank', image: BloodBankIcon },
+										{ title: 'ICU', image: IcuIcon },
+									].map((s) => (
+										<Box
+											key={s.title}
+											sx={{
+												display: 'flex',
+												flexDirection: 'column',
+												alignItems: 'center',
+												gap: 0.5,
+												cursor: 'pointer',
+												minWidth: 80,
+												pb: 1,
+												borderBottom: '1px solid #e0e0e0',
+												'&:last-child': { borderBottom: 'none' },
+												'&:hover img': { transform: 'translateY(-2px)' },
+											}}
+										>
+											<Box
+												component="img"
+												src={s.image}
+												alt={s.title}
+												sx={{
+													width: 52,
+													height: 52,
+													objectFit: 'contain',
+													transition: 'transform 0.2s ease',
+												}}
+											/>
+											<Typography
+												sx={{
+													fontSize: '12px',
+													fontWeight: 600,
+													color: 'text.primary',
+													textAlign: 'center',
+												}}
+											>
+												{s.title}
+											</Typography>
+										</Box>
+									))}
+								</Box>
 							</Box>
 
-							{/* Quick Services � 5 per row = 2 rows */}
-							<Box
-								mt={2}
-								sx={{ display: 'flex', flexWrap: 'wrap', rowGap: 2.5, justifyContent: 'center' }}
-							>
-								{quickServices.map((service) => (
+							{/* Bottom 5 horizontal service icons */}
+							<Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', pt: 1 }}>
+								{[
+									{ title: 'Appointment', image: AppointmentsIcon },
+									{ title: 'Pharmacy', image: PharmacyIcon },
+									{ title: 'Laboratory', image: LabIcon },
+									{ title: 'Radiology', image: RadiologyIcon },
+									{ title: 'Ancillary', image: AncilaryIcon },
+								].map((s) => (
 									<Box
-										key={service.title}
+										key={s.title}
 										sx={{
-											width: '20%',
 											display: 'flex',
 											flexDirection: 'column',
 											alignItems: 'center',
 											gap: 0.8,
 											cursor: 'pointer',
-											'&:hover img': {
-												transform: 'translateY(-3px)',
-												filter: 'drop-shadow(0 6px 10px rgba(0,0,0,0.20))',
-											},
+											'&:hover img': { transform: 'translateY(-3px)' },
 										}}
 									>
 										<Box
 											component="img"
-											src={service.image}
-											alt={service.title}
+											src={s.image}
+											alt={s.title}
 											sx={{
-												width: 42,
-												height: 42,
+												width: 52,
+												height: 52,
 												objectFit: 'contain',
-												transition: 'transform 0.2s ease, filter 0.2s ease',
+												transition: 'transform 0.2s ease',
 											}}
 										/>
 										<Typography
-											align="center"
-											sx={{ fontWeight: 700, color: 'text.primary', fontSize: '12px' }}
+											sx={{
+												fontSize: '12px',
+												fontWeight: 600,
+												color: 'text.primary',
+												textAlign: 'center',
+											}}
 										>
-											{service.title}
-										</Typography>
-									</Box>
-								))}
-							</Box>
-
-							{/* Video Image */}
-							<Box sx={{ borderRadius: '16px', overflow: 'hidden', maxHeight: '300px' }}>
-								<Box
-									component="img"
-									src={videoImage}
-									alt="Video"
-									sx={{ width: '100%', display: 'block', objectFit: 'cover' }}
-								/>
-							</Box>
-
-							{/* Community / Blogs / Events Nav */}
-							<Box
-								sx={{
-									p: 2,
-									display: 'flex',
-									justifyContent: 'space-around',
-									alignItems: 'center',
-								}}
-							>
-								{[
-									{ icon: <PeopleAltIcon sx={{ fontSize: 26 }} />, label: 'Community' },
-									{ icon: <GridViewIcon sx={{ fontSize: 26 }} />, label: 'Blogs' },
-									{ icon: <MicIcon sx={{ fontSize: 26 }} />, label: 'Events' },
-								].map((item, i) => (
-									<Box
-										key={i}
-										sx={{
-											display: 'flex',
-											flexDirection: 'column',
-											alignItems: 'center',
-											gap: 0.5,
-											cursor: 'pointer',
-											color: i === 0 ? '#0c7c7c' : 'text.secondary',
-										}}
-									>
-										{item.icon}
-										<Typography sx={{ fontSize: '12px', fontWeight: i === 0 ? 700 : 400 }}>
-											{item.label}
+											{s.title}
 										</Typography>
 									</Box>
 								))}
@@ -411,269 +462,20 @@ export default function DoctorPortalPage() {
 
 					{/* RIGHT */}
 					<Grid size={{ xs: 12, md: 6 }}>
-						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
-							<Box>
-								<Typography sx={{ fontWeight: 700, fontSize: '16px', color: 'text.primary', mb: 1.5 }}>
-									Search Patient
-								</Typography>
-								<TextField
-									fullWidth
-									placeholder="Search Patient ID, Name..."
-									size="small"
-									InputProps={{
-										startAdornment: (
-											<InputAdornment position="start">
-												<SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-											</InputAdornment>
-										),
-										endAdornment: (
-											<InputAdornment position="end">
-												<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-													<MicNoneOutlinedIcon
-														sx={{ fontSize: 20, color: '#0c7c7c', cursor: 'pointer' }}
-													/>
-													<Box sx={{ width: '1px', height: '18px', bgcolor: '#e0e0e0' }} />
-													<QrCodeScannerIcon
-														sx={{ fontSize: 20, color: '#0c7c7c', cursor: 'pointer' }}
-													/>
-												</Box>
-											</InputAdornment>
-										),
-									}}
-									sx={{ '& fieldset': { borderRadius: '10px' } }}
-								/>
-							</Box>
-							<Box sx={{ overflowY: 'auto', flex: 1 }}>
-								<Box
-									sx={{
-										display: 'flex',
-										alignItems: 'center',
-										justifyContent: 'space-between',
-										mb: 2,
-									}}
-								>
-									<Typography sx={{ fontWeight: 700, fontSize: '17px', color: 'text.primary' }}>
-										Today's Appointments
-									</Typography>
-									<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-										<Typography sx={{ fontSize: '13px', color: '#0c7c7c', fontWeight: 600 }}>
-											{selectedDateObj.toLocaleDateString('en-US', {
-												month: 'long',
-												year: 'numeric',
-											})}
-										</Typography>
-										<ChevronRightIcon sx={{ fontSize: 18, color: '#0c7c7c' }} />
-									</Box>
-								</Box>
-								<Box sx={{ display: 'flex', gap: 0.8, mb: 2, alignItems: 'center' }}>
-									<ChevronLeftIcon
-										sx={{ fontSize: 18, color: 'text.secondary', cursor: 'pointer' }}
-									/>
-									{weekDays.map((d, i) => (
-										<Box
-											key={i}
-											onClick={() => setSelectedDate(i)}
-											sx={{
-												flex: 1,
-												textAlign: 'center',
-												py: 0.8,
-												borderRadius: '10px',
-												bgcolor: selectedDate === i ? '#0c7c7c' : 'transparent',
-												cursor: 'pointer',
-												transition: 'background 0.2s',
-												'&:hover': {
-													bgcolor: selectedDate === i ? '#0c7c7c' : 'rgba(12,124,124,0.08)',
-												},
-											}}
-										>
-											<Typography
-												sx={{
-													fontSize: '9px',
-													color:
-														selectedDate === i ? 'rgba(255,255,255,0.8)' : 'text.secondary',
-												}}
-											>
-												{d.day}
-											</Typography>
-											<Typography
-												sx={{
-													fontSize: '14px',
-													fontWeight: 700,
-													color:
-														selectedDate === i
-															? '#fff'
-															: d.red
-																? '#e53935'
-																: 'text.primary',
-												}}
-											>
-												{d.date}
-											</Typography>
-										</Box>
-									))}
-									<ChevronRightIcon
-										sx={{ fontSize: 18, color: 'text.secondary', cursor: 'pointer' }}
-									/>
-								</Box>
-								<Divider sx={{ mb: 2 }} />
-								<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-									{apptLoading &&
-										Array.from({ length: 5 }).map((_, i) => <AppSkeleton key={i} height={90} />)}
-
-									{appointments.map((apt) => (
-										<Box
-											key={apt.id}
-											sx={{
-												p: 1.5,
-												borderRadius: '12px',
-												border:
-													apt.status === 'cancelled'
-														? '1px solid #f5c6c6'
-														: '1px solid #e0e0e0',
-												bgcolor: apt.status === 'cancelled' ? '#fff5f5' : '#fff',
-												display: 'flex',
-												alignItems: 'center',
-												gap: 1.5,
-											}}
-										>
-											<Box
-												sx={{
-													width: 30,
-													height: 30,
-													borderRadius: '6px',
-													bgcolor: apt.status === 'cancelled' ? '#f5c6c6' : '#e8f5e9',
-													display: 'flex',
-													alignItems: 'center',
-													justifyContent: 'center',
-													flexShrink: 0,
-												}}
-											>
-												<HomeIcon
-													sx={{
-														fontSize: 17,
-														color: apt.status === 'cancelled' ? '#b0b0b0' : '#0c7c7c',
-													}}
-												/>
-											</Box>
-											<Box sx={{ flex: 1, minWidth: 0 }}>
-												<Box
-													sx={{
-														display: 'flex',
-														alignItems: 'center',
-														gap: 0.8,
-														mb: 0.3,
-														flexWrap: 'wrap',
-													}}
-												>
-													<Typography
-														sx={{
-															fontWeight: 600,
-															fontSize: '13px',
-															color:
-																apt.status === 'cancelled'
-																	? 'text.secondary'
-																	: 'text.primary',
-														}}
-													>
-														{apt.patient.name}
-													</Typography>
-													<Typography sx={{ fontSize: '10px', color: 'text.secondary' }}>
-														{/* ({shortId}) */}
-													</Typography>
-													<Chip
-														label={apt.status}
-														size="small"
-														sx={{
-															fontSize: '9px',
-															height: 16,
-															bgcolor: apt.status === 'cancelled' ? '#ffeeee' : '#fff8e8',
-															color: apt.status === 'cancelled' ? '#e53935' : '#f59e0b',
-															fontWeight: 600,
-														}}
-													/>
-												</Box>
-												<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-													<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-														{apt.appointment_mode}
-													</Typography>
-													<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-														|
-													</Typography>
-													<AccessTimeIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
-													<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-														{apt.appointment_time}
-													</Typography>
-												</Box>
-											</Box>
-											{apt.status === 'cancelled' ? (
-												<Box
-													sx={{
-														display: 'flex',
-														alignItems: 'center',
-														gap: 1,
-														bgcolor: '#ffe0e0',
-														borderRadius: '8px',
-														px: 1.5,
-														py: 0.8,
-													}}
-												>
-													<CancelOutlinedIcon sx={{ fontSize: 16, color: '#e53935' }} />
-													<Typography
-														sx={{ fontSize: '10px', color: '#e53935', fontWeight: 600 }}
-													>
-														Patient has canceled the appointment
-													</Typography>
-												</Box>
-											) : (
-												<Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
-													{actionButtons.map((action, i) => (
-														<Box>
-															<Box
-																key={i}
-																sx={{
-																	display: 'flex',
-																	flexDirection: 'column',
-																	alignItems: 'center',
-																	gap: 0.4,
-																	cursor: 'pointer',
-																	bgcolor: action.bg,
-																	borderRadius: '8px',
-																	px: 1,
-																	py: 1,
-																	minWidth: 28,
-																	transition: 'opacity 0.2s',
-																	'&:hover': { opacity: 0.75 },
-																}}
-															>
-																<img
-																	src={action.icon}
-																	width={16}
-																	height={16}
-																	alt={action.label}
-																/>
-															</Box>
-															<Typography
-																sx={{
-																	mt: 0.4,
-																	fontSize: '10px',
-																	fontWeight: 400,
-																	textAlign: 'center',
-																}}
-															>
-																{action.label}
-															</Typography>
-														</Box>
-													))}
-												</Box>
-											)}
-											<ChevronRightIcon
-												sx={{ fontSize: 16, color: 'text.secondary', flexShrink: 0 }}
-											/>
-										</Box>
-									))}
-								</Box>
-							</Box>
-						</Box>
+						{role === USER_ROLES.DOCTOR && (
+							<DoctorAppointments
+								selectedDate={selectedDate}
+								setSelectedDate={setSelectedDate}
+								appointments={appointments}
+								apptLoading={apptLoading}
+								apptError={apptError}
+								weekDays={weekDays}
+								selectedDateObj={selectedDateObj}
+							/>
+						)}
+                        { role === USER_ROLES.PATIENT &&(
+                            <PatientAppointments/>
+                        )}
 					</Grid>
 				</Grid>
 

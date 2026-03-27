@@ -14,9 +14,10 @@ import SidebarLayout from '../components/layout/SidebarLayout'
 import ConsultationPage from '../features/consultation/ConsultationPage'
 import AccountPage from '../features/auth/AccountPage'
 import WelcomePage from '../features/auth/WelcomePage'
-import DoctorPortalPage from '../features/doctor/DoctorPortalPage'
-import PatientPortalPage from '../features/patient/PatientPortalPage'
-import PatientProfilePage from '../features/patient/PatientProfilePage'
+import PortalPage from '../features/portal/PortalPage'
+// import DoctorPortalPage from '../features/doctor/DoctorPortalPage'
+// import PatientPortalPage from '../features/patient/PatientPortalPage'
+// import PatientProfilePage from '../features/patient/PatientProfilePage'
 
 // Wraps all protected pages inside MainLayout
 function ProtectedLayout() {
@@ -77,9 +78,9 @@ export default function AppRoutes() {
 			</Route>
 
 			<Route element={<SidebarProtectedLayout />}>
-				<Route path="/portal" element={<DoctorPortalPage />} />
-				<Route path="/portal-patient" element={<PatientProfilePage />} />
-				<Route path="/patient" element={<PatientPortalPage />} />
+				<Route path="/portal" element={<PortalPage />} />
+				{/* <Route path="/portal-patient" element={<PatientProfilePage />} />
+				<Route path="/patient" element={<PatientPortalPage />} /> */}
 				<Route path="/profile" element={<ProfilePage />} />
 			</Route>
 
