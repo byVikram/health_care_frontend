@@ -47,6 +47,7 @@ import RescheduleIcon from '../../assets/icons/reschedule.svg'
 import ReferIcon from '../../assets/icons/refer.svg'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import { PatientAppointments } from '../patient/PatientAppointments'
+import { USER_ROLES } from '../../constants/constants'
 
 const buildWeekDays = () => {
 	const today = new Date()
@@ -461,7 +462,7 @@ export default function PortalPage() {
 
 					{/* RIGHT */}
 					<Grid size={{ xs: 12, md: 6 }}>
-						{role === 'doctor' && (
+						{role === USER_ROLES.DOCTOR && (
 							<DoctorAppointments
 								selectedDate={selectedDate}
 								setSelectedDate={setSelectedDate}
@@ -472,7 +473,7 @@ export default function PortalPage() {
 								selectedDateObj={selectedDateObj}
 							/>
 						)}
-                        { role === 'patient' &&(
+                        { role === USER_ROLES.PATIENT &&(
                             <PatientAppointments/>
                         )}
 					</Grid>
