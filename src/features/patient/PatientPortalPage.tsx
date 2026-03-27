@@ -1,4 +1,4 @@
-﻿// src/features/patient/PatientPortalPage.tsx
+// src/features/patient/PatientPortalPage.tsx
 import { Box, Typography, Container, Grid } from '@mui/material'
 import React, { useState } from 'react'
 // import MicIcon from '@mui/icons-material/Mic'
@@ -8,12 +8,13 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 // import PeopleAltIcon from '@mui/icons-material/PeopleAlt'
 // import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
+import { PatientAppointments } from './patient/PatientAppointments'
 // import SearchIcon from '@mui/icons-material/Search'
 // import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AppButton from '../../components/common/Button/AppButton'
 
-import drImage from '../../assets/Services/doctors-service.png'
+import drImage from '../../../../assets/Services/doctors-service.png'
 // import patientImage from '../../assets/Banner/patient.png'
 // import patientImage from '../../assets/Banner/banner.png'
 import videoImage from '../../assets/blog-and-community/video-image.png'
@@ -36,8 +37,6 @@ import AmbulanceIcon from '../../assets/quick-services/ambulance.svg'
 import BloodBankIcon from '../../assets/quick-services/blood-bank.svg'
 import IcuIcon from '../../assets/quick-services/icu.svg'
 import EmergencyIcon from '../../assets/quick-services/emergency.svg'
-import StarIcon from '@mui/icons-material/Star'
-import { customCardStyle } from '../../styles/commonStyles'
 
 const communities = [
 	{ id: 1, name: 'Diabatics Associations', location: 'Rajajinagar, Bengaluru', avatar: groupImage },
@@ -91,45 +90,6 @@ const eventList = [
 	{ id: 4, day: '20', month: 'JUN', name: 'Online Yoga & Wellness Workshop', location: 'Virtual Event' },
 ]
 
-const appointments = [
-	{
-		name: 'Dr. Ashika Rao',
-		specialization: 'Dental Consultation',
-		rating: 4.9,
-		date: 'Mon, 26 July at 02:30 PM',
-		status: 'Confirmed',
-		statusColor: '#4caf50',
-		image: drImage,
-	},
-	{
-		name: 'Dr. Ramesh Kumar',
-		specialization: 'Cardiology Consultation',
-		rating: 4.7,
-		date: 'Wed, 28 July at 10:00 AM',
-		status: 'Pending',
-		statusColor: '#f59e0b',
-		image: drImage,
-	},
-	{
-		name: 'Dr. Priya Nair',
-		specialization: 'Pediatric Consultation',
-		rating: 4.8,
-		date: 'Fri, 30 July at 11:00 AM',
-		status: 'Confirmed',
-		statusColor: '#4caf50',
-		image: drImage,
-	},
-	{
-		name: 'Dr. Suresh Babu',
-		specialization: 'Neurology Consultation',
-		rating: 4.6,
-		date: 'Sat, 31 July at 09:00 AM',
-		status: 'Cancelled',
-		statusColor: '#e53935',
-		image: drImage,
-	},
-]
-
 export default function PatientPortalPage() {
 	const [activeSlide, setActiveSlide] = useState(0)
 	// const totalSlides = 4
@@ -138,127 +98,157 @@ export default function PatientPortalPage() {
 	return (
 		<Box sx={{ bgcolor: '#f5f7fa' }}>
 			{/* Patient Header */}
+			{/* <Box
+				sx={{
+					background: 'linear-gradient(160deg, #0f5c5c 0%, #0c7c7c 60%, #0a9494 100%)',
+					px: 3,
+					pt: 2.5,
+					pb: 2.5,
+					position: 'sticky',
+					top: 0,
+					zIndex: 200,
+					display: 'flex',
+					flexDirection: 'column',
+					gap: 2,
+				}}
+			>
+				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+						<Avatar
+							src={patientImage}
+							sx={{ width: 56, height: 56, border: '2px solid rgba(255,255,255,0.5)' }}
+						/>
+						<Box>
+							<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+								<Typography sx={{ color: '#4fd1c5', fontWeight: 700, fontSize: '22px' }}>
+									Hello,
+								</Typography>
+								<Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '22px' }}>Nitin</Typography>
+							</Box>
+							<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, cursor: 'pointer' }}>
+								<LocationOnIcon sx={{ color: '#fff', fontSize: 15 }} />
+								<Typography sx={{ color: '#fff', fontSize: '13px', fontWeight: 500 }}>
+									KR Market
+								</Typography>
+								<KeyboardArrowDownIcon sx={{ color: '#fff', fontSize: 16 }} />
+							</Box>
+						</Box>
+					</Box>
+					<Box sx={{ display: 'flex', gap: 1 }}>
+						<Box
+							sx={{
+								bgcolor: '#fff',
+								borderRadius: '12px',
+								width: 44,
+								height: 44,
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'center',
+								cursor: 'pointer',
+								boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+							}}
+						>
+							<NotificationsNoneOutlinedIcon sx={{ fontSize: 22, color: '#4caf50' }} />
+						</Box>
+						<Box
+							sx={{
+								bgcolor: '#fff',
+								borderRadius: '12px',
+								width: 44,
+								height: 44,
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'center',
+								cursor: 'pointer',
+								boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+							}}
+						>
+							<FavoriteBorderIcon sx={{ fontSize: 22, color: '#e53935' }} />
+						</Box>
+					</Box>
+				</Box>
+				<Box
+					sx={{
+						bgcolor: 'rgba(255,255,255,0.15)',
+						borderRadius: '14px',
+						px: 2,
+						py: 1.2,
+						display: 'flex',
+						alignItems: 'center',
+						gap: 1.5,
+						border: '1px solid rgba(255,255,255,0.3)',
+					}}
+				>
+					<SearchIcon sx={{ color: '#fff', fontSize: 22 }} />
+					<Typography sx={{ flex: 1, color: 'rgba(255,255,255,0.7)', fontSize: '15px' }}>
+						Search Doctors/Symptoms
+					</Typography>
+					<MicNoneOutlinedIcon sx={{ color: '#fff', fontSize: 22, cursor: 'pointer' }} />
+				</Box>
+			</Box> */}
 
 			<Container maxWidth="lg" sx={{ py: 3 }}>
 				{/* TOP 50/50: Welcome+Services | Search+Appointments */}
 				<Grid container spacing={3} alignItems="stretch" sx={{ alignItems: 'stretch' }}>
 					{/* LEFT */}
-					<Grid size={{ xs: 12, md: 8 }} sx={{ display: 'flex', flexDirection: 'column' }}>
-						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+					<Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%', flex: 1 }}>
 							{/* Video + Right Services row */}
-							<Grid container spacing={2} alignItems="stretch">
+							<Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
 								{/* Video Image with dots */}
-								<Grid size={{ xs: 12, md: 9.5 }}>
-									<Box sx={{ display: 'flex', flexDirection: 'column' }}>
-										<Box sx={{ borderRadius: '16px', overflow: 'hidden' }}>
+								<Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+									<Box sx={{ borderRadius: '16px', overflow: 'hidden' }}>
+										<Box
+											component="img"
+											src={videoImage}
+											alt="Video"
+											sx={{
+												width: '100%',
+												display: 'block',
+												objectFit: 'cover',
+												maxHeight: '480px',
+												minHeight: '400px',
+											}}
+										/>
+									</Box>
+									{/* Slider dots */}
+									<Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, pt: 1.5 }}>
+										{Array.from({ length: 5 }).map((_, i) => (
 											<Box
-												component="img"
-												src={videoImage}
-												alt="Video"
+												key={i}
 												sx={{
-													width: '100%',
-													display: 'block',
-													objectFit: 'cover',
-													maxHeight: '420px',
-													minHeight: '320px',
+													width: i === 0 ? 20 : 10,
+													height: 10,
+													borderRadius: '5px',
+													bgcolor: i === 0 ? '#0c7c7c' : '#d0d0d0',
+													transition: 'all 0.3s ease',
 												}}
 											/>
-										</Box>
-										{/* Slider dots */}
-										<Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, pt: 1.5 }}>
-											{Array.from({ length: 5 }).map((_, i) => (
-												<Box
-													key={i}
-													sx={{
-														width: i === 0 ? 20 : 10,
-														height: 10,
-														borderRadius: '5px',
-														bgcolor: i === 0 ? '#0c7c7c' : '#d0d0d0',
-														transition: 'all 0.3s ease',
-													}}
-												/>
-											))}
-										</Box>
-									</Box>
-								</Grid>
-
-								{/* Right services: Emergency, Ambulance, Blood Bank, ICU */}
-								<Grid size={{ xs: 12, md: 2.4 }}>
-									<Grid
-										container
-										height={'100%'}
-										justifyContent={'space-between'}
-										sx={{ pt: { xs: 0, md: 1 } }}
-									>
-										{[
-											{ title: 'Emergency', image: EmergencyIcon },
-											{ title: 'Ambulance', image: AmbulanceIcon },
-											{ title: 'Blood Bank', image: BloodBankIcon },
-											{ title: 'ICU', image: IcuIcon },
-										].map((s) => (
-											<Grid key={s.title} size={{ xs: 6, sm: 3, md: 12 }}>
-												<Box
-													sx={{
-														display: 'flex',
-														flexDirection: 'column',
-														alignItems: 'center',
-														gap: 0.5,
-														cursor: 'pointer',
-														minWidth: 80,
-														pb: 1,
-														borderBottom: '1px solid #e0e0e0',
-														'&:last-child': { borderBottom: 'none' },
-														'&:hover img': { transform: 'translateY(-2px)' },
-													}}
-												>
-													<Box
-														component="img"
-														src={s.image}
-														alt={s.title}
-														sx={{
-															width: 42,
-															height: 42,
-															objectFit: 'contain',
-															transition: 'transform 0.2s ease',
-														}}
-													/>
-													<Typography
-														sx={{
-															fontSize: '12px',
-															fontWeight: 600,
-															color: 'text.primary',
-															textAlign: 'center',
-														}}
-													>
-														{s.title}
-													</Typography>
-												</Box>
-											</Grid>
 										))}
-									</Grid>
-								</Grid>
-							</Grid>
+									</Box>
+								</Box>
 
-							{/* Bottom 5 horizontal service icons */}
-							<Grid container justifyContent={'space-between'} sx={{ pt: 1 }} alignItems="center">
-								{[
-									{ title: 'Appointment', image: AppointmentsIcon },
-									{ title: 'Pharmacy', image: PharmacyIcon },
-									{ title: 'Laboratory', image: LabIcon },
-									{ title: 'Radiology', image: RadiologyIcon },
-									{ title: 'Ancillary', image: AncilaryIcon },
-								].map((s) => (
-									<Grid key={s.title} size={{ xs: 6, sm: 3, md: 2.4 }}>
+								{/* Right vertical services: Emergency, Ambulance, Blood Bank, ICU */}
+								<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 1 }}>
+									{[
+										{ title: 'Emergency', image: EmergencyIcon },
+										{ title: 'Ambulance', image: AmbulanceIcon },
+										{ title: 'Blood Bank', image: BloodBankIcon },
+										{ title: 'ICU', image: IcuIcon },
+									].map((s) => (
 										<Box
+											key={s.title}
 											sx={{
 												display: 'flex',
 												flexDirection: 'column',
 												alignItems: 'center',
-												gap: 0.8,
+												gap: 0.5,
 												cursor: 'pointer',
-												'&:hover img': { transform: 'translateY(-3px)' },
-												minWidth: '80px',
-												width: '100%',
+												minWidth: 80,
+												pb: 1,
+												borderBottom: '1px solid #e0e0e0',
+												'&:last-child': { borderBottom: 'none' },
+												'&:hover img': { transform: 'translateY(-2px)' },
 											}}
 										>
 											<Box
@@ -266,8 +256,8 @@ export default function PatientPortalPage() {
 												src={s.image}
 												alt={s.title}
 												sx={{
-													width: 42,
-													height: 42,
+													width: 52,
+													height: 52,
 													objectFit: 'contain',
 													transition: 'transform 0.2s ease',
 												}}
@@ -283,305 +273,104 @@ export default function PatientPortalPage() {
 												{s.title}
 											</Typography>
 										</Box>
-									</Grid>
-								))}
-							</Grid>
-							{/* Ad Image Slider */}
-							<Grid size={{ xs: 12, md: 9.5 }}>
-								<Box
-									sx={{
-										borderRadius: '16px',
-										overflow: 'hidden',
-										display: 'flex',
-										flexDirection: 'column',
-										// flex: 1,
-										// minHeight: 220,
-										bgcolor: '#fff',
-									}}
-								>
+									))}
+								</Box>
+							</Box>
+
+							{/* Bottom 5 horizontal service icons */}
+							<Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', pt: 1 }}>
+								{[
+									{ title: 'Appointment', image: AppointmentsIcon },
+									{ title: 'Pharmacy', image: PharmacyIcon },
+									{ title: 'Laboratory', image: LabIcon },
+									{ title: 'Radiology', image: RadiologyIcon },
+									{ title: 'Ancillary', image: AncilaryIcon },
+								].map((s) => (
 									<Box
-										component="img"
-										src={adImage}
-										alt="Advertisement"
-										sx={{
-											// width: '100%',
-											display: 'block',
-											objectFit: 'cover',
-											maxHeight: '420px',
-											minHeight: '320px',
-										}}
-									/>
-									{/* Slider dots */}
-									<Box
+										key={s.title}
 										sx={{
 											display: 'flex',
-											justifyContent: 'center',
-											gap: 1,
-											py: 1.5,
-											bgcolor: '#fff',
+											flexDirection: 'column',
+											alignItems: 'center',
+											gap: 0.8,
+											cursor: 'pointer',
+											'&:hover img': { transform: 'translateY(-3px)' },
 										}}
 									>
-										{Array.from({ length: 4 }).map((_, i) => (
-											<Box
-												key={i}
-												onClick={() => setActiveSlide(i)}
-												sx={{
-													width: i === activeSlide ? 20 : 10,
-													height: 10,
-													borderRadius: '5px',
-													bgcolor: i === activeSlide ? '#0c7c7c' : '#d0d0d0',
-													cursor: 'pointer',
-													transition: 'all 0.3s ease',
-												}}
-											/>
-										))}
+										<Box
+											component="img"
+											src={s.image}
+											alt={s.title}
+											sx={{
+												width: 52,
+												height: 52,
+												objectFit: 'contain',
+												transition: 'transform 0.2s ease',
+											}}
+										/>
+										<Typography
+											sx={{
+												fontSize: '12px',
+												fontWeight: 600,
+												color: 'text.primary',
+												textAlign: 'center',
+											}}
+										>
+											{s.title}
+										</Typography>
 									</Box>
+								))}
+							</Box>
+							{/* Ad Image Slider */}
+							<Box
+								sx={{
+									borderRadius: '16px',
+									overflow: 'hidden',
+									display: 'flex',
+									flexDirection: 'column',
+									flex: 1,
+									minHeight: 280,
+									bgcolor: '#fff',
+								}}
+							>
+								<Box
+									component="img"
+									src={adImage}
+									alt="Advertisement"
+									sx={{
+										width: '100%',
+										height: '100%',
+										display: 'block',
+										objectFit: 'contain',
+										objectPosition: 'center',
+									}}
+								/>
+								{/* Slider dots */}
+								<Box
+									sx={{ display: 'flex', justifyContent: 'center', gap: 1, py: 1.5, bgcolor: '#fff' }}
+								>
+									{Array.from({ length: 4 }).map((_, i) => (
+										<Box
+											key={i}
+											onClick={() => setActiveSlide(i)}
+											sx={{
+												width: i === activeSlide ? 20 : 10,
+												height: 10,
+												borderRadius: '5px',
+												bgcolor: i === activeSlide ? '#0c7c7c' : '#d0d0d0',
+												cursor: 'pointer',
+												transition: 'all 0.3s ease',
+											}}
+										/>
+									))}
 								</Box>
-							</Grid>
+							</Box>
 						</Box>
 					</Grid>
 
 					{/* RIGHT */}
-					<Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', flexDirection: 'column' }}>
-						<Box
-							sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%', overflowY: 'auto' }}
-						>
-							{/* Upcoming Appointments */}
-							<Box>
-								<Box
-									sx={{
-										display: 'flex',
-										alignItems: 'center',
-										justifyContent: 'space-between',
-										mb: 2,
-									}}
-								>
-									<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-										<Typography variant="body1" sx={{ fontWeight: 500 }}>
-											Upcoming Appointments
-										</Typography>
-										<Typography variant="body1" sx={{ fontWeight: 500, color: '#0c7c7c' }}>
-											(3)
-										</Typography>
-									</Box>
-									<Typography
-										variant="body1"
-										sx={{ fontSize: '14px', color: '#0c7c7c', fontWeight: 500, cursor: 'pointer' }}
-									>
-										See All
-									</Typography>
-								</Box>
-
-								<Grid container spacing={2}>
-									{appointments.map((appt, index) => (
-										<Grid size={{ xs: 12 }} key={index}>
-											<Box
-												sx={{
-													backgroundColor: '#fff',
-													borderRadius: '24px',
-													boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
-													transition: 'transform 0.2s, box-shadow 0.2s',
-													height: '100%',
-													display: 'flex',
-													flexDirection: 'column',
-													'&:hover': {
-														transform: 'translateY(-2px)',
-														boxShadow: '0 8px 30px rgba(0, 0, 0, 0.1)',
-													},
-													overflow: 'hidden',
-												}}
-											>
-												{/* Card Content */}
-												<Box
-													sx={{
-														...customCardStyle,
-														boxShadow:
-															'0 4px 6px rgba(0, 0, 0, 0.05),0 10px 15px rgba(0, 0, 0, 0.08);',
-													}}
-												>
-													{/* Header Section */}
-													<Grid container spacing={2} sx={{ mb: 2.5 }}>
-														<Grid size={{ xs: 8, sm: 8, md: 7 }}>
-															<Grid container spacing={1.5} alignItems="center">
-																{/* Avatar */}
-																<Grid size={{ xs: 4 }}>
-																	<Box
-																		sx={{
-																			width: 48,
-																			height: 48,
-																			borderRadius: '50%',
-																			overflow: 'hidden',
-																			backgroundColor: '#f0f2f5',
-																			boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
-																		}}
-																	>
-																		<Box
-																			component="img"
-																			src={appt.image}
-																			alt={appt.name}
-																			sx={{
-																				width: '100%',
-																				height: '100%',
-																				objectFit: 'cover',
-																			}}
-																		/>
-																	</Box>
-																</Grid>
-
-																{/* Doctor Info */}
-																<Grid size={{ xs: 8 }}>
-																	<Typography
-																		variant="body1"
-																		sx={{
-																			fontWeight: 500,
-																			color: '#1a2c3e',
-																			fontSize: '12px',
-																			lineHeight: 1.3,
-																			mb: 0.5,
-																		}}
-																	>
-																		{appt.name}
-																	</Typography>
-																	<Typography
-																		variant="caption"
-																		sx={{
-																			color: '#5e6f8d',
-																			fontSize: '0.75rem',
-																			display: 'block',
-																		}}
-																	>
-																		{appt.specialization}
-																	</Typography>
-																</Grid>
-															</Grid>
-														</Grid>
-
-														{/* Status Badge */}
-														<Grid size={{ xs: 4, sm: 4, md: 5 }}>
-															<Box
-																sx={{
-																	backgroundColor: `${appt.statusColor}10`,
-																	borderRadius: '20px',
-																	px: 1.5,
-																	py: 0.5,
-																	display: 'inline-block',
-																	float: 'right',
-																}}
-															>
-																<Typography
-																	sx={{
-																		color: appt.statusColor,
-																		fontSize: '0.7rem',
-																		fontWeight: 600,
-																		letterSpacing: '0.3px',
-																		textTransform: 'uppercase',
-																		textAlign: 'center',
-																	}}
-																>
-																	{appt.status}
-																</Typography>
-															</Box>
-														</Grid>
-													</Grid>
-
-													{/* Details Section */}
-													<Grid container spacing={2}>
-														{/* Rating */}
-														<Grid size={{ xs: 2 }}>
-															<Box
-																sx={{
-																	display: 'flex',
-																	alignItems: 'center',
-																	gap: 0.75,
-																}}
-															>
-																<StarIcon
-																	sx={{
-																		color: '#f5b042',
-																		fontSize: 16,
-																	}}
-																/>
-																<Typography
-																	sx={{
-																		color: '#4a5b7a',
-																		fontSize: '0.8rem',
-																		fontWeight: 400,
-																	}}
-																>
-																	{appt.rating}
-																</Typography>
-															</Box>
-														</Grid>
-
-														{/* Date */}
-														<Grid size={{ xs: 8 }}>
-															<Box
-																sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}
-															>
-																<CalendarTodayIcon
-																	sx={{ color: '#8a99b4', fontSize: 14 }}
-																/>
-																<Typography
-																	sx={{
-																		color: '#4a5b7a',
-																		fontSize: '0.8rem',
-																		fontWeight: 400,
-																	}}
-																>
-																	{appt.date}
-																</Typography>
-															</Box>
-														</Grid>
-													</Grid>
-
-													{/* Action Buttons */}
-													<Grid container spacing={2} mt={2}>
-														<Grid size={{ xs: 12, sm: 6 }}>
-															<AppButton
-																variant="outlined"
-																label="Reschedule"
-																fullWidth
-																sx={{
-																	borderRadius: '12px',
-																	textTransform: 'none',
-																	fontWeight: 600,
-																	borderColor: '#d0d5dd',
-																	color: '#2c3e50',
-																	py: '4px',
-																	'&:hover': {
-																		borderColor: '#0f4c4c',
-																		backgroundColor: '#f8fafc',
-																	},
-																}}
-															/>
-														</Grid>
-														<Grid size={{ xs: 12, sm: 6 }}>
-															<AppButton
-																variant="contained"
-																color="error"
-																label="Cancel"
-																fullWidth
-																sx={{
-																	borderRadius: '12px',
-																	textTransform: 'none',
-																	fontWeight: 600,
-																	py: '5px',
-																	boxShadow: 'none',
-																	'&:hover': {
-																		boxShadow: 'none',
-																		backgroundColor: '#d32f2f',
-																	},
-																}}
-															/>
-														</Grid>
-													</Grid>
-												</Box>
-											</Box>
-										</Grid>
-									))}
-								</Grid>
-							</Box>
-						</Box>
+					<Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+    					<PatientAppointments />
 					</Grid>
 				</Grid>
 
@@ -659,7 +448,7 @@ export default function PatientPortalPage() {
 							</Box>
 							<Grid container spacing={2} sx={{ flex: 1, alignContent: 'stretch' }}>
 								{blogs.map((blog) => (
-									<Grid size={{ xs: 12, sm: 6 }} key={blog.id} sx={{ display: 'flex' }}>
+									<Grid size={{ xs: 6 }} key={blog.id} sx={{ display: 'flex' }}>
 										<Box
 											sx={{
 												bgcolor: '#fff',
@@ -752,7 +541,7 @@ export default function PatientPortalPage() {
 											border: '1px solid #e0e0e0',
 											borderRadius: '12px',
 											px: 2,
-											py: 2.2,
+											py: 1.2,
 											cursor: 'pointer',
 											'&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.08)' },
 										}}
@@ -800,10 +589,9 @@ export default function PatientPortalPage() {
 									</Box>
 								))}
 							</Box>
-
 							<Grid container spacing={2} sx={{ flex: 1, alignContent: 'stretch' }}>
 								{featuredEvents.map((event) => (
-									<Grid size={{ xs: 12, sm: 6 }} key={event.id} sx={{ display: 'flex' }}>
+									<Grid size={{ xs: 6 }} key={event.id} sx={{ display: 'flex' }}>
 										<Box
 											sx={{
 												bgcolor: '#fff',
@@ -812,7 +600,7 @@ export default function PatientPortalPage() {
 												overflow: 'hidden',
 												display: 'flex',
 												flexDirection: 'column',
-												flex: 1,
+												// flex: 1,
 												'&:hover': { boxShadow: '0 6px 16px rgba(0,0,0,0.10)' },
 											}}
 										>
@@ -880,6 +668,159 @@ export default function PatientPortalPage() {
 				{/* Health Expert Answers Section */}
 				<HealthQuestionsSection />
 			</Container>
+			{/* Draggable AI Chatbot Button */}
+			{/* <AIChatBot /> */}
 		</Box>
 	)
 }
+
+// function AIChatBot() {
+// 	const [pos, setPos] = React.useState({ x: window.innerWidth - 90, y: window.innerHeight - 140 })
+// 	const [dragging, setDragging] = React.useState(false)
+// 	const [open, setOpen] = React.useState(false)
+// 	const offset = React.useRef({ x: 0, y: 0 })
+
+// 	const onMouseDown = (e: React.MouseEvent) => {
+// 		setDragging(true)
+// 		offset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y }
+// 		e.preventDefault()
+// 	}
+
+// 	React.useEffect(() => {
+// 		const onMouseMove = (e: MouseEvent) => {
+// 			if (!dragging) return
+// 			setPos({ x: e.clientX - offset.current.x, y: e.clientY - offset.current.y })
+// 		}
+// 		const onMouseUp = () => setDragging(false)
+// 		window.addEventListener('mousemove', onMouseMove)
+// 		window.addEventListener('mouseup', onMouseUp)
+// 		return () => {
+// 			window.removeEventListener('mousemove', onMouseMove)
+// 			window.removeEventListener('mouseup', onMouseUp)
+// 		}
+// 	}, [dragging])
+
+// 	return (
+// 		<>
+// 			<Box
+// 				onMouseDown={onMouseDown}
+// 				onClick={() => !dragging && setOpen((o) => !o)}
+// 				sx={{
+// 					position: 'fixed',
+// 					left: pos.x,
+// 					top: pos.y,
+// 					width: 90,
+// 					height: 90,
+// 					borderRadius: '50%',
+// 					background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
+// 					display: 'flex',
+// 					alignItems: 'center',
+// 					justifyContent: 'center',
+// 					cursor: dragging ? 'grabbing' : 'grab',
+// 					zIndex: 9999,
+// 					boxShadow: '0 4px 20px rgba(124,58,237,0.5)',
+// 					userSelect: 'none',
+// 					'&:hover': { transform: 'scale(1.08)' },
+// 					transition: 'transform 0.2s ease',
+// 				}}
+// 			>
+// 				<Box
+// 					component="img"
+// 					src={AiChatBotImg}
+// 					alt="AI Chatbot"
+// 					sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+// 				/>
+// 			</Box>
+
+// 			{/* Chat Panel */}
+// 			{open && (
+// 				<Box
+// 					sx={{
+// 						position: 'fixed',
+// 						left: pos.x - 280,
+// 						top: pos.y - 380,
+// 						width: 320,
+// 						height: 400,
+// 						bgcolor: '#fff',
+// 						borderRadius: '16px',
+// 						boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+// 						zIndex: 9998,
+// 						display: 'flex',
+// 						flexDirection: 'column',
+// 						overflow: 'hidden',
+// 					}}
+// 				>
+// 					<Box
+// 						sx={{
+// 							bgcolor: 'linear-gradient(135deg, #7c3aed, #a855f7)',
+// 							background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
+// 							px: 2.5,
+// 							py: 2,
+// 							display: 'flex',
+// 							alignItems: 'center',
+// 							justifyContent: 'space-between',
+// 						}}
+// 					>
+// 						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+// 							<Box
+// 								component="img"
+// 								src={AiChatBotImg}
+// 								alt="AI"
+// 								sx={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }}
+// 							/>
+// 							<Box>
+// 								<Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '14px' }}>
+// 									Whisper AI
+// 								</Typography>
+// 								<Typography sx={{ color: 'rgba(255,255,255,0.8)', fontSize: '11px' }}>
+// 									Ask me anything
+// 								</Typography>
+// 							</Box>
+// 						</Box>
+// 						<Box
+// 							onClick={() => setOpen(false)}
+// 							sx={{ color: '#fff', cursor: 'pointer', fontSize: '20px', lineHeight: 1 }}
+// 						>
+// 							?
+// 						</Box>
+// 					</Box>
+// 					<Box sx={{ flex: 1, p: 2, overflowY: 'auto', bgcolor: '#f5f7fa' }}>
+// 						<Box sx={{ bgcolor: '#e8f5e9', borderRadius: '10px', px: 2, py: 1.5, mb: 1, maxWidth: '85%' }}>
+// 							<Typography sx={{ fontSize: '13px', color: '#333' }}>
+// 								?? Hi! I'm your Whisper AI assistant. How can I help you today?
+// 							</Typography>
+// 						</Box>
+// 					</Box>
+// 					<Box sx={{ px: 2, py: 1.5, borderTop: '1px solid #e0e0e0', display: 'flex', gap: 1 }}>
+// 						<Box
+// 							component="input"
+// 							placeholder="Type a message..."
+// 							sx={{
+// 								flex: 1,
+// 								border: '1px solid #e0e0e0',
+// 								borderRadius: '8px',
+// 								px: 1.5,
+// 								py: 1,
+// 								fontSize: '13px',
+// 								outline: 'none',
+// 								'&:focus': { borderColor: '#7c3aed' },
+// 							}}
+// 						/>
+// 						<Box
+// 							sx={{
+// 								bgcolor: '#7c3aed',
+// 								borderRadius: '8px',
+// 								px: 1.5,
+// 								display: 'flex',
+// 								alignItems: 'center',
+// 								cursor: 'pointer',
+// 							}}
+// 						>
+// 							<Typography sx={{ color: '#fff', fontSize: '16px' }}>?</Typography>
+// 						</Box>
+// 					</Box>
+// 				</Box>
+// 			)}
+// 		</>
+// 	)
+// }
