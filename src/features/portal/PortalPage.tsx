@@ -20,7 +20,7 @@ import HomeIcon from '@mui/icons-material/Home'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AppButton from '../../components/common/Button/AppButton'
 import { DoctorAppointments } from '../doctor/DoctorAppointments'
-import { PatientAppointments } from '../patient/patient/PatientAppointments'
+// import { PatientAppointments } from '../patient/patient/PatientAppointments'
 import { useAuth } from '../../hooks/useAuth'
 
 import drImage from '../../assets/Services/doctors-service.png'
@@ -46,6 +46,7 @@ import RejectIcon from '../../assets/icons/reject.svg'
 import RescheduleIcon from '../../assets/icons/reschedule.svg'
 import ReferIcon from '../../assets/icons/refer.svg'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
+import { PatientAppointments } from '../patient/PatientAppointments'
 
 const buildWeekDays = () => {
 	const today = new Date()

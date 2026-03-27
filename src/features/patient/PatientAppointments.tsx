@@ -1,6 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
-import drImage from '../../../assets/Services/doctors-service.png'
+// import drImage from '../../../assets/Services/doctors-service.png'
+import drImage from '../../assets/Services/doctors-service.png'
 
 export function PatientAppointments() {
 	return (
