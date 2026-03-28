@@ -48,6 +48,8 @@ import ReferIcon from '../../assets/icons/refer.svg'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import { PatientAppointments } from '../patient/PatientAppointments'
 import { USER_ROLES } from '../../constants/constants'
+import UpcomingEventsSection from '../dashboard/UpcomingEventsSection'
+import CommunityBlogsSection from '../dashboard/CommunityBlogsSection'
 
 const buildWeekDays = () => {
 	const today = new Date()
@@ -241,7 +243,7 @@ export default function PortalPage() {
 												Welcome
 											</Typography>
 											<Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '17px' }}>
-												Dr. Arjun Sharma 
+												Dr. Arjun Sharma
 											</Typography>
 										</Box>
 										<Box
@@ -292,8 +294,8 @@ export default function PortalPage() {
 										))}
 									</Box>
 								</Box>
+							</Box>
 						</Box>
-					</Box>
 						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%', flex: 1, mt: 2 }}>
 							{/* Video + Right Services row */}
 							<Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
@@ -473,300 +475,21 @@ export default function PortalPage() {
 								selectedDateObj={selectedDateObj}
 							/>
 						)}
-                        { role === USER_ROLES.PATIENT &&(
-                            <PatientAppointments/>
-                        )}
+						{role === USER_ROLES.PATIENT && <PatientAppointments />}
 					</Grid>
 				</Grid>
 
 				{/* BOTTOM 50/50: Community & Blogs | Upcoming Events */}
 				<Grid container spacing={3} alignItems="stretch" sx={{ mt: 1 }}>
 					{/* LEFT: Community rows + Blog cards */}
-					<Grid size={{ xs: 12, md: 6 }}>
-						<Box
-							sx={{
-								height: '100%',
-								boxSizing: 'border-box',
-								display: 'flex',
-								flexDirection: 'column',
-							}}
-						>
-							<Typography sx={{ fontWeight: 700, fontSize: '18px', mb: 2, color: 'text.primary' }}>
-								Community & Blogs
-							</Typography>
 
-							<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2.5 }}>
-								{communities.map((c) => (
-									<Box
-										key={c.id}
-										sx={{
-											display: 'flex',
-											alignItems: 'center',
-											gap: 1.5,
-											borderRadius: '12px',
-											px: 2,
-											py: 1.6,
-											cursor: 'pointer',
-											boxShadow: '0 1px 3px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.08)',
-											border: '0px',
-										}}
-									>
-										<Box
-											component="img"
-											src={c.avatar}
-											alt={c.name}
-											sx={{
-												width: 52,
-												height: 52,
-												borderRadius: '50%',
-												objectFit: 'cover',
-												flexShrink: 0,
-											}}
-										/>
-										<Box sx={{ flex: 1 }}>
-											<Typography
-												sx={{ fontWeight: 700, fontSize: '13px', color: 'text.primary' }}
-											>
-												{c.name}
-											</Typography>
-											<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-												{c.location}
-											</Typography>
-										</Box>
-										<AppButton
-											variant="outlined"
-											label="View Community"
-											borderRadius="30px"
-											sx={{
-												fontSize: '10px',
-												px: 2,
-												py: 0.6,
-												fontWeight: '600',
-												border: '0px',
-												bgcolor: '#EDF1F1',
-												color: 'text.primary',
-												whiteSpace: 'nowrap',
-											}}
-										/>
-									</Box>
-								))}
-							</Box>
-							<Grid container spacing={2} sx={{ flex: 1, alignContent: 'stretch' }}>
-								{blogs.map((blog) => (
-									<Grid size={{ xs: 6 }} key={blog.id} sx={{ display: 'flex' }}>
-										<Box
-											sx={{
-												bgcolor: '#fff',
-												border: '1px solid #e0e0e0',
-												borderRadius: '14px',
-												overflow: 'hidden',
-												display: 'flex',
-												flexDirection: 'column',
-												flex: 1,
-												'&:hover': { boxShadow: '0 6px 16px rgba(0,0,0,0.10)' },
-											}}
-										>
-											<Box sx={{ height: 160, overflow: 'hidden' }}>
-												<Box
-													component="img"
-													src={blog.image}
-													alt={blog.title}
-													sx={{
-														width: '100%',
-														height: '100%',
-														objectFit: 'cover',
-														transition: 'transform 0.3s ease',
-														'&:hover': { transform: 'scale(1.03)' },
-													}}
-												/>
-											</Box>
-											<Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 0.8 }}>
-												<Typography
-													sx={{
-														fontWeight: 700,
-														fontSize: '13px',
-														color: 'text.primary',
-														lineHeight: 1.4,
-													}}
-												>
-													{blog.title}
-												</Typography>
-												<Typography
-													sx={{ fontSize: '11px', color: 'text.secondary', lineHeight: 1.5 }}
-												>
-													{blog.description}
-												</Typography>
-												<Typography
-													sx={{
-														fontSize: '12px',
-														color: '#0c7c7c',
-														fontWeight: 600,
-														cursor: 'pointer',
-													}}
-												>
-													Read More
-												</Typography>
-												<Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-													<Typography sx={{ fontSize: '10px', color: 'text.secondary' }}>
-														{blog.author}
-													</Typography>
-													<Typography sx={{ fontSize: '10px', color: 'text.secondary' }}>
-														{blog.date}
-													</Typography>
-												</Box>
-											</Box>
-										</Box>
-									</Grid>
-								))}
-							</Grid>
-						</Box>
+					<Grid size={{ xs: 12, md: 6 }}>
+						<CommunityBlogsSection variant={'column'} />
 					</Grid>
 
 					{/* RIGHT: Event rows + Featured event cards */}
 					<Grid size={{ xs: 12, md: 6 }}>
-						<Box
-							sx={{
-								height: '100%',
-								boxSizing: 'border-box',
-								display: 'flex',
-								flexDirection: 'column',
-							}}
-						>
-							<Typography sx={{ fontWeight: 700, fontSize: '18px', mb: 2, color: 'text.primary' }}>
-								Upcoming Events
-							</Typography>
-							<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2.5 }}>
-								{eventList.map((event) => (
-									<Box
-										key={event.id}
-										sx={{
-											display: 'flex',
-											alignItems: 'center',
-											gap: 2,
-											border: '1px solid #e0e0e0',
-											borderRadius: '12px',
-											px: 2,
-											py: 1.2,
-											cursor: 'pointer',
-											'&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.08)' },
-										}}
-									>
-										<Box
-											sx={{
-												minWidth: 44,
-												textAlign: 'center',
-												bgcolor: '#f0f4f8',
-												borderRadius: '8px',
-												py: 0.6,
-												px: 1,
-											}}
-										>
-											<Typography
-												sx={{
-													fontWeight: 700,
-													fontSize: '16px',
-													color: '#0c7c7c',
-													lineHeight: 1,
-												}}
-											>
-												{event.day}
-											</Typography>
-											<Typography sx={{ fontSize: '10px', color: '#0c7c7c', fontWeight: 600 }}>
-												{event.month}
-											</Typography>
-										</Box>
-										<Box sx={{ flex: 1 }}>
-											<Typography
-												sx={{ fontWeight: 600, fontSize: '13px', color: 'text.primary' }}
-											>
-												{event.name}
-											</Typography>
-											<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-												<LocationOnOutlinedIcon
-													sx={{ fontSize: 12, color: 'text.secondary' }}
-												/>
-												<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-													{event.location}
-												</Typography>
-											</Box>
-										</Box>
-										<ChevronRightIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-									</Box>
-								))}
-							</Box>
-							<Grid container spacing={2} sx={{ flex: 1, alignContent: 'stretch' }}>
-								{featuredEvents.map((event) => (
-									<Grid size={{ xs: 6 }} key={event.id} sx={{ display: 'flex' }}>
-										<Box
-											sx={{
-												bgcolor: '#fff',
-												border: '1px solid #e0e0e0',
-												borderRadius: '14px',
-												overflow: 'hidden',
-												display: 'flex',
-												flexDirection: 'column',
-												// flex: 1,
-												'&:hover': { boxShadow: '0 6px 16px rgba(0,0,0,0.10)' },
-											}}
-										>
-											<Box
-												component="img"
-												src={event.image}
-												alt={event.title}
-												sx={{ width: '100%', height: 200, objectFit: 'cover' }}
-											/>
-											<Box
-												sx={{
-													p: 1.5,
-													display: 'flex',
-													flexDirection: 'column',
-													gap: 0.6,
-													flex: 1,
-													justifyContent: 'space-between',
-												}}
-											>
-												<Typography
-													sx={{
-														fontWeight: 700,
-														fontSize: '13px',
-														color: 'text.primary',
-														lineHeight: 1.3,
-													}}
-												>
-													{event.title}
-												</Typography>
-												<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-													<CalendarTodayIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
-													<Typography sx={{ fontSize: '10px', color: 'text.secondary' }}>
-														{event.date}
-													</Typography>
-												</Box>
-												<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-													<LocationOnOutlinedIcon
-														sx={{ fontSize: 11, color: 'text.secondary' }}
-													/>
-													<Typography sx={{ fontSize: '10px', color: 'text.secondary' }}>
-														{event.location}
-													</Typography>
-												</Box>
-												<AppButton
-													label="Register Now"
-													sx={{
-														bgcolor: '#0c7c7c',
-														color: '#fff',
-														borderRadius: '6px',
-														fontSize: '11px',
-														py: 0.5,
-														width: '100%',
-														'&:hover': { bgcolor: '#0f4c4c' },
-													}}
-												/>
-											</Box>
-										</Box>
-									</Grid>
-								))}
-							</Grid>
-						</Box>
+						<UpcomingEventsSection variant={'column'} />
 					</Grid>
 				</Grid>
 

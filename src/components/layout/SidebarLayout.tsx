@@ -37,8 +37,8 @@ const NAVBAR_HEIGHT = 64
 const DOCTOR_MENU_ITEMS = [
 	{ id: 'appointments', label: 'My Appointments', icon: <CalendarMonthOutlinedIcon />, path: '/doctor' },
 	{ id: 'patients', label: 'My Patients', icon: <PeopleAltOutlinedIcon />, path: '/doctor/patients' },
-	{ id: 'hospitals', label: 'My Hospitals', icon: <LocalHospitalOutlinedIcon />, path: '/profile' },
-	{ id: 'availability', label: 'Availability', icon: <EventAvailableOutlinedIcon />, path: '/profile' },
+	{ id: 'profile', label: 'Profile', icon: <LocalHospitalOutlinedIcon />, path: '/profile' },
+	// { id: 'availability', label: 'Availability', icon: <EventAvailableOutlinedIcon />, path: '/profile' },
 	{ id: 'help', label: 'Help Center', icon: <HelpOutlineIcon /> },
 	{ id: 'settings', label: 'Settings', icon: <SettingsOutlinedIcon />, path: '/profile' },
 ]
@@ -137,23 +137,23 @@ export default function SidebarLayout({ children, activeMenuId }: SidebarLayoutP
 				</Box> */}
 
 				{/* Sidebar (only for patient) */}
-				{!isDoctor && (
-					<AppSidebar
-						user={sidebarUser}
-						carePlan={carePlan}
-						menuItems={menuItems}
-						activeId={activeId}
-						onLogout={handleLogout}
-						width={SIDEBAR_WIDTH}
-						topOffset={NAVBAR_HEIGHT}
-					/>
-				)}
+				{/* {!isDoctor && ( */}
+				<AppSidebar
+					user={sidebarUser}
+					carePlan={carePlan}
+					menuItems={menuItems}
+					activeId={activeId}
+					onLogout={handleLogout}
+					width={SIDEBAR_WIDTH}
+					topOffset={NAVBAR_HEIGHT}
+				/>
 
 				{/* Page content */}
 				<Box
 					sx={{
 						flex: 1,
-						ml: !isDoctor ? `${SIDEBAR_WIDTH}px` : 0,
+						// ml: !isDoctor ? `${SIDEBAR_WIDTH}px` : 0,
+						ml: `${SIDEBAR_WIDTH}px`,
 						display: 'flex',
 						flexDirection: 'column',
 						minHeight: `calc(100vh - ${NAVBAR_HEIGHT}px)`,

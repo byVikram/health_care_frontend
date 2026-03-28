@@ -111,13 +111,17 @@ export default function DashboardPage() {
 			<ArticleSection />
 
 			{/* Upcoming Events Section */}
-			<UpcomingEventsSection />
+			<Container maxWidth="lg" sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6 }}>
+				<UpcomingEventsSection />
+			</Container>
 
-			{/* Community & Blogs Section */}
-			<CommunityBlogsSection />
+			<Container maxWidth="lg" sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6 }}>
+				{/* Community & Blogs Section */}
+				<CommunityBlogsSection />
+				<PodcastsSection />
+			</Container>
 
 			{/* Podcasts & Videocasts Section */}
-			<PodcastsSection />
 
 			{/* Health Questions Section */}
 			<HealthQuestionsSection />

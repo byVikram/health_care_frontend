@@ -41,7 +41,6 @@ const actionButtons = [
 	},
 ]
 
-
 export function DoctorAppointments({
 	selectedDate,
 	setSelectedDate,
@@ -58,8 +57,7 @@ export function DoctorAppointments({
 	apptError: string
 	weekDays: { day: string; date: string; red: boolean; dateObj: Date }[]
 	selectedDateObj: Date
-})
-    {
+}) {
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
 			<Box>
@@ -108,16 +106,31 @@ export function DoctorAppointments({
 							key={i}
 							onClick={() => setSelectedDate(i)}
 							sx={{
-								flex: 1, textAlign: 'center', py: 0.8, borderRadius: '10px',
+								flex: 1,
+								textAlign: 'center',
+								py: 0.8,
+								borderRadius: '10px',
 								bgcolor: selectedDate === i ? '#0c7c7c' : 'transparent',
-								cursor: 'pointer', transition: 'background 0.2s',
+								cursor: 'pointer',
+								transition: 'background 0.2s',
 								'&:hover': { bgcolor: selectedDate === i ? '#0c7c7c' : 'rgba(12,124,124,0.08)' },
 							}}
 						>
-							<Typography sx={{ fontSize: '9px', color: selectedDate === i ? 'rgba(255,255,255,0.8)' : 'text.secondary' }}>
+							<Typography
+								sx={{
+									fontSize: '9px',
+									color: selectedDate === i ? 'rgba(255,255,255,0.8)' : 'text.secondary',
+								}}
+							>
 								{d.day}
 							</Typography>
-							<Typography sx={{ fontSize: '14px', fontWeight: 700, color: selectedDate === i ? '#fff' : d.red ? '#e53935' : 'text.primary' }}>
+							<Typography
+								sx={{
+									fontSize: '14px',
+									fontWeight: 700,
+									color: selectedDate === i ? '#fff' : d.red ? '#e53935' : 'text.primary',
+								}}
+							>
 								{d.date}
 							</Typography>
 						</Box>
@@ -134,31 +147,79 @@ export function DoctorAppointments({
 						<Box
 							key={apt.id}
 							sx={{
-								p: 1.5, borderRadius: '12px',
+								p: 1.5,
+								borderRadius: '12px',
 								border: apt.status === 'cancelled' ? '1px solid #f5c6c6' : '1px solid #e0e0e0',
 								bgcolor: apt.status === 'cancelled' ? '#fff5f5' : '#fff',
-								display: 'flex', alignItems: 'center', gap: 1.5,
+								display: 'flex',
+								alignItems: 'center',
+								gap: 1.5,
 							}}
 						>
-							<Box sx={{ width: 30, height: 30, borderRadius: '6px', bgcolor: apt.status === 'cancelled' ? '#f5c6c6' : '#e8f5e9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-								<HomeIcon sx={{ fontSize: 17, color: apt.status === 'cancelled' ? '#b0b0b0' : '#0c7c7c' }} />
+							<Box
+								sx={{
+									width: 30,
+									height: 30,
+									borderRadius: '6px',
+									bgcolor: apt.status === 'cancelled' ? '#f5c6c6' : '#e8f5e9',
+									display: 'flex',
+									alignItems: 'center',
+									justifyContent: 'center',
+									flexShrink: 0,
+								}}
+							>
+								<HomeIcon
+									sx={{ fontSize: 17, color: apt.status === 'cancelled' ? '#b0b0b0' : '#0c7c7c' }}
+								/>
 							</Box>
 							<Box sx={{ flex: 1, minWidth: 0 }}>
-								<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.3, flexWrap: 'wrap' }}>
-									<Typography sx={{ fontWeight: 600, fontSize: '13px', color: apt.status === 'cancelled' ? 'text.secondary' : 'text.primary' }}>
+								<Box
+									sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.3, flexWrap: 'wrap' }}
+								>
+									<Typography
+										sx={{
+											fontWeight: 600,
+											fontSize: '13px',
+											color: apt.status === 'cancelled' ? 'text.secondary' : 'text.primary',
+										}}
+									>
 										{apt.patient.name}
 									</Typography>
-									<Chip label={apt.status} size="small" sx={{ fontSize: '9px', height: 16, bgcolor: apt.status === 'cancelled' ? '#ffeeee' : '#fff8e8', color: apt.status === 'cancelled' ? '#e53935' : '#f59e0b', fontWeight: 600 }} />
+									<Chip
+										label={apt.status}
+										size="small"
+										sx={{
+											fontSize: '9px',
+											height: 16,
+											bgcolor: apt.status === 'cancelled' ? '#ffeeee' : '#fff8e8',
+											color: apt.status === 'cancelled' ? '#e53935' : '#f59e0b',
+											fontWeight: 600,
+										}}
+									/>
 								</Box>
 								<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-									<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>{apt.appointment_mode}</Typography>
+									<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
+										{apt.appointment_mode}
+									</Typography>
 									<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>|</Typography>
 									<AccessTimeIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
-									<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>{apt.appointment_time}</Typography>
+									<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
+										{apt.appointment_time}
+									</Typography>
 								</Box>
 							</Box>
 							{apt.status === 'cancelled' ? (
-								<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: '#ffe0e0', borderRadius: '8px', px: 1.5, py: 0.8 }}>
+								<Box
+									sx={{
+										display: 'flex',
+										alignItems: 'center',
+										gap: 1,
+										bgcolor: '#ffe0e0',
+										borderRadius: '8px',
+										px: 1.5,
+										py: 0.8,
+									}}
+								>
 									<CancelOutlinedIcon sx={{ fontSize: 16, color: '#e53935' }} />
 									<Typography sx={{ fontSize: '10px', color: '#e53935', fontWeight: 600 }}>
 										Patient has canceled the appointment
@@ -168,10 +229,27 @@ export function DoctorAppointments({
 								<Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
 									{actionButtons.map((action, i) => (
 										<Box key={i}>
-											<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.4, cursor: 'pointer', bgcolor: action.bg, borderRadius: '8px', px: 1, py: 1, minWidth: 28, transition: 'opacity 0.2s', '&:hover': { opacity: 0.75 } }}>
+											<Box
+												sx={{
+													display: 'flex',
+													flexDirection: 'column',
+													alignItems: 'center',
+													gap: 0.4,
+													cursor: 'pointer',
+													bgcolor: action.bg,
+													borderRadius: '8px',
+													px: 1,
+													py: 1,
+													minWidth: 28,
+													transition: 'opacity 0.2s',
+													'&:hover': { opacity: 0.75 },
+												}}
+											>
 												<img src={action.icon} width={16} height={16} alt={action.label} />
 											</Box>
-											<Typography sx={{ mt: 0.4, fontSize: '10px', fontWeight: 400, textAlign: 'center' }}>
+											<Typography
+												sx={{ mt: 0.4, fontSize: '10px', fontWeight: 400, textAlign: 'center' }}
+											>
 												{action.label}
 											</Typography>
 										</Box>
