@@ -7,6 +7,11 @@ import HospitalSelector from './components/HospitalSelector'
 import AppointmentTypeSelector from './components/AppointmentTypeSelector'
 import AppButton from '../../../components/common/Button/AppButton'
 import DateSlotPicker from '../../../components/common/DateSlotPicker/DateSlotPicker'
+import AppModal from '../../../components/common/Modal/AppModal'
+import LoginForm from '../../../features/auth/components/LoginForm'
+import RegisterForm from '../../../features/auth/components/RegisterForm'
+import OtpForm from '../../../features/auth/components/OtpForm'
+import { useAuth } from '../../../hooks/useAuth'
 import { customCardStyle } from '../../../styles/commonStyles'
 import { AppointmentType } from '../../../types/doctor'
 import { DoctorDetailData } from '../../../types/doctor-detail'
@@ -26,6 +31,35 @@ export default function DoctorDetailPage() {
 	const [error, setError] = useState<string | null>(null)
 
 	const { id } = useParams<{ id: string }>()
+	const { accessToken } = useAuth()
+	const isAuthenticated = Boolean(accessToken)
+
+	const [authModalOpen, setAuthModalOpen] = useState(false)
+	const [authModalView, setAuthModalView] = useState<'login' | 'register' | 'otp'>('login')
+	const [authContactNumber, setAuthContactNumber] = useState('')
+
+	const openAuthModal = (view: 'login' | 'register') => {
+		setAuthModalView(view)
+		setAuthModalOpen(true)
+		setAuthContactNumber('')
+	}
+
+	const closeAuthModal = () => {
+		setAuthModalOpen(false)
+		setAuthModalView('login')
+		setAuthContactNumber('')
+	}
+
+	const handleAuthNext = (contactNumber: string) => {
+		setAuthContactNumber(contactNumber)
+		setAuthModalView('otp')
+	}
+
+	const handleAuthVerified = () => {
+		setAuthModalOpen(false)
+		setAuthModalView('login')
+		setAuthContactNumber('')
+	}
 
 	// Direct calculation - no need for useMemo for simple derived data
 	const primaryHospital =
@@ -154,6 +188,13 @@ export default function DoctorDetailPage() {
 		return about.length > 120 ? `${about.slice(0, 120)}...` : about
 	})()
 
+	const authModalTitle =
+		authModalView === 'register'
+			? 'Register to book appointment'
+			: authModalView === 'otp'
+				? 'Verify OTP'
+				: 'Login to book an appointment'
+
 	if (error) {
 		return (
 			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
@@ -166,6 +207,11 @@ export default function DoctorDetailPage() {
 
 	const handleBook = async () => {
 		if (!doctorDetail) return
+
+		if (!isAuthenticated) {
+			openAuthModal('login')
+			return
+		}
 
 		setBooking(true)
 		setBookingError(null)
@@ -342,6 +388,25 @@ export default function DoctorDetailPage() {
 					</Grid>
 				</Grid>
 			</Container>
+			<AppModal open={authModalOpen} onClose={closeAuthModal} title={authModalTitle} maxWidth="xs" fullWidth>
+				{authModalView === 'login' && (
+					<LoginForm
+						mode="modal"
+						onSubmit={handleAuthNext}
+						onSwitchToRegister={() => setAuthModalView('register')}
+					/>
+				)}
+				{authModalView === 'register' && (
+					<RegisterForm
+						mode="modal"
+						onSubmit={handleAuthNext}
+						onSwitchToLogin={() => setAuthModalView('login')}
+					/>
+				)}
+				{authModalView === 'otp' && (
+					<OtpForm mode="modal" contactNumber={authContactNumber} onVerify={handleAuthVerified} />
+				)}
+			</AppModal>
 		</Box>
 	)
 }

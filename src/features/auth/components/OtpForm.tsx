@@ -8,9 +8,10 @@ import { setAuth } from '../../../hooks/useAuth'
 interface OtpFormProps {
 	contactNumber: string
 	onVerify: () => void
+	mode?: 'page' | 'modal'
 }
 
-export default function OtpForm({ contactNumber, onVerify }: OtpFormProps) {
+export default function OtpForm({ contactNumber, onVerify, mode = 'page' }: OtpFormProps) {
 	// const navigate = useNavigate()
 	const [otp, setOtp] = useState<string[]>(Array(6).fill(''))
 	const [error, setError] = useState('')
@@ -110,6 +111,82 @@ export default function OtpForm({ contactNumber, onVerify }: OtpFormProps) {
 		} catch {
 			setApiError('Failed to resend OTP. Please try again.')
 		}
+	}
+
+	if (mode === 'modal') {
+		return (
+			<Box sx={{ width: '100%' }}>
+				<Typography variant="h5" sx={{ mb: 1 }}>
+					OTP Verification
+				</Typography>
+				<Typography sx={{ fontSize: '14px', color: '#666', mb: 3 }}>
+					Enter the OTP received on <strong>+91 {contactNumber}</strong>
+				</Typography>
+				<Box sx={{ display: 'flex', gap: '10px', marginBottom: '8px' }} onPaste={handlePaste}>
+					{otp.map((digit, i) => (
+						<input
+							key={i}
+							ref={(el) => {
+								inputRefs.current[i] = el
+							}}
+							maxLength={1}
+							value={digit}
+							onChange={(e) => handleOtpChange(i, e.target.value)}
+							onKeyDown={(e) => handleKeyDown(i, e)}
+							autoFocus={i === 0}
+							style={{
+								width: '45px',
+								height: '45px',
+								textAlign: 'center',
+								fontSize: '18px',
+								fontWeight: '500',
+								border: error ? '1.5px solid #d32f2f' : '1.5px solid #ccc',
+								borderRadius: '8px',
+								outline: 'none',
+								transition: 'border-color 0.2s',
+								color: '#000',
+							}}
+							onFocus={(e) => (e.target.style.borderColor = error ? '#d32f2f' : '#0d9488')}
+							onBlur={(e) => (e.target.style.borderColor = error ? '#d32f2f' : '#ccc')}
+						/>
+					))}
+				</Box>
+				{error && <Typography sx={{ color: 'error.main', fontSize: '12px', mb: 1 }}>{error}</Typography>}
+				{apiError && <Typography sx={{ color: 'error.main', fontSize: '12px', mb: 1 }}>{apiError}</Typography>}
+				<Box sx={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', marginTop: '8px' }}>
+					<Typography sx={{ fontSize: '13px', color: '#666' }}>
+						Didn&apos;t receive the OTP?{' '}
+						<span
+							onClick={handleResend}
+							style={{
+								color: timer > 0 ? '#999' : '#000',
+								fontWeight: '600',
+								cursor: timer > 0 ? 'not-allowed' : 'pointer',
+							}}
+						>
+							Resend
+						</span>
+					</Typography>
+					{timer > 0 && (
+						<Typography sx={{ fontSize: '13px', color: '#0d9488', fontWeight: '500' }}>
+							00:{timer < 10 ? `0${timer}` : timer}
+						</Typography>
+					)}
+				</Box>
+				<Typography sx={{ fontSize: '13px', color: '#0d9488', cursor: 'pointer', marginBottom: '24px' }}>
+					Get OTP on call
+				</Typography>
+				<Button
+					onClick={handleVerify}
+					variant="contained"
+					fullWidth
+					disabled={loading}
+					sx={{ backgroundColor: '#0d9488', '&:hover': { backgroundColor: '#0f766e' }, padding: '12px' }}
+				>
+					{loading ? <CircularProgress size={22} sx={{ color: '#fff' }} /> : 'Verify'}
+				</Button>
+			</Box>
+		)
 	}
 
 	return (

@@ -1,5 +1,5 @@
 ﻿// src/features/dashboard/CommunityBlogsSection.tsx
-import { Box, Typography, Grid, Container } from '@mui/material'
+import { Box, Typography, Grid } from '@mui/material'
 import AppButton from '../../components/common/Button/AppButton'
 // import blogImage from '../../assets/blog-and-community/blog-1.png'
 import blogImage from '../../assets/blog-and-community/blog-1.svg'
@@ -37,7 +37,7 @@ const blogs = [
 		id: 1,
 		title: 'The Future of Digital Health: What to Expect!',
 		description:
-			'Explore how technology is transforming healthcare, from AI diagnostics to personalized treatment plans.',
+			'Explore how technology is transforming healthcare, from AI diagnostics to personalized treatment plans.Explore how technology is transforming healthcare, from AI diagnostics to personalized treatment plans.Explore how technology is transforming healthcare, from AI diagnostics to personalized treatment plans.',
 		author: 'By Dr. Emily White',
 		date: '15 May 2024',
 		image: blogImage,
@@ -46,174 +46,193 @@ const blogs = [
 		id: 2,
 		title: 'Understanding Telemedicine: Your Guide to Virtual Care',
 		description:
-			'A comprehensive guide to telemedicine services, benefits, and how to get started with virtual consultations.',
+			'A comprehensive guide to telemedicine services, benefits, and how to get started with virtual consultations. A comprehensive guide to telemedicine services, benefits, and how to get started with virtual consultations. A comprehensive guide to telemedicine services, benefits, and how to get started with virtual consultations.',
 		author: 'By Dr. Emily White',
 		date: '15 May 2024',
 		image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=220&fit=crop',
 	},
 ]
 
-export default function CommunityBlogsSection() {
+interface CommunityBlogsProps {
+	variant?: string
+}
+
+export default function CommunityBlogsSection({ variant = 'row' }: CommunityBlogsProps) {
 	return (
-		<Box sx={{ py: 6, bgcolor: 'background.default' }}>
-			<Container maxWidth="lg">
-				{/* Heading */}
-				<Typography variant="h3" align="center" sx={{ mb: 4, fontWeight: 700 }}>
-					Community & Blogs
-				</Typography>
+		<Box>
+			<Typography
+				variant={'h3'}
+				align={variant === 'column' ? 'left' : 'center'}
+				mb={variant === 'column' ? 2 : 3}
+				// fontWeight={variant === 'column' ? 400 : 500}
+				fontWeight={500}
+				fontSize={variant === 'column' ? '16px' : '1.5rem'}
+			>
+				Community & Blogs
+			</Typography>
 
-				<Grid container spacing={3} alignItems="stretch">
-					{/* Left: Community List */}
-					<Grid size={{ xs: 12, md: 5 }}>
-						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
-							{communities.map((community) => (
+			<Grid container spacing={3} alignItems="stretch">
+				{/* Left: Community List */}
+				{/* <Grid size={{ xs: 12, md: 5 }}> */}
+				<Grid container size={{ xs: 12, md: variant === 'column' ? 12 : 4 }} spacing={2}>
+					<Grid container size={{ xs: 12 }} spacing={2}>
+						{communities.map((c) => (
+							<Grid
+								key={c.id}
+								sx={{
+									display: 'flex',
+									alignItems: 'center',
+									gap: 2,
+									borderRadius: '12px',
+									px: 2,
+									py: 1.6,
+									cursor: 'pointer',
+									bgcolor: '#fff',
+									height: 'fit-content',
+									width: '100%',
+									boxShadow: '0px 0px 9.65px 0px #00000029',
+									transition: '0.2s',
+									'&:hover': { transform: 'scale(1.01)' },
+								}}
+							>
 								<Box
-									key={community.id}
+									component="img"
+									src={c.avatar}
+									alt={c.name}
 									sx={{
-										display: 'flex',
-										alignItems: 'center',
-										gap: 2,
-										bgcolor: '#fff',
-										border: '1px solid #e0e0e0',
-										borderRadius: '12px',
-										px: 2,
-										py: 1.5,
-										flex: 1,
-										transition: 'box-shadow 0.2s ease',
-										'&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.08)' },
+										width: 52,
+										height: 52,
+										borderRadius: '50%',
+										objectFit: 'cover',
+										flexShrink: 0,
 									}}
-								>
-									{/* Avatar */}
-									<Box
-										component="img"
-										src={community.avatar}
-										alt={community.name}
-										sx={{
-											width: 52,
-											height: 52,
-											borderRadius: '50%',
-											objectFit: 'cover',
-											flexShrink: 0,
-										}}
-									/>
-
-									{/* Info */}
-									<Box sx={{ flex: 1 }}>
-										<Typography sx={{ fontWeight: 700, fontSize: '14px', color: 'text.primary' }}>
-											{community.name}
-										</Typography>
-										<Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>
-											{community.location}
-										</Typography>
-									</Box>
-
-									{/* Button */}
-									<AppButton
-										variant="outlined"
-										label="View Community"
-										sx={{
-											borderRadius: '8px',
-											fontSize: '11px',
-											px: 1.5,
-											py: 0.5,
-											whiteSpace: 'nowrap',
-											borderColor: '#0c7c7c',
-											color: '#0c7c7c',
-											'&:hover': { bgcolor: '#f0f9f9' },
-										}}
-									/>
+								/>
+								<Box sx={{ flex: 1 }}>
+									<Typography sx={{ fontWeight: 700, fontSize: '13px', color: 'text.primary' }}>
+										{c.name}
+									</Typography>
+									<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
+										{c.location}
+									</Typography>
 								</Box>
-							))}
-						</Box>
-					</Grid>
-
-					{/* Right: Blog Cards */}
-					<Grid size={{ xs: 12, md: 7 }}>
-						<Grid container spacing={2} sx={{ height: '100%' }}>
-							{blogs.map((blog) => (
-								<Grid size={{ xs: 12, sm: 6 }} key={blog.id}>
-									<Box
-										sx={{
-											bgcolor: '#fff',
-											border: '1px solid #e0e0e0',
-											borderRadius: '14px',
-											overflow: 'hidden',
-											display: 'flex',
-											flexDirection: 'column',
-											height: '100%',
-											transition: 'box-shadow 0.2s ease',
-											'&:hover': { boxShadow: '0 6px 16px rgba(0,0,0,0.10)' },
-											'&:hover .blog-img': { transform: 'scale(1.03)' },
-										}}
-									>
-										{/* Image */}
-										<Box sx={{ overflow: 'hidden', height: 180 }}>
-											<Box
-												component="img"
-												src={blog.image}
-												alt={blog.title}
-												className="blog-img"
-												sx={{
-													width: '100%',
-													height: '100%',
-													objectFit: 'cover',
-													display: 'block',
-													transition: 'transform 0.3s ease',
-												}}
-											/>
-										</Box>
-
-										{/* Content */}
-										<Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1, flex: 1 }}>
-											<Typography
-												sx={{
-													fontWeight: 700,
-													fontSize: '15px',
-													color: 'text.primary',
-													lineHeight: 1.4,
-												}}
-											>
-												{blog.title}
-											</Typography>
-											<Typography
-												sx={{ fontSize: '13px', color: 'text.secondary', lineHeight: 1.5 }}
-											>
-												{blog.description}
-											</Typography>
-											<Typography
-												sx={{
-													fontSize: '13px',
-													color: '#0c7c7c',
-													fontWeight: 600,
-													cursor: 'pointer',
-													'&:hover': { textDecoration: 'underline' },
-												}}
-											>
-												Read More
-											</Typography>
-											<Box
-												sx={{
-													display: 'flex',
-													justifyContent: 'space-between',
-													alignItems: 'center',
-													mt: 'auto',
-												}}
-											>
-												<Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>
-													{blog.author}
-												</Typography>
-												<Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>
-													{blog.date}
-												</Typography>
-											</Box>
-										</Box>
-									</Box>
-								</Grid>
-							))}
-						</Grid>
+								<AppButton
+									variant="outlined"
+									label="View Community"
+									borderRadius="30px"
+									sx={{
+										fontSize: '10px',
+										px: 2,
+										py: 0.6,
+										fontWeight: '600',
+										border: '0px',
+										bgcolor: '#EDF1F1',
+										color: 'text.primary',
+										whiteSpace: 'nowrap',
+									}}
+								/>
+							</Grid>
+						))}
 					</Grid>
 				</Grid>
-			</Container>
+
+				{/* Right: Blog Cards */}
+				{/* <Grid size={{ xs: 12, md: 7 }}> */}
+				<Grid size={{ xs: 12, md: variant === 'column' ? 12 : 8 }}>
+					<Grid container spacing={2}>
+						{blogs.map((blog) => (
+							<Grid
+								key={blog.id}
+								// size={{ xs: 12, sm: 6, md: variant === 'column' ? 12 : 6 }}
+								size={{ xs: 12, sm: 6 }}
+								sx={{ display: 'flex' }}
+							>
+								<Box
+									sx={{
+										display: 'flex',
+										flexDirection: 'column',
+										flex: 1,
+										bgcolor: '#fff',
+										borderRadius: '6px',
+										overflow: 'hidden',
+										height: variant === 'column' ? '320px' : '380px',
+										// maxHeight='240px'
+									}}
+								>
+									{/* Image */}
+									<Box
+										component="img"
+										src={blog.image}
+										alt={blog.title}
+										sx={{
+											width: '100%',
+											objectFit: 'cover',
+											height: variant === 'column' ? '140px' : '40%',
+										}}
+									/>
+
+									{/* Content */}
+									{/* <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1, flex: 1 }}> */}
+									<Box
+										sx={{
+											p: 1.5,
+											display: 'flex',
+											flexDirection: 'column',
+											gap: 1,
+											flex: 1,
+										}}
+									>
+										{/* <Typography variant="body1" fontWeight={600}></Typography> */}
+										<Typography
+											variant="body1"
+											fontWeight={600}
+											sx={{
+												display: '-webkit-box',
+												WebkitLineClamp: 2,
+												WebkitBoxOrient: 'vertical',
+												overflow: 'hidden',
+												minHeight: '48px', //
+											}}
+										>
+											{blog.title}
+										</Typography>
+										<Typography
+											variant="body2"
+											sx={{
+												fontSize: '12px',
+												display: '-webkit-box',
+												WebkitLineClamp: variant === 'column' ? 2 : 5, // 🔥 max lines
+												WebkitBoxOrient: 'vertical',
+												overflow: 'hidden',
+												flex: 1, // 🔥 fills remaining space
+											}}
+										>
+											{blog.description}
+										</Typography>
+										<Typography variant="body1" color="neutral.main">
+											Read More
+										</Typography>
+										<Box
+											sx={{
+												display: 'flex',
+												justifyContent: 'space-between',
+												alignItems: 'center',
+												mt: 'auto',
+											}}
+										>
+											<Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>
+												{blog.author}
+											</Typography>
+											<Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>
+												{blog.date}
+											</Typography>
+										</Box>
+									</Box>
+								</Box>
+							</Grid>
+						))}
+					</Grid>
+				</Grid>
+			</Grid>
 		</Box>
 	)
 }

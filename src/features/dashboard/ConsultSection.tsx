@@ -76,7 +76,7 @@ export default function ConsultSection() {
 			{/* Consult Cards */}
 			<Grid container spacing={3}>
 				{consults.map((s) => (
-					<Grid size={{ xs: 12, sm: 6, md: 3 }} key={s.id}>
+					<Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={s.id}>
 						<ConsultCard
 							image={s.image}
 							title={s.title}

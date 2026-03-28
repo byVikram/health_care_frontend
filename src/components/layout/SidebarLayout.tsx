@@ -143,23 +143,23 @@ export default function SidebarLayout({ children, activeMenuId }: SidebarLayoutP
 				</Box> */}
 
 				{/* Sidebar (only for patient) */}
-				{!isDoctor && (
-					<AppSidebar
-						user={sidebarUser}
-						carePlan={carePlan}
-						menuItems={menuItems}
-						activeId={activeId}
-						onLogout={handleLogout}
-						width={SIDEBAR_WIDTH}
-						topOffset={NAVBAR_HEIGHT}
-					/>
-				)}
+				{/* {!isDoctor && ( */}
+				<AppSidebar
+					user={sidebarUser}
+					carePlan={carePlan}
+					menuItems={menuItems}
+					activeId={activeId}
+					onLogout={handleLogout}
+					width={SIDEBAR_WIDTH}
+					topOffset={NAVBAR_HEIGHT}
+				/>
 
 				{/* Page content */}
 				<Box
 					sx={{
 						flex: 1,
-						ml: !isDoctor ? `${SIDEBAR_WIDTH}px` : 0,
+						// ml: !isDoctor ? `${SIDEBAR_WIDTH}px` : 0,
+						ml: `${SIDEBAR_WIDTH}px`,
 						display: 'flex',
 						flexDirection: 'column',
 						minHeight: `calc(100vh - ${NAVBAR_HEIGHT}px)`,
