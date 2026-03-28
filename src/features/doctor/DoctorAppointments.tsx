@@ -58,6 +58,9 @@ export function DoctorAppointments({
 	weekDays: { day: string; date: string; red: boolean; dateObj: Date }[]
 	selectedDateObj: Date
 }) {
+	const getStatusLabel = (status: Appointment['status']) =>
+		typeof status === 'string' ? status : status?.label ?? 'pending'
+
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
 			<Box>
@@ -143,122 +146,139 @@ export function DoctorAppointments({
 					{!apptLoading && apptError && (
 						<Typography sx={{ color: 'error.main', fontSize: '13px' }}>{apptError}</Typography>
 					)}
-					{appointments.map((apt) => (
-						<Box
-							key={apt.id}
-							sx={{
-								p: 1.5,
-								borderRadius: '12px',
-								border: apt.status === 'cancelled' ? '1px solid #f5c6c6' : '1px solid #e0e0e0',
-								bgcolor: apt.status === 'cancelled' ? '#fff5f5' : '#fff',
-								display: 'flex',
-								alignItems: 'center',
-								gap: 1.5,
-							}}
-						>
+					{!apptLoading && !apptError && appointments.length === 0 && (
+						<Typography sx={{ color: 'text.secondary', fontSize: '13px' }}>
+							No appointments for the selected date.
+						</Typography>
+					)}
+					{appointments.map((apt) => {
+						const statusLabel = getStatusLabel(apt.status)
+						const isCancelled = statusLabel === 'cancelled'
+						const patientName = apt.patient?.name ?? 'Unknown Patient'
+
+						return (
 							<Box
+								key={apt.id}
 								sx={{
-									width: 30,
-									height: 30,
-									borderRadius: '6px',
-									bgcolor: apt.status === 'cancelled' ? '#f5c6c6' : '#e8f5e9',
+									p: 1.5,
+									borderRadius: '12px',
+									border: isCancelled ? '1px solid #f5c6c6' : '1px solid #e0e0e0',
+									bgcolor: isCancelled ? '#fff5f5' : '#fff',
 									display: 'flex',
 									alignItems: 'center',
-									justifyContent: 'center',
-									flexShrink: 0,
+									gap: 1.5,
 								}}
 							>
-								<HomeIcon
-									sx={{ fontSize: 17, color: apt.status === 'cancelled' ? '#b0b0b0' : '#0c7c7c' }}
-								/>
-							</Box>
-							<Box sx={{ flex: 1, minWidth: 0 }}>
-								<Box
-									sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.3, flexWrap: 'wrap' }}
-								>
-									<Typography
-										sx={{
-											fontWeight: 600,
-											fontSize: '13px',
-											color: apt.status === 'cancelled' ? 'text.secondary' : 'text.primary',
-										}}
-									>
-										{apt.patient.name}
-									</Typography>
-									<Chip
-										label={apt.status}
-										size="small"
-										sx={{
-											fontSize: '9px',
-											height: 16,
-											bgcolor: apt.status === 'cancelled' ? '#ffeeee' : '#fff8e8',
-											color: apt.status === 'cancelled' ? '#e53935' : '#f59e0b',
-											fontWeight: 600,
-										}}
-									/>
-								</Box>
-								<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-									<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-										{apt.appointment_mode}
-									</Typography>
-									<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>|</Typography>
-									<AccessTimeIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
-									<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-										{apt.appointment_time}
-									</Typography>
-								</Box>
-							</Box>
-							{apt.status === 'cancelled' ? (
 								<Box
 									sx={{
+										width: 30,
+										height: 30,
+										borderRadius: '6px',
+										bgcolor: isCancelled ? '#f5c6c6' : '#e8f5e9',
 										display: 'flex',
 										alignItems: 'center',
-										gap: 1,
-										bgcolor: '#ffe0e0',
-										borderRadius: '8px',
-										px: 1.5,
-										py: 0.8,
+										justifyContent: 'center',
+										flexShrink: 0,
 									}}
 								>
-									<CancelOutlinedIcon sx={{ fontSize: 16, color: '#e53935' }} />
-									<Typography sx={{ fontSize: '10px', color: '#e53935', fontWeight: 600 }}>
-										Patient has canceled the appointment
-									</Typography>
+									<HomeIcon
+										sx={{ fontSize: 17, color: isCancelled ? '#b0b0b0' : '#0c7c7c' }}
+									/>
 								</Box>
-							) : (
-								<Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
-									{actionButtons.map((action, i) => (
-										<Box key={i}>
-											<Box
-												sx={{
-													display: 'flex',
-													flexDirection: 'column',
-													alignItems: 'center',
-													gap: 0.4,
-													cursor: 'pointer',
-													bgcolor: action.bg,
-													borderRadius: '8px',
-													px: 1,
-													py: 1,
-													minWidth: 28,
-													transition: 'opacity 0.2s',
-													'&:hover': { opacity: 0.75 },
-												}}
-											>
-												<img src={action.icon} width={16} height={16} alt={action.label} />
+								<Box sx={{ flex: 1, minWidth: 0 }}>
+									<Box
+										sx={{
+											display: 'flex',
+											alignItems: 'center',
+											gap: 0.8,
+											mb: 0.3,
+											flexWrap: 'wrap',
+										}}
+									>
+										<Typography
+											sx={{
+												fontWeight: 600,
+												fontSize: '13px',
+												color: isCancelled ? 'text.secondary' : 'text.primary',
+											}}
+										>
+											{patientName}
+										</Typography>
+										<Chip
+											label={statusLabel}
+											size="small"
+											sx={{
+												fontSize: '9px',
+												height: 16,
+												bgcolor: isCancelled ? '#ffeeee' : '#fff8e8',
+												color: isCancelled ? '#e53935' : '#f59e0b',
+												fontWeight: 600,
+											}}
+										/>
+									</Box>
+									<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+										<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
+											{apt.appointment_mode ?? 'offline'}
+										</Typography>
+										<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>|</Typography>
+										<AccessTimeIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
+										<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
+											{apt.appointment_time ?? '--'}
+										</Typography>
+									</Box>
+								</Box>
+								{isCancelled ? (
+									<Box
+										sx={{
+											display: 'flex',
+											alignItems: 'center',
+											gap: 1,
+											bgcolor: '#ffe0e0',
+											borderRadius: '8px',
+											px: 1.5,
+											py: 0.8,
+										}}
+									>
+										<CancelOutlinedIcon sx={{ fontSize: 16, color: '#e53935' }} />
+										<Typography sx={{ fontSize: '10px', color: '#e53935', fontWeight: 600 }}>
+											Patient has canceled the appointment
+										</Typography>
+									</Box>
+								) : (
+									<Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
+										{actionButtons.map((action, i) => (
+											<Box key={i}>
+												<Box
+													sx={{
+														display: 'flex',
+														flexDirection: 'column',
+														alignItems: 'center',
+														gap: 0.4,
+														cursor: 'pointer',
+														bgcolor: action.bg,
+														borderRadius: '8px',
+														px: 1,
+														py: 1,
+														minWidth: 28,
+														transition: 'opacity 0.2s',
+														'&:hover': { opacity: 0.75 },
+													}}
+												>
+													<img src={action.icon} width={16} height={16} alt={action.label} />
+												</Box>
+												<Typography
+													sx={{ mt: 0.4, fontSize: '10px', fontWeight: 400, textAlign: 'center' }}
+												>
+													{action.label}
+												</Typography>
 											</Box>
-											<Typography
-												sx={{ mt: 0.4, fontSize: '10px', fontWeight: 400, textAlign: 'center' }}
-											>
-												{action.label}
-											</Typography>
-										</Box>
-									))}
-								</Box>
-							)}
-							<ChevronRightIcon sx={{ fontSize: 16, color: 'text.secondary', flexShrink: 0 }} />
-						</Box>
-					))}
+										))}
+									</Box>
+								)}
+								<ChevronRightIcon sx={{ fontSize: 16, color: 'text.secondary', flexShrink: 0 }} />
+							</Box>
+						)
+					})}
 				</Box>
 			</Box>
 		</Box>

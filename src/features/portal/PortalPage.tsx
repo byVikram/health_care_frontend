@@ -1,24 +1,8 @@
-import { Box, Typography, Container, Grid, Chip, Divider, InputAdornment, TextField } from '@mui/material'
+import { Box, Typography, Container, Grid } from '@mui/material'
 import { useState, useEffect } from 'react'
 import { getAppointments } from '../doctor/doctorService'
 import { Appointment } from '../../types/appointment'
-import MicIcon from '@mui/icons-material/Mic'
-import GridViewIcon from '@mui/icons-material/GridView'
-// import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
-import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
-// import EventRepeatIcon from '@mui/icons-material/EventRepeat'
-// import CallSplitIcon from '@mui/icons-material/CallSplit'
-import AccessTimeIcon from '@mui/icons-material/AccessTime'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import PeopleAltIcon from '@mui/icons-material/PeopleAlt'
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
-import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
-import SearchIcon from '@mui/icons-material/Search'
-import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
-import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
-import HomeIcon from '@mui/icons-material/Home'
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
-import AppButton from '../../components/common/Button/AppButton'
+
 import { DoctorAppointments } from '../doctor/DoctorAppointments'
 // import { PatientAppointments } from '../patient/patient/PatientAppointments'
 import { useAuth } from '../../hooks/useAuth'
@@ -26,8 +10,6 @@ import { useAuth } from '../../hooks/useAuth'
 import drImage from '../../assets/Services/doctors-service.png'
 import videoImage from '../../assets/blog-and-community/video-image.png'
 import adImage from '../../assets/blog-and-community/ad-image.png'
-import groupImage from '../../assets/blog-and-community/community-1.svg'
-import blogImage from '../../assets/blog-and-community/blog-1.svg'
 import AnswerQuestionsSection from '../dashboard/AnswerQuestionsSection'
 // import DoctorNavBar from '../../components/common/Navbar/DoctorNavBar'
 
@@ -41,11 +23,6 @@ import BloodBankIcon from '../../assets/quick-services/blood-bank.svg'
 import IcuIcon from '../../assets/quick-services/icu.svg'
 import EmergencyIcon from '../../assets/quick-services/emergency.svg'
 
-import ConfirmIcon from '../../assets/icons/confirm.svg'
-import RejectIcon from '../../assets/icons/reject.svg'
-import RescheduleIcon from '../../assets/icons/reschedule.svg'
-import ReferIcon from '../../assets/icons/refer.svg'
-import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import { PatientAppointments } from '../patient/PatientAppointments'
 import { USER_ROLES } from '../../constants/constants'
 import UpcomingEventsSection from '../dashboard/UpcomingEventsSection'
@@ -75,97 +52,6 @@ const stats = [
 	{ label: 'Emergency Patients', value: '01' },
 ]
 
-const quickServices = [
-	{ title: 'Appointments', image: AppointmentsIcon },
-	{ title: 'Pharmacy', image: PharmacyIcon },
-	{ title: 'Lab', image: LabIcon },
-	{ title: 'Radiology', image: RadiologyIcon },
-	{ title: 'Ancillary', image: AncilaryIcon },
-	{ title: 'Ambulance', image: AmbulanceIcon },
-	{ title: 'Blood Bank', image: BloodBankIcon },
-	{ title: 'ICU', image: IcuIcon },
-	{ title: 'Emergency', image: EmergencyIcon },
-]
-
-const communities = [
-	{ id: 1, name: 'Diabatics Associations', location: 'Rajajinagar, Bengaluru', avatar: groupImage },
-	{ id: 2, name: 'Diabatics Associations', location: 'Rajajinagar, Bengaluru', avatar: groupImage },
-	{ id: 3, name: 'Diabatics Associations', location: 'Rajajinagar, Bengaluru', avatar: groupImage },
-	{ id: 4, name: 'Diabatics Associations', location: 'Rajajinagar, Bengaluru', avatar: groupImage },
-]
-
-const blogs = [
-	{
-		id: 1,
-		title: 'The Future of Digital Health: What to Expect!',
-		description:
-			'Explore how technology is transforming healthcare, from AI diagnostics to personalized treatment plans.',
-		author: 'By Dr. Emily White',
-		date: '15 May 2024',
-		image: blogImage,
-	},
-	{
-		id: 2,
-		title: 'Understanding Telemedicine: Your Guide to Virtual Care',
-		description:
-			'A comprehensive guide to telemedicine services, benefits, and how to get started with virtual consultations.',
-		author: 'By Dr. Emily White',
-		date: '15 May 2024',
-		image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=220&fit=crop',
-	},
-]
-
-const featuredEvents = [
-	{
-		id: 1,
-		title: 'Annual Health & Wellness Expo',
-		date: 'August 10, 2024',
-		location: 'City Park, Health Center',
-		image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&h=200&fit=crop',
-	},
-	{
-		id: 2,
-		title: 'Annual Health & Wellness Expo',
-		date: 'August 10, 2024',
-		location: 'City Park, Health Center',
-		image: 'https://images.unsplash.com/photo-1576671081837-49000212a370?w=400&h=200&fit=crop',
-	},
-]
-
-const eventList = [
-	{ id: 1, day: '20', month: 'JUN', name: 'Free Diabetes Screening Camp', location: 'City Community Hall' },
-	{ id: 2, day: '20', month: 'JUN', name: 'Online Yoga & Wellness Workshop', location: 'Virtual Event' },
-	{ id: 3, day: '20', month: 'JUN', name: 'Online Yoga & Wellness Workshop', location: 'Virtual Event' },
-	{ id: 4, day: '20', month: 'JUN', name: 'Online Yoga & Wellness Workshop', location: 'Virtual Event' },
-]
-
-const actionButtons = [
-	{
-		icon: ConfirmIcon,
-		label: 'Confirm',
-		bg: '#e8f5e9',
-		color: '#4caf50',
-	},
-	{
-		icon: RejectIcon,
-		label: 'Reject',
-		bg: '#ffeeee',
-		color: '#e53935',
-	},
-	{
-		icon: RescheduleIcon,
-		label: 'Reschedule',
-		bg: '#fff8e8',
-		color: '#f59e0b',
-	},
-	{
-		icon: ReferIcon,
-		label: 'Refer',
-		bg: '#e8f4f8',
-		color: '#0c7c7c',
-	},
-]
-
 export default function PortalPage() {
 	const { role } = useAuth()
 	const [activeSlide, setActiveSlide] = useState(0)
@@ -174,7 +60,7 @@ export default function PortalPage() {
 	const [appointments, setAppointments] = useState<Appointment[]>([])
 	const [apptLoading, setApptLoading] = useState(true)
 	const [apptError, setApptError] = useState('')
-	const weekDays = buildWeekDays()
+	const [weekDays] = useState(() => buildWeekDays())
 	const selectedDateObj = weekDays[selectedDate]?.dateObj ?? new Date()
 
 	const formatDateForApi = (date: Date) => {
@@ -184,7 +70,7 @@ export default function PortalPage() {
 		return `${year}-${month}-${day}`
 	}
 
-	const getSelectedAppointmentDate = () => formatDateForApi(selectedDateObj)
+	// const getSelectedAppointmentDate = () => formatDateForApi(selectedDateObj)
 
 	useEffect(() => {
 		const fetchAppointments = async () => {
@@ -193,8 +79,10 @@ export default function PortalPage() {
 				setApptError('')
 				const dateStr = formatDateForApi(weekDays[selectedDate]?.dateObj ?? new Date())
 				const res = await getAppointments({ appointment_date: dateStr })
-				if (res.success) setAppointments(res.data)
-				else setApptError(res.message ?? 'Failed to load appointments')
+				if (res.success) {
+					const items = Array.isArray(res.data) ? res.data : []
+					setAppointments(items)
+				} else setApptError(res.message ?? 'Failed to load appointments')
 			} catch {
 				setApptError('Failed to load appointments')
 			} finally {
@@ -202,7 +90,8 @@ export default function PortalPage() {
 			}
 		}
 		fetchAppointments()
-	}, [selectedDate])
+	}, [selectedDate, weekDays])
+
 	return (
 		<Box sx={{ bgcolor: '#f5f7fa' }}>
 			<Container maxWidth="lg" sx={{ py: 3 }}>

@@ -7,11 +7,21 @@ import { sendOtp } from '../authService'
 
 interface LoginFormProps {
 	onSubmit: (contactNumber: string) => void
+	mode?: 'page' | 'modal'
+	onSwitchToRegister?: () => void
 }
 
-export default function LoginForm({ onSubmit }: LoginFormProps) {
+export default function LoginForm({ onSubmit, mode = 'page', onSwitchToRegister }: LoginFormProps) {
 	const navigate = useNavigate()
-	const isMobile = useMediaQuery('(max-width: 600px)')   // ← true on phone, false on desktop
+	const isMobile = useMediaQuery('(max-width: 600px)') // ← true on phone, false on desktop
+
+	const handleSwitchToRegister = () => {
+		if (onSwitchToRegister) {
+			onSwitchToRegister()
+			return
+		}
+		navigate('/register')
+	}
 
 	const [contactNumber, setContactNumber] = useState('')
 	const [error, setError] = useState('')
@@ -41,7 +51,7 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
 		setLoading(true)
 		try {
 			const res = await sendOtp(contactNumber.trim())
-			window.alert(`Otp for the testing purpose is :${res.data.otp}`)
+
 			if (res.success) {
 				onSubmit(contactNumber.trim())
 			} else {
@@ -57,11 +67,13 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
 	// ── Shared form fields (used in both layouts) ──────────────────────────────
 	const formFields = (
 		<>
-			<Typography variant="h4" sx={{ fontWeight: '600', marginBottom: '32px', fontSize: '32px' }}>
-				Login
-			</Typography>
+			{mode === 'page' && (
+				<Typography variant="h4" sx={{ fontWeight: '600', marginBottom: '32px', fontSize: '32px' }}>
+					Login
+				</Typography>
+			)}
 
-			<Typography sx={{ fontSize: '14px', marginBottom: '8px' }}>Enter your mobile number</Typography>
+			{/* <Typography sx={{ fontSize: '14px', marginBottom: '8px' }}>Enter your mobile number</Typography> */}
 
 			<AppInput
 				placeholder="Mobile Number"
@@ -79,15 +91,7 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
 				onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
 			/>
 
-			{apiError && (
-				<Typography sx={{ color: 'error.main', fontSize: '12px', mt: 1 }}>{apiError}</Typography>
-			)}
-
-			<Box sx={{ textAlign: 'right', marginTop: '8px' }}>
-				<a href="#" style={{ fontSize: '12px', color: '#0d9488' }}>
-					Forgot password?
-				</a>
-			</Box>
+			{apiError && <Typography sx={{ color: 'error.main', fontSize: '12px', mt: 1 }}>{apiError}</Typography>}
 
 			<Typography
 				variant="caption"
@@ -105,7 +109,7 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
 			>
 				Don&apos;t have an account?{' '}
 				<span
-					onClick={() => navigate('/register')}
+					onClick={handleSwitchToRegister}
 					style={{ color: '#0d9488', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }}
 				>
 					Register
@@ -124,6 +128,10 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
 		</>
 	)
 
+	if (mode === 'modal') {
+		return <Box sx={{ width: '100%' }}>{formFields}</Box>
+	}
+
 	// ════════════════════════════════════════════════════════════════════════════
 	// PHONE layout  — CSS Grid, stacked top/bottom
 	// Shown when screen width ≤ 600px
@@ -132,7 +140,6 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
 		return (
 			<div style={grid.pageWrapper}>
 				<div style={grid.phoneCard}>
-
 					{/* ROW 1 — teal hero banner */}
 					<div style={grid.hero}>
 						{/* brand: logo | title */}
@@ -161,7 +168,6 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
 							&copy; 2025 Whisper ai. All rights reserved.
 						</Typography>
 					</div>
-
 				</div>
 			</div>
 		)
@@ -173,7 +179,6 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
 	// ════════════════════════════════════════════════════════════════════════════
 	return (
 		<Box sx={{ display: 'flex', width: '100vw', height: '100vh' }}>
-
 			{/* Left Side — teal */}
 			<Box
 				sx={{
@@ -186,7 +191,9 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
 					padding: '40px',
 				}}
 			>
-				<Box sx={{ display: 'flex', alignItems: 'center', gap: '16px', alignSelf: 'center', marginLeft: '30px' }}>
+				<Box
+					sx={{ display: 'flex', alignItems: 'center', gap: '16px', alignSelf: 'center', marginLeft: '30px' }}
+				>
 					<img src="/src/assets/Banner/logo.png" alt="Whisper AI" style={{ width: '80px' }} />
 					<Box>
 						<Typography sx={{ color: 'white', fontWeight: 'bold', fontSize: '30px' }}>
@@ -199,7 +206,13 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
 				<img
 					src="/src/assets/Banner/banner.png"
 					alt="Doctor"
-					style={{ width: '70%', height: '60%', objectFit: 'contain', marginLeft: '40px', marginBottom: '30px' }}
+					style={{
+						width: '70%',
+						height: '60%',
+						objectFit: 'contain',
+						marginLeft: '40px',
+						marginBottom: '30px',
+					}}
 				/>
 
 				<Typography sx={{ color: 'white', fontSize: '12px' }}>
@@ -217,11 +230,8 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
 					backgroundColor: '#fff',
 				}}
 			>
-				<Box sx={{ width: '380px' }}>
-					{formFields}
-				</Box>
+				<Box sx={{ width: '380px' }}>{formFields}</Box>
 			</Box>
-
 		</Box>
 	)
 }
@@ -230,7 +240,6 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
 // Grid styles — used ONLY by the mobile layout
 // ─────────────────────────────────────────────────────────────────────────────
 const grid: Record<string, React.CSSProperties> = {
-
 	pageWrapper: {
 		display: 'grid',
 		placeItems: 'center',

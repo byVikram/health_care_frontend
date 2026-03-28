@@ -17,10 +17,24 @@ type RoleId = {
 	label: string
 }
 
-export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) => void }) {
+interface RegisterFormProps {
+	onSubmit: (mobile: string) => void
+	mode?: 'page' | 'modal'
+	onSwitchToLogin?: () => void
+}
+
+export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin }: RegisterFormProps) {
 	const [registerAs, setRegisterAs] = useState('')
 	const navigate = useNavigate()
-	const isMobile = useMediaQuery('(max-width: 600px)')   // ← true on phone, false on desktop
+	const isMobile = useMediaQuery('(max-width: 600px)') // ← true on phone, false on desktop
+
+	const handleSwitchToLogin = () => {
+		if (onSwitchToLogin) {
+			onSwitchToLogin()
+			return
+		}
+		navigate('/login')
+	}
 	const [loading, setLoading] = useState(false)
 	const [roles, setRoles] = useState<Role[]>([])
 	const [formError, setFormError] = useState('')
@@ -60,12 +74,30 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 		setNameError('')
 		setEmailError('')
 
-		if (!registerAs) { setRoleError('Role is required'); return }
-		if (!name.trim()) { setNameError('Name is required'); return }
-		if (!email.trim()) { setEmailError('Email is required'); return }
-		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setEmailError('Enter a valid email address'); return }
-		if (!mobile.trim()) { setMobileError('Mobile number is required'); return }
-		if (!/^[6-9]\d{9}$/.test(mobile.trim())) { setMobileError('Enter a valid 10-digit mobile number'); return }
+		if (!registerAs) {
+			setRoleError('Role is required')
+			return
+		}
+		if (!name.trim()) {
+			setNameError('Name is required')
+			return
+		}
+		if (!email.trim()) {
+			setEmailError('Email is required')
+			return
+		}
+		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+			setEmailError('Enter a valid email address')
+			return
+		}
+		if (!mobile.trim()) {
+			setMobileError('Mobile number is required')
+			return
+		}
+		if (!/^[6-9]\d{9}$/.test(mobile.trim())) {
+			setMobileError('Enter a valid 10-digit mobile number')
+			return
+		}
 
 		const payload = { role_id: registerAs, name, email, contact_number: mobile }
 		console.log('API Payload:', payload)
@@ -98,9 +130,11 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 	// ── Shared form fields (used in BOTH layouts) ──────────────────────────────
 	const formFields = (
 		<>
-			<Typography variant="h4" sx={{ fontWeight: '600', marginBottom: '32px', fontSize: '32px' }}>
-				Register
-			</Typography>
+			{mode === 'page' && (
+				<Typography variant="h4" sx={{ fontWeight: '600', marginBottom: '32px', fontSize: '32px' }}>
+					Register
+				</Typography>
+			)}
 
 			<AppSelect
 				label="Role"
@@ -163,7 +197,9 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 
 			<Typography variant="caption" sx={{ color: '#666', display: 'block', margin: '20px 0' }}>
 				By continuing, you agree to our{' '}
-				<a href="#" style={{ color: '#0d9488' }}>Terms &amp; Conditions</a>
+				<a href="#" style={{ color: '#0d9488' }}>
+					Terms &amp; Conditions
+				</a>
 			</Typography>
 
 			<Typography
@@ -172,13 +208,12 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 			>
 				Already have an account?{' '}
 				<span
-					onClick={() => navigate('/login')}
+					onClick={handleSwitchToLogin}
 					style={{ color: '#0d9488', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }}
 				>
 					Login
 				</span>
 			</Typography>
-
 			<Box sx={{ display: 'flex', gap: '12px' }}>
 				<Button
 					onClick={handleRegister}
@@ -191,22 +226,19 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 			</Box>
 
 			{formError && (
-				<Typography sx={{ mt: 1.5, color: 'error.main', fontSize: '0.9rem' }}>
-					{formError}
-				</Typography>
+				<Typography sx={{ mt: 1.5, color: 'error.main', fontSize: '0.9rem' }}>{formError}</Typography>
 			)}
 		</>
 	)
 
-	// ════════════════════════════════════════════════════════════════════════════
-	// PHONE layout — CSS Grid, stacked top/bottom
-	// Shown when screen width ≤ 600px
-	// ════════════════════════════════════════════════════════════════════════════
+	if (mode === 'modal') {
+		return <Box sx={{ width: '100%' }}>{formFields}</Box>
+	}
+
 	if (isMobile) {
 		return (
 			<div style={grid.pageWrapper}>
 				<div style={grid.phoneCard}>
-
 					{/* ROW 1 — teal hero banner */}
 					<div style={grid.hero}>
 						{/* brand: logo | title */}
@@ -235,7 +267,6 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 							&copy; 2025 Whisper ai. All rights reserved.
 						</Typography>
 					</div>
-
 				</div>
 			</div>
 		)
@@ -247,7 +278,6 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 	// ════════════════════════════════════════════════════════════════════════════
 	return (
 		<Box sx={{ display: 'flex', width: '100vw', height: '100vh' }}>
-
 			{/* Left Side — teal */}
 			<Box
 				sx={{
@@ -260,7 +290,9 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 					padding: '40px',
 				}}
 			>
-				<Box sx={{ display: 'flex', alignItems: 'center', gap: '16px', alignSelf: 'center', marginLeft: '30px' }}>
+				<Box
+					sx={{ display: 'flex', alignItems: 'center', gap: '16px', alignSelf: 'center', marginLeft: '30px' }}
+				>
 					<img src="/src/assets/Banner/logo.png" alt="Whisper AI" style={{ width: '80px' }} />
 					<Box>
 						<Typography sx={{ color: 'white', fontWeight: 'bold', fontSize: '30px' }}>
@@ -273,7 +305,13 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 				<img
 					src="/src/assets/Banner/banner.png"
 					alt="Doctor"
-					style={{ width: '70%', height: '60%', objectFit: 'contain', marginLeft: '40px', marginBottom: '30px' }}
+					style={{
+						width: '70%',
+						height: '60%',
+						objectFit: 'contain',
+						marginLeft: '40px',
+						marginBottom: '30px',
+					}}
 				/>
 
 				<Typography sx={{ color: 'white', fontSize: '12px' }}>
@@ -291,11 +329,8 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 					backgroundColor: '#fff',
 				}}
 			>
-				<Box sx={{ width: '380px' }}>
-					{formFields}
-				</Box>
+				<Box sx={{ width: '380px' }}>{formFields}</Box>
 			</Box>
-
 		</Box>
 	)
 }
@@ -304,7 +339,6 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 // Grid styles — used ONLY by the mobile layout
 // ─────────────────────────────────────────────────────────────────────────────
 const grid: Record<string, React.CSSProperties> = {
-
 	// Full-viewport wrapper — centres the card on desktop
 	pageWrapper: {
 		display: 'grid',

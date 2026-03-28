@@ -1,8 +1,10 @@
 ﻿// src/types/appointment.ts
 
+export type AppointmentStatusValue = 'pending' | 'confirmed' | 'completed' | 'cancelled' | string
+
 export interface AppointmentStatus {
 	id: string
-	label: 'pending' | 'confirmed' | 'completed' | 'cancelled' | string
+	label: AppointmentStatusValue
 }
 
 export interface AppointmentDoctor {
@@ -29,10 +31,10 @@ export interface Appointment {
 	appointment_time: string
 	fees: number
 	created_at: string
-	status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | string
+	status: AppointmentStatusValue | AppointmentStatus
 	doctor: AppointmentDoctor
-	patient: AppointmentPatient
-	hospital: AppointmentHospital
+	patient: AppointmentPatient | null
+	hospital: AppointmentHospital | null
 }
 
 export interface AppointmentsResponse {
