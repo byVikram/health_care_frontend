@@ -241,7 +241,7 @@ export default function PortalPage() {
 												Welcome
 											</Typography>
 											<Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '17px' }}>
-												Dr. Arjun Sharma 
+												Dr. Arjun Sharma
 											</Typography>
 										</Box>
 										<Box
@@ -292,8 +292,8 @@ export default function PortalPage() {
 										))}
 									</Box>
 								</Box>
+							</Box>
 						</Box>
-					</Box>
 						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%', flex: 1, mt: 2 }}>
 							{/* Video + Right Services row */}
 							<Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
@@ -473,9 +473,7 @@ export default function PortalPage() {
 								selectedDateObj={selectedDateObj}
 							/>
 						)}
-                        { role === USER_ROLES.PATIENT &&(
-                            <PatientAppointments/>
-                        )}
+						{role === USER_ROLES.PATIENT && <PatientAppointments />}
 					</Grid>
 				</Grid>
 
