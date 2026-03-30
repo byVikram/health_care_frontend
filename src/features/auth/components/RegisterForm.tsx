@@ -2,7 +2,8 @@
 import AppInput from '../../../components/common/Input/AppInput'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Box, Button, Typography, useMediaQuery } from '@mui/material'
+import { Box, Button, Typography } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import AppSelect from '../../../components/common/Select/AppSelect'
 import { createUser, getRoles } from '../authService'
 import axios from 'axios'
@@ -20,7 +21,6 @@ type RoleId = {
 export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) => void }) {
 	const [registerAs, setRegisterAs] = useState('')
 	const navigate = useNavigate()
-	const isMobile = useMediaQuery('(max-width: 600px)')   // ← true on phone, false on desktop
 	const [loading, setLoading] = useState(false)
 	const [roles, setRoles] = useState<Role[]>([])
 	const [formError, setFormError] = useState('')
@@ -28,7 +28,6 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 	const [roleError, setRoleError] = useState('')
 	const [nameError, setNameError] = useState('')
 	const [emailError, setEmailError] = useState('')
-
 	const [name, setName] = useState('')
 	const [email, setEmail] = useState('')
 	const [mobile, setMobile] = useState('')
@@ -95,7 +94,6 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 		}
 	}
 
-	// ── Shared form fields (used in BOTH layouts) ──────────────────────────────
 	const formFields = (
 		<>
 			<Typography variant="h4" sx={{ fontWeight: '600', marginBottom: '32px', fontSize: '32px' }}>
@@ -198,56 +196,10 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 		</>
 	)
 
-	// ════════════════════════════════════════════════════════════════════════════
-	// PHONE layout — CSS Grid, stacked top/bottom
-	// Shown when screen width ≤ 600px
-	// ════════════════════════════════════════════════════════════════════════════
-	if (isMobile) {
-		return (
-			<div style={grid.pageWrapper}>
-				<div style={grid.phoneCard}>
+	// Single layout for phone and desktop 
 
-					{/* ROW 1 — teal hero banner */}
-					<div style={grid.hero}>
-						{/* brand: logo | title */}
-						<div style={grid.brandRow}>
-							<img src="/src/assets/Banner/logo.png" alt="Whisper AI" style={grid.logo} />
-							<div>
-								<Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '24px', lineHeight: 1.15 }}>
-									Whisper ai.
-								</Typography>
-								<Typography sx={{ color: 'rgba(255,255,255,0.8)', fontSize: '11px' }}>
-									Smart Care. Simple Access
-								</Typography>
-							</div>
-						</div>
-
-						{/* banner image pushed to bottom of hero */}
-						<div style={grid.bannerRow}>
-							<img src="/src/assets/Banner/banner.png" alt="Doctor" style={grid.bannerImg} />
-						</div>
-					</div>
-
-					{/* ROW 2 — white form panel */}
-					<div style={grid.formPanel}>
-						{formFields}
-						<Typography sx={{ fontSize: '11px', color: '#bbb', textAlign: 'center', mt: '16px' }}>
-							&copy; 2025 Whisper ai. All rights reserved.
-						</Typography>
-					</div>
-
-				</div>
-			</div>
-		)
-	}
-
-	// ════════════════════════════════════════════════════════════════════════════
-	// DESKTOP layout — original Box version, 50/50 side-by-side
-	// Shown when screen width > 600px  (unchanged from original)
-	// ════════════════════════════════════════════════════════════════════════════
 	return (
-		<Box sx={{ display: 'flex', width: '100vw', height: '100vh' }}>
-
+		<Grid container sx={{ height: { xs: '50vh', md: '100vh' } }} size={{ xs: 12, md: 6 }}>
 			{/* Left Side — teal */}
 			<Box
 				sx={{
@@ -295,77 +247,6 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 					{formFields}
 				</Box>
 			</Box>
-
-		</Box>
+		</Grid>
 	)
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Grid styles — used ONLY by the mobile layout
-// ─────────────────────────────────────────────────────────────────────────────
-const grid: Record<string, React.CSSProperties> = {
-
-	// Full-viewport wrapper — centres the card on desktop
-	pageWrapper: {
-		display: 'grid',
-		placeItems: 'center',
-		minHeight: '100vh',
-		backgroundColor: '#eef7f7',
-	},
-
-	// 2 rows: hero (240px fixed) | form (fills rest)
-	phoneCard: {
-		display: 'grid',
-		gridTemplateRows: '240px 1fr',
-		width: '100%',
-		maxWidth: '390px',
-		minHeight: '100vh',
-		backgroundColor: '#ffffff',
-		overflow: 'hidden',
-	},
-
-	// hero: 2 rows — brandRow (auto) | bannerRow (1fr pushes image down)
-	hero: {
-		display: 'grid',
-		gridTemplateRows: 'auto 1fr',
-		background: 'linear-gradient(160deg, #528C91 0%, #3a7d82 100%)',
-		padding: '28px 16px 0 20px',
-		overflow: 'hidden',
-	},
-
-	// brandRow: 2 columns — logo (64px) | title+tagline
-	brandRow: {
-		display: 'grid',
-		gridTemplateColumns: '64px 1fr',
-		alignItems: 'center',
-		gap: '12px',
-	},
-
-	logo: {
-		width: '60px',
-		height: '60px',
-		objectFit: 'contain',
-	},
-
-	bannerRow: {
-		display: 'grid',
-		alignItems: 'end',
-		justifyItems: 'center',
-	},
-
-	bannerImg: {
-		width: '72%',
-		maxHeight: '170px',
-		objectFit: 'contain',
-		display: 'block',
-	},
-
-	// formPanel: stacked rows for each form section
-	formPanel: {
-		display: 'grid',
-		gridTemplateRows: 'auto auto auto auto auto',
-		alignContent: 'start',
-		padding: '28px 24px 20px',
-		overflowY: 'auto',
-	},
 }

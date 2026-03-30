@@ -55,8 +55,6 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
 		}
 	}
 
-	// ── Shared form fields (used in both layouts) ──────────────────────────────
-
 	// Single Layout for both phone and Desktop
 	return (
 		<Grid container sx={{ height: { xs: '50vh', md: '100vh' } }} size={{ xs: 12, md: 6 }}>
