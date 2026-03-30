@@ -63,7 +63,7 @@ export default function ConsultCard({ image, title, description, onConsult }: Co
 			</Typography>
 
 			{/* Consult Now */}
-			<Typography
+			{/* <Typography
 				variant="body2"
 				sx={{
 					color: 'neutral.main',
@@ -73,7 +73,7 @@ export default function ConsultCard({ image, title, description, onConsult }: Co
 				}}
 			>
 				Consult Now
-			</Typography>
+			</Typography> */}
 		</Box>
 	)
 }

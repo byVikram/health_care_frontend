@@ -48,7 +48,7 @@ const specialities = [
 export default function SpecialitySection() {
 	const navigate = useNavigate()
 	return (
-		<Box sx={{ py: 4 }}>
+		<Box sx={{ py: 2 }}>
 			{/* Header Row */}
 			<Grid
 				container

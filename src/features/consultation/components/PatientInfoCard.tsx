@@ -51,12 +51,18 @@ export default function PatientInfoCard({ patient }: PatientInfoCardProps) {
 					<Avatar
 						src={patient.avatar}
 						alt={patient.name}
-						sx={{ width: 80, height: 80, border: '2px solid', borderColor: 'primary.main' }}
+						sx={{
+							width: 80,
+							height: 80,
+							border: '2px solid',
+							borderColor: 'primary.main',
+							borderRadius: '8px',
+						}}
 					/>
 					<Box
 						sx={{
 							position: 'absolute',
-							bottom: 2,
+							top: 2,
 							right: 2,
 							bgcolor: 'primary.main',
 							borderRadius: '4px',

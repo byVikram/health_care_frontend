@@ -42,9 +42,14 @@ const NAVBAR_HEIGHT = 64
 // -- Doctor config -------------------------------------------------------------
 const DOCTOR_MENU_ITEMS = [
 	{ id: 'appointments', label: 'My Appointments', icon: AppointmentIcon, path: '/doctor' },
+	{ id: 'pharmacy', label: 'Pharmacy', icon: PharmacyIcon },
+	{ id: 'lab', label: 'Lab', icon: LabIcon },
+	{ id: 'radiology', label: 'Radiology', icon: RadiologyIcon },
+	{ id: 'reminders', label: 'Reminders', icon: RemindersIcon },
 	// { id: 'patients', label: 'My Patients', icon: , path: '/doctor/patients' },
 	// { id: 'hospitals', label: 'My Hospitals', icon: , path: '/profile' },
 	// { id: 'availability', label: 'Availability', icon: <EventAvailableOutlinedIcon />, path: '/profile' },
+	{ id: 'blogs', label: 'Blogs', icon: BlogsIcon },
 	{ id: 'help', label: 'Help Center', icon: HelpCenterIcon },
 	{ id: 'settings', label: 'Settings', icon: SettingsIcon, path: '/profile' },
 ]

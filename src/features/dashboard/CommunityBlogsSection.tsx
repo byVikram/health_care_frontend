@@ -204,6 +204,7 @@ export default function CommunityBlogsSection({ variant = 'row' }: CommunityBlog
 												WebkitBoxOrient: 'vertical',
 												overflow: 'hidden',
 												flex: 1, // 🔥 fills remaining space
+												lineHeight: 1.2,
 											}}
 										>
 											{blog.description}
