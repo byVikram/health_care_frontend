@@ -15,6 +15,7 @@ import ConsultationPage from '../features/consultation/ConsultationPage'
 import AccountPage from '../features/auth/AccountPage'
 import WelcomePage from '../features/auth/WelcomePage'
 import PortalPage from '../features/portal/PortalPage'
+import NavbarLayout from '../components/layout/NavbarLayout'
 // import DoctorPortalPage from '../features/doctor/DoctorPortalPage'
 // import PatientPortalPage from '../features/patient/PatientPortalPage'
 // import PatientProfilePage from '../features/patient/PatientProfilePage'
@@ -37,6 +38,13 @@ function SidebarProtectedLayout() {
 	)
 }
 
+function LoogedInNavbarLayout() {
+	return (
+		<NavbarLayout>
+			<Outlet />
+		</NavbarLayout>
+	)
+}
 export default function AppRoutes() {
 	const isAuthenticated = true
 
@@ -76,11 +84,14 @@ export default function AppRoutes() {
 			</Route>
 
 			<Route element={<SidebarProtectedLayout />}>
-				<Route path="/portal" element={<PortalPage />} />
 				{/* <Route path="/portal-patient" element={<PatientProfilePage />} />
 				<Route path="/patient" element={<PatientPortalPage />} /> */}
 				<Route path="/profile" element={<ProfilePage />} />
 				<Route path="/consultation/:patientId" element={<ConsultationPage />} />
+			</Route>
+
+			<Route element={<LoogedInNavbarLayout />}>
+				<Route path="/portal" element={<PortalPage />} />
 			</Route>
 
 			{/* 404 */}

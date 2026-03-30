@@ -16,7 +16,7 @@ import { useNavigate } from 'react-router-dom'
 // import BiotechOutlinedIcon from '@mui/icons-material/BiotechOutlined'
 
 // MUI Icons - Common
-import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined'
+// import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined'
 import drImage from '../../assets/Services/doctors-service.png'
 
 import AppointmentIcon from '../../assets/icons/appointments.svg'
