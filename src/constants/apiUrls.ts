@@ -27,7 +27,8 @@ export const API_ENDPOINTS = {
 	},
 	APPOINTMENTS: {
 		GET: `${BASE_URL}/api/appointments`,
-    	GET_BY_ID: (id: number) => `${BASE_URL}/api/appointments/${id}`,
-    	UPDATE: `${BASE_URL}/api/appointments/update-status`,
-	}
+		CREATE: `${BASE_URL}/api/appointments`,
+		GET_BY_ID: (id: number) => `${BASE_URL}/api/appointments/${id}`,
+		UPDATE: `${BASE_URL}/api/appointments/update-status`,
+	},
 }

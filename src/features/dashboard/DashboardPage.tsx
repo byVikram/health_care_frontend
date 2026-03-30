@@ -9,7 +9,6 @@ import CommunityBlogsSection from './CommunityBlogsSection'
 import PodcastsSection from './PodcastsSection'
 import HealthQuestionsSection from './HealthQuestionsSection'
 
-
 import ServicesSection from './ServiceSection'
 import EmergencyBannerSection from './EmergencySection'
 
@@ -18,6 +17,7 @@ export default function DashboardPage() {
 		<Box>
 			{/* Banner Section */}
 			<Box
+				id="home"
 				sx={{
 					position: 'relative',
 					minHeight: { xs: 'auto', md: '580px' },
@@ -30,6 +30,7 @@ export default function DashboardPage() {
 					py: { xs: 6, md: 0 },
 					textAlign: { xs: 'center', md: 'left' },
 					background: 'linear-gradient(135deg,#0f4c4c,#0c7c7c)',
+					scrollMarginTop: { xs: 80, md: 96 },
 				}}
 			>
 				<Box
@@ -91,19 +92,25 @@ export default function DashboardPage() {
 			</Box>
 
 			{/* Main Content Container */}
-			<Container maxWidth="lg" sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6 }}>
+			<Container
+				id="services"
+				maxWidth="lg"
+				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6, scrollMarginTop: { xs: 80, md: 96 } }}
+			>
 				{/* Quick Services Icon Grid */}
-			<QuickServicesSection />
+				<QuickServicesSection />
 
 				<Divider />
 				<ServicesSection />
 			</Container>
-			
-			<EmergencyBannerSection/>
 
-			<Container maxWidth="lg" sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6 }}>
+			<EmergencyBannerSection />
 
-
+			<Container
+				id="about"
+				maxWidth="lg"
+				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6, scrollMarginTop: { xs: 80, md: 96 } }}
+			>
 				<Divider />
 
 				{/* Speciality Section */}
@@ -113,14 +120,24 @@ export default function DashboardPage() {
 			</Container>
 
 			{/* Article Section — full width background */}
-			<ArticleSection />
+			<Box id="blog-media" sx={{ scrollMarginTop: { xs: 80, md: 96 } }}>
+				<ArticleSection />
+			</Box>
 
 			{/* Upcoming Events Section */}
-			<Container maxWidth="lg" sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6 }}>
+			<Container
+				id="events"
+				maxWidth="lg"
+				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6, scrollMarginTop: { xs: 80, md: 96 } }}
+			>
 				<UpcomingEventsSection />
 			</Container>
 
-			<Container maxWidth="lg" sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6 }}>
+			<Container
+				id="community"
+				maxWidth="lg"
+				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6, scrollMarginTop: { xs: 80, md: 96 } }}
+			>
 				{/* Community & Blogs Section */}
 				<CommunityBlogsSection />
 				<PodcastsSection />
@@ -129,7 +146,9 @@ export default function DashboardPage() {
 			{/* Podcasts & Videocasts Section */}
 
 			{/* Health Questions Section */}
-			<HealthQuestionsSection />
+			<Box id="contact" sx={{ scrollMarginTop: { xs: 80, md: 96 } }}>
+				<HealthQuestionsSection />
+			</Box>
 		</Box>
 	)
 }

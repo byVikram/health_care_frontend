@@ -3,8 +3,9 @@ import { useState, useRef, useEffect, ReactNode } from 'react'
 import { Box, Paper, MenuItem, Divider, Typography, Stack, IconButton, Avatar } from '@mui/material'
 import { SwapHoriz as SwapIcon, Check as CheckIcon } from '@mui/icons-material'
 import DoctorNavBar from '../common/Navbar/DoctorNavBar'
-import { clearAuth } from '../../hooks/useAuth'
+import { clearAuth, useAuth } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
+import { USER_ROLES } from '../../constants/constants'
 
 const NAVBAR_HEIGHT = 64
 
@@ -36,7 +37,7 @@ const PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
 
 	{ divider: true },
 
-	{ label: 'Logout', path: '#', danger: true },
+	{ label: 'Logout', path: '/logout', danger: true },
 ]
 
 // Sample accounts data - replace with actual data from your auth context
@@ -193,10 +194,12 @@ function ProfileDropdown({
 	onClose,
 	currentAccount,
 	onOpenAccountSwitcher,
+	role = 'patient',
 }: {
 	onClose: () => void
 	currentAccount: Account
 	onOpenAccountSwitcher: () => void
+	role: string
 }) {
 	const navigate = useNavigate()
 	const ref = useRef<HTMLDivElement>(null)
@@ -220,24 +223,6 @@ function ProfileDropdown({
 			navigate(path)
 		}
 	}
-
-	// const handleEditProfile = () => {
-	// 	onClose()
-	// 	navigate('/profile')
-	// }
-
-	// const getRoleColor = (role: string) => {
-	// 	switch (role) {
-	// 		case 'doctor':
-	// 			return '#2196f3'
-	// 		case 'patient':
-	// 			return '#4caf50'
-	// 		case 'admin':
-	// 			return '#ff9800'
-	// 		default:
-	// 			return '#9e9e9e'
-	// 	}
-	// }
 
 	return (
 		<Paper
@@ -277,38 +262,41 @@ function ProfileDropdown({
 					<Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
 						{currentAccount.email}
 					</Typography>
-					<Typography
-						variant="caption"
+					{role === USER_ROLES.PATIENT && (
+						<Typography
+							variant="caption"
+							sx={{
+								display: 'inline-block',
+								mt: 0.5,
+								fontSize: '0.7rem',
+								textTransform: 'capitalize',
+								px: 1,
+								py: 0.25,
+								borderRadius: 1,
+							}}
+						>
+							{currentAccount.relation}
+						</Typography>
+					)}
+				</Box>
+
+				{role === USER_ROLES.PATIENT && (
+					<IconButton
+						onClick={onOpenAccountSwitcher}
+						size="small"
 						sx={{
-							display: 'inline-block',
-							mt: 0.5,
-							// color: getRoleColor(currentAccount.role),
-							fontSize: '0.7rem',
-							textTransform: 'capitalize',
-							// bgcolor: `${getRoleColor(currentAccount.role)}10`,
-							px: 1,
-							py: 0.25,
-							borderRadius: 1,
+							bgcolor: 'primary.main',
+							color: 'white',
+							'&:hover': {
+								bgcolor: 'primary.dark',
+								transform: 'scale(1.05)',
+							},
+							transition: 'all 0.2s ease',
 						}}
 					>
-						{currentAccount.relation}
-					</Typography>
-				</Box>
-				<IconButton
-					onClick={onOpenAccountSwitcher}
-					size="small"
-					sx={{
-						bgcolor: 'primary.main',
-						color: 'white',
-						'&:hover': {
-							bgcolor: 'primary.dark',
-							transform: 'scale(1.05)',
-						},
-						transition: 'all 0.2s ease',
-					}}
-				>
-					<SwapIcon fontSize="small" />
-				</IconButton>
+						<SwapIcon fontSize="small" />
+					</IconButton>
+				)}
 			</Box>
 
 			{/* Menu Items */}
@@ -367,6 +355,8 @@ interface NavbarLayoutProps {
 }
 
 export default function NavbarLayout({ children }: NavbarLayoutProps) {
+	const { role } = useAuth()
+
 	const [dropdownOpen, setDropdownOpen] = useState(false)
 	const [accountSwitcherOpen, setAccountSwitcherOpen] = useState(false)
 
@@ -423,6 +413,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 					onClose={handleCloseAll}
 					currentAccount={currentAccount}
 					onOpenAccountSwitcher={handleOpenAccountSwitcher}
+					role={role || 'patient'}
 				/>
 			)}
 

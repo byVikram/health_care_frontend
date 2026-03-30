@@ -197,7 +197,7 @@ export default function DoctorSearchPage() {
 						>
 							<LocationOnIcon sx={{ fontSize: 16, color: '#000' }} />
 							<Typography variant="body2" sx={{ fontSize: '13px', fontWeight: 500 }}>
-								KR Market
+								Bengaluru, KR Market
 							</Typography>
 							<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />
 						</Box>

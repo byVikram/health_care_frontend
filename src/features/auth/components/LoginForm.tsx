@@ -5,6 +5,7 @@ import Grid from '@mui/material/Grid'
 import { useNavigate } from 'react-router-dom'
 import AppInput from '../../../components/common/Input/AppInput'
 import { sendOtp } from '../authService'
+import axios from 'axios'
 
 interface LoginFormProps {
 	onSubmit: (contactNumber: string) => void
@@ -58,8 +59,12 @@ export default function LoginForm({ onSubmit, mode = 'page', onSwitchToRegister 
 			} else {
 				setApiError(res.message ?? 'Failed to send OTP. Please try again.')
 			}
-		} catch {
-			setApiError('Something went wrong. Please try again.')
+		} catch (err) {
+			if (axios.isAxiosError(err)) {
+				setApiError(err.response?.data?.message || 'Something went wrong')
+			} else {
+				setApiError('Unexpected error occurred')
+			}
 		} finally {
 			setLoading(false)
 		}

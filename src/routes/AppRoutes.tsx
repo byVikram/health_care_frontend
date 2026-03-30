@@ -86,12 +86,12 @@ export default function AppRoutes() {
 			<Route element={<SidebarProtectedLayout />}>
 				{/* <Route path="/portal-patient" element={<PatientProfilePage />} />
 				<Route path="/patient" element={<PatientPortalPage />} /> */}
-				<Route path="/profile" element={<ProfilePage />} />
-				<Route path="/consultation/:patientId" element={<ConsultationPage />} />
 			</Route>
 
 			<Route element={<LoogedInNavbarLayout />}>
 				<Route path="/portal" element={<PortalPage />} />
+				<Route path="/profile" element={<ProfilePage />} />
+				<Route path="/consultation/:patientId" element={<ConsultationPage />} />
 			</Route>
 
 			{/* 404 */}
