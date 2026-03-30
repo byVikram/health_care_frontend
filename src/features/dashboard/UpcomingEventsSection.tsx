@@ -1,5 +1,5 @@
 // src/features/dashboard/UpcomingEventsSection.tsx
-import { Box, Typography, Container, Grid } from '@mui/material'
+import { Box, Typography, Grid } from '@mui/material'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
@@ -29,149 +29,154 @@ const featuredEvents = [
 	},
 ]
 
-export default function UpcomingEventsSection() {
+interface UpcommingEventProps {
+	variant?: string
+}
+
+export default function UpcomingEventsSection({ variant = 'row' }: UpcommingEventProps) {
 	return (
-		<Box sx={{ py: 6 }}>
-			<Container maxWidth="lg">
-				<Typography variant="h3" align="center" sx={{ mb: 4, fontWeight: 700 }}>
-					Upcoming Events
-				</Typography>
+		<Box>
+			<Typography
+				variant={'h3'}
+				align={variant === 'column' ? 'left' : 'center'}
+				mb={variant === 'column' ? 2 : 3}
+				// fontWeight={variant === 'column' ? 400 : 500}
+				fontWeight={500}
+				fontSize={variant === 'column' ? '16px' : '1.5rem'}
+			>
+				Upcoming Events
+			</Typography>
 
-				<Grid container spacing={3} alignItems="stretch">
-					{/* Left: Event List - 44% */}
-					<Grid size={{ xs: 12, md: 5 }}>
-						{eventList.map((event) => (
-							<Box
-								key={event.id}
-								sx={{
-									display: 'flex',
-									alignItems: 'center',
-									gap: 2,
-									border: '1px solid #e0e0e0',
-									borderRadius: '12px',
-									px: 2,
-									flex: 1,
-									cursor: 'pointer',
-									bgcolor: '#fff',
-									mb: 1.5,
-									'&:last-child': { mb: 0 },
-									transition: 'box-shadow 0.2s ease',
-									'&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.08)' },
-								}}
-							>
-								<Box
-									sx={{
-										minWidth: 44,
-										textAlign: 'center',
-										bgcolor: '#f0f4f8',
-										borderRadius: '8px',
-										py: 0.6,
-										px: 1,
-									}}
-								>
-									<Typography
-										sx={{ fontWeight: 700, fontSize: '16px', color: '#0c7c7c', lineHeight: 1 }}
-									>
-										{event.day}
-									</Typography>
-									<Typography sx={{ fontSize: '10px', color: '#0c7c7c', fontWeight: 600 }}>
-										{event.month}
-									</Typography>
-								</Box>
-								<Box sx={{ flex: 1, py: 1.5 }}>
-									<Typography sx={{ fontWeight: 600, fontSize: '13px', color: 'text.primary' }}>
-										{event.name}
-									</Typography>
-									<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-										{event.location}
-									</Typography>
-								</Box>
-								<ChevronRightIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
-							</Box>
-						))}
-					</Grid>
-
-					{/* Right: Background with exactly 2 equal cards */}
-					<Grid size={{ xs: 12, md: 7 }}>
-						<Box
+			<Grid container spacing={3} alignItems="stretch">
+				{/* Left: Event List */}
+				<Grid container size={{ xs: 12, md: variant === 'column' ? 12 : 4 }} spacing={2}>
+					{eventList.map((event) => (
+						<Grid
+							key={event.id}
 							sx={{
-								bgcolor: '#b0c8d8',
-								borderRadius: '16px',
-								p: { xs: 1.5, sm: 2 },
+								display: 'flex',
+								alignItems: 'center',
+								gap: 2,
+								borderRadius: '12px',
+								px: 2,
+								py: 1,
+								cursor: 'pointer',
+								bgcolor: '#fff',
+								// mb: 1.5,
+								width: '100%',
+								boxShadow: '0px 0px 9.65px 0px #00000029',
+								transition: '0.2s',
+								'&:hover': { transform: 'scale(1.01)' },
 							}}
 						>
-							<Grid container spacing={2} alignItems="stretch">
-								{featuredEvents.map((event) => (
-									<Grid key={event.id} size={{ xs: 12, sm: 6 }}>
+							<Box
+								sx={{
+									minWidth: 44,
+									textAlign: 'center',
+									bgcolor: '#f0f4f8',
+									borderRadius: '8px',
+									py: 0.6,
+									px: 1,
+								}}
+							>
+								<Typography variant="body1" color="primary.main" fontWeight={700}>
+									{event.day}
+								</Typography>
+								<Typography variant="body1" color="primary.main" fontWeight={400} fontSize="10px">
+									{event.month}
+								</Typography>
+							</Box>
+
+							<Box sx={{ flex: 1, py: 1.5 }}>
+								<Typography sx={{ fontWeight: 600, fontSize: '13px' }}>{event.name}</Typography>
+								<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
+									{event.location}
+								</Typography>
+							</Box>
+
+							<ChevronRightIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
+						</Grid>
+					))}
+				</Grid>
+
+				{/* Right: Featured Events */}
+				<Grid size={{ xs: 12, md: variant === 'column' ? 12 : 8 }}>
+					<Box
+						sx={{
+							bgcolor: variant === 'column' ? '' : '#e4e7e7',
+							borderRadius: '8px',
+							p: variant === 'column' ? 0 : 3,
+							height: '100%',
+						}}
+					>
+						<Grid container spacing={2} alignItems="stretch">
+							{featuredEvents.map((event) => (
+								<Grid
+									key={event.id}
+									// size={{ xs: 12, sm: 6, md: variant === 'column' ? 12 : 6 }}
+									size={{ xs: 12, sm: 6 }}
+									sx={{ display: 'flex' }}
+								>
+									<Box
+										sx={{
+											display: 'flex',
+											flexDirection: 'column',
+											flex: 1,
+											bgcolor: '#fff',
+											borderRadius: '6px',
+											overflow: 'hidden',
+											height: variant === 'column' ? '320px' : 'auto',
+										}}
+									>
+										<Box
+											component="img"
+											src={event.image}
+											alt={event.title}
+											sx={{
+												width: '100%',
+												objectFit: 'cover',
+												height: variant === 'column' ? '140px' : '40%',
+											}}
+										/>
+
 										<Box
 											sx={{
-												height: '100%',
-												bgcolor: '#fff',
-												borderRadius: '12px',
-												overflow: 'hidden',
+												p: 1.5,
 												display: 'flex',
 												flexDirection: 'column',
-												transition: 'box-shadow 0.2s ease',
-												'&:hover': { boxShadow: '0 6px 16px rgba(0,0,0,0.10)' },
+												gap: 0.8,
+												flex: 1,
 											}}
 										>
-											<Box
-												component="img"
-												src={event.image}
-												alt={event.title}
-												sx={{
-													width: '100%',
-													height: { xs: 180, sm: 160 },
-													objectFit: 'cover',
-													flexShrink: 0,
-												}}
-											/>
-											<Box
-												sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 0.8, flex: 1 }}
-											>
-												<Typography
-													sx={{
-														fontWeight: 700,
-														fontSize: '14px',
-														color: 'text.primary',
-														lineHeight: 1.3,
-													}}
-												>
-													{event.title}
-												</Typography>
-												<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-													<CalendarTodayIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
-													<Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>
-														{event.date}
-													</Typography>
-												</Box>
-												<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-													<LocationOnOutlinedIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
-													<Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>
-														{event.location}
-													</Typography>
-												</Box>
-												<AppButton
-													label="Register Now"
-													sx={{
-														mt: 'auto',
-														bgcolor: '#0c7c7c',
-														color: '#fff',
-														borderRadius: '8px',
-														fontSize: '12px',
-														py: 0.5,
-														'&:hover': { bgcolor: '#0f4c4c' },
-													}}
-												/>
+											<Typography variant="body1" fontWeight={600}>
+												{event.title}
+											</Typography>
+
+											<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+												<CalendarTodayIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
+												<Typography variant="body2">{event.date}</Typography>
 											</Box>
+
+											<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+												<LocationOnOutlinedIcon
+													sx={{ fontSize: 12, color: 'text.secondary' }}
+												/>
+												<Typography variant="body2">{event.location}</Typography>
+											</Box>
+
+											<AppButton
+												label="Register Now"
+												borderRadius="30px"
+												sx={{ mt: 'auto' }} // 🔥 aligns buttons
+											/>
 										</Box>
-									</Grid>
-								))}
-							</Grid>
-						</Box>
-					</Grid>
+									</Box>
+								</Grid>
+							))}
+						</Grid>
+					</Box>
 				</Grid>
-			</Container>
+			</Grid>
 		</Box>
 	)
 }

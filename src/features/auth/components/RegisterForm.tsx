@@ -18,9 +18,24 @@ type RoleId = {
 	label: string
 }
 
-export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) => void }) {
+interface RegisterFormProps {
+	onSubmit: (mobile: string) => void
+	mode?: 'page' | 'modal'
+	onSwitchToLogin?: () => void
+}
+
+export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin }: RegisterFormProps) {
 	const [registerAs, setRegisterAs] = useState('')
 	const navigate = useNavigate()
+	// const isMobile = useMediaQuery('(max-width: 600px)') // ← true on phone, false on desktop
+
+	const handleSwitchToLogin = () => {
+		if (onSwitchToLogin) {
+			onSwitchToLogin()
+			return
+		}
+		navigate('/login')
+	}
 	const [loading, setLoading] = useState(false)
 	const [roles, setRoles] = useState<Role[]>([])
 	const [formError, setFormError] = useState('')
@@ -59,12 +74,30 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 		setNameError('')
 		setEmailError('')
 
-		if (!registerAs) { setRoleError('Role is required'); return }
-		if (!name.trim()) { setNameError('Name is required'); return }
-		if (!email.trim()) { setEmailError('Email is required'); return }
-		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setEmailError('Enter a valid email address'); return }
-		if (!mobile.trim()) { setMobileError('Mobile number is required'); return }
-		if (!/^[6-9]\d{9}$/.test(mobile.trim())) { setMobileError('Enter a valid 10-digit mobile number'); return }
+		if (!registerAs) {
+			setRoleError('Role is required')
+			return
+		}
+		if (!name.trim()) {
+			setNameError('Name is required')
+			return
+		}
+		if (!email.trim()) {
+			setEmailError('Email is required')
+			return
+		}
+		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+			setEmailError('Enter a valid email address')
+			return
+		}
+		if (!mobile.trim()) {
+			setMobileError('Mobile number is required')
+			return
+		}
+		if (!/^[6-9]\d{9}$/.test(mobile.trim())) {
+			setMobileError('Enter a valid 10-digit mobile number')
+			return
+		}
 
 		const payload = { role_id: registerAs, name, email, contact_number: mobile }
 		console.log('API Payload:', payload)
@@ -96,9 +129,11 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 
 	const formFields = (
 		<>
-			<Typography variant="h4" sx={{ fontWeight: '600', marginBottom: '32px', fontSize: '32px' }}>
-				Register
-			</Typography>
+			{mode === 'page' && (
+				<Typography variant="h4" sx={{ fontWeight: '600', marginBottom: '32px', fontSize: '32px' }}>
+					Register
+				</Typography>
+			)}
 
 			<AppSelect
 				label="Role"
@@ -161,7 +196,9 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 
 			<Typography variant="caption" sx={{ color: '#666', display: 'block', margin: '20px 0' }}>
 				By continuing, you agree to our{' '}
-				<a href="#" style={{ color: '#0d9488' }}>Terms &amp; Conditions</a>
+				<a href="#" style={{ color: '#0d9488' }}>
+					Terms &amp; Conditions
+				</a>
 			</Typography>
 
 			<Typography
@@ -170,13 +207,12 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 			>
 				Already have an account?{' '}
 				<span
-					onClick={() => navigate('/login')}
+					onClick={handleSwitchToLogin}
 					style={{ color: '#0d9488', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }}
 				>
 					Login
 				</span>
 			</Typography>
-
 			<Box sx={{ display: 'flex', gap: '12px' }}>
 				<Button
 					onClick={handleRegister}
@@ -189,15 +225,20 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 			</Box>
 
 			{formError && (
-				<Typography sx={{ mt: 1.5, color: 'error.main', fontSize: '0.9rem' }}>
-					{formError}
-				</Typography>
+				<Typography sx={{ mt: 1.5, color: 'error.main', fontSize: '0.9rem' }}>{formError}</Typography>
 			)}
 		</>
 	)
 
-	// Single layout for phone and desktop 
+	if (mode === 'modal') {
+		return <Box sx={{ width: '100%' }}>{formFields}</Box>
+	}
 
+
+	// ════════════════════════════════════════════════════════════════════════════
+	// DESKTOP layout — original Box version, 50/50 side-by-side
+	// Shown when screen width > 600px  (unchanged from original)
+	// ════════════════════════════════════════════════════════════════════════════
 	return (
 		<Grid container sx={{ height: { xs: '50vh', md: '100vh' } }} size={{ xs: 12, md: 6 }}>
 			{/* Left Side — teal */}
@@ -250,3 +291,4 @@ export default function RegisterForm({ onSubmit }: { onSubmit: (mobile: string) 
 		</Grid>
 	)
 }
+

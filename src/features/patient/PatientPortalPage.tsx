@@ -8,7 +8,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 // import PeopleAltIcon from '@mui/icons-material/PeopleAlt'
 // import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
-import { PatientAppointments } from './patient/PatientAppointments'
+import { PatientAppointments } from './PatientAppointments'
 // import SearchIcon from '@mui/icons-material/Search'
 // import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
@@ -368,11 +368,14 @@ export default function PatientPortalPage() {
 						</Box>
 					</Grid>
 
-					{/* RIGHT */}
-					<Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
-    					<PatientAppointments />
-					</Grid>
-				</Grid>
+
+			</Grid>
+		</Grid>
+
+		{/* Full width appointments */}
+		<Box sx={{ mt: 3 }}>
+			<PatientAppointments />
+		</Box>
 
 				{/* BOTTOM 50/50: Community & Blogs | Upcoming Events */}
 				<Grid container spacing={3} alignItems="stretch" sx={{ mt: 1 }}>
@@ -824,3 +827,5 @@ export default function PatientPortalPage() {
 // 		</>
 // 	)
 // }
+
+

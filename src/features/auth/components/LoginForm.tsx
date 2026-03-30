@@ -8,11 +8,21 @@ import { sendOtp } from '../authService'
 
 interface LoginFormProps {
 	onSubmit: (contactNumber: string) => void
+	mode?: 'page' | 'modal'
+	onSwitchToRegister?: () => void
 }
 
-export default function LoginForm({ onSubmit }: LoginFormProps) {
+export default function LoginForm({ onSubmit, mode = 'page', onSwitchToRegister }: LoginFormProps) {
 	const navigate = useNavigate()
-	// const isMobile = useMediaQuery('(max-width: 600px)')   // ← true on phone, false on desktop
+	// const isMobile = useMediaQuery('(max-width: 600px)') // ← true on phone, false on desktop
+
+	const handleSwitchToRegister = () => {
+		if (onSwitchToRegister) {
+			onSwitchToRegister()
+			return
+		}
+		navigate('/register')
+	}
 
 	const [contactNumber, setContactNumber] = useState('')
 	const [error, setError] = useState('')
@@ -42,7 +52,7 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
 		setLoading(true)
 		try {
 			const res = await sendOtp(contactNumber.trim())
-			window.alert(`Otp for the testing purpose is :${res.data.otp}`)
+
 			if (res.success) {
 				onSubmit(contactNumber.trim())
 			} else {
@@ -55,10 +65,83 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
 		}
 	}
 
-	// Single Layout for both phone and Desktop
+	// ── Shared form fields (used in both layouts) ──────────────────────────────
+	const formFields = (
+		<>
+			{mode === 'page' && (
+				<Typography variant="h4" sx={{ fontWeight: '600', marginBottom: '32px', fontSize: '32px' }}>
+					Login
+				</Typography>
+			)}
+
+			{/* <Typography sx={{ fontSize: '14px', marginBottom: '8px' }}>Enter your mobile number</Typography> */}
+
+			<AppInput
+				placeholder="Mobile Number"
+				fullWidth
+				value={contactNumber}
+				onChange={(e) => {
+					setContactNumber(e.target.value.replace(/\D/g, '').slice(0, 10))
+					if (error) setError('')
+					if (apiError) setApiError('')
+				}}
+				onBlur={handleBlur}
+				error={!!error}
+				helperText={error}
+				inputProps={{ maxLength: 10 }}
+				onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+			/>
+
+			{apiError && <Typography sx={{ color: 'error.main', fontSize: '12px', mt: 1 }}>{apiError}</Typography>}
+
+			<Typography
+				variant="caption"
+				sx={{ color: '#666', display: 'block', margin: '20px 0', fontSize: '0.85rem' }}
+			>
+				By continuing, you agree to our{' '}
+				<a href="#" style={{ color: '#0d9488' }}>
+					Terms & Conditions
+				</a>
+			</Typography>
+
+			<Typography
+				variant="caption"
+				sx={{ color: '#666', display: 'block', marginBottom: '16px', fontSize: '0.95rem' }}
+			>
+				Don&apos;t have an account?{' '}
+				<span
+					onClick={handleSwitchToRegister}
+					style={{ color: '#0d9488', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }}
+				>
+					Register
+				</span>
+			</Typography>
+
+			<Button
+				onClick={handleSubmit}
+				variant="contained"
+				fullWidth
+				disabled={loading}
+				sx={{ backgroundColor: '#0d9488', '&:hover': { backgroundColor: '#0f766e' }, padding: '12px' }}
+			>
+				{loading ? <CircularProgress size={22} sx={{ color: '#fff' }} /> : 'Login'}
+			</Button>
+		</>
+	)
+
+	if (mode === 'modal') {
+		return <Box sx={{ width: '100%' }}>{formFields}</Box>
+	}
+
+
+	// ════════════════════════════════════════════════════════════════════════════
+	// DESKTOP layout — original Box version, 50 / 50 side-by-side
+	// Shown when screen width > 600px  (unchanged from original)
+	// ════════════════════════════════════════════════════════════════════════════
 	return (
-		<Grid container sx={{ height: { xs: '50vh', md: '100vh' } }} size={{ xs: 12, md: 6 }}>
-			{/* LEFT — Teal Side */}
+				<Grid container sx={{ height: { xs: '50vh', md: '100vh' } }} size={{ xs: 12, md: 6 }}>
+
+			{/* Left Side — teal */}
 			<Grid
 				size={{ xs: 12, md: 6 }}
 				p={3}
@@ -184,3 +267,8 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
 		</Grid>
 	)
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Grid styles — used ONLY by the mobile layout
+// ─────────────────────────────────────────────────────────────────────────────
+
