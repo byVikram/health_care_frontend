@@ -62,7 +62,7 @@ export default function SpecialityCard({ image, title, onConsult }: SpecialityCa
 			</Typography>
 
 			{/* Consult Now */}
-			<Typography
+			{/* <Typography
 				variant="body2"
 				fontSize={'16px'}
 				sx={{
@@ -73,7 +73,7 @@ export default function SpecialityCard({ image, title, onConsult }: SpecialityCa
 				}}
 			>
 				Consult Now
-			</Typography>
+			</Typography> */}
 		</Box>
 	)
 }

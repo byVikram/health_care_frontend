@@ -108,9 +108,6 @@ export default function DashboardPage() {
 
 				{/* Speciality Section */}
 				<SpecialitySection />
-
-				<Divider />
-
 				{/* Consult Section */}
 				<ConsultSection />
 			</Container>

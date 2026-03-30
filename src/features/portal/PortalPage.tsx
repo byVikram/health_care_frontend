@@ -108,7 +108,7 @@ export default function PortalPage() {
 									py: 2,
 									display: 'flex',
 									alignItems: 'center',
-									gap: 2,
+									// gap: 2,
 								}}
 							>
 								<Box
@@ -200,7 +200,8 @@ export default function PortalPage() {
 												display: 'block',
 												objectFit: 'cover',
 												maxHeight: '480px',
-												minHeight: '400px',
+												// minHeight: '400px',
+												maxWidth: '480px',
 											}}
 										/>
 									</Box>
@@ -249,8 +250,8 @@ export default function PortalPage() {
 												src={s.image}
 												alt={s.title}
 												sx={{
-													width: 52,
-													height: 52,
+													width: 32,
+													height: 32,
 													objectFit: 'contain',
 													transition: 'transform 0.2s ease',
 												}}
@@ -271,7 +272,17 @@ export default function PortalPage() {
 							</Box>
 
 							{/* Bottom 5 horizontal service icons */}
-							<Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', pt: 1 }}>
+							<Box
+								sx={{
+									display: 'flex',
+									justifyContent: 'space-between',
+									alignItems: 'center',
+									pt: 1,
+									'& > :last-child': {
+										mr: 1.8,
+									},
+								}}
+							>
 								{[
 									{ title: 'Appointment', image: AppointmentsIcon },
 									{ title: 'Pharmacy', image: PharmacyIcon },
@@ -295,8 +306,8 @@ export default function PortalPage() {
 											src={s.image}
 											alt={s.title}
 											sx={{
-												width: 52,
-												height: 52,
+												width: 32,
+												height: 32,
 												objectFit: 'contain',
 												transition: 'transform 0.2s ease',
 											}}
