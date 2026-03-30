@@ -9,7 +9,9 @@ import CommunityBlogsSection from './CommunityBlogsSection'
 import PodcastsSection from './PodcastsSection'
 import HealthQuestionsSection from './HealthQuestionsSection'
 
+
 import ServicesSection from './ServiceSection'
+import EmergencyBannerSection from './EmergencySection'
 
 export default function DashboardPage() {
 	return (
@@ -91,10 +93,16 @@ export default function DashboardPage() {
 			{/* Main Content Container */}
 			<Container maxWidth="lg" sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6 }}>
 				{/* Quick Services Icon Grid */}
-				<QuickServicesSection />
+			<QuickServicesSection />
 
 				<Divider />
 				<ServicesSection />
+			</Container>
+			
+			<EmergencyBannerSection/>
+
+			<Container maxWidth="lg" sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6 }}>
+
 
 				<Divider />
 
