@@ -71,8 +71,6 @@ export default function AppRoutes() {
 					<Route path="/doctors/:id" element={<DoctorDetailPage />} />
 					<Route path="/doctors/search" element={<DoctorSearchPage />} />
 
-					<Route path="/consultation/:patientId" element={<ConsultationPage />} />
-
 					{/* Add more protected pages here */}
 				</Route>
 			</Route>
@@ -82,6 +80,7 @@ export default function AppRoutes() {
 				{/* <Route path="/portal-patient" element={<PatientProfilePage />} />
 				<Route path="/patient" element={<PatientPortalPage />} /> */}
 				<Route path="/profile" element={<ProfilePage />} />
+				<Route path="/consultation/:patientId" element={<ConsultationPage />} />
 			</Route>
 
 			{/* 404 */}

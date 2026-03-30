@@ -84,7 +84,7 @@ export default function ShareWith() {
 
 	return (
 		<Box sx={{ ...customCardStyle, mt: 2 }}>
-			<Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: 'primary.dark' }}>
+			<Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
 				Share with:
 			</Typography>
 

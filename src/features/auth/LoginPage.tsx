@@ -13,9 +13,10 @@ export default function LoginPage() {
 
 	const handleVerified = () => {
 		setStep('verified')
-		const role = localStorage.getItem('role')
-		if (role === 'doctor') navigate('/portal')
-		else navigate('/patient')
+		// const role = localStorage.getItem('role')
+		// if (role === 'doctor')
+		navigate('/portal')
+		// else navigate('/patient')
 	}
 
 	return (

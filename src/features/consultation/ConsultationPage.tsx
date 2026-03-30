@@ -116,36 +116,34 @@ export default function ConsultationPage() {
 
 			{/* Tabs */}
 			<Box sx={{ borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-				<Container maxWidth="lg">
-					<Tabs
-						value={activeTab}
-						onChange={(_, v) => setActiveTab(v)}
-						sx={{
-							'& .MuiTab-root': {
-								textTransform: 'none',
-								fontWeight: 500,
-								fontSize: '14px',
-								color: 'text.secondary',
-							},
-							'& .Mui-selected': { color: 'primary.main', fontWeight: 700 },
-							'& .MuiTabs-indicator': { bgcolor: 'primary.main', height: 3, borderRadius: '2px' },
-						}}
-					>
-						<Tab label="Info & Timeline" />
-						<Tab label="Vitals" />
-					</Tabs>
-				</Container>
+				<Tabs
+					value={activeTab}
+					onChange={(_, v) => setActiveTab(v)}
+					sx={{
+						'& .MuiTab-root': {
+							textTransform: 'none',
+							fontWeight: 500,
+							fontSize: '14px',
+							color: 'text.secondary',
+						},
+						'& .Mui-selected': { color: 'primary.main', fontWeight: 700 },
+						'& .MuiTabs-indicator': { bgcolor: 'primary.main', height: 3, borderRadius: '2px' },
+					}}
+				>
+					<Tab label="Info & Timeline" />
+					<Tab label="Vitals" />
+				</Tabs>
 			</Box>
 
 			{/* Tab content */}
 			<Container maxWidth="lg" sx={{ py: 3 }}>
 				{activeTab === 0 && (
 					<Grid container spacing={3}>
-						<Grid size={{ xs: 12, md: 7 }}>
+						<Grid size={{ xs: 12, md: 6 }}>
 							<PatientInfoCard patient={MOCK_PATIENT} />
 							<PastMedicalHistory />
 						</Grid>
-						<Grid size={{ xs: 12, md: 5 }}>
+						<Grid size={{ xs: 12, md: 6 }} display={'flex'} flexDirection={'column'}>
 							<ConsultationNotes doctor={MOCK_DOCTOR} />
 							<ShareWith />
 						</Grid>
