@@ -5,6 +5,7 @@ import Grid from '@mui/material/Grid'
 import { useNavigate } from 'react-router-dom'
 import AppInput from '../../../components/common/Input/AppInput'
 import { sendOtp } from '../authService'
+import axios from 'axios'
 
 interface LoginFormProps {
 	onSubmit: (contactNumber: string) => void
@@ -58,8 +59,12 @@ export default function LoginForm({ onSubmit, mode = 'page', onSwitchToRegister 
 			} else {
 				setApiError(res.message ?? 'Failed to send OTP. Please try again.')
 			}
-		} catch {
-			setApiError('Something went wrong. Please try again.')
+		} catch (err) {
+			if (axios.isAxiosError(err)) {
+				setApiError(err.response?.data?.message || 'Something went wrong')
+			} else {
+				setApiError('Unexpected error occurred')
+			}
 		} finally {
 			setLoading(false)
 		}
@@ -133,14 +138,12 @@ export default function LoginForm({ onSubmit, mode = 'page', onSwitchToRegister 
 		return <Box sx={{ width: '100%' }}>{formFields}</Box>
 	}
 
-
 	// ════════════════════════════════════════════════════════════════════════════
 	// DESKTOP layout — original Box version, 50 / 50 side-by-side
 	// Shown when screen width > 600px  (unchanged from original)
 	// ════════════════════════════════════════════════════════════════════════════
 	return (
-				<Grid container sx={{ height: { xs: '50vh', md: '100vh' } }} size={{ xs: 12, md: 6 }}>
-
+		<Grid container sx={{ height: { xs: '50vh', md: '100vh' } }} size={{ xs: 12, md: 6 }}>
 			{/* Left Side — teal */}
 			<Grid
 				size={{ xs: 12, md: 6 }}
@@ -193,7 +196,7 @@ export default function LoginForm({ onSubmit, mode = 'page', onSwitchToRegister 
 						Login
 					</Typography>
 
-					<Typography sx={{ fontSize: '14px', marginBottom: '8px' }}>Enter your mobile number</Typography>
+					{/* <Typography sx={{ fontSize: '14px', marginBottom: '8px' }}>Enter your mobile number</Typography> */}
 
 					<AppInput
 						placeholder="Mobile Number"
@@ -215,11 +218,11 @@ export default function LoginForm({ onSubmit, mode = 'page', onSwitchToRegister 
 						<Typography sx={{ color: 'error.main', fontSize: '12px', mt: 1 }}>{apiError}</Typography>
 					)}
 
-					<Box sx={{ textAlign: 'right', marginTop: '8px' }}>
+					{/* <Box sx={{ textAlign: 'right', marginTop: '8px' }}>
 						<a href="#" style={{ fontSize: '12px', color: '#0d9488' }}>
 							Forgot password?
 						</a>
-					</Box>
+					</Box> */}
 
 					<Typography
 						variant="caption"
@@ -271,4 +274,3 @@ export default function LoginForm({ onSubmit, mode = 'page', onSwitchToRegister 
 // ─────────────────────────────────────────────────────────────────────────────
 // Grid styles — used ONLY by the mobile layout
 // ─────────────────────────────────────────────────────────────────────────────
-

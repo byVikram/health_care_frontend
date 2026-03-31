@@ -197,7 +197,7 @@ export default function DoctorSearchPage() {
 						>
 							<LocationOnIcon sx={{ fontSize: 16, color: '#000' }} />
 							<Typography variant="body2" sx={{ fontSize: '13px', fontWeight: 500 }}>
-								KR Market
+								Bengaluru, KR Market
 							</Typography>
 							<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />
 						</Box>
@@ -251,7 +251,7 @@ export default function DoctorSearchPage() {
 									setFilters(next)
 									setPage(1)
 								}}
-								specialities={specialities}
+								// specialities={specialities}
 							/>
 						</Box>
 					</Grid>
@@ -266,7 +266,7 @@ export default function DoctorSearchPage() {
 							<Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
 								{specialityLoading ? (
 									<>
-										{Array.from({ length: 5 }).map((_) => (
+										{Array.from({ length: 5 }).map(() => (
 											<AppSkeleton width={70} height={70} />
 										))}
 									</>

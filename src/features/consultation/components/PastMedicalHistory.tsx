@@ -45,8 +45,8 @@ export default function PastMedicalHistory() {
 	const [selectedDate, setSelectedDate] = useState('all')
 
 	return (
-		<Box sx={{ ...customCardStyle, mt: 2 }}>
-			<Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: 'primary.dark' }}>
+		<Box sx={{ ...customCardStyle, mt: 2, minHeight: '80vh', flexGrow: 1 }}>
+			<Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
 				Past medical history
 			</Typography>
 

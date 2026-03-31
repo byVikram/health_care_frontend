@@ -97,7 +97,7 @@ export default function AppSidebar({
 						<Typography
 							variant="body1"
 							onClick={() => user.profilePath && navigate(user.profilePath)}
-							sx={{ color: 'neutral.main' }}
+							sx={{ color: 'neutral.main', cursor: 'pointerForgot password?' }}
 						>
 							View and Edit profile
 						</Typography>

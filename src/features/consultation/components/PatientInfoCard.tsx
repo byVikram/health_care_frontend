@@ -11,7 +11,7 @@ interface PatientInfoCardProps {
 
 function Label({ children }: { children: React.ReactNode }) {
 	return (
-		<Typography component="span" sx={{ color: 'primary.main', fontWeight: 400 }}>
+		<Typography component="span" fontSize={'12px'} sx={{ color: 'primary.main', fontWeight: 400 }}>
 			{children}
 		</Typography>
 	)
@@ -19,7 +19,7 @@ function Label({ children }: { children: React.ReactNode }) {
 
 function Value({ children }: { children: React.ReactNode }) {
 	return (
-		<Typography component="span" sx={{ color: 'text.primary', ml: 1 }}>
+		<Typography component="span" fontWeight={500} fontSize={'12px'} sx={{ color: 'text.primary', ml: 1 }}>
 			{children}
 		</Typography>
 	)
@@ -54,8 +54,8 @@ export default function PatientInfoCard({ patient }: PatientInfoCardProps) {
 						sx={{
 							width: 80,
 							height: 80,
-							border: '2px solid',
-							borderColor: 'primary.main',
+							// border: '2px solid',
+							// borderColor: 'primary.main',
 							borderRadius: '8px',
 						}}
 					/>
@@ -98,6 +98,8 @@ export default function PatientInfoCard({ patient }: PatientInfoCardProps) {
 						</Box>
 					</Box>
 
+					<Divider orientation="vertical" flexItem />
+
 					{/* Right sub-column */}
 					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6 }}>
 						<Row label="Gender:" value={patient.gender} />
@@ -120,16 +122,20 @@ export default function PatientInfoCard({ patient }: PatientInfoCardProps) {
 					<Row label="Weight:" value={patient.weight} />
 				</Box>
 
+				<Divider orientation="vertical" flexItem />
+
 				{/* Middle: Address */}
 				<Box sx={{ flex: 1 }}>
 					<Label>Address:</Label>
 					<Typography
 						variant="body2"
-						sx={{ color: 'text.primary', fontSize: '13px', mt: 0.3, lineHeight: 1.6 }}
+						sx={{ color: 'text.primary', fontSize: '12px', mt: 0.3, lineHeight: 1.6 }}
 					>
 						{patient.address}
 					</Typography>
 				</Box>
+
+				<Divider orientation="vertical" flexItem />
 
 				{/* Right: Emergency Contact */}
 				<Box sx={{ minWidth: 140 }}>

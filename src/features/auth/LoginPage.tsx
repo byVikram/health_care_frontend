@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import LoginForm from './components/LoginForm'
 import OtpForm from './components/OtpForm'
+import { toast } from 'react-toastify'
 // import OtpVerified from './components/OtpVerified'
 
 export default function LoginPage() {
@@ -13,9 +14,11 @@ export default function LoginPage() {
 
 	const handleVerified = () => {
 		setStep('verified')
-		const role = localStorage.getItem('role')
-		if (role === 'doctor') navigate('/portal')
-		else navigate('/patient')
+		toast.success('Logged in successfully.')
+		// const role = localStorage.getItem('role')
+		// if (role === 'doctor')
+		navigate('/portal')
+		// else navigate('/patient')
 	}
 
 	return (

@@ -1,5 +1,5 @@
 // src/features/consultation/components/ConsultationNotes.tsx
-import { useState } from 'react'
+import { useEffect, useRef, type PointerEvent } from 'react'
 import { Box, Typography, Divider, IconButton, Tooltip } from '@mui/material'
 import UndoIcon from '@mui/icons-material/Undo'
 import RedoIcon from '@mui/icons-material/Redo'
@@ -27,7 +27,84 @@ const TOOLBAR_ACTIONS = [
 ]
 
 export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
-	const [notes, setNotes] = useState('')
+	const canvasRef = useRef<HTMLCanvasElement | null>(null)
+	const contextRef = useRef<CanvasRenderingContext2D | null>(null)
+	const isDrawingRef = useRef(false)
+	const lastPointRef = useRef<{ x: number; y: number } | null>(null)
+
+	const prepareCanvas = () => {
+		const canvas = canvasRef.current
+		if (!canvas) return
+
+		const rect = canvas.getBoundingClientRect()
+		const ratio = window.devicePixelRatio || 1
+		const width = Math.max(1, Math.floor(rect.width))
+		const height = Math.max(1, Math.floor(rect.height))
+
+		canvas.width = width * ratio
+		canvas.height = height * ratio
+		canvas.style.width = `${width}px`
+		canvas.style.height = `${height}px`
+
+		const context = canvas.getContext('2d')
+		if (!context) return
+
+		context.setTransform(ratio, 0, 0, ratio, 0, 0)
+		context.lineCap = 'round'
+		context.lineJoin = 'round'
+		context.strokeStyle = '#0F766E'
+		context.lineWidth = 2
+		contextRef.current = context
+	}
+
+	useEffect(() => {
+		prepareCanvas()
+		window.addEventListener('resize', prepareCanvas)
+		return () => window.removeEventListener('resize', prepareCanvas)
+	}, [])
+
+	const getPointerPosition = (event: PointerEvent<HTMLCanvasElement>) => {
+		const canvas = canvasRef.current
+		if (!canvas) return null
+
+		const rect = canvas.getBoundingClientRect()
+		return {
+			x: event.clientX - rect.left,
+			y: event.clientY - rect.top,
+		}
+	}
+
+	const handlePointerDown = (event: PointerEvent<HTMLCanvasElement>) => {
+		const point = getPointerPosition(event)
+		if (!point) return
+
+		isDrawingRef.current = true
+		lastPointRef.current = point
+		const canvas = canvasRef.current
+		canvas?.setPointerCapture(event.pointerId)
+	}
+
+	const handlePointerMove = (event: PointerEvent<HTMLCanvasElement>) => {
+		if (!isDrawingRef.current) return
+		const point = getPointerPosition(event)
+		if (!point || !lastPointRef.current) return
+
+		const context = contextRef.current
+		if (!context) return
+
+		context.beginPath()
+		context.moveTo(lastPointRef.current.x, lastPointRef.current.y)
+		context.lineTo(point.x, point.y)
+		context.stroke()
+		lastPointRef.current = point
+	}
+
+	const stopDrawing = (event: PointerEvent<HTMLCanvasElement>) => {
+		isDrawingRef.current = false
+		lastPointRef.current = null
+		const canvas = canvasRef.current
+		canvas?.releasePointerCapture(event.pointerId)
+	}
 
 	return (
 		<Box
@@ -37,26 +114,36 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 				borderColor: 'divider',
 				borderRadius: '16px',
 				overflow: 'hidden',
-				height: '300px',
+				// height: '300px',
 				display: 'flex',
+				flexGrow: 1,
 				flexDirection: 'column',
 			}}
 		>
 			{/* Doctor + Clinic header */}
-			<Box sx={{ px: 2.5, py: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+			<Box
+				sx={{
+					px: 2.5,
+					py: 2,
+					display: 'flex',
+					justifyContent: 'space-between',
+					alignItems: 'flex-start',
+					background: '#DBE2E3',
+				}}
+			>
 				<Box>
-					<Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '14px' }}>
+					<Typography variant="body1" sx={{ fontWeight: 600, color: 'primary.main', fontSize: '14px' }}>
 						{doctor.name}, {doctor.degree}
 					</Typography>
-					<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '12px' }}>
+					<Typography variant="body1" sx={{ color: 'primary.main', fontSize: '11px' }}>
 						{doctor.specialization}
 					</Typography>
 				</Box>
 				<Box sx={{ textAlign: 'right' }}>
-					<Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', fontSize: '13px' }}>
+					<Typography variant="body1" sx={{ fontWeight: 600, color: 'primary.main', fontSize: '14px' }}>
 						{doctor.clinicName}
 					</Typography>
-					<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '12px' }}>
+					<Typography variant="body1" sx={{ color: 'primary.main', fontSize: '11px' }}>
 						{doctor.clinicAddress}
 					</Typography>
 				</Box>
@@ -95,23 +182,19 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 
 			{/* Notes editor area */}
 			<Box
-				component="textarea"
-				value={notes}
-				onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNotes(e.target.value)}
-				placeholder="Type consultation notes here..."
+				component="canvas"
+				ref={canvasRef}
+				onPointerDown={handlePointerDown}
+				onPointerMove={handlePointerMove}
+				onPointerUp={stopDrawing}
+				onPointerLeave={stopDrawing}
 				sx={{
-					// flex: 1,
+					flex: 1,
+					width: '100%',
 					border: 'none',
 					outline: 'none',
-					resize: 'none',
-					p: 2,
-					fontFamily: 'Inter, sans-serif',
-					fontSize: '13.5px',
-					color: 'text.primary',
 					bgcolor: 'background.paper',
-					lineHeight: 1.7,
-					// minHeight: 300,
-					'&::placeholder': { color: 'text.disabled' },
+					cursor: 'pointer',
 				}}
 			/>
 		</Box>

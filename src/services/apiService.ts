@@ -1,6 +1,7 @@
 ﻿// src/services/apiService.ts
 import axios, { AxiosResponse } from 'axios'
 import { clearAuth } from '../hooks/useAuth'
+import { toast } from 'react-toastify'
 
 // ── Axios instance ────────────────────────────────────────────────────────────
 const axiosInstance = axios.create()
@@ -21,10 +22,16 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
 	(response) => response,
 	(error) => {
-		if (error.response?.status === 401) {
+		const status = error.response?.status
+		const message = error.response?.data?.message || 'Something went wrong'
+
+		if (status === 401) {
 			clearAuth()
 			window.location.href = '/login'
+		} else {
+			toast.error(message) // 👈 global toast
 		}
+
 		return Promise.reject(error)
 	}
 )

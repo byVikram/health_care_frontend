@@ -2,8 +2,8 @@
 import { Box, Typography, Slider, Divider } from '@mui/material'
 import { customCardStyle } from '../../../../styles/commonStyles'
 import StarIcon from '@mui/icons-material/Star'
-import { getSpecialityIcon } from '../../../../components/common/SpecialityIconMap'
-import { SpecialityItem } from '../../../../types/speciality'
+// import { getSpecialityIcon } from '../../../../components/common/SpecialityIconMap'
+// import { SpecialityItem } from '../../../../types/speciality'
 
 export interface FilterState {
 	speciality: string
@@ -15,10 +15,10 @@ export interface FilterState {
 interface SearchFiltersProps {
 	filters: FilterState
 	onChange: (filters: FilterState) => void
-	specialities: SpecialityItem[]
+	// specialities: SpecialityItem[]
 }
 
-export default function SearchFilters({ filters, onChange, specialities }: SearchFiltersProps) {
+export default function SearchFilters({ filters, onChange }: SearchFiltersProps) {
 	const consultationTypes = [
 		{ id: 'all', label: 'All' },
 		{ id: 'clinic', label: 'Clinic Visit' },
@@ -40,10 +40,10 @@ export default function SearchFilters({ filters, onChange, specialities }: Searc
 				Filters
 			</Typography>
 
-			<Divider />
+			{/* <Divider /> */}
 
 			{/* Speciality */}
-			<Box>
+			{/* <Box>
 				<Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, color: 'text.primary' }}>
 					Speciality
 				</Typography>
@@ -98,7 +98,7 @@ export default function SearchFilters({ filters, onChange, specialities }: Searc
 						</Box>
 					))}
 				</Box>
-			</Box>
+			</Box> */}
 
 			<Divider />
 

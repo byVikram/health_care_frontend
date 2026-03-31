@@ -74,8 +74,11 @@ export default function DoctorSearchCard({ doctor, recommended = false }: Doctor
 				<Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.2 }}>
 					{doctor.name}
 				</Typography>
-				<Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '13px', mb: 1.5 }}>
+				<Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '13px', mb: 1 }}>
 					{specialization}
+				</Typography>
+				<Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '13px', mb: 1.5 }}>
+					Earliest available slot (Today 2:00 PM)
 				</Typography>
 
 				{/* Experience + Rating row */}

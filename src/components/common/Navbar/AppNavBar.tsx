@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
 	AppBar,
 	Toolbar,
@@ -14,19 +14,107 @@ import {
 } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import CloseIcon from '@mui/icons-material/Close'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
 import AppButton from '../Button/AppButton'
 
-const navItems = ['Home', 'About', 'Services', 'Community', 'Blog & Media', 'Events', 'Contact']
+const navItems = [
+	{ label: 'Home', href: '/#home' },
+	// { label: 'About', href: '#about' },
+	{ label: 'Services', href: '/#services' },
+	{ label: 'Find doctors', href: '/doctors/search' },
+	{ label: 'Community', href: '/#community' },
+	// { label: 'Blog & Media', href: '/#blog-media' },
+	// { label: 'Events', href: '#events' },
+	{ label: 'Contact', href: '/#contact' },
+	{ label: 'Demo', href: '#' },
+]
 
 const AppNavBar: React.FC = () => {
 	const navigate = useNavigate()
+	const location = useLocation()
 	const theme = useTheme()
 	const isMdUp = useMediaQuery(theme.breakpoints.up('md'))
 	const [mobileOpen, setMobileOpen] = useState(false)
+	const [activeHref, setActiveHref] = useState<string>('/#home')
 
 	const handleDrawerToggle = () => setMobileOpen((prev) => !prev)
+	const handleNavClick = (href: string) => {
+		setActiveHref(href)
+		if (href === '#') return
+		// debugger
+		if (href.startsWith('/#')) {
+			if (location.pathname === '/') {
+				const targetId = href.replace('/#', '')
+				const target = document.getElementById(targetId)
+				if (target) {
+					target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+				}
+				window.history.replaceState(null, '', href)
+				return
+			}
+			navigate('/')
+			window.location.hash = href.replace('/#', '')
+			return
+		}
+
+		navigate(href)
+	}
+
+	const hashSectionIds = useMemo(
+		() => navItems.filter((item) => item.href.startsWith('/#')).map((item) => item.href.replace('/#', '')),
+		[]
+	)
+
+	useEffect(() => {
+		const current = `${location.pathname}${location.hash || ''}`
+		if (current !== '/') {
+			setActiveHref(current)
+			return
+		}
+
+		if (location.hash) {
+			setActiveHref(`/${location.hash}`)
+		} else {
+			setActiveHref('/#home')
+		}
+	}, [location.pathname, location.hash])
+
+	useEffect(() => {
+		if (location.pathname !== '/') return
+
+		let ticking = false
+		const updateActive = () => {
+			if (ticking) return
+			ticking = true
+
+			window.requestAnimationFrame(() => {
+				const offset = isMdUp ? 96 : 80
+				let current = '/#home'
+
+				for (const id of hashSectionIds) {
+					const el = document.getElementById(id)
+					if (!el) continue
+					const top = el.getBoundingClientRect().top
+					if (top - offset <= 0) {
+						current = `/#${id}`
+					}
+				}
+
+				setActiveHref(current)
+				ticking = false
+			})
+		}
+
+		window.addEventListener('scroll', updateActive, { passive: true })
+		window.addEventListener('resize', updateActive)
+		updateActive()
+
+		return () => {
+			window.removeEventListener('scroll', updateActive)
+			window.removeEventListener('resize', updateActive)
+		}
+	}, [hashSectionIds, isMdUp, location.pathname])
 
 	return (
 		<AppBar position="sticky" sx={{ bgcolor: 'primary.dark', padding: 1, boxShadow: 'none' }}>
@@ -43,7 +131,10 @@ const AppNavBar: React.FC = () => {
 					{/* Left: Logo + Divider + Nav Links */}
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
 						{/* Logo */}
-						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+						<Box
+							sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}
+							onClick={() => navigate('/')}
+						>
 							<Typography
 								variant="h6"
 								sx={{ fontWeight: 700, fontStyle: 'italic', color: 'white', letterSpacing: '-0.01em' }}
@@ -60,18 +151,19 @@ const AppNavBar: React.FC = () => {
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: 3.5 }}>
 								{navItems.map((item) => (
 									<Typography
-										key={item}
+										key={item.href}
 										variant="body2"
 										sx={{
 											cursor: 'pointer',
-											color: item === 'Home' ? '#13C0C5' : 'rgba(255,255,255,0.88)',
-											fontWeight: item === 'Home' ? 600 : 400,
+											color: activeHref === item.href ? '#13C0C5' : 'rgba(255,255,255,0.88)',
+											fontWeight: activeHref === item.href ? 600 : 400,
 											fontSize: '14.5px',
 											'&:hover': { color: '#13C0C5' },
 											transition: 'color 0.15s',
 										}}
+										onClick={() => handleNavClick(item.href)}
 									>
-										{item}
+										{item.label}
 									</Typography>
 								))}
 							</Box>
@@ -136,9 +228,10 @@ const AppNavBar: React.FC = () => {
 				<List sx={{ mb: 2 }}>
 					{navItems.map((item) => (
 						<ListItemButton
-							key={item}
+							key={item.href}
 							onClick={() => {
 								handleDrawerToggle()
+								handleNavClick(item.href)
 							}}
 							sx={{
 								borderRadius: 1,
@@ -146,11 +239,11 @@ const AppNavBar: React.FC = () => {
 							}}
 						>
 							<ListItemText
-								primary={item}
+								primary={item.label}
 								primaryTypographyProps={{
 									fontSize: '14px',
-									fontWeight: item === 'Home' ? 600 : 400,
-									color: item === 'Home' ? '#13C0C5' : 'rgba(255,255,255,0.88)',
+									fontWeight: activeHref === item.href ? 600 : 400,
+									color: activeHref === item.href ? '#13C0C5' : 'rgba(255,255,255,0.88)',
 								}}
 							/>
 						</ListItemButton>
