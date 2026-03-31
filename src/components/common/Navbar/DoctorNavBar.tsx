@@ -6,6 +6,8 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined'
 import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined'
 import drImage from '../../../assets/Services/doctors-service.png'
+import { useAuth } from '../../../hooks/useAuth'
+import { USER_ROLES } from '../../../constants/constants'
 
 interface DoctorNavBarProps {
 	onProfileClick?: () => void
@@ -26,6 +28,8 @@ const clinics: Clinic[] = [
 ]
 
 export default function DoctorNavBar({ onProfileClick }: DoctorNavBarProps) {
+	const { role } = useAuth()
+
 	const [selectedClinic, setSelectedClinic] = useState<Clinic>(clinics[0])
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
 	const open = Boolean(anchorEl)
@@ -63,110 +67,124 @@ export default function DoctorNavBar({ onProfileClick }: DoctorNavBarProps) {
 					</Typography>
 				</Box>
 
-				{/* Divider */}
-				<Box sx={{ width: '1px', height: '22px', bgcolor: 'rgba(255,255,255,0.3)' }} />
+				{role === USER_ROLES.DOCTOR && (
+					<>
+						{/* Divider */}
+						<Box sx={{ width: '1px', height: '22px', bgcolor: 'rgba(255,255,255,0.3)' }} />
 
-				{/* Location Dropdown */}
-				<Box
-					sx={{
-						display: 'flex',
-						alignItems: 'center',
-						gap: 0.5,
-						cursor: 'pointer',
-						'&:hover': { opacity: 0.9 },
-					}}
-					onClick={handleClinicClick}
-				>
-					<LocationOnIcon sx={{ color: '#fff', fontSize: 16 }} />
-					<Typography sx={{ color: '#fff', fontSize: '13px', fontWeight: 500 }}>
-						{selectedClinic.name}, {selectedClinic.location}
-					</Typography>
-					{clinics.length - 1 && (
-						<Box sx={{ bgcolor: 'rgba(255,255,255,0.2)', borderRadius: '10px', px: 0.8, py: 0.2, ml: 0.5 }}>
-							<Typography sx={{ color: '#fff', fontSize: '11px', fontWeight: 600 }}>
-								+{clinics.length - 1}
+						{/* Location Dropdown */}
+						<Box
+							sx={{
+								display: 'flex',
+								alignItems: 'center',
+								gap: 0.5,
+								cursor: 'pointer',
+								'&:hover': { opacity: 0.9 },
+							}}
+							onClick={handleClinicClick}
+						>
+							<LocationOnIcon sx={{ color: '#fff', fontSize: 16 }} />
+							<Typography sx={{ color: '#fff', fontSize: '13px', fontWeight: 500 }}>
+								{selectedClinic.name}, {selectedClinic.location}
 							</Typography>
-						</Box>
-					)}
-					<KeyboardArrowDownIcon sx={{ color: '#fff', fontSize: 18 }} />
-				</Box>
-
-				{/* Clinics Dropdown Menu */}
-				<Menu
-					anchorEl={anchorEl}
-					open={open}
-					onClose={handleClinicClose}
-					anchorOrigin={{
-						vertical: 'bottom',
-						horizontal: 'left',
-					}}
-					transformOrigin={{
-						vertical: 'top',
-						horizontal: 'left',
-					}}
-					PaperProps={{
-						sx: {
-							mt: 1,
-							minWidth: 280,
-							borderRadius: 1,
-							boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.15)',
-							'& .MuiMenuItem-root': {
-								py: 0.6,
-								px: 2,
-							},
-						},
-					}}
-				>
-					{clinics.map((clinic) => (
-						<div key={clinic.id}>
-							<MenuItem
-								onClick={() => handleClinicSelect(clinic)}
-								sx={{
-									backgroundColor:
-										selectedClinic.id === clinic.id ? 'rgba(12, 124, 124, 0.08)' : 'transparent',
-									'&:hover': {
-										backgroundColor: 'rgba(12, 124, 124, 0.04)',
-									},
-								}}
-							>
+							{clinics.length - 1 && (
 								<Box
 									sx={{
-										display: 'flex',
-										alignItems: 'center',
-										justifyContent: 'space-between',
-										width: '100%',
+										bgcolor: 'rgba(255,255,255,0.2)',
+										borderRadius: '10px',
+										px: 0.8,
+										py: 0.2,
+										ml: 0.5,
 									}}
 								>
-									<Box>
-										<Typography
-											variant="body2"
-											sx={{ fontWeight: selectedClinic.id === clinic.id ? 600 : 400 }}
-										>
-											{clinic.name}
-										</Typography>
-										<Typography
-											variant="caption"
-											sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
-										>
-											{clinic.location}
-										</Typography>
-									</Box>
+									<Typography sx={{ color: '#fff', fontSize: '11px', fontWeight: 600 }}>
+										+{clinics.length - 1}
+									</Typography>
+								</Box>
+							)}
+							<KeyboardArrowDownIcon sx={{ color: '#fff', fontSize: 18 }} />
+						</Box>
 
-									{selectedClinic.id === clinic.id && (
+						{/* Clinics Dropdown Menu */}
+						<Menu
+							anchorEl={anchorEl}
+							open={open}
+							onClose={handleClinicClose}
+							anchorOrigin={{
+								vertical: 'bottom',
+								horizontal: 'left',
+							}}
+							transformOrigin={{
+								vertical: 'top',
+								horizontal: 'left',
+							}}
+							PaperProps={{
+								sx: {
+									mt: 1,
+									minWidth: 280,
+									borderRadius: 1,
+									boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.15)',
+									'& .MuiMenuItem-root': {
+										py: 0.6,
+										px: 2,
+									},
+								},
+							}}
+						>
+							{clinics.map((clinic) => (
+								<div key={clinic.id}>
+									<MenuItem
+										onClick={() => handleClinicSelect(clinic)}
+										sx={{
+											backgroundColor:
+												selectedClinic.id === clinic.id
+													? 'rgba(12, 124, 124, 0.08)'
+													: 'transparent',
+											'&:hover': {
+												backgroundColor: 'rgba(12, 124, 124, 0.04)',
+											},
+										}}
+									>
 										<Box
 											sx={{
-												width: 8,
-												height: 8,
-												borderRadius: '50%',
-												bgcolor: '#0c7c7c',
+												display: 'flex',
+												alignItems: 'center',
+												justifyContent: 'space-between',
+												width: '100%',
 											}}
-										/>
-									)}
-								</Box>
-							</MenuItem>
-						</div>
-					))}
-				</Menu>
+										>
+											<Box>
+												<Typography
+													variant="body2"
+													sx={{ fontWeight: selectedClinic.id === clinic.id ? 600 : 400 }}
+												>
+													{clinic.name}
+												</Typography>
+												<Typography
+													variant="caption"
+													sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
+												>
+													{clinic.location}
+												</Typography>
+											</Box>
+
+											{selectedClinic.id === clinic.id && (
+												<Box
+													sx={{
+														width: 8,
+														height: 8,
+														borderRadius: '50%',
+														bgcolor: '#0c7c7c',
+													}}
+												/>
+											)}
+										</Box>
+									</MenuItem>
+								</div>
+							))}
+						</Menu>
+					</>
+				)}
 			</Box>
 
 			{/* Right: Calendar + Bell + Profile */}
