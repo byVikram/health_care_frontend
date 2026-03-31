@@ -17,7 +17,7 @@ export const API_ENDPOINTS = {
 		DETAILS: `${BASE_URL}/api/doctors/details`,
 	},
 	SPECIALITIES: {
-		LIST: `${BASE_URL}/api/specialities/`,
+		LIST: `${BASE_URL}/api/specialities`,
 	},
 	USERS: {
 		GET: `${BASE_URL}/api/users`,
