@@ -5,38 +5,6 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import AppSkeleton from '../Skeleton/AppSkeleton'
 
-const TIME_SLOTS = [
-	'09:00AM',
-	'09:30AM',
-	'10:00AM',
-	'10:30AM',
-	'11:00AM',
-	'11:30AM',
-	'12:00PM',
-	'12:30PM',
-	'01:00PM',
-	'01:30PM',
-	'02:00PM',
-	'02:30PM',
-	'03:00PM',
-	'03:30PM',
-	'04:00PM',
-	'04:30PM',
-	'05:00PM',
-	'05:30PM',
-	'06:00PM',
-	'06:30PM',
-	'07:00PM',
-	'07:30PM',
-	'08:00PM',
-	'08:30PM',
-	'09:00PM',
-	'09:30PM',
-	'10:00PM',
-	'10:30PM',
-	'11:00PM',
-]
-
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -47,6 +15,164 @@ function getWeekDates(start: Date) {
 		return d
 	})
 }
+
+type TimeSlot = {
+	start_time: string
+	end_time: string
+	status: string
+	is_enabled: boolean
+	is_booked: boolean
+	can_toggle: boolean
+}
+
+type SlotGroup = {
+	label: string
+	range: string
+	slots: TimeSlot[]
+}
+
+const DEFAULT_SLOT_GROUPS: SlotGroup[] = [  
+  {
+    "label": "Morning",
+    "range": "09:00-12:00",
+    "slots": [
+      {
+        "start_time": "09:00",
+        "end_time": "09:15",
+        "status": "AVAILABLE",
+        "is_enabled": true,
+        "is_booked": false,
+        "can_toggle": true
+      },
+      {
+        "start_time": "09:15",
+        "end_time": "09:30",
+        "status": "OCCUPIED",
+        "is_enabled": true,
+        "is_booked": true,
+        "can_toggle": false
+      },
+      {
+        "start_time": "09:30",
+        "end_time": "09:45",
+        "status": "BLOCKED",
+        "is_enabled": false,
+        "is_booked": false,
+        "can_toggle": true
+      },
+      {
+        "start_time": "09:45",
+        "end_time": "10:00",
+        "status": "AVAILABLE",
+        "is_enabled": true,
+        "is_booked": false,
+        "can_toggle": true
+      },
+      {
+        "start_time": "10:00",
+        "end_time": "10:15",
+        "status": "OCCUPIED",
+        "is_enabled": true,
+        "is_booked": true,
+        "can_toggle": false
+      },
+      {
+        "start_time": "10:15",
+        "end_time": "10:30",
+        "status": "AVAILABLE",
+        "is_enabled": true,
+        "is_booked": false,
+        "can_toggle": true
+      },
+      {
+        "start_time": "10:30",
+        "end_time": "10:45",
+        "status": "BLOCKED",
+        "is_enabled": false,
+        "is_booked": false,
+        "can_toggle": true
+      },
+      {
+        "start_time": "10:45",
+        "end_time": "11:00",
+        "status": "AVAILABLE",
+        "is_enabled": true,
+        "is_booked": false,
+        "can_toggle": true
+      },
+      {
+        "start_time": "11:00",
+        "end_time": "11:15",
+        "status": "OCCUPIED",
+        "is_enabled": true,
+        "is_booked": true,
+        "can_toggle": false
+      },
+      {
+        "start_time": "11:15",
+        "end_time": "11:30",
+        "status": "AVAILABLE",
+        "is_enabled": true,
+        "is_booked": false,
+        "can_toggle": true
+      },
+      {
+        "start_time": "11:30",
+        "end_time": "11:45",
+        "status": "BLOCKED",
+        "is_enabled": false,
+        "is_booked": false,
+        "can_toggle": true
+      },
+      {
+        "start_time": "11:45",
+        "end_time": "12:00",
+        "status": "AVAILABLE",
+        "is_enabled": true,
+        "is_booked": false,
+        "can_toggle": true
+      }
+    ]
+  },
+  {
+    "label": "Afternoon",
+    "range": "12:00-15:00",
+    "slots": [
+      {
+        "start_time": "12:00",
+        "end_time": "12:15",
+        "status": "AVAILABLE",
+        "is_enabled": true,
+        "is_booked": false,
+        "can_toggle": true
+      },
+      {
+        "start_time": "12:15",
+        "end_time": "12:30",
+        "status": "OCCUPIED",
+        "is_enabled": true,
+        "is_booked": true,
+        "can_toggle": false
+      },
+      {
+        "start_time": "12:30",
+        "end_time": "12:45",
+        "status": "AVAILABLE",
+        "is_enabled": true,
+        "is_booked": false,
+        "can_toggle": true
+      },
+      {
+        "start_time": "12:45",
+        "end_time": "13:00",
+        "status": "BLOCKED",
+        "is_enabled": false,
+        "is_booked": false,
+        "can_toggle": true
+      }
+    ]
+  }
+]
 
 // -- Overloaded prop types based on multiSelect --------------------------------
 type SingleProps = {
@@ -68,8 +194,9 @@ type CommonProps = {
 	timeLabel?: string
 	disablePast?: boolean
 	timeSlotColumns?: number
-	availableSlots?: string[]
+	availableSlots?: SlotGroup[]
 	loading?: boolean
+	disableBookedSlots?: boolean
 }
 
 type DateSlotPickerProps = CommonProps & (SingleProps | MultiProps)
@@ -86,6 +213,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		timeSlotColumns = 4,
 		availableSlots,
 		loading = false,
+		disableBookedSlots
 	} = props
 
 	const today = new Date()
@@ -119,6 +247,9 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		}
 	}
 
+	// const slotsToRender = availableSlots ?? DEFAULT_SLOT_GROUPS
+	const slotsToRender = DEFAULT_SLOT_GROUPS
+
 	return (
 		<Box>
 			{loading ? (
@@ -131,16 +262,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 					</Typography>
 
 					{/* Week calendar */}
-					<Box
-						sx={{
-							// bgcolor: 'background.paper',
-							// border: '1px solid',
-							// borderColor: 'divider',
-							// borderRadius: '14px',
-							p: 2,
-							mb: 3,
-						}}
-					>
+					<Box sx={{ p: 2, mb: 3 }}>
 						{/* Month nav */}
 						<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
 							<IconButton
@@ -238,49 +360,90 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 						{timeLabel}
 					</Typography>
 
-					{/* Time slots */}
-					<Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${timeSlotColumns}, 1fr)`, gap: 1 }}>
-						{(availableSlots ?? TIME_SLOTS).map((slot) => {
-							const isSelected = isSlotSelected(slot)
-							return (
-								<Box
-									key={slot}
-									onClick={() => handleSlotClick(slot)}
-									sx={{
-										py: 0.6,
-										px: 0.4,
-										textAlign: 'center',
-										border: '1.5px solid',
-										borderColor: isSelected ? 'primary.main' : 'divider',
-										borderRadius: '8px',
-										cursor: 'pointer',
-										bgcolor: isSelected ? 'primary.main' : 'background.paper',
-										transition: 'all 0.15s',
-										'&:hover': {
-											borderColor: 'primary.main',
-											bgcolor: isSelected ? 'primary.main' : 'rgba(43,111,113,0.06)',
-										},
-									}}
-								>
-									<Typography
-										variant="caption"
-										sx={{
-											fontSize: '12px',
-											fontWeight: isSelected ? 600 : 400,
-											color: isSelected ? '#fff' : 'text.primary',
-										}}
-									>
-										{slot}
-									</Typography>
-								</Box>
-							)
-						})}
-					</Box>
+					{/* No slots message */}
 					{availableSlots && availableSlots.length === 0 && (
 						<Typography variant="body2" sx={{ color: 'text.secondary', mt: 2 }}>
 							No slots available for the selected day.
 						</Typography>
 					)}
+
+					{/* Time slots grouped by period */}
+					{slotsToRender.map((group) => (
+						<Box key={group.label} sx={{ mb: 2 }}>
+							{/* Section header */}
+							<Typography
+								variant="caption"
+								sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.5, display: 'block' }}
+							>
+								{group.label} · {group.range}
+							</Typography>
+
+							{/* Time slots grid */}
+							<Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${timeSlotColumns}, 1fr)`, gap: 1 }}>
+								{group.slots.map((slot) => {
+									const isPatientView = disableBookedSlots
+
+									// Patient view: hide BLOCKED slots entirely
+									if (isPatientView && slot.status === 'BLOCKED') return null
+
+									const isSelected = isSlotSelected(slot.start_time)
+									// Patient view: grey out OCCUPIED slots; doctor view: no change
+									const isBooked = isPatientView && slot.is_booked
+									const isDisabled = !slot.is_enabled
+
+									return (
+										<Box
+											key={slot.start_time}
+											onClick={() => {
+												if (isBooked || isDisabled) return
+												handleSlotClick(slot.start_time)
+											}}
+											sx={{
+												py: 0.6,
+												px: 0.4,
+												textAlign: 'center',
+												border: '1.5px solid',
+												borderColor: isSelected ? 'primary.main' : 'divider',
+												borderRadius: '8px',
+												// OCCUPIED (isBooked): default cursor — slot is silent, not forbidden
+												// BLOCKED (isDisabled, doctor only): not-allowed
+												// AVAILABLE: pointer
+												cursor: isBooked ? 'default' : isDisabled ? 'not-allowed' : 'pointer',
+												bgcolor:
+  													props.multiSelect
+    												? (slot.status === 'BLOCKED'
+        											? 'error.main'   // red for blocked
+        											: 'success.main')  // green for all others (doctor page)
+    												: (isBooked
+        											? 'rgba(0,0,0,0.08)'
+        											: isSelected
+        											? 'primary.main'
+        											: 'background.paper'),
+												transition: 'all 0.15s',
+												'&:hover': isBooked
+													? {} // no hover effect on occupied slots
+													: {
+														borderColor: 'primary.main',
+														bgcolor: isSelected ? 'primary.main' : 'rgba(43,111,113,0.06)',
+													},
+											}}
+										>
+											<Typography
+												variant="body1"
+												sx={{
+													// fontSize: '12px',
+													fontWeight: isSelected ? 600 : 400,
+													color: props.multiSelect? '#fff' : (isSelected? '#fff': isBooked? 'text.disabled': 'text.primary'),
+												}}
+											>
+												{slot.start_time}
+											</Typography>
+										</Box>
+									)
+								})}
+							</Box>
+						</Box>
+					))}
 				</>
 			)}
 		</Box>
