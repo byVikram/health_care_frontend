@@ -1,6 +1,7 @@
 // src/features/patient/PatientProfilePage.tsx
-import { useState, useMemo } from 'react'
-import { Box, Container, Grid } from '@mui/material'
+import { useState, useMemo, useEffect } from 'react'
+import { Box, Container, Grid, Divider } from '@mui/material'
+import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import AppProfileSidebar from '../../components/common/ProfileSidebar/AppProfileSidebar'
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline'
 import MedicalServicesOutlinedIcon from '@mui/icons-material/MedicalServicesOutlined'
@@ -9,15 +10,15 @@ import PersonalTab from './components/PersonalTab'
 import MedicalTab from './components/MedicalTab'
 import LifeStyleTab from './components/LifeStyleTab'
 import { Patient, PatientPersonal, PatientMedical, PatientLifeStyle } from '../../types/patient'
-import { updatePatientProfile } from './patientService'
+import { updatePatientProfile, getPatientDetails } from './patientService'
 import { toast } from 'react-toastify'
 
-const MOCK_PATIENT: Patient = {
-	id: 'patient-001',
+const EMPTY_PATIENT: Patient = {
+	id: '',
 	personal: {
-		name: 'Nitin',
-		contactNumber: '+91-7892502634',
-		contactVerified: true,
+		name: '',
+		contactNumber: '',
+		contactVerified: false,
 		email: '',
 		emailVerified: false,
 		gender: '',
@@ -63,7 +64,23 @@ function calcCompletion(patient: Patient): number {
 
 export default function PatientProfilePage() {
 	const [activeTab, setActiveTab] = useState<string>('personal')
-	const [patient, setPatient] = useState<Patient>(MOCK_PATIENT)
+	const [patient, setPatient] = useState<Patient>(EMPTY_PATIENT)
+	const [loading, setLoading] = useState(false)
+	
+	useEffect(() => {
+		const fetchPatient = async () => {
+			try {
+				setLoading(true)
+				const data = await getPatientDetails()
+				setPatient(data.data)
+			} catch (err) {
+				console.error('Failed to load patient:', err)
+			} finally {
+				setLoading(false)
+			}
+		}
+		fetchPatient()
+	}, [])
 
 	const [dirtyPersonal, setDirtyPersonal] = useState<Partial<PatientPersonal>>({})
 	const [dirtyMedical, setDirtyMedical] = useState<Partial<PatientMedical>>({})
@@ -73,11 +90,7 @@ export default function PatientProfilePage() {
 
 	const handlePersonalChange = (updated: Partial<PatientPersonal>) => {
 		setPatient((prev) => ({ ...prev, personal: { ...prev.personal, ...updated } }))
-
-		setDirtyPersonal((prev) => ({
-			...prev,
-			...updated,
-		}))
+		setDirtyPersonal((prev) => ({ ...prev, ...updated }))
 	}
 
 	const handleMedicalChange = (updated: Partial<PatientMedical>) =>
@@ -87,16 +100,10 @@ export default function PatientProfilePage() {
 		setPatient((prev) => ({ ...prev, lifeStyle: { ...prev.lifeStyle, ...updated } }))
 
 	const handleMedicalDirtyChange = (updated: Partial<PatientMedical>) =>
-		setDirtyMedical((prev) => ({
-			...prev,
-			...updated,
-		}))
+		setDirtyMedical((prev) => ({ ...prev, ...updated }))
 
 	const handleLifeStyleDirtyChange = (updated: Partial<PatientLifeStyle>) =>
-		setDirtyLifeStyle((prev) => ({
-			...prev,
-			...updated,
-		}))
+		setDirtyLifeStyle((prev) => ({ ...prev, ...updated }))
 
 	const handleMedicalUpdate = (updated: Partial<PatientMedical>) => {
 		handleMedicalChange(updated)
@@ -165,38 +172,75 @@ export default function PatientProfilePage() {
 				return null
 		}
 	}
-
 	return (
 		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
 			<Container maxWidth="lg">
 				<Grid container spacing={3}>
-					<Grid size={{ xs: 12, md: 3 }}>
-						<AppProfileSidebar
-							avatar={patient.personal.avatar}
-							name={patient.personal.name}
-							subTitle={patient.personal.contactNumber}
-							completionPercent={completionPercent}
-							backLabel="Patient Profile"
-							navItems={[
-								{
-									id: 'personal',
-									label: 'Personal details',
-									icon: <PersonOutlineIcon fontSize="small" />,
-								},
-								{
-									id: 'medical',
-									label: 'Medical',
-									icon: <MedicalServicesOutlinedIcon fontSize="small" />,
-								},
-								{ id: 'lifestyle', label: 'Life Style', icon: <SpaOutlinedIcon fontSize="small" /> },
-							]}
-							activeTab={activeTab}
-							onTabChange={setActiveTab}
-							onAvatarChange={handleAvatarChange}
-						/>
-					</Grid>
-
-					<Grid size={{ xs: 12, md: 9 }}>{renderTab()}</Grid>
+					{loading ? (
+						<>
+							{/* Skeleton: left sidebar */}
+							<Grid size={{ xs: 12, md: 3 }}>
+								<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+									<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, p: 3 }}>
+										<AppSkeleton width={90} height={90} sx={{ borderRadius: '50%' }} />
+										<AppSkeleton variant="text" width={140} height={24} />
+										<AppSkeleton variant="text" width={110} height={20} />
+										<AppSkeleton width={160} height={10} />
+									</Box>
+									<Divider />
+									<Box sx={{ display: 'flex',alignItems: 'center', flexDirection: 'column', gap: 1, px: 2 }}>
+										<AppSkeleton variant="text" width={180} height={36} />
+										<AppSkeleton variant="text" width={180} height={36} />
+										<AppSkeleton variant="text" width={180} height={36} />
+									</Box>
+								</Box>
+							</Grid>
+							{/* Skeleton: right content area */}
+							<Grid size={{ xs: 12, md: 9 }}>
+								<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 3 }}>
+									<AppSkeleton variant="text" width={200} height={32} />
+									<AppSkeleton height={56} />
+									<AppSkeleton height={56} />
+									<AppSkeleton height={56} />
+									<AppSkeleton height={56} />
+									<Divider sx={{ my: 1 }} />
+									<AppSkeleton variant="text" width={200} height={32} />
+									<AppSkeleton height={56} />
+									<AppSkeleton height={56} />
+									<AppSkeleton height={56} />
+								</Box>
+							</Grid>
+						</>
+					) : (
+						<>
+							<Grid size={{ xs: 12, md: 3 }}>
+								<AppProfileSidebar
+									avatar={patient.personal.avatar}
+									name={patient.personal.name}
+									subTitle={patient.personal.contactNumber}
+									completionPercent={completionPercent}
+									backLabel="Patient Profile"
+									navItems={[
+										{
+											id: 'personal',
+											label: 'Personal details',
+											icon: <PersonOutlineIcon fontSize="small" />,
+										},
+										{
+											id: 'medical',
+											label: 'Medical',
+											icon: <MedicalServicesOutlinedIcon fontSize="small" />,
+										},
+										{ id: 'lifestyle', label: 'Life Style', icon: <SpaOutlinedIcon fontSize="small" /> },
+									]}
+									activeTab={activeTab}
+									onTabChange={setActiveTab}
+									onAvatarChange={handleAvatarChange}
+								/>
+							</Grid>
+							<Grid size={{ xs: 12, md: 9 }}>{renderTab()}</Grid>
+						</>
+					)}
 				</Grid>
 			</Container>
 		</Box>
