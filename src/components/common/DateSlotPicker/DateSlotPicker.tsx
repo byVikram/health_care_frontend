@@ -197,6 +197,8 @@ type CommonProps = {
 	availableSlots?: SlotGroup[]
 	loading?: boolean
 	disableBookedSlots?: boolean
+	onSelectAll?: () => void
+	onUnselectAll?: () => void
 }
 
 type DateSlotPickerProps = CommonProps & (SingleProps | MultiProps)
@@ -213,7 +215,9 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		timeSlotColumns = 4,
 		availableSlots,
 		loading = false,
-		disableBookedSlots
+		disableBookedSlots,
+		onSelectAll,
+		onUnselectAll
 	} = props
 
 	const today = new Date()
@@ -356,9 +360,34 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 					</Box>
 
 					{/* Time label */}
-					<Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
-						{timeLabel}
-					</Typography>
+					<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+						<Typography variant="h5" sx={{ fontWeight: 600 }}>
+							{timeLabel}
+						</Typography>
+						{onSelectAll && onUnselectAll ? (
+							<Box sx={{ display: 'flex', gap: 1 }}>
+								<Box
+									onClick={onSelectAll}
+									sx={{ cursor: 'pointer', fontSize: '12px', fontWeight: 500, color: 'primary.main', border: '1.5px solid', borderColor: 'primary.main', borderRadius: '8px', px: 1.5, py: 0.4, userSelect: 'none', '&:hover': { bgcolor: 'rgba(43,111,113,0.06)' } }}
+								>
+									Select All
+								</Box>
+								<Box
+									onClick={onUnselectAll}
+									sx={{ cursor: 'pointer', fontSize: '12px', fontWeight: 500, color: 'text.secondary', border: '1.5px solid', borderColor: 'divider', borderRadius: '8px', px: 1.5, py: 0.4, userSelect: 'none', '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' } }}
+								>
+									Unselect All
+								</Box>
+							</Box>
+						) : (
+							<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+								<Box sx={{ width: 14, height: 14, borderRadius: '3px', bgcolor: 'rgba(0,0,0,0.08)', border: '1.5px solid', borderColor: 'divider', flexShrink: 0 }} />
+								<Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+									Booked
+								</Typography>
+							</Box>
+						)}
+					</Box>
 
 					{/* No slots message */}
 					{availableSlots && availableSlots.length === 0 && (

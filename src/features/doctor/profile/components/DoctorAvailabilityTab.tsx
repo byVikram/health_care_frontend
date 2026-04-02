@@ -24,6 +24,12 @@ const DAY_KEYS: (keyof DoctorAvailability)[] = [
 	'saturday',
 ]
 
+// All non-BLOCKED slot start_times — used for Select All
+const ALL_SLOTS = [
+	'09:00', '09:15', '09:45', '10:00', '10:15', '10:45', '11:00', '11:15', '11:45',
+	'12:00', '12:15', '12:30',
+]
+
 export default function DoctorAvailabilityTab({ hospitals, availability, onChange }: DoctorAvailabilityTabProps) {
 	const [selectedHospitalId, setSelectedHospitalId] = useState<string>(
 		hospitals.find((h) => h.isPrimary)?.id ?? hospitals[0]?.id ?? ''
@@ -130,6 +136,8 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 				timeLabel="Select Follow up time"
 				timeSlotColumns={5}
 				disableBookedSlots={false}
+			onSelectAll={() => onChange({ ...availability, [dayKey]: ALL_SLOTS })}
+			onUnselectAll={() => onChange({ ...availability, [dayKey]: [] })}
 			/>
 
 			{/* Buttons */}
