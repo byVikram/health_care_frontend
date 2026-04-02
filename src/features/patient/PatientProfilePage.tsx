@@ -9,6 +9,8 @@ import PersonalTab from './components/PersonalTab'
 import MedicalTab from './components/MedicalTab'
 import LifeStyleTab from './components/LifeStyleTab'
 import { Patient, PatientPersonal, PatientMedical, PatientLifeStyle } from '../../types/patient'
+import { updatePatientProfile } from './patientService'
+import { toast } from 'react-toastify'
 
 const MOCK_PATIENT: Patient = {
 	id: 'patient-001',
@@ -63,10 +65,20 @@ export default function PatientProfilePage() {
 	const [activeTab, setActiveTab] = useState<string>('personal')
 	const [patient, setPatient] = useState<Patient>(MOCK_PATIENT)
 
+	const [dirtyPersonal, setDirtyPersonal] = useState<Partial<PatientPersonal>>({})
+	const [dirtyMedical, setDirtyMedical] = useState<Partial<PatientMedical>>({})
+	const [dirtyLifeStyle, setDirtyLifeStyle] = useState<Partial<PatientLifeStyle>>({})
+
 	const completionPercent = useMemo(() => calcCompletion(patient), [patient])
 
-	const handlePersonalChange = (updated: Partial<PatientPersonal>) =>
+	const handlePersonalChange = (updated: Partial<PatientPersonal>) => {
 		setPatient((prev) => ({ ...prev, personal: { ...prev.personal, ...updated } }))
+
+		setDirtyPersonal((prev) => ({
+			...prev,
+			...updated,
+		}))
+	}
 
 	const handleMedicalChange = (updated: Partial<PatientMedical>) =>
 		setPatient((prev) => ({ ...prev, medical: { ...prev.medical, ...updated } }))
@@ -74,9 +86,52 @@ export default function PatientProfilePage() {
 	const handleLifeStyleChange = (updated: Partial<PatientLifeStyle>) =>
 		setPatient((prev) => ({ ...prev, lifeStyle: { ...prev.lifeStyle, ...updated } }))
 
+	const handleMedicalDirtyChange = (updated: Partial<PatientMedical>) =>
+		setDirtyMedical((prev) => ({
+			...prev,
+			...updated,
+		}))
+
+	const handleLifeStyleDirtyChange = (updated: Partial<PatientLifeStyle>) =>
+		setDirtyLifeStyle((prev) => ({
+			...prev,
+			...updated,
+		}))
+
+	const handleMedicalUpdate = (updated: Partial<PatientMedical>) => {
+		handleMedicalChange(updated)
+		handleMedicalDirtyChange(updated)
+	}
+
+	const handleLifeStyleUpdate = (updated: Partial<PatientLifeStyle>) => {
+		handleLifeStyleChange(updated)
+		handleLifeStyleDirtyChange(updated)
+	}
+
 	const handleAvatarChange = (file: File) => {
 		const url = URL.createObjectURL(file)
 		setPatient((prev) => ({ ...prev, personal: { ...prev.personal, avatar: url } }))
+	}
+
+	const handlePersonalSave = async () => {
+		if (!Object.keys(dirtyPersonal).length) return
+		const res = await updatePatientProfile(patient.id, dirtyPersonal)
+		toast.success(res.message || 'Personal details updated')
+		setDirtyPersonal({})
+	}
+
+	const handleMedicalSave = async () => {
+		if (!Object.keys(dirtyMedical).length) return
+		const res = await updatePatientProfile(patient.id, dirtyMedical)
+		toast.success(res.message || 'Medical details updated')
+		setDirtyMedical({})
+	}
+
+	const handleLifeStyleSave = async () => {
+		if (!Object.keys(dirtyLifeStyle).length) return
+		const res = await updatePatientProfile(patient.id, dirtyLifeStyle)
+		toast.success(res.message || 'Life style details updated')
+		setDirtyLifeStyle({})
 	}
 
 	const renderTab = () => {
@@ -87,12 +142,25 @@ export default function PatientProfilePage() {
 						data={patient.personal}
 						onChange={handlePersonalChange}
 						onAvatarChange={handleAvatarChange}
+						handleSave={handlePersonalSave}
 					/>
 				)
 			case 'medical':
-				return <MedicalTab data={patient.medical} onChange={handleMedicalChange} />
+				return (
+					<MedicalTab
+						data={patient.medical}
+						onChange={handleMedicalUpdate}
+						handleSave={handleMedicalSave}
+					/>
+				)
 			case 'lifestyle':
-				return <LifeStyleTab data={patient.lifeStyle} onChange={handleLifeStyleChange} />
+				return (
+					<LifeStyleTab
+						data={patient.lifeStyle}
+						onChange={handleLifeStyleUpdate}
+						handleSave={handleLifeStyleSave}
+					/>
+				)
 			default:
 				return null
 		}

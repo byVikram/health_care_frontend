@@ -98,7 +98,7 @@ export default function PortalPage() {
 				{/* TOP 50/50: Welcome+Services | Search+Appointments */}
 				<Grid container spacing={3} alignItems="stretch">
 					{/* LEFT */}
-					<Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column', mb: 2 }}>
+					<Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
 						{role === USER_ROLES.DOCTOR && (
 							<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
 								<Box
@@ -198,7 +198,7 @@ export default function PortalPage() {
 							</Box>
 						)}
 
-						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%', flex: 1, mt: 0 }}>
+						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%', flex: 1 }}>
 							{/* Video + Right Services row */}
 							<Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
 								{/* Video Image with dots */}
@@ -347,6 +347,7 @@ export default function PortalPage() {
 									overflow: 'hidden',
 									flex: 1,
 									maxHeight: '400px',
+									mt: 2,
 								}}
 							>
 								<Box
@@ -393,7 +394,7 @@ export default function PortalPage() {
 				</Grid>
 
 				{/* BOTTOM 50/50: Community & Blogs | Upcoming Events */}
-				<Grid container spacing={3} alignItems="stretch" sx={{ mt: 1 }}>
+				<Grid container spacing={3} alignItems="stretch" sx={{ mt: 3 }}>
 					{/* LEFT: Community rows + Blog cards */}
 
 					<Grid size={{ xs: 12, md: 6 }}>

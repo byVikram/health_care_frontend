@@ -3,13 +3,15 @@ import { useState, useEffect } from 'react'
 import { Box, Typography, Grid } from '@mui/material'
 import AppSelect from '../../../components/common/Select/AppSelect'
 import AppInput from '../../../components/common/Input/AppInput'
-import ProfileFormActions from '../../../components/common/ProfileFormActions/ProfileFormActions'
+// import ProfileFormActions from '../../../components/common/ProfileFormActions/ProfileFormActions'
 import { PatientLifeStyle } from '../../../types/patient'
 import { customCardStyle } from '../../../styles/commonStyles'
+import AppButton from '../../../components/common/Button/AppButton'
 
 interface LifeStyleTabProps {
 	data: PatientLifeStyle
 	onChange: (updated: Partial<PatientLifeStyle>) => void
+	handleSave: () => void | Promise<void>
 }
 
 const SMOKING_OPTIONS = [
@@ -37,19 +39,23 @@ const DIET_OPTIONS = [
 	{ value: 'jain', label: 'Jain' },
 ]
 
-export default function LifeStyleTab({ data, onChange }: LifeStyleTabProps) {
+export default function LifeStyleTab({ data, onChange, handleSave }: LifeStyleTabProps) {
 	const [isDirty, setIsDirty] = useState(false)
-	const [showSuccess, setShowSuccess] = useState(false)
+	// const [showSuccess, setShowSuccess] = useState(false)
 	const [saved, setSaved] = useState(data)
 
 	useEffect(() => {
 		setIsDirty(JSON.stringify(data) !== JSON.stringify(saved))
 	}, [data, saved])
 
-	const handleSave = () => {
-		setSaved(data)
-		setIsDirty(false)
-		setShowSuccess(true)
+	const onSave = async () => {
+		try {
+			await handleSave()
+			setSaved(data)
+			setIsDirty(false)
+		} catch {
+			// Keep the form dirty if save fails.
+		}
 	}
 
 	return (
@@ -115,12 +121,9 @@ export default function LifeStyleTab({ data, onChange }: LifeStyleTabProps) {
 				</Grid>
 			</Box>
 
-			<ProfileFormActions
-				isDirty={isDirty}
-				showSuccess={showSuccess}
-				onSave={handleSave}
-				onCloseSnackbar={() => setShowSuccess(false)}
-			/>
+			<Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+				<AppButton variant="contained" label="Save" disabled={!isDirty} onClick={onSave} />
+			</Box>
 		</Box>
 	)
 }
