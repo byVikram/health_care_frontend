@@ -23,6 +23,10 @@ export interface DoctorAvailability {
 	day_of_week: number
 	slot_time: string
 	is_active: boolean
+	status?: 'AVAILABLE' | 'OCCUPIED' | 'BLOCKED'
+	is_booked?: boolean
+	is_enabled?: boolean
+	can_toggle?: boolean
 }
 
 export interface DoctorDetailData {

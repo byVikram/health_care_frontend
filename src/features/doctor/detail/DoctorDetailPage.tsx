@@ -61,7 +61,6 @@ export default function DoctorDetailPage() {
 		setAuthContactNumber('')
 	}
 
-	// Direct calculation - no need for useMemo for simple derived data
 	const primaryHospital =
 		doctorDetail?.hospitals.find((h) => h.is_primary) ||
 		(doctorDetail?.hospitals.length ? doctorDetail.hospitals[0] : null)
@@ -69,7 +68,6 @@ export default function DoctorDetailPage() {
 	const selectedHospitalEntry =
 		doctorDetail?.hospitals.find((h) => h.hospital.id === selectedHospital) || primaryHospital
 
-	// Calculate appointment types directly
 	const appointmentTypes: AppointmentType[] = [
 		{
 			id: 'clinic',
@@ -89,21 +87,17 @@ export default function DoctorDetailPage() {
 
 	useEffect(() => {
 		if (!id) return
-
 		let active = true
 
 		const fetchDoctor = async () => {
 			try {
 				setLoading(true)
 				setError(null)
-
 				const res = await getDoctorById(id)
-
 				if (!active) return
-
 				setDoctorDetail(res.data)
 				const primaryHospitalData =
-					res.data.hospitals.find((h) => h.is_primary) ||
+					res.data.hospitals.find((h: { is_primary: boolean }) => h.is_primary) ||
 					(res.data.hospitals.length > 0 ? res.data.hospitals[0] : null)
 				setSelectedHospital(primaryHospitalData?.hospital.id || '')
 			} catch (err) {
@@ -116,10 +110,7 @@ export default function DoctorDetailPage() {
 		}
 
 		fetchDoctor()
-
-		return () => {
-			active = false
-		}
+		return () => { active = false }
 	}, [id])
 
 	const formatSlotTime = (slot: string) => {
@@ -132,9 +123,9 @@ export default function DoctorDetailPage() {
 	}
 
 	const formatDateForApi = (date: Date) => {
-		const year = date.getFullYear()
+		const year  = date.getFullYear()
 		const month = String(date.getMonth() + 1).padStart(2, '0')
-		const day = String(date.getDate()).padStart(2, '0')
+		const day   = String(date.getDate()).padStart(2, '0')
 		return `${year}-${month}-${day}`
 	}
 
@@ -149,20 +140,7 @@ export default function DoctorDetailPage() {
 		return `${String(hour).padStart(2, '0')}:${mText}`
 	}
 
-	// Calculate available slots directly
-	// const availableSlots =
-	// 	!doctorDetail || !selectedHospital
-	// 		? []
-	// 		: doctorDetail.availability
-	// 				.filter(
-	// 					(slot) =>
-	// 						slot.is_active &&
-	// 						slot.hospital_id === selectedHospital &&
-	// 						slot.day_of_week === selectedDate.getDay()
-	// 				)
-	// 				.map((slot) => formatSlotTime(slot.slot_time))
-
-	const jsDay = selectedDate.getDay() // 0 = Sunday
+	const jsDay     = selectedDate.getDay()
 	const pythonDay = jsDay === 0 ? 6 : jsDay - 1
 
 	const availableSlots =
@@ -175,7 +153,6 @@ export default function DoctorDetailPage() {
 					)
 					.map((slot) => formatSlotTime(slot.slot_time))
 
-	// Resolve selected time directly
 	const resolvedSelectedTime =
 		availableSlots.length && availableSlots.includes(selectedTime)
 			? selectedTime
@@ -198,24 +175,17 @@ export default function DoctorDetailPage() {
 	if (error) {
 		return (
 			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-				<Typography variant="h5" sx={{ color: 'error.main' }}>
-					{error}
-				</Typography>
+				<Typography variant="h5" sx={{ color: 'error.main' }}>{error}</Typography>
 			</Box>
 		)
 	}
 
 	const handleBook = async () => {
 		if (!doctorDetail) return
-
-		if (!isAuthenticated) {
-			openAuthModal('login')
-			return
-		}
+		if (!isAuthenticated) { openAuthModal('login'); return }
 
 		setBooking(true)
 		setBookingError(null)
-
 		try {
 			await createAppointment({
 				doctor_id: doctorDetail.id,
@@ -264,16 +234,13 @@ export default function DoctorDetailPage() {
 								<Card sx={{ ...customCardStyle, p: 2 }}>
 									<AppSkeleton variant="text" width={160} height={30} />
 									<AppSkeleton sx={{ mt: 1 }} height={60} />
-
 									<Divider sx={{ my: 2 }} />
 									<AppSkeleton sx={{ mt: 1 }} height={60} />
 								</Card>
-
 								<Card sx={{ ...customCardStyle, p: 2 }}>
 									<AppSkeleton variant="text" width={160} height={30} />
 									<AppSkeleton sx={{ mt: 1 }} height={60} />
 								</Card>
-
 								<Card sx={{ ...customCardStyle, p: 2 }}>
 									<AppSkeleton variant="text" width={160} height={30} />
 									<AppSkeleton sx={{ mt: 1 }} height={60} />
@@ -281,68 +248,33 @@ export default function DoctorDetailPage() {
 							</Box>
 						) : (
 							<Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-								{/* Doctor Profile Card */}
 								{doctorDetail && (
 									<>
 										<DoctorProfileCard doctor={doctorDetail} />
-										{/* About */}
-										<Box
-											sx={{
-												...customCardStyle,
-												p: 3,
-											}}
-										>
-											<Typography variant="h5" sx={{ mb: 1.5 }}>
-												About
-											</Typography>
+										<Box sx={{ ...customCardStyle, p: 3 }}>
+											<Typography variant="h5" sx={{ mb: 1.5 }}>About</Typography>
 											<Typography variant="body2">
 												{aboutText}
 												<Typography
 													component="span"
 													onClick={() => setShowFullAbout(!showFullAbout)}
-													sx={{
-														color: 'primary.main',
-														fontWeight: 600,
-														cursor: 'pointer',
-														ml: 0.5,
-														fontSize: '14px',
-													}}
+													sx={{ color: 'primary.main', fontWeight: 600, cursor: 'pointer', ml: 0.5, fontSize: '14px' }}
 												>
 													{showFullAbout ? 'Show less' : 'Read more'}
 												</Typography>
 											</Typography>
-
 											<Divider sx={{ my: 2 }} />
-
-											<Typography variant="h5" sx={{ mb: 0.5 }}>
-												Working Time
-											</Typography>
-											<Typography variant="body2">
-												{primaryHospital?.working_hours || 'Not available'}
-											</Typography>
+											<Typography variant="h5" sx={{ mb: 0.5 }}>Working Time</Typography>
+											<Typography variant="body2">{primaryHospital?.working_hours || 'Not available'}</Typography>
 										</Box>
-
-										{/* Hospital Selector */}
-										<Box
-											sx={{
-												...customCardStyle,
-												p: 3,
-											}}
-										>
+										<Box sx={{ ...customCardStyle, p: 3 }}>
 											<HospitalSelector
 												hospitals={doctorDetail.hospitals}
 												selected={selectedHospital}
 												onChange={setSelectedHospital}
 											/>
 										</Box>
-
-										{/* Appointment Type */}
-										<Box
-											sx={{
-												...customCardStyle,
-												p: 3,
-											}}
-										>
+										<Box sx={{ ...customCardStyle, p: 3 }}>
 											<AppointmentTypeSelector
 												types={appointmentTypes}
 												selected={selectedType}
@@ -373,13 +305,12 @@ export default function DoctorDetailPage() {
 								onDateChange={setSelectedDate}
 								selectedTime={resolvedSelectedTime}
 								onTimeChange={setSelectedTime}
-								availableSlots={availableSlots}
+								// availableSlots={availableSlots}
 								loading={loading}
+								disableBookedSlots={true}
 							/>
 							{bookingError && (
-								<Typography variant="body2" sx={{ color: 'error.main' }}>
-									{bookingError}
-								</Typography>
+								<Typography variant="body2" sx={{ color: 'error.main' }}>{bookingError}</Typography>
 							)}
 							{!loading && (
 								<AppButton label="Book Appointment" fullWidth loading={booking} onClick={handleBook} />
@@ -388,20 +319,13 @@ export default function DoctorDetailPage() {
 					</Grid>
 				</Grid>
 			</Container>
+
 			<AppModal open={authModalOpen} onClose={closeAuthModal} title={authModalTitle} maxWidth="xs" fullWidth>
 				{authModalView === 'login' && (
-					<LoginForm
-						mode="modal"
-						onSubmit={handleAuthNext}
-						onSwitchToRegister={() => setAuthModalView('register')}
-					/>
+					<LoginForm mode="modal" onSubmit={handleAuthNext} onSwitchToRegister={() => setAuthModalView('register')} />
 				)}
 				{authModalView === 'register' && (
-					<RegisterForm
-						mode="modal"
-						onSubmit={handleAuthNext}
-						onSwitchToLogin={() => setAuthModalView('login')}
-					/>
+					<RegisterForm mode="modal" onSubmit={handleAuthNext} onSwitchToLogin={() => setAuthModalView('login')} />
 				)}
 				{authModalView === 'otp' && (
 					<OtpForm mode="modal" contactNumber={authContactNumber} onVerify={handleAuthVerified} />
