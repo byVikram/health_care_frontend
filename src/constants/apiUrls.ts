@@ -9,10 +9,6 @@ export const API_ENDPOINTS = {
 		GET_ROLES: `${BASE_URL}/api/auth/get-roles`,
 		CREATE_USER: `${BASE_URL}/api/auth/create-user`,
 	},
-	APPOINTMENTS: {
-		GET: `${BASE_URL}/api/appointments`,
-		CREATE: `${BASE_URL}/api/appointments`,
-	},
 	DOCTORS: {
 		SEARCH: `${BASE_URL}/api/doctors`,
 		DETAIL: (id: string) => `${BASE_URL}/api/doctors/${id}`,
@@ -21,12 +17,18 @@ export const API_ENDPOINTS = {
 		DETAILS: `${BASE_URL}/api/doctors/details`,
 	},
 	SPECIALITIES: {
-		LIST: `${BASE_URL}/api/specialities/`,
+		LIST: `${BASE_URL}/api/specialities`,
 	},
 	USERS: {
 		GET: `${BASE_URL}/api/users`,
 		CREATE: `${BASE_URL}/api/users`,
 		UPDATE: (id: string | number) => `${BASE_URL}/api/users/${id}`,
 		DELETE: (id: string | number) => `${BASE_URL}/api/users/${id}`,
+	},
+	APPOINTMENTS: {
+		GET: `${BASE_URL}/api/appointments`,
+		CREATE: `${BASE_URL}/api/appointments`,
+		GET_BY_ID: (id: number) => `${BASE_URL}/api/appointments/${id}`,
+		UPDATE: `${BASE_URL}/api/appointments/update-status`,
 	},
 }

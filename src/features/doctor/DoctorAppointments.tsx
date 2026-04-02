@@ -13,6 +13,8 @@ import ConfirmIcon from '../../assets/icons/confirm.svg'
 import RejectIcon from '../../assets/icons/reject.svg'
 import RescheduleIcon from '../../assets/icons/reschedule.svg'
 import ReferIcon from '../../assets/icons/refer.svg'
+import { updateAppointmentsStatus } from '../../features/dashboard/dashboardService'
+import { toast } from 'react-toastify'
 
 const actionButtons = [
 	{
@@ -20,24 +22,28 @@ const actionButtons = [
 		label: 'Confirm',
 		bg: '#e8f5e9',
 		color: '#4caf50',
+		action: 'confirm',
 	},
 	{
 		icon: RejectIcon,
 		label: 'Reject',
 		bg: '#ffeeee',
 		color: '#e53935',
+		action: 'reject',
 	},
 	{
 		icon: RescheduleIcon,
 		label: 'Reschedule',
 		bg: '#fff8e8',
 		color: '#f59e0b',
+		action: 'reschedule',
 	},
 	{
 		icon: ReferIcon,
 		label: 'Refer',
 		bg: '#e8f4f8',
 		color: '#0c7c7c',
+		action: 'refer',
 	},
 ]
 
@@ -59,7 +65,32 @@ export function DoctorAppointments({
 	selectedDateObj: Date
 }) {
 	const getStatusLabel = (status: Appointment['status']) =>
-		typeof status === 'string' ? status : status?.label ?? 'pending'
+		typeof status === 'string' ? status : (status?.label ?? 'pending')
+
+	const handleAction = async (action: string, appointmentId: string) => {
+		try {
+			if (action === 'confirm') {
+				const res = await updateAppointmentsStatus(appointmentId, '3f9a2c8e-7b61-4d2a-9a3f-5c8e1b2d4f90')
+				if (res.success) {
+					toast.success(res.message)
+				}
+			}
+			if (action === 'reject') {
+				const res = await updateAppointmentsStatus(appointmentId, 'a7d4e1c2-9f6b-4c83-b2e1-6f3a9d8c7b12')
+				if (res.success) {
+					toast.success(res.message)
+				}
+			}
+			if (action === 'reschedule') {
+				alert('Reschedule coming soon!')
+			}
+			if (action === 'refer') {
+				alert('Refer coming soon!')
+			}
+		} catch {
+			alert('Something went wrong. Please try again.')
+		}
+	}
 
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
@@ -181,9 +212,7 @@ export function DoctorAppointments({
 										flexShrink: 0,
 									}}
 								>
-									<HomeIcon
-										sx={{ fontSize: 17, color: isCancelled ? '#b0b0b0' : '#0c7c7c' }}
-									/>
+									<HomeIcon sx={{ fontSize: 17, color: isCancelled ? '#b0b0b0' : '#0c7c7c' }} />
 								</Box>
 								<Box sx={{ flex: 1, minWidth: 0 }}>
 									<Box
@@ -249,6 +278,7 @@ export function DoctorAppointments({
 										{actionButtons.map((action, i) => (
 											<Box key={i}>
 												<Box
+													onClick={() => handleAction(action.action, apt.id)}
 													sx={{
 														display: 'flex',
 														flexDirection: 'column',
@@ -267,7 +297,12 @@ export function DoctorAppointments({
 													<img src={action.icon} width={16} height={16} alt={action.label} />
 												</Box>
 												<Typography
-													sx={{ mt: 0.4, fontSize: '10px', fontWeight: 400, textAlign: 'center' }}
+													sx={{
+														mt: 0.4,
+														fontSize: '10px',
+														fontWeight: 400,
+														textAlign: 'center',
+													}}
 												>
 													{action.label}
 												</Typography>

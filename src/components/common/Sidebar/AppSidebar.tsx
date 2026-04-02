@@ -1,16 +1,17 @@
 // src/components/common/Sidebar/AppSidebar.tsx
-import { Box, Typography, Avatar, Divider, LinearProgress, IconButton } from '@mui/material'
+import { Box, Typography, Avatar, Divider, IconButton } from '@mui/material'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import LogoutIcon from '@mui/icons-material/Logout'
+// import LogoutIcon from '@mui/icons-material/Logout'
 import QrCode2Icon from '@mui/icons-material/QrCode2'
-import { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+
+import LogoutIcon from '../../../assets/icons/logout.svg'
 
 // -- Types ---------------------------------------------------------------------
 export interface SidebarMenuItem {
 	id: string
 	label: string
-	icon: ReactNode
+	icon: string
 	path?: string
 	onClick?: () => void
 }
@@ -18,7 +19,7 @@ export interface SidebarMenuItem {
 export interface SidebarCarePlan {
 	title: string
 	subtitle: string
-	icon?: ReactNode
+	icon?: string
 }
 
 export interface AppSidebarUser {
@@ -81,37 +82,28 @@ export default function AppSidebar({
 					<Avatar
 						src={user.avatar}
 						alt={user.name}
-						sx={{ width: 48, height: 48, border: '2px solid', borderColor: 'primary.main' }}
+						sx={{
+							width: 48,
+							height: 48,
+							border: '2px solid',
+							// borderColor: 'primary.main',
+							borderRadius: '8px',
+						}}
 					/>
 					<Box>
 						<Typography sx={{ fontWeight: 700, fontSize: '15px', color: 'text.primary' }}>
 							{user.name}
 						</Typography>
 						<Typography
+							variant="body1"
 							onClick={() => user.profilePath && navigate(user.profilePath)}
-							sx={{
-								fontSize: '11.5px',
-								color: 'primary.main',
-								cursor: 'pointer',
-								'&:hover': { textDecoration: 'underline' },
-							}}
+							sx={{ color: 'neutral.main', cursor: 'pointerForgot password?' }}
 						>
 							View and Edit profile
 						</Typography>
 						{user.profileCompletion !== undefined && (
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.3 }}>
-								<LinearProgress
-									variant="determinate"
-									value={user.profileCompletion}
-									sx={{
-										width: 60,
-										height: 3,
-										borderRadius: 2,
-										bgcolor: 'rgba(43,111,113,0.15)',
-										'& .MuiLinearProgress-bar': { bgcolor: 'primary.main', borderRadius: 2 },
-									}}
-								/>
-								<Typography sx={{ fontSize: '10px', color: 'primary.main', fontWeight: 600 }}>
+								<Typography variant="body1" sx={{ color: 'success.main' }}>
 									{user.profileCompletion}% Profile completed
 								</Typography>
 							</Box>
@@ -142,7 +134,7 @@ export default function AppSidebar({
 						sx={{
 							background: 'linear-gradient(135deg, #0f4c4c, #0c7c7c)',
 							borderRadius: '12px',
-							px: 2,
+							px: 1,
 							py: 1.5,
 							display: 'flex',
 							alignItems: 'center',
@@ -152,12 +144,13 @@ export default function AppSidebar({
 							transition: 'opacity 0.15s',
 						}}
 					>
-						{carePlan.icon && <Box sx={{ flexShrink: 0, color: '#ffd700' }}>{carePlan.icon}</Box>}
+						{/* {carePlan.icon && <Box sx={{ flexShrink: 0, color: '#ffd700' }}>{carePlan.icon}</Box>} */}
+						{carePlan.icon && <img src={carePlan.icon} alt="icon" style={{ width: 28, height: 28 }} />}
 						<Box sx={{ flex: 1 }}>
-							<Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '13px' }}>
+							<Typography sx={{ color: '#fff', fontWeight: 500, fontSize: '13px' }}>
 								{carePlan.title}
 							</Typography>
-							<Typography sx={{ color: 'rgba(255,255,255,0.75)', fontSize: '11px' }}>
+							<Typography sx={{ color: 'rgba(255,255,255,0.75)', fontSize: '10px' }}>
 								{carePlan.subtitle}
 							</Typography>
 						</Box>
@@ -202,7 +195,8 @@ export default function AppSidebar({
 									fontSize: 22,
 								}}
 							>
-								{item.icon}
+								{/* {item.icon} */}
+								<img src={item.icon} alt="icon" style={{ width: 22, height: 22 }} />
 							</Box>
 							<Typography
 								sx={{
@@ -229,14 +223,16 @@ export default function AppSidebar({
 					display: 'flex',
 					alignItems: 'center',
 					gap: 1.5,
-					px: 2.5,
+					pr: 2.5,
 					py: 1.8,
+					pl: '22px',
 					cursor: 'pointer',
 					'&:hover': { bgcolor: 'rgba(211,47,47,0.04)' },
 					transition: 'all 0.15s',
 				}}
 			>
-				<LogoutIcon sx={{ fontSize: 20, color: 'error.main' }} />
+				{/* <LogoutIcon sx={{ fontSize: 20, color: 'error.main' }} /> */}
+				<img src={LogoutIcon} alt="icon" style={{ width: 22, height: 22 }} />
 				<Typography sx={{ fontSize: '13.5px', fontWeight: 600, color: 'error.main' }}>Log out</Typography>
 			</Box>
 

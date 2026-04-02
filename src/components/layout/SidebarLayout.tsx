@@ -8,39 +8,50 @@ import { useAuth, clearAuth } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 
 // MUI Icons - Doctor
-import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
-import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined'
-import LocalHospitalOutlinedIcon from '@mui/icons-material/LocalHospitalOutlined'
-import EventAvailableOutlinedIcon from '@mui/icons-material/EventAvailableOutlined'
+// import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined'
+// import LocalHospitalOutlinedIcon from '@mui/icons-material/LocalHospitalOutlined'
+// import EventAvailableOutlinedIcon from '@mui/icons-material/EventAvailableOutlined'
 // MUI Icons - Patient
-import LocalPharmacyOutlinedIcon from '@mui/icons-material/LocalPharmacyOutlined'
-import BiotechOutlinedIcon from '@mui/icons-material/BiotechOutlined'
-import MedicalInformationOutlinedIcon from '@mui/icons-material/MedicalInformationOutlined'
-import AccessibilityNewOutlinedIcon from '@mui/icons-material/AccessibilityNewOutlined'
-import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined'
-import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined'
-import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined'
-import HealthAndSafetyOutlinedIcon from '@mui/icons-material/HealthAndSafetyOutlined'
-import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined'
-import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined'
-import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
+// import LocalPharmacyOutlinedIcon from '@mui/icons-material/LocalPharmacyOutlined'
+// import BiotechOutlinedIcon from '@mui/icons-material/BiotechOutlined'
+
 // MUI Icons - Common
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
-import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined'
+// import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined'
 import drImage from '../../assets/Services/doctors-service.png'
+
+import AppointmentIcon from '../../assets/icons/appointments.svg'
+import PharmacyIcon from '../../assets/icons/pharmacy.svg'
+import LabIcon from '../../assets/icons/lab.svg'
+import RadiologyIcon from '../../assets/icons/radiology.svg'
+import AncillaryIcon from '../../assets/icons/ancillary.svg'
+import TreatmentIcon from '../../assets/icons/treatment.svg'
+import OrdersIcon from '../../assets/icons/orders.svg'
+import MyDocsIcon from '../../assets/icons/my-doctors.svg'
+import InsuranceIcon from '../../assets/icons/insurance.svg'
+import RemindersIcon from '../../assets/icons/reminders.svg'
+import PaymentsIcon from '../../assets/icons/payments.svg'
+import BlogsIcon from '../../assets/icons/blogs.svg'
+import HelpCenterIcon from '../../assets/icons/help-center.svg'
+import SettingsIcon from '../../assets/icons/settings.svg'
+
+import CarePlanIcon from '../../assets/icons/care-plan.svg'
 
 const SIDEBAR_WIDTH = 280
 const NAVBAR_HEIGHT = 64
 
 // -- Doctor config -------------------------------------------------------------
 const DOCTOR_MENU_ITEMS = [
-	{ id: 'appointments', label: 'My Appointments', icon: <CalendarMonthOutlinedIcon />, path: '/doctor' },
-	{ id: 'patients', label: 'My Patients', icon: <PeopleAltOutlinedIcon />, path: '/doctor/patients' },
-	{ id: 'profile', label: 'Profile', icon: <LocalHospitalOutlinedIcon />, path: '/profile' },
+	{ id: 'appointments', label: 'My Appointments', icon: AppointmentIcon, path: '/doctor' },
+	{ id: 'pharmacy', label: 'Pharmacy', icon: PharmacyIcon },
+	{ id: 'lab', label: 'Lab', icon: LabIcon },
+	{ id: 'radiology', label: 'Radiology', icon: RadiologyIcon },
+	{ id: 'reminders', label: 'Reminders', icon: RemindersIcon },
+	// { id: 'patients', label: 'My Patients', icon: , path: '/doctor/patients' },
+	// { id: 'hospitals', label: 'My Hospitals', icon: , path: '/profile' },
 	// { id: 'availability', label: 'Availability', icon: <EventAvailableOutlinedIcon />, path: '/profile' },
-	{ id: 'help', label: 'Help Center', icon: <HelpOutlineIcon /> },
-	{ id: 'settings', label: 'Settings', icon: <SettingsOutlinedIcon />, path: '/profile' },
+	{ id: 'blogs', label: 'Blogs', icon: BlogsIcon },
+	{ id: 'help', label: 'Help Center', icon: HelpCenterIcon },
+	{ id: 'settings', label: 'Settings', icon: SettingsIcon, path: '/profile' },
 ]
 
 // -- Patient config ------------------------------------------------------------
@@ -48,22 +59,22 @@ const PATIENT_MENU_ITEMS = [
 	{
 		id: 'appointments',
 		label: 'My Appointments',
-		icon: <CalendarMonthOutlinedIcon />,
+		icon: AppointmentIcon,
 		path: '/patient/appointments',
 	},
-	{ id: 'pharmacy', label: 'Pharmacy', icon: <LocalPharmacyOutlinedIcon /> },
-	{ id: 'lab', label: 'Lab', icon: <BiotechOutlinedIcon /> },
-	{ id: 'radiology', label: 'Radiology', icon: <MedicalInformationOutlinedIcon /> },
-	{ id: 'ancillary', label: 'Ancillary', icon: <AccessibilityNewOutlinedIcon /> },
-	{ id: 'history', label: 'Treatment History', icon: <HistoryOutlinedIcon /> },
-	{ id: 'orders', label: 'Orders', icon: <ShoppingCartOutlinedIcon /> },
-	{ id: 'doctors', label: 'My Doctors', icon: <FavoriteOutlinedIcon /> },
-	{ id: 'insurance', label: 'My Insurance Policy', icon: <HealthAndSafetyOutlinedIcon /> },
-	{ id: 'reminders', label: 'Reminders', icon: <NotificationsNoneOutlinedIcon /> },
-	{ id: 'payments', label: 'Payments', icon: <PaymentsOutlinedIcon /> },
-	{ id: 'blogs', label: 'Blogs', icon: <ArticleOutlinedIcon /> },
-	{ id: 'help', label: 'Help Center', icon: <HelpOutlineIcon /> },
-	{ id: 'settings', label: 'Settings', icon: <SettingsOutlinedIcon />, path: '/profile' },
+	{ id: 'pharmacy', label: 'Pharmacy', icon: PharmacyIcon },
+	{ id: 'lab', label: 'Lab', icon: LabIcon },
+	{ id: 'radiology', label: 'Radiology', icon: RadiologyIcon },
+	{ id: 'ancillary', label: 'Ancillary', icon: AncillaryIcon },
+	{ id: 'history', label: 'Treatment History', icon: TreatmentIcon },
+	{ id: 'orders', label: 'Orders', icon: OrdersIcon },
+	{ id: 'doctors', label: 'My Doctors', icon: MyDocsIcon },
+	{ id: 'insurance', label: 'My Insurance Policy', icon: InsuranceIcon },
+	{ id: 'reminders', label: 'Reminders', icon: RemindersIcon },
+	{ id: 'payments', label: 'Payments', icon: PaymentsIcon },
+	{ id: 'blogs', label: 'Blogs', icon: BlogsIcon },
+	{ id: 'help', label: 'Help Center', icon: HelpCenterIcon },
+	{ id: 'settings', label: 'Settings', icon: SettingsIcon, path: '/profile' },
 ]
 
 // -- Props ---------------------------------------------------------------------
@@ -95,7 +106,7 @@ export default function SidebarLayout({ children, activeMenuId }: SidebarLayoutP
 		? {
 				title: 'Whisper Ai Care Plans',
 				subtitle: '12 FREE Appointments for a year',
-				icon: <EmojiEventsOutlinedIcon />,
+				icon: CarePlanIcon,
 			}
 		: undefined
 

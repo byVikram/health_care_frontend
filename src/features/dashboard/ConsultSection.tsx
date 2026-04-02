@@ -39,7 +39,7 @@ const consults = [
 export default function ConsultSection() {
 	const navigate = useNavigate()
 	return (
-		<Box sx={{ py: 4 }}>
+		<Box sx={{ pt: 2 }}>
 			{/* Header Row */}
 			<Grid
 				container

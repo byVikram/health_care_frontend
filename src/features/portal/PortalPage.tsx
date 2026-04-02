@@ -98,94 +98,107 @@ export default function PortalPage() {
 				{/* TOP 50/50: Welcome+Services | Search+Appointments */}
 				<Grid container spacing={3} alignItems="stretch">
 					{/* LEFT */}
-					<Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
-						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
-							<Box
-								sx={{
-									background: 'linear-gradient(135deg, #0f4c4c, #0c7c7c)',
-									borderRadius: '8px',
-									px: 2.5,
-									py: 2,
-									display: 'flex',
-									alignItems: 'center',
-									gap: 2,
-								}}
-							>
+					<Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column', mb: 2 }}>
+						{role === USER_ROLES.DOCTOR && (
+							<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
 								<Box
-									component="img"
-									src={drImage}
-									alt="Dr. Ashika Rao"
 									sx={{
-										width: 85,
-										height: 85,
-										borderRadius: '12px',
-										objectFit: 'cover',
-										flexShrink: 0,
+										background: 'linear-gradient(135deg, #0f4c4c, #0c7c7c)',
+										borderRadius: '8px',
+										px: 2.5,
+										py: 2,
+										display: 'flex',
+										alignItems: 'center',
+										// gap: 2,
 									}}
-								/>
-								<Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+								>
 									<Box
-										sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-									>
-										<Box>
-											<Typography sx={{ color: '#4fd1c5', fontSize: '12px', fontWeight: 500 }}>
-												Welcome
-											</Typography>
-											<Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '17px' }}>
-												Dr. Arjun Sharma
-											</Typography>
-										</Box>
+										component="img"
+										src={drImage}
+										alt="Dr. Ashika Rao"
+										sx={{
+											width: 85,
+											height: 85,
+											borderRadius: '12px',
+											objectFit: 'cover',
+											flexShrink: 0,
+										}}
+									/>
+									<Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
 										<Box
 											sx={{
-												bgcolor: 'rgba(255,255,255,0.15)',
-												borderRadius: '8px',
-												px: 1.5,
-												py: 0.4,
+												display: 'flex',
+												alignItems: 'center',
+												justifyContent: 'space-between',
 											}}
 										>
-											<Typography sx={{ color: '#fff', fontSize: '11px', fontWeight: 600 }}>
-												ID: 143265
-											</Typography>
-										</Box>
-									</Box>
-									<Box sx={{ display: 'flex', gap: 1 }}>
-										{stats.map((stat, i) => (
-											<Box
-												key={i}
-												sx={{
-													flex: 1,
-													bgcolor: '#fff',
-													borderRadius: '4px',
-													px: 1,
-													py: 0.6,
-													display: 'flex',
-													alignItems: 'center',
-													justifyContent: 'space-between',
-													gap: 0.5,
-												}}
-											>
+											<Box>
 												<Typography
-													sx={{ color: 'text.secondary', fontSize: '9px', lineHeight: 1.3 }}
+													sx={{ color: '#4fd1c5', fontSize: '12px', fontWeight: 500 }}
 												>
-													{stat.label}
+													Welcome
 												</Typography>
-												<Typography
-													sx={{
-														color: '#0c7c7c',
-														fontWeight: 700,
-														fontSize: '20px',
-														lineHeight: 1,
-													}}
-												>
-													{stat.value}
+												<Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '17px' }}>
+													Dr. Arjun Sharma
 												</Typography>
 											</Box>
-										))}
+											<Box
+												sx={{
+													bgcolor: 'rgba(255,255,255,0.15)',
+													borderRadius: '8px',
+													px: 1.5,
+													py: 0.4,
+												}}
+											>
+												<Typography sx={{ color: '#fff', fontSize: '11px', fontWeight: 600 }}>
+													ID: 143265
+												</Typography>
+											</Box>
+										</Box>
+										<Box sx={{ display: 'flex', gap: 1 }}>
+											{stats.map((stat, i) => (
+												<Box
+													key={i}
+													sx={{
+														flex: 1,
+														bgcolor: '#fff',
+														borderRadius: '4px',
+														px: 1,
+														py: 0.6,
+														display: 'flex',
+														alignItems: 'center',
+														justifyContent: 'space-between',
+														gap: 0.5,
+													}}
+												>
+													<Typography
+														sx={{
+															color: 'text.secondary',
+															fontSize: '9px',
+															lineHeight: 1.3,
+														}}
+													>
+														{stat.label}
+													</Typography>
+													<Typography
+														sx={{
+															color: '#0c7c7c',
+															fontWeight: 700,
+															fontSize: '20px',
+															lineHeight: 1,
+														}}
+													>
+														{stat.value}
+													</Typography>
+												</Box>
+											))}
+										</Box>
 									</Box>
 								</Box>
 							</Box>
-						</Box>
-						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%', flex: 1, mt: 2 }}>
+						)}
+
+						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%', flex: 1, mt: 0 }}>
 							{/* Video + Right Services row */}
 							<Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
 								{/* Video Image with dots */}
@@ -200,7 +213,8 @@ export default function PortalPage() {
 												display: 'block',
 												objectFit: 'cover',
 												maxHeight: '480px',
-												minHeight: '400px',
+												// minHeight: '400px',
+												maxWidth: '480px',
 											}}
 										/>
 									</Box>
@@ -249,8 +263,8 @@ export default function PortalPage() {
 												src={s.image}
 												alt={s.title}
 												sx={{
-													width: 52,
-													height: 52,
+													width: 32,
+													height: 32,
 													objectFit: 'contain',
 													transition: 'transform 0.2s ease',
 												}}
@@ -271,7 +285,17 @@ export default function PortalPage() {
 							</Box>
 
 							{/* Bottom 5 horizontal service icons */}
-							<Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', pt: 1 }}>
+							<Box
+								sx={{
+									display: 'flex',
+									justifyContent: 'space-between',
+									alignItems: 'center',
+									pt: 1,
+									'& > :last-child': {
+										mr: 1.8,
+									},
+								}}
+							>
 								{[
 									{ title: 'Appointment', image: AppointmentsIcon },
 									{ title: 'Pharmacy', image: PharmacyIcon },
@@ -295,8 +319,8 @@ export default function PortalPage() {
 											src={s.image}
 											alt={s.title}
 											sx={{
-												width: 52,
-												height: 52,
+												width: 32,
+												height: 32,
 												objectFit: 'contain',
 												transition: 'transform 0.2s ease',
 											}}

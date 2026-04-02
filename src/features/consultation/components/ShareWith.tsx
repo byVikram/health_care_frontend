@@ -14,51 +14,16 @@ const TABS = [
 	{ id: 'ancillary', label: 'Ancillary' },
 ]
 
-const TAB_ICONS: Record<string, React.ReactNode> = {
-	pharmacy: (
-		<Box sx={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-			<svg viewBox="0 0 48 48" width="44" height="44">
-				<rect x="10" y="4" width="28" height="36" rx="3" fill="#f0f7f8" stroke="#2B6F71" strokeWidth="1.5" />
-				<text x="18" y="26" fontSize="14" fill="#2B6F71" fontWeight="bold">
-					Rx
-				</text>
-				<line x1="14" y1="32" x2="34" y2="32" stroke="#2B6F71" strokeWidth="1.2" />
-				<line x1="14" y1="36" x2="28" y2="36" stroke="#2B6F71" strokeWidth="1.2" />
-			</svg>
-		</Box>
-	),
-	laboratory: (
-		<Box sx={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-			<svg viewBox="0 0 48 48" width="44" height="44">
-				<rect x="8" y="4" width="32" height="36" rx="3" fill="#f0f7f8" stroke="#2B6F71" strokeWidth="1.5" />
-				<rect x="13" y="10" width="22" height="4" rx="1" fill="#2B6F71" opacity="0.3" />
-				<circle cx="18" cy="28" r="4" fill="#e53935" opacity="0.7" />
-				<circle cx="30" cy="28" r="4" fill="#2B6F71" opacity="0.5" />
-				<line x1="13" y1="20" x2="35" y2="20" stroke="#2B6F71" strokeWidth="1.2" />
-			</svg>
-		</Box>
-	),
-	radiology: (
-		<Box sx={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-			<svg viewBox="0 0 48 48" width="44" height="44">
-				<rect x="8" y="4" width="32" height="36" rx="3" fill="#f0f7f8" stroke="#2B6F71" strokeWidth="1.5" />
-				<ellipse cx="24" cy="22" rx="10" ry="12" fill="none" stroke="#2B6F71" strokeWidth="1.5" />
-				<line x1="24" y1="10" x2="24" y2="34" stroke="#2B6F71" strokeWidth="1" strokeDasharray="2" />
-				<line x1="14" y1="22" x2="34" y2="22" stroke="#2B6F71" strokeWidth="1" strokeDasharray="2" />
-			</svg>
-		</Box>
-	),
-	ancillary: (
-		<Box sx={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-			<svg viewBox="0 0 48 48" width="44" height="44">
-				<rect x="8" y="4" width="32" height="36" rx="3" fill="#f0f7f8" stroke="#2B6F71" strokeWidth="1.5" />
-				<path d="M20 18 L24 14 L28 18" fill="none" stroke="#e53935" strokeWidth="1.5" />
-				<rect x="21" y="18" width="6" height="8" fill="#e53935" opacity="0.7" />
-				<line x1="13" y1="30" x2="35" y2="30" stroke="#2B6F71" strokeWidth="1.2" />
-				<line x1="13" y1="34" x2="28" y2="34" stroke="#2B6F71" strokeWidth="1.2" />
-			</svg>
-		</Box>
-	),
+import PrescriptionIcon from '../../../assets/icons/consultation/prescription.svg'
+import LabIcon from '../../../assets/icons/consultation/lab.svg'
+import RadiologyIcon from '../../../assets/icons/consultation/radiology.svg'
+import AncillaryIcon from '../../../assets/icons/consultation/ancillary.svg'
+
+const TAB_ICONS: Record<string, string> = {
+	pharmacy: PrescriptionIcon,
+	laboratory: LabIcon,
+	radiology: RadiologyIcon,
+	ancillary: AncillaryIcon,
 }
 
 const CITY_OPTIONS = [
@@ -119,7 +84,7 @@ export default function ShareWith() {
 
 	return (
 		<Box sx={{ ...customCardStyle, mt: 2 }}>
-			<Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: 'primary.dark' }}>
+			<Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
 				Share with:
 			</Typography>
 
@@ -152,7 +117,12 @@ export default function ShareWith() {
 								transition: 'all 0.15s',
 							}}
 						>
-							{TAB_ICONS[tab.id]}
+							{/* {TAB_ICONS[tab.id]} */}
+							<img
+								src={TAB_ICONS[tab.id]}
+								// alt={title}
+								style={{ width: 42, height: 42, objectFit: 'cover' }}
+							/>
 							<Typography
 								variant="caption"
 								sx={{
