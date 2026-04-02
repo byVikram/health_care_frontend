@@ -2,28 +2,33 @@
 import { useState, useEffect } from 'react'
 import { Box, Typography, Grid } from '@mui/material'
 import AppInput from '../../../components/common/Input/AppInput'
-import ProfileFormActions from '../../../components/common/ProfileFormActions/ProfileFormActions'
+// import ProfileFormActions from '../../../components/common/ProfileFormActions/ProfileFormActions'
 import { PatientMedical } from '../../../types/patient'
 import { customCardStyle } from '../../../styles/commonStyles'
+import AppButton from '../../../components/common/Button/AppButton'
 
 interface MedicalTabProps {
 	data: PatientMedical
 	onChange: (updated: Partial<PatientMedical>) => void
+	handleSave: () => void | Promise<void>
 }
 
-export default function MedicalTab({ data, onChange }: MedicalTabProps) {
+export default function MedicalTab({ data, onChange, handleSave }: MedicalTabProps) {
 	const [isDirty, setIsDirty] = useState(false)
-	const [showSuccess, setShowSuccess] = useState(false)
 	const [saved, setSaved] = useState(data)
 
 	useEffect(() => {
 		setIsDirty(JSON.stringify(data) !== JSON.stringify(saved))
 	}, [data, saved])
 
-	const handleSave = () => {
-		setSaved(data)
-		setIsDirty(false)
-		setShowSuccess(true)
+	const onSave = async () => {
+		try {
+			await handleSave()
+			setSaved(data)
+			setIsDirty(false)
+		} catch {
+			// Keep the form dirty if save fails.
+		}
 	}
 
 	return (
@@ -81,12 +86,9 @@ export default function MedicalTab({ data, onChange }: MedicalTabProps) {
 				/>
 			</Box>
 
-			<ProfileFormActions
-				isDirty={isDirty}
-				showSuccess={showSuccess}
-				onSave={handleSave}
-				onCloseSnackbar={() => setShowSuccess(false)}
-			/>
+			<Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+				<AppButton variant="contained" label="Save" disabled={!isDirty} onClick={onSave} />
+			</Box>
 		</Box>
 	)
 }
