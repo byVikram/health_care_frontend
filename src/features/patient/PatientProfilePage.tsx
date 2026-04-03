@@ -17,46 +17,46 @@ const EMPTY_PATIENT: Patient = {
 	id: '',
 	personal: {
 		name: '',
-		contactNumber: '',
-		contactVerified: false,
+		contact_number: '',
+		contact_verified: false,
 		email: '',
-		emailVerified: false,
+		email_verified: false,
 		gender: '',
-		dateOfBirth: '',
-		bloodGroup: '',
-		maritalStatus: '',
+		date_of_birth: '',
+		blood_group: '',
+		marital_status: '',
 		height: '',
 		weight: '',
-		emergencyContact: { name: '', number: '' },
+		emergency_contact: { name: '', number: '' },
 		location: '',
 		avatar: '',
 	},
 	medical: {
 		allergies: '',
-		chronicConditions: '',
-		currentMedications: '',
-		pastSurgeries: '',
-		familyHistory: '',
+		chronic_conditions: '',
+		current_medications: '',
+		past_surgeries: '',
+		family_history: '',
 	},
-	lifeStyle: {
-		smokingStatus: '',
-		alcoholConsumption: '',
-		activityLevel: '',
-		dietType: '',
-		sleepHours: '',
+	lifestyle: {
+		smoking_status: '',
+		alcohol_consumption: '',
+		activity_level: '',
+		diet_type: '',
+		sleep_hours: '',
 	},
 }
 
 function calcCompletion(patient: Patient): number {
 	const personalFields = Object.entries(patient.personal)
-		.filter(([key]) => !['contactVerified', 'emailVerified', 'avatar', 'emergencyContact'].includes(key))
+		.filter(([key]) => !['contact_verified', 'email_verified', 'avatar', 'emergency_contact'].includes(key))
 		.map(([, val]) => val as string)
-	const ecFields = [patient.personal.emergencyContact.name, patient.personal.emergencyContact.number]
+	const ecFields = [patient.personal.emergency_contact.name, patient.personal.emergency_contact.number]
 	const allFields = [
 		...personalFields,
 		...ecFields,
 		...Object.values(patient.medical),
-		...Object.values(patient.lifeStyle),
+		...Object.values(patient.lifestyle),
 	]
 	const filled = allFields.filter((v) => v && String(v).trim()).length
 	return Math.round((filled / allFields.length) * 100)
@@ -97,7 +97,7 @@ export default function PatientProfilePage() {
 		setPatient((prev) => ({ ...prev, medical: { ...prev.medical, ...updated } }))
 
 	const handleLifeStyleChange = (updated: Partial<PatientLifeStyle>) =>
-		setPatient((prev) => ({ ...prev, lifeStyle: { ...prev.lifeStyle, ...updated } }))
+		setPatient((prev) => ({ ...prev, lifestyle: { ...prev.lifestyle, ...updated } }))
 
 	const handleMedicalDirtyChange = (updated: Partial<PatientMedical>) =>
 		setDirtyMedical((prev) => ({ ...prev, ...updated }))
@@ -163,7 +163,7 @@ export default function PatientProfilePage() {
 			case 'lifestyle':
 				return (
 					<LifeStyleTab
-						data={patient.lifeStyle}
+						data={patient.lifestyle}
 						onChange={handleLifeStyleUpdate}
 						handleSave={handleLifeStyleSave}
 					/>
@@ -217,7 +217,7 @@ export default function PatientProfilePage() {
 								<AppProfileSidebar
 									avatar={patient.personal.avatar}
 									name={patient.personal.name}
-									subTitle={patient.personal.contactNumber}
+									subTitle={patient.personal.contact_number}
 									completionPercent={completionPercent}
 									backLabel="Patient Profile"
 									navItems={[

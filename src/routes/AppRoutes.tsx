@@ -16,6 +16,7 @@ import AccountPage from '../features/auth/AccountPage'
 import WelcomePage from '../features/auth/WelcomePage'
 import PortalPage from '../features/portal/PortalPage'
 import NavbarLayout from '../components/layout/NavbarLayout'
+// import TestPage from '../features/auth/test/TestPage'
 // import DoctorPortalPage from '../features/doctor/DoctorPortalPage'
 // import PatientPortalPage from '../features/patient/PatientPortalPage'
 // import PatientProfilePage from '../features/patient/PatientProfilePage'
@@ -82,6 +83,8 @@ export default function AppRoutes() {
 					{/* Add more protected pages here */}
 				</Route>
 			</Route>
+			
+
 
 			<Route element={<SidebarProtectedLayout />}>
 				{/* <Route path="/portal-patient" element={<PatientProfilePage />} />

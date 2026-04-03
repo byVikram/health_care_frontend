@@ -84,11 +84,11 @@ export default function PersonalTab({ data, onChange, handleSave }: PersonalTabP
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
 							label="Mobile Number"
-							value={data.contactNumber}
+							value={data.contact_number}
 							placeholder="+91 XXXXXXXXXX"
 							type="tel"
 							disabled
-							InputProps={{ endAdornment: data.contactVerified ? verifiedAdornment : undefined }}
+							InputProps={{ endAdornment: data.contact_verified ? verifiedAdornment : undefined }}
 						/>
 					</Grid>
 					<Grid size={{ xs: 12, sm: 6 }}>
@@ -98,7 +98,7 @@ export default function PersonalTab({ data, onChange, handleSave }: PersonalTabP
 							placeholder="Enter your email"
 							type="email"
 							onChange={(e) => onChange({ email: e.target.value })}
-							InputProps={{ endAdornment: data.emailVerified ? verifiedAdornment : undefined }}
+							InputProps={{ endAdornment: data.email_verified ? verifiedAdornment : undefined }}
 						/>
 					</Grid>
 				</Grid>
@@ -116,9 +116,9 @@ export default function PersonalTab({ data, onChange, handleSave }: PersonalTabP
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
 							label="Date of Birth"
-							value={data.dateOfBirth}
+							value={data.date_of_birth}
 							type="date"
-							onChange={(e) => onChange({ dateOfBirth: e.target.value })}
+							onChange={(e) => onChange({ date_of_birth: e.target.value })}
 						/>
 					</Grid>
 				</Grid>
@@ -127,19 +127,19 @@ export default function PersonalTab({ data, onChange, handleSave }: PersonalTabP
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppSelect
 							label="Blood Group"
-							value={data.bloodGroup || ''}
+							value={data.blood_group || ''}
 							options={BLOOD_GROUP_OPTIONS}
 							placeholder="Select blood group"
-							onChange={(e) => onChange({ bloodGroup: e.target.value as string })}
+							onChange={(e) => onChange({ blood_group: e.target.value as string })}
 						/>
 					</Grid>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppSelect
 							label="Marital Status"
-							value={data.maritalStatus || ''}
+							value={data.marital_status || ''}
 							options={MARITAL_STATUS_OPTIONS}
 							placeholder="Select marital status"
-							onChange={(e) => onChange({ maritalStatus: e.target.value as string })}
+							onChange={(e) => onChange({ marital_status: e.target.value as string })}
 						/>
 					</Grid>
 				</Grid>
@@ -167,21 +167,21 @@ export default function PersonalTab({ data, onChange, handleSave }: PersonalTabP
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
 							label="Emergency Contact Name"
-							value={data.emergencyContact.name}
+							value={data.emergency_contact.name}
 							placeholder="Enter contact name"
 							onChange={(e) =>
-								onChange({ emergencyContact: { ...data.emergencyContact, name: e.target.value } })
+								onChange({ emergency_contact: { ...data.emergency_contact, name: e.target.value } })
 							}
 						/>
 					</Grid>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
 							label="Emergency Contact Number"
-							value={data.emergencyContact.number}
+							value={data.emergency_contact.number}
 							placeholder="+91 XXXXXXXXXX"
 							type="tel"
 							onChange={(e) =>
-								onChange({ emergencyContact: { ...data.emergencyContact, number: e.target.value } })
+								onChange({ emergency_contact: { ...data.emergency_contact, number: e.target.value } })
 							}
 						/>
 					</Grid>
