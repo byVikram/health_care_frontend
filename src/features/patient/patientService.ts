@@ -14,14 +14,13 @@ export interface PatientProfileApiResponse {
 	data: Patient
 }
 
-
 export type PatientUpdatePayload = Partial<PatientPersonal> | Partial<PatientMedical> | Partial<PatientLifeStyle>
 
 export const updatePatientProfile = async (
 	patientId: string,
 	payload: PatientUpdatePayload
 ): Promise<PatientUpdateResponse> => {
-	const res = await ApiService.patch<PatientUpdateResponse>(API_ENDPOINTS.USERS.UPDATE(patientId), payload)
+	const res = await ApiService.patch<PatientUpdateResponse>(API_ENDPOINTS.PATIENT.UPDATE, payload)
 	return res.data
 }
 

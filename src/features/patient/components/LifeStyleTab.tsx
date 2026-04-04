@@ -73,19 +73,19 @@ export default function LifeStyleTab({ data, onChange, handleSave }: LifeStyleTa
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppSelect
 							label="Smoking Status"
-							value={data.smokingStatus || ''}
+							value={data.smoking_status || ''}
 							options={SMOKING_OPTIONS}
 							placeholder="Select smoking status"
-							onChange={(e) => onChange({ smokingStatus: e.target.value as string })}
+							onChange={(e) => onChange({ smoking_status: e.target.value as string })}
 						/>
 					</Grid>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppSelect
 							label="Alcohol Consumption"
-							value={data.alcoholConsumption || ''}
+							value={data.alcohol_consumption || ''}
 							options={ALCOHOL_OPTIONS}
 							placeholder="Select alcohol consumption"
-							onChange={(e) => onChange({ alcoholConsumption: e.target.value as string })}
+							onChange={(e) => onChange({ alcohol_consumption: e.target.value as string })}
 						/>
 					</Grid>
 				</Grid>
@@ -93,19 +93,19 @@ export default function LifeStyleTab({ data, onChange, handleSave }: LifeStyleTa
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppSelect
 							label="Activity Level"
-							value={data.activityLevel || ''}
+							value={data.activity_level || ''}
 							options={ACTIVITY_OPTIONS}
 							placeholder="Select activity level"
-							onChange={(e) => onChange({ activityLevel: e.target.value as string })}
+							onChange={(e) => onChange({ activity_level: e.target.value as string })}
 						/>
 					</Grid>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppSelect
 							label="Diet Type"
-							value={data.dietType || ''}
+							value={data.diet_type || ''}
 							options={DIET_OPTIONS}
 							placeholder="Select diet type"
-							onChange={(e) => onChange({ dietType: e.target.value as string })}
+							onChange={(e) => onChange({ diet_type: e.target.value as string })}
 						/>
 					</Grid>
 				</Grid>
@@ -113,9 +113,9 @@ export default function LifeStyleTab({ data, onChange, handleSave }: LifeStyleTa
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
 							label="Sleep Hours (per night)"
-							value={data.sleepHours}
+							value={data.sleep_hours}
 							placeholder="e.g. 7"
-							onChange={(e) => onChange({ sleepHours: e.target.value })}
+							onChange={(e) => onChange({ sleep_hours: e.target.value })}
 						/>
 					</Grid>
 				</Grid>
