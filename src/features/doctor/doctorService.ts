@@ -5,8 +5,9 @@ import { AppointmentsResponse } from '../../types/appointment'
 import { DoctorSearchResponse } from '../../types/doctor-search'
 import { DoctorDetailResponse } from '../../types/doctor-detail'
 import { SpecialitiesResponse } from '../../types/speciality'
-import { DoctorProfileApiResponse, DoctorProfileApiData } from '../../types/doctor-profile-api'
+import { DoctorProfileApiResponse, DoctorProfileApiData, DoctorProfileApiHospital, DoctorProfileApiAvailability } from '../../types/doctor-profile-api'
 import { DoctorProfile } from '../../types/doctor-profile'
+import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 
 export interface AppointmentParams {
 	page?: number
@@ -73,10 +74,44 @@ export const getSpecialities = async (): Promise<SpecialitiesResponse> => {
 	return res.data
 }
 
-export const getDoctorAvailability = async (params: { doctor_id?: string; hospital_id: number | string; date: string }): Promise<any> => {
-	const res = await ApiService.getWithParams<any>(
+export interface AvailabilityResponse {
+	data?: SlotGroup[]
+}
+
+export const getDoctorAvailability = async (params: {
+	doctor_id?: string
+	hospital_id: number | string
+	date: string
+}): Promise<SlotGroup[] | AvailabilityResponse> => {
+	const res = await ApiService.getWithParams<SlotGroup[] | AvailabilityResponse>(
 		API_ENDPOINTS.DOCTORS.AVAILABILITY,
 		params as Record<string, unknown>
+	)
+	return res.data
+}
+
+// ── Slot overrides ────────────────────────────────────────────────────────────
+
+export interface SlotOverridePayload {
+	hospital_id?: string | null
+	date: string        // "YYYY-MM-DD"
+	start_time: string  // "HH:MM"
+	end_time: string    // "HH:MM"
+	is_blocked: boolean
+	reason?: string
+}
+
+export interface SlotOverrideResponse {
+	success: boolean
+	message: string
+}
+
+export const createSlotOverride = async (
+	payload: SlotOverridePayload
+): Promise<SlotOverrideResponse> => {
+	const res = await ApiService.post<SlotOverrideResponse>(
+		API_ENDPOINTS.DOCTORS.OVERRIDES,
+		payload
 	)
 	return res.data
 }
@@ -87,7 +122,7 @@ export const getDoctorProfile = async (): Promise<DoctorProfileApiResponse> => {
 	return res.data
 }
 
-// Maps API response ? DoctorProfile (used by DoctorProfilePage)
+// Maps API response -> DoctorProfile (used by DoctorProfilePage)
 const DAY_MAP: Record<number, keyof DoctorProfile['availability']> = {
 	0: 'sunday',
 	1: 'monday',
@@ -98,7 +133,7 @@ const DAY_MAP: Record<number, keyof DoctorProfile['availability']> = {
 	6: 'saturday',
 }
 
-export const mapDoctorProfileApi = (data: any): DoctorProfile => {
+export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile => {
 	// Build availability: day_of_week -> slot_time[]
 	const availability: DoctorProfile['availability'] = {
 		sunday: [],
@@ -111,7 +146,7 @@ export const mapDoctorProfileApi = (data: any): DoctorProfile => {
 	}
 
 	if (Array.isArray(data?.availability)) {
-		data.availability.forEach((slot: any) => {
+		data.availability.forEach((slot: DoctorProfileApiAvailability) => {
 			const dayKey = DAY_MAP[slot.day_of_week]
 			if (dayKey && slot.is_active && slot.slot_time) {
 				const [h, m] = slot.slot_time.split(':').map(Number)
@@ -125,7 +160,7 @@ export const mapDoctorProfileApi = (data: any): DoctorProfile => {
 
 	// Build hospitals
 	const hospitals: DoctorProfile['hospitals'] = Array.isArray(data?.hospitals)
-		? data.hospitals.map((h: any) => ({
+		? data.hospitals.map((h: DoctorProfileApiHospital) => ({
 				id: h.id,
 				name: h.hospital?.name ?? '',
 				location: h.hospital?.address ?? '',
@@ -134,8 +169,8 @@ export const mapDoctorProfileApi = (data: any): DoctorProfile => {
 		  }))
 		: []
 
-	const pd = data?.personal_details ?? {}
-	const prof = data?.professional_details ?? {}
+	const pd = data?.personal_details
+	const prof = data?.professional_details
 
 	return {
 		id: '',
@@ -168,4 +203,3 @@ export const mapDoctorProfileApi = (data: any): DoctorProfile => {
 		availability,
 	}
 }
-

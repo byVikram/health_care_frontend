@@ -1,4 +1,4 @@
-// src/components/common/DateSlotPicker/DateSlotPicker.tsx
+﻿// src/components/common/DateSlotPicker/DateSlotPicker.tsx
 import { useState } from 'react'
 import { Box, Typography, IconButton } from '@mui/material'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
@@ -91,7 +91,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 	const isSameDay = (a: Date, b: Date) =>
 		a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()
 
-	const isPast = (d: Date) => disablePast && d < today && !isSameDay(d, today)
+	const isPast = (d: Date) => { if (!disablePast) return false; const today0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()); const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate()); return d0 < today0 }
 
 	const isSlotSelected = (slot: string): boolean => {
 		if (props.multiSelect) return (props.selectedTime as string[]).includes(slot)
@@ -104,7 +104,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 			const updated = current.includes(slot) ? current.filter((s) => s !== slot) : [...current, slot]
 			props.onTimeChange(updated)
 		} else {
-			props.onTimeChange(slot)
+			props.onTimeChange(props.selectedTime === slot ? '' : slot)
 		}
 	}
 
@@ -304,8 +304,9 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 								{group.slots.map((slot) => {
 									const isPatientView = disableBookedSlots
 
-									// Patient view: hide BLOCKED slots entirely
-									if (isPatientView && slot.status === 'BLOCKED') return null
+
+										// Patient view: hide BLOCKED slots and doctor-disabled slots entirely
+										if (isPatientView && (slot.status === 'BLOCKED' || !slot.is_enabled)) return null
 
 									const isSelected = isSlotSelected(slot.start_time)
 									// Patient view: grey out OCCUPIED slots; doctor view: no change
@@ -345,7 +346,9 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 													: props.multiSelect
 														? slot.status === 'BLOCKED'
 															? 'error.main' // red for blocked
-															: 'success.main' // green for others
+														: isSelected
+															? 'success.main' // green = selected by doctor
+															: 'error.main' // red = blocked/unselected by doctor
 														: isSelected
 															? 'primary.main'
 															: 'background.paper',
@@ -366,7 +369,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 													// fontSize: '12px',
 													fontWeight: isSelected ? 600 : 400,
 													color: props.multiSelect
-														? '#fff'
+											? '#fff'
 														: isSelected
 															? '#fff'
 															: isBooked
