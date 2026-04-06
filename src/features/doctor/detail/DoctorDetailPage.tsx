@@ -1,4 +1,4 @@
-// src/features/doctor/DoctorDetailPage.tsx
+﻿// src/features/doctor/DoctorDetailPage.tsx
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Box, Container, Typography, Divider, Grid, Card } from '@mui/material'
@@ -22,7 +22,7 @@ export default function DoctorDetailPage() {
 	const [selectedHospital, setSelectedHospital] = useState('')
 	const [selectedType, setSelectedType] = useState<'clinic' | 'video'>('clinic')
 	const [selectedDate, setSelectedDate] = useState(new Date())
-	const [selectedTime, setSelectedTime] = useState('01:00PM')
+	const [selectedTime, setSelectedTime] = useState('')
 	const [showFullAbout, setShowFullAbout] = useState(false)
 	const [booking, setBooking] = useState(false)
 	const [bookingError, setBookingError] = useState<string | null>(null)
@@ -153,10 +153,10 @@ export default function DoctorDetailPage() {
 					)
 					.map((slot) => formatSlotTime(slot.slot_time))
 
-	const resolvedSelectedTime =
-		availableSlots.length && availableSlots.includes(selectedTime)
-			? selectedTime
-			: availableSlots[0] || selectedTime
+	const resolvedSelectedTime = selectedTime
+
+
+
 
 	const aboutText = (() => {
 		const about = doctorDetail?.details?.about

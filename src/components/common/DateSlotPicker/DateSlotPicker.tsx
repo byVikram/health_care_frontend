@@ -1,4 +1,4 @@
-// src/components/common/DateSlotPicker/DateSlotPicker.tsx
+﻿// src/components/common/DateSlotPicker/DateSlotPicker.tsx
 import { useState } from 'react'
 import { Box, Typography, IconButton } from '@mui/material'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
@@ -234,7 +234,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 	const isSameDay = (a: Date, b: Date) =>
 		a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()
 
-	const isPast = (d: Date) => disablePast && d < today && !isSameDay(d, today)
+	const isPast = (d: Date) => { if (!disablePast) return false; const today0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()); const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate()); return d0 < today0 }
 
 	const isSlotSelected = (slot: string): boolean => {
 		if (props.multiSelect) return (props.selectedTime as string[]).includes(slot)
@@ -247,7 +247,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 			const updated = current.includes(slot) ? current.filter((s) => s !== slot) : [...current, slot]
 			props.onTimeChange(updated)
 		} else {
-			props.onTimeChange(slot)
+			props.onTimeChange(props.selectedTime === slot ? '' : slot)
 		}
 	}
 
