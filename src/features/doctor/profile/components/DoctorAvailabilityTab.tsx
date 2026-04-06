@@ -1,12 +1,12 @@
-// src/features/doctor/profile/components/DoctorAvailabilityTab.tsx
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Box, Typography } from '@mui/material'
 import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked'
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 import AppButton from '../../../../components/common/Button/AppButton'
-import DateSlotPicker from '../../../../components/common/DateSlotPicker/DateSlotPicker'
+import DateSlotPicker, { SlotGroup, TimeSlot } from '../../../../components/common/DateSlotPicker/DateSlotPicker'
 import { DoctorHospital, DoctorAvailability } from '../../../../types/doctor-profile'
 import { customCardStyle } from '../../../../styles/commonStyles'
+import { getDoctorAvailability } from '../../../../features/doctor/doctorService'
 
 interface DoctorAvailabilityTabProps {
 	hospitals: DoctorHospital[]
@@ -24,20 +24,66 @@ const DAY_KEYS: (keyof DoctorAvailability)[] = [
 	'saturday',
 ]
 
-// All non-BLOCKED slot start_times — used for Select All
-const ALL_SLOTS = [
-	'09:00', '09:15', '09:45', '10:00', '10:15', '10:45', '11:00', '11:15', '11:45',
-	'12:00', '12:15', '12:30',
-]
-
 export default function DoctorAvailabilityTab({ hospitals, availability, onChange }: DoctorAvailabilityTabProps) {
 	const [selectedHospitalId, setSelectedHospitalId] = useState<string>(
 		hospitals.find((h) => h.isPrimary)?.id ?? hospitals[0]?.id ?? ''
 	)
 	const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+	const [availableSlotGroups, setAvailableSlotGroups] = useState<SlotGroup[]>([])
+	const [slotsLoading, setSlotsLoading] = useState(false)
+
+	const formatDateForApi = (date: Date) => {
+		const year = date.getFullYear()
+		const month = String(date.getMonth() + 1).padStart(2, '0')
+		const day = String(date.getDate()).padStart(2, '0')
+		return `${year}-${month}-${day}`
+	}
+
+	useEffect(() => {
+		if (!selectedHospitalId || !selectedDate) return
+		let active = true
+
+		const fetchAvailability = async () => {
+			try {
+				setSlotsLoading(true)
+				const res = await getDoctorAvailability({
+					hospital_id: selectedHospitalId,
+					date: formatDateForApi(selectedDate),
+				})
+				if (!active) return
+				let processedData: SlotGroup[] = []
+				if (Array.isArray(res)) {
+					processedData = res as SlotGroup[]
+				} else if (res && Array.isArray(res.data)) {
+					processedData = res.data as SlotGroup[]
+				}
+				debugger
+				setAvailableSlotGroups(processedData)
+			} catch (err) {
+				console.log(err)
+				if (!active) return
+				setAvailableSlotGroups([])
+			} finally {
+				if (active) setSlotsLoading(false)
+			}
+		}
+
+		fetchAvailability()
+		return () => {
+			active = false
+		}
+	}, [selectedHospitalId, selectedDate])
 
 	const dayKey = DAY_KEYS[selectedDate.getDay()]
 	const selectedSlots: string[] = availability[dayKey] ?? []
+	const allSelectableSlots = useMemo(() => {
+		const slotTimes = availableSlotGroups.flatMap((group) =>
+			(group.slots ?? [])
+				.filter((slot: TimeSlot) => Boolean(slot.start_time) && slot.is_enabled && slot.can_toggle !== false)
+				.map((slot: TimeSlot) => slot.start_time)
+		)
+		return Array.from(new Set(slotTimes))
+	}, [availableSlotGroups])
 
 	return (
 		<Box
@@ -136,8 +182,10 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 				timeLabel="Select Follow up time"
 				timeSlotColumns={5}
 				disableBookedSlots={false}
-			onSelectAll={() => onChange({ ...availability, [dayKey]: ALL_SLOTS })}
-			onUnselectAll={() => onChange({ ...availability, [dayKey]: [] })}
+				availableSlots={availableSlotGroups.length > 0 ? availableSlotGroups : undefined}
+				loading={slotsLoading}
+				onSelectAll={() => onChange({ ...availability, [dayKey]: allSelectableSlots })}
+				onUnselectAll={() => onChange({ ...availability, [dayKey]: [] })}
 			/>
 
 			{/* Buttons */}

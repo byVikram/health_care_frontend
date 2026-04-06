@@ -16,7 +16,7 @@ function getWeekDates(start: Date) {
 	})
 }
 
-type TimeSlot = {
+export type TimeSlot = {
 	start_time: string
 	end_time: string
 	status: string
@@ -25,154 +25,11 @@ type TimeSlot = {
 	can_toggle: boolean
 }
 
-type SlotGroup = {
+export type SlotGroup = {
 	label: string
 	range: string
 	slots: TimeSlot[]
 }
-
-const DEFAULT_SLOT_GROUPS: SlotGroup[] = [  
-  {
-    "label": "Morning",
-    "range": "09:00-12:00",
-    "slots": [
-      {
-        "start_time": "09:00",
-        "end_time": "09:15",
-        "status": "AVAILABLE",
-        "is_enabled": true,
-        "is_booked": false,
-        "can_toggle": true
-      },
-      {
-        "start_time": "09:15",
-        "end_time": "09:30",
-        "status": "OCCUPIED",
-        "is_enabled": true,
-        "is_booked": true,
-        "can_toggle": false
-      },
-      {
-        "start_time": "09:30",
-        "end_time": "09:45",
-        "status": "BLOCKED",
-        "is_enabled": false,
-        "is_booked": false,
-        "can_toggle": true
-      },
-      {
-        "start_time": "09:45",
-        "end_time": "10:00",
-        "status": "AVAILABLE",
-        "is_enabled": true,
-        "is_booked": false,
-        "can_toggle": true
-      },
-      {
-        "start_time": "10:00",
-        "end_time": "10:15",
-        "status": "OCCUPIED",
-        "is_enabled": true,
-        "is_booked": true,
-        "can_toggle": false
-      },
-      {
-        "start_time": "10:15",
-        "end_time": "10:30",
-        "status": "AVAILABLE",
-        "is_enabled": true,
-        "is_booked": false,
-        "can_toggle": true
-      },
-      {
-        "start_time": "10:30",
-        "end_time": "10:45",
-        "status": "BLOCKED",
-        "is_enabled": false,
-        "is_booked": false,
-        "can_toggle": true
-      },
-      {
-        "start_time": "10:45",
-        "end_time": "11:00",
-        "status": "AVAILABLE",
-        "is_enabled": true,
-        "is_booked": false,
-        "can_toggle": true
-      },
-      {
-        "start_time": "11:00",
-        "end_time": "11:15",
-        "status": "OCCUPIED",
-        "is_enabled": true,
-        "is_booked": true,
-        "can_toggle": false
-      },
-      {
-        "start_time": "11:15",
-        "end_time": "11:30",
-        "status": "AVAILABLE",
-        "is_enabled": true,
-        "is_booked": false,
-        "can_toggle": true
-      },
-      {
-        "start_time": "11:30",
-        "end_time": "11:45",
-        "status": "BLOCKED",
-        "is_enabled": false,
-        "is_booked": false,
-        "can_toggle": true
-      },
-      {
-        "start_time": "11:45",
-        "end_time": "12:00",
-        "status": "AVAILABLE",
-        "is_enabled": true,
-        "is_booked": false,
-        "can_toggle": true
-      }
-    ]
-  },
-  {
-    "label": "Afternoon",
-    "range": "12:00-15:00",
-    "slots": [
-      {
-        "start_time": "12:00",
-        "end_time": "12:15",
-        "status": "AVAILABLE",
-        "is_enabled": true,
-        "is_booked": false,
-        "can_toggle": true
-      },
-      {
-        "start_time": "12:15",
-        "end_time": "12:30",
-        "status": "OCCUPIED",
-        "is_enabled": true,
-        "is_booked": true,
-        "can_toggle": false
-      },
-      {
-        "start_time": "12:30",
-        "end_time": "12:45",
-        "status": "AVAILABLE",
-        "is_enabled": true,
-        "is_booked": false,
-        "can_toggle": true
-      },
-      {
-        "start_time": "12:45",
-        "end_time": "13:00",
-        "status": "BLOCKED",
-        "is_enabled": false,
-        "is_booked": false,
-        "can_toggle": true
-      }
-    ]
-  }
-]
 
 // -- Overloaded prop types based on multiSelect --------------------------------
 type SingleProps = {
@@ -217,7 +74,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		loading = false,
 		disableBookedSlots,
 		onSelectAll,
-		onUnselectAll
+		onUnselectAll,
 	} = props
 
 	const today = new Date()
@@ -251,8 +108,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		}
 	}
 
-	// const slotsToRender = availableSlots ?? DEFAULT_SLOT_GROUPS
-	const slotsToRender = DEFAULT_SLOT_GROUPS
+	const slotsToRender = availableSlots ?? []
 
 	return (
 		<Box>
@@ -368,20 +224,54 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 							<Box sx={{ display: 'flex', gap: 1 }}>
 								<Box
 									onClick={onSelectAll}
-									sx={{ cursor: 'pointer', fontSize: '12px', fontWeight: 500, color: 'primary.main', border: '1.5px solid', borderColor: 'primary.main', borderRadius: '8px', px: 1.5, py: 0.4, userSelect: 'none', '&:hover': { bgcolor: 'rgba(43,111,113,0.06)' } }}
+									sx={{
+										cursor: 'pointer',
+										fontSize: '12px',
+										fontWeight: 500,
+										color: 'primary.main',
+										border: '1.5px solid',
+										borderColor: 'primary.main',
+										borderRadius: '8px',
+										px: 1.5,
+										py: 0.4,
+										userSelect: 'none',
+										'&:hover': { bgcolor: 'rgba(43,111,113,0.06)' },
+									}}
 								>
 									Select All
 								</Box>
 								<Box
 									onClick={onUnselectAll}
-									sx={{ cursor: 'pointer', fontSize: '12px', fontWeight: 500, color: 'text.secondary', border: '1.5px solid', borderColor: 'divider', borderRadius: '8px', px: 1.5, py: 0.4, userSelect: 'none', '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' } }}
+									sx={{
+										cursor: 'pointer',
+										fontSize: '12px',
+										fontWeight: 500,
+										color: 'text.secondary',
+										border: '1.5px solid',
+										borderColor: 'divider',
+										borderRadius: '8px',
+										px: 1.5,
+										py: 0.4,
+										userSelect: 'none',
+										'&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+									}}
 								>
 									Unselect All
 								</Box>
 							</Box>
 						) : (
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-								<Box sx={{ width: 14, height: 14, borderRadius: '3px', bgcolor: 'rgba(0,0,0,0.08)', border: '1.5px solid', borderColor: 'divider', flexShrink: 0 }} />
+								<Box
+									sx={{
+										width: 14,
+										height: 14,
+										borderRadius: '3px',
+										bgcolor: 'rgba(0,0,0,0.08)',
+										border: '1.5px solid',
+										borderColor: 'divider',
+										flexShrink: 0,
+									}}
+								/>
 								<Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
 									Booked
 								</Typography>
@@ -408,7 +298,9 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 							</Typography>
 
 							{/* Time slots grid */}
-							<Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${timeSlotColumns}, 1fr)`, gap: 1 }}>
+							<Box
+								sx={{ display: 'grid', gridTemplateColumns: `repeat(${timeSlotColumns}, 1fr)`, gap: 1 }}
+							>
 								{group.slots.map((slot) => {
 									const isPatientView = disableBookedSlots
 
@@ -417,7 +309,8 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 
 									const isSelected = isSlotSelected(slot.start_time)
 									// Patient view: grey out OCCUPIED slots; doctor view: no change
-									const isBooked = isPatientView && slot.is_booked
+									// const isBooked = isPatientView && slot.is_booked
+									const isBooked = slot.is_booked
 									const isDisabled = !slot.is_enabled
 
 									return (
@@ -438,23 +331,33 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 												// BLOCKED (isDisabled, doctor only): not-allowed
 												// AVAILABLE: pointer
 												cursor: isBooked ? 'default' : isDisabled ? 'not-allowed' : 'pointer',
-												bgcolor:
-  													props.multiSelect
-    												? (slot.status === 'BLOCKED'
-        											? 'error.main'   // red for blocked
-        											: 'success.main')  // green for all others (doctor page)
-    												: (isBooked
-        											? 'rgba(0,0,0,0.08)'
-        											: isSelected
-        											? 'primary.main'
-        											: 'background.paper'),
+												// bgcolor: props.multiSelect
+												// 	? slot.status === 'BLOCKED'
+												// 		? 'error.main' // red for blocked
+												// 		: 'success.main' // green for all others (doctor page)
+												// 	: isBooked
+												// 		? 'rgba(0,0,0,0.08)'
+												// 		: isSelected
+												// 			? 'primary.main'
+												// 			: 'background.paper',
+												bgcolor: isBooked
+													? 'rgba(0,0,0,0.08)'
+													: props.multiSelect
+														? slot.status === 'BLOCKED'
+															? 'error.main' // red for blocked
+															: 'success.main' // green for others
+														: isSelected
+															? 'primary.main'
+															: 'background.paper',
 												transition: 'all 0.15s',
 												'&:hover': isBooked
 													? {} // no hover effect on occupied slots
 													: {
-														borderColor: 'primary.main',
-														bgcolor: isSelected ? 'primary.main' : 'rgba(43,111,113,0.06)',
-													},
+															borderColor: 'primary.main',
+															bgcolor: isSelected
+																? 'primary.main'
+																: 'rgba(43,111,113,0.06)',
+														},
 											}}
 										>
 											<Typography
@@ -462,7 +365,13 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 												sx={{
 													// fontSize: '12px',
 													fontWeight: isSelected ? 600 : 400,
-													color: props.multiSelect? '#fff' : (isSelected? '#fff': isBooked? 'text.disabled': 'text.primary'),
+													color: props.multiSelect
+														? '#fff'
+														: isSelected
+															? '#fff'
+															: isBooked
+																? 'text.disabled'
+																: 'text.primary',
 												}}
 											>
 												{slot.start_time}

@@ -1,4 +1,4 @@
-﻿// src/features/doctor/doctorService.ts
+// src/features/doctor/doctorService.ts
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { AppointmentsResponse } from '../../types/appointment'
@@ -73,6 +73,14 @@ export const getSpecialities = async (): Promise<SpecialitiesResponse> => {
 	return res.data
 }
 
+export const getDoctorAvailability = async (params: { doctor_id?: string; hospital_id: number | string; date: string }): Promise<any> => {
+	const res = await ApiService.getWithParams<any>(
+		API_ENDPOINTS.DOCTORS.AVAILABILITY,
+		params as Record<string, unknown>
+	)
+	return res.data
+}
+
 // -- Doctor profile -------------------------------------------------------------
 export const getDoctorProfile = async (): Promise<DoctorProfileApiResponse> => {
 	const res = await ApiService.get<DoctorProfileApiResponse>(API_ENDPOINTS.DOCTOR_PROFILE.DETAILS)
@@ -90,8 +98,8 @@ const DAY_MAP: Record<number, keyof DoctorProfile['availability']> = {
 	6: 'saturday',
 }
 
-export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile => {
-	// Build availability: day_of_week ? slot_time[]
+export const mapDoctorProfileApi = (data: any): DoctorProfile => {
+	// Build availability: day_of_week -> slot_time[]
 	const availability: DoctorProfile['availability'] = {
 		sunday: [],
 		monday: [],
@@ -101,58 +109,63 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 		friday: [],
 		saturday: [],
 	}
-	data.availability.forEach((slot) => {
-		const dayKey = DAY_MAP[slot.day_of_week]
-		if (dayKey && slot.is_active) {
-			// Convert "09:00" ? "09:00AM" format
-			const [h, m] = slot.slot_time.split(':').map(Number)
-			const suffix = h >= 12 ? 'PM' : 'AM'
-			const hour = h > 12 ? h - 12 : h === 0 ? 12 : h
-			const timeStr = `${String(hour).padStart(2, '0')}:${String(m).padStart(2, '0')}${suffix}`
-			availability[dayKey].push(timeStr)
-		}
-	})
+
+	if (Array.isArray(data?.availability)) {
+		data.availability.forEach((slot: any) => {
+			const dayKey = DAY_MAP[slot.day_of_week]
+			if (dayKey && slot.is_active && slot.slot_time) {
+				const [h, m] = slot.slot_time.split(':').map(Number)
+				const suffix = h >= 12 ? 'PM' : 'AM'
+				const hour = h > 12 ? h - 12 : h === 0 ? 12 : h
+				const timeStr = `${String(hour).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}${suffix}`
+				availability[dayKey].push(timeStr)
+			}
+		})
+	}
 
 	// Build hospitals
-	const hospitals: DoctorProfile['hospitals'] = data.hospitals.map((h) => ({
-		id: h.id,
-		name: h.hospital.name,
-		location: h.hospital.address,
-		fullAddress: h.hospital.address,
-		isPrimary: h.is_primary,
-	}))
+	const hospitals: DoctorProfile['hospitals'] = Array.isArray(data?.hospitals)
+		? data.hospitals.map((h: any) => ({
+				id: h.id,
+				name: h.hospital?.name ?? '',
+				location: h.hospital?.address ?? '',
+				fullAddress: h.hospital?.address ?? '',
+				isPrimary: h.is_primary ?? false,
+		  }))
+		: []
 
-	const pd = data.personal_details
-	const prof = data.professional_details
+	const pd = data?.personal_details ?? {}
+	const prof = data?.professional_details ?? {}
 
 	return {
 		id: '',
-		specialization: prof.specialities?.[0]?.label ?? '',
+		specialization: prof?.specialities?.[0]?.label ?? '',
 		personal: {
-			name: pd.name,
+			name: pd?.name ?? '',
 			contactNumber: '',
 			contactVerified: false,
-			email: pd.email,
+			email: pd?.email ?? '',
 			emailVerified: false,
-			gender: pd.gender,
-			dateOfBirth: pd.date_of_birth,
-			location: pd.location,
-			avatar: pd.avatar_s3_key ?? '',
-			experience: String(prof.experience_years),
-			languages: pd.languages,
+			gender: pd?.gender ?? '',
+			dateOfBirth: pd?.date_of_birth ?? '',
+			location: pd?.location ?? '',
+			avatar: pd?.avatar_s3_key ?? '',
+			experience: String(prof?.experience_years ?? 0),
+			languages: pd?.languages ?? [],
 		},
 		professional: {
-			specialization_id: prof.specialities?.[0]?.id ?? '',
-			specialization_label: prof.specialities?.[0]?.label ?? '',
-			degree: prof.degree,
-			college: prof.college,
-			yearOfPassing: prof.year_of_passing,
-			qualificationProof: prof.qualification_proof_s3_key ?? '',
-			registrationNumber: prof.registration_number,
-			registrationProof: prof.registration_proof_s3_key ?? '',
-			about: prof.about,
+			specialization_id: prof?.specialities?.[0]?.id ?? '',
+			specialization_label: prof?.specialities?.[0]?.label ?? '',
+			degree: prof?.degree ?? '',
+			college: prof?.college ?? '',
+			yearOfPassing: prof?.year_of_passing ?? '',
+			qualificationProof: prof?.qualification_proof_s3_key ?? '',
+			registrationNumber: prof?.registration_number ?? '',
+			registrationProof: prof?.registration_proof_s3_key ?? '',
+			about: prof?.about ?? '',
 		},
 		hospitals,
 		availability,
 	}
 }
+
