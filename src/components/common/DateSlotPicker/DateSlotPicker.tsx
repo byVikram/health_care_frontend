@@ -304,8 +304,9 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 								{group.slots.map((slot) => {
 									const isPatientView = disableBookedSlots
 
-									// Patient view: hide BLOCKED slots entirely
-									if (isPatientView && slot.status === 'BLOCKED') return null
+
+										// Patient view: hide BLOCKED slots and doctor-disabled slots entirely
+										if (isPatientView && (slot.status === 'BLOCKED' || !slot.is_enabled)) return null
 
 									const isSelected = isSlotSelected(slot.start_time)
 									// Patient view: grey out OCCUPIED slots; doctor view: no change
@@ -345,7 +346,9 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 													: props.multiSelect
 														? slot.status === 'BLOCKED'
 															? 'error.main' // red for blocked
-															: 'success.main' // green for others
+														: isSelected
+															? 'success.main' // green = selected by doctor
+															: 'error.main' // red = blocked/unselected by doctor
 														: isSelected
 															? 'primary.main'
 															: 'background.paper',
@@ -366,7 +369,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 													// fontSize: '12px',
 													fontWeight: isSelected ? 600 : 400,
 													color: props.multiSelect
-														? '#fff'
+											? '#fff'
 														: isSelected
 															? '#fff'
 															: isBooked

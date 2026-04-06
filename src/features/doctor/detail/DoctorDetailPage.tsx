@@ -1,4 +1,4 @@
-﻿// src/features/doctor/DoctorDetailPage.tsx
+// src/features/doctor/DoctorDetailPage.tsx
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Box, Container, Typography, Divider, Grid, Card } from '@mui/material'
@@ -6,7 +6,7 @@ import DoctorProfileCard from './components/DoctorProfileCard'
 import HospitalSelector from './components/HospitalSelector'
 import AppointmentTypeSelector from './components/AppointmentTypeSelector'
 import AppButton from '../../../components/common/Button/AppButton'
-import DateSlotPicker from '../../../components/common/DateSlotPicker/DateSlotPicker'
+import DateSlotPicker, { SlotGroup, TimeSlot } from '../../../components/common/DateSlotPicker/DateSlotPicker'
 import AppModal from '../../../components/common/Modal/AppModal'
 import LoginForm from '../../../features/auth/components/LoginForm'
 import RegisterForm from '../../../features/auth/components/RegisterForm'
@@ -30,7 +30,7 @@ export default function DoctorDetailPage() {
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
-	const [availableSlotGroups, setAvailableSlotGroups] = useState<any[]>([])
+	const [availableSlotGroups, setAvailableSlotGroups] = useState<SlotGroup[]>([])
 	const [slotsLoading, setSlotsLoading] = useState(false)
 
 	const { id } = useParams<{ id: string }>()
@@ -116,15 +116,6 @@ export default function DoctorDetailPage() {
 		return () => { active = false }
 	}, [id])
 
-	const formatSlotTime = (slot: string) => {
-		const [hourText = '0', minuteText = '00'] = slot.split(':')
-		let hour = Number.parseInt(hourText, 10)
-		const suffix = hour >= 12 ? 'PM' : 'AM'
-		hour = hour % 12
-		if (hour === 0) hour = 12
-		return `${String(hour).padStart(2, '0')}:${minuteText}${suffix}`
-	}
-
 	const formatDateForApi = (date: Date) => {
 		const year  = date.getFullYear()
 		const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -135,7 +126,7 @@ export default function DoctorDetailPage() {
 	const formatTimeForApi = (timeLabel: string) => {
 		const trimmed = timeLabel.trim().toUpperCase()
 		const match = trimmed.match(/^(\d{1,2}):(\d{2})(AM|PM)$/)
-		if (!match) return timeLabel // If it's already HH:mm format, return as is
+		if (!match) return timeLabel
 		const [, hText, mText, suffix] = match
 		let hour = Number.parseInt(hText, 10)
 		if (suffix === 'PM' && hour !== 12) hour += 12
@@ -156,7 +147,7 @@ export default function DoctorDetailPage() {
 					date: formatDateForApi(selectedDate),
 				})
 				if (!active) return
-				let processedData: any[] = []
+				let processedData: SlotGroup[] = []
 				if (Array.isArray(res)) {
 					processedData = res
 				} else if (res && Array.isArray(res.data)) {
@@ -182,7 +173,7 @@ export default function DoctorDetailPage() {
 	if (Array.isArray(availableSlotGroups)) {
 		availableSlotGroups.forEach(group => {
 			if (group.slots && Array.isArray(group.slots)) {
-				group.slots.forEach((s: any) => {
+				group.slots.forEach((s: TimeSlot) => {
 					if (s.status === 'AVAILABLE') {
 						availableSlotStrings.push(s.start_time)
 					}
@@ -192,14 +183,6 @@ export default function DoctorDetailPage() {
 	}
 
 	const resolvedSelectedTime = selectedTime
-
-	// const resolvedSelectedTime =
-	// 	availableSlotStrings.length && availableSlotStrings.includes(selectedTime)
-	// 		? selectedTime
-	// 		: availableSlotStrings[0] || selectedTime
-
-
-
 
 	const aboutText = (() => {
 		const about = doctorDetail?.details?.about
