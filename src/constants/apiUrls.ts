@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
 	DOCTORS: {
 		SEARCH: `${BASE_URL}/api/doctors`,
 		DETAIL: (id: string) => `${BASE_URL}/api/doctors/${id}`,
+		AVAILABILITY: `${BASE_URL}/api/doctors/availability`,
 	},
 	DOCTOR_PROFILE: {
 		DETAILS: `${BASE_URL}/api/doctors/details`,

@@ -15,20 +15,23 @@ import { useAuth } from '../../../hooks/useAuth'
 import { customCardStyle } from '../../../styles/commonStyles'
 import { AppointmentType } from '../../../types/doctor'
 import { DoctorDetailData } from '../../../types/doctor-detail'
-import { createAppointment, getDoctorById } from '../doctorService'
+import { createAppointment, getDoctorById, getDoctorAvailability } from '../doctorService'
 import AppSkeleton from '../../../components/common/Skeleton/AppSkeleton'
 
 export default function DoctorDetailPage() {
 	const [selectedHospital, setSelectedHospital] = useState('')
 	const [selectedType, setSelectedType] = useState<'clinic' | 'video'>('clinic')
 	const [selectedDate, setSelectedDate] = useState(new Date())
-	const [selectedTime, setSelectedTime] = useState('01:00PM')
+	const [selectedTime, setSelectedTime] = useState('09:00')
 	const [showFullAbout, setShowFullAbout] = useState(false)
 	const [booking, setBooking] = useState(false)
 	const [bookingError, setBookingError] = useState<string | null>(null)
 	const [doctorDetail, setDoctorDetail] = useState<DoctorDetailData | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
+
+	const [availableSlotGroups, setAvailableSlotGroups] = useState<any[]>([])
+	const [slotsLoading, setSlotsLoading] = useState(false)
 
 	const { id } = useParams<{ id: string }>()
 	const { accessToken } = useAuth()
@@ -132,7 +135,7 @@ export default function DoctorDetailPage() {
 	const formatTimeForApi = (timeLabel: string) => {
 		const trimmed = timeLabel.trim().toUpperCase()
 		const match = trimmed.match(/^(\d{1,2}):(\d{2})(AM|PM)$/)
-		if (!match) return timeLabel
+		if (!match) return timeLabel // If it's already HH:mm format, return as is
 		const [, hText, mText, suffix] = match
 		let hour = Number.parseInt(hText, 10)
 		if (suffix === 'PM' && hour !== 12) hour += 12
@@ -140,23 +143,58 @@ export default function DoctorDetailPage() {
 		return `${String(hour).padStart(2, '0')}:${mText}`
 	}
 
-	const jsDay     = selectedDate.getDay()
-	const pythonDay = jsDay === 0 ? 6 : jsDay - 1
+	useEffect(() => {
+		if (!id || !selectedHospital || !selectedDate) return
+		let active = true
 
-	const availableSlots =
-		!doctorDetail || !selectedHospital
-			? []
-			: doctorDetail.availability
-					.filter(
-						(slot) =>
-							slot.is_active && slot.hospital_id === selectedHospital && slot.day_of_week === pythonDay
-					)
-					.map((slot) => formatSlotTime(slot.slot_time))
+		const fetchAvailability = async () => {
+			try {
+				setSlotsLoading(true)
+				const res = await getDoctorAvailability({
+					doctor_id: id,
+					hospital_id: selectedHospital,
+					date: formatDateForApi(selectedDate),
+				})
+				if (!active) return
+				let processedData: any[] = []
+				if (Array.isArray(res)) {
+					processedData = res
+				} else if (res && Array.isArray(res.data)) {
+					processedData = res.data
+				}
+				setAvailableSlotGroups(processedData)
+			} catch (err) {
+				console.log(err)
+				if (!active) return
+				setAvailableSlotGroups([])
+			} finally {
+				if (active) {
+					setSlotsLoading(false)
+				}
+			}
+		}
+
+		fetchAvailability()
+		return () => { active = false }
+	}, [id, selectedHospital, selectedDate])
+
+	const availableSlotStrings: string[] = []
+	if (Array.isArray(availableSlotGroups)) {
+		availableSlotGroups.forEach(group => {
+			if (group.slots && Array.isArray(group.slots)) {
+				group.slots.forEach((s: any) => {
+					if (s.status === 'AVAILABLE') {
+						availableSlotStrings.push(s.start_time)
+					}
+				})
+			}
+		})
+	}
 
 	const resolvedSelectedTime =
-		availableSlots.length && availableSlots.includes(selectedTime)
+		availableSlotStrings.length && availableSlotStrings.includes(selectedTime)
 			? selectedTime
-			: availableSlots[0] || selectedTime
+			: availableSlotStrings[0] || selectedTime
 
 	const aboutText = (() => {
 		const about = doctorDetail?.details?.about
@@ -305,8 +343,8 @@ export default function DoctorDetailPage() {
 								onDateChange={setSelectedDate}
 								selectedTime={resolvedSelectedTime}
 								onTimeChange={setSelectedTime}
-								// availableSlots={availableSlots}
-								loading={loading}
+								availableSlots={availableSlotGroups.length > 0 ? availableSlotGroups : undefined}
+								loading={slotsLoading || loading}
 								disableBookedSlots={true}
 							/>
 							{bookingError && (
