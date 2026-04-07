@@ -101,6 +101,17 @@ export interface SlotOverridePayload {
 	reason?: string
 }
 
+export interface SlotOverrideBatchPayload {
+	hospital_id?: string | null
+	date: string // "YYYY-MM-DD"
+	slots: Array<{
+		start_time: string // "HH:MM"
+		end_time: string // "HH:MM"
+		is_blocked: boolean
+	}>
+	reason?: string
+}
+
 export interface SlotOverrideResponse {
 	success: boolean
 	message: string
@@ -108,6 +119,16 @@ export interface SlotOverrideResponse {
 
 export const createSlotOverride = async (
 	payload: SlotOverridePayload
+): Promise<SlotOverrideResponse> => {
+	const res = await ApiService.post<SlotOverrideResponse>(
+		API_ENDPOINTS.DOCTORS.OVERRIDES,
+		payload
+	)
+	return res.data
+}
+
+export const createSlotOverrideBatch = async (
+	payload: SlotOverrideBatchPayload
 ): Promise<SlotOverrideResponse> => {
 	const res = await ApiService.post<SlotOverrideResponse>(
 		API_ENDPOINTS.DOCTORS.OVERRIDES,

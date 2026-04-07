@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Box, Typography } from '@mui/material'
 import { toast } from 'react-toastify'
 import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked'
@@ -7,7 +7,12 @@ import AppButton from '../../../../components/common/Button/AppButton'
 import DateSlotPicker, { SlotGroup, TimeSlot } from '../../../../components/common/DateSlotPicker/DateSlotPicker'
 import { DoctorHospital, DoctorAvailability } from '../../../../types/doctor-profile'
 import { customCardStyle } from '../../../../styles/commonStyles'
-import { getDoctorAvailability, createSlotOverride, SlotOverridePayload } from '../../../../features/doctor/doctorService'
+import {
+	getDoctorAvailability,
+	createSlotOverrideBatch,
+	SlotOverridePayload,
+	SlotOverrideBatchPayload,
+} from '../../../../features/doctor/doctorService'
 
 interface DoctorAvailabilityTabProps {
 	hospitals: DoctorHospital[]
@@ -25,7 +30,7 @@ const DAY_KEYS: (keyof DoctorAvailability)[] = [
 	'saturday',
 ]
 
-type UnselectedSlotsJson = Record<string, string[]>
+type UnselectedSlotsByDate = Record<string, string[]>
 
 export default function DoctorAvailabilityTab({ hospitals, availability, onChange }: DoctorAvailabilityTabProps) {
 	const [selectedHospitalId, setSelectedHospitalId] = useState<string>(
@@ -34,7 +39,7 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 	const [selectedDate, setSelectedDate] = useState<Date>(new Date())
 	const [availableSlotGroups, setAvailableSlotGroups] = useState<SlotGroup[]>([])
 	const [slotsLoading, setSlotsLoading] = useState(false)
-	const [unselectedSlots, setUnselectedSlots] = useState<UnselectedSlotsJson>({})
+	const [unselectedSlotsByDate, setUnselectedSlotsByDate] = useState<UnselectedSlotsByDate>({})
 	const [pendingOverrides, setPendingOverrides] = useState<SlotOverridePayload[]>([])
 	const [saveLoading, setSaveLoading] = useState(false)
 	const [pendingSaveToast, setPendingSaveToast] = useState<string | null>(null)
@@ -46,39 +51,36 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 		return `${year}-${month}-${day}`
 	}
 
-	useEffect(() => {
+	const fetchAvailability = useCallback(async () => {
 		if (!selectedHospitalId || !selectedDate) return
-		let active = true
-
-		const fetchAvailability = async () => {
-			try {
-				setSlotsLoading(true)
-				const res = await getDoctorAvailability({
-					hospital_id: selectedHospitalId,
-					date: formatDateForApi(selectedDate),
-				})
-				if (!active) return
-				let processedData: SlotGroup[] = []
-				if (Array.isArray(res)) {
-					processedData = res as SlotGroup[]
-				} else if (res && Array.isArray(res.data)) {
-					processedData = res.data as SlotGroup[]
-				}
-				setAvailableSlotGroups(processedData)
-			} catch (err) {
-				console.log(err)
-				if (!active) return
-				setAvailableSlotGroups([])
-			} finally {
-				if (active) setSlotsLoading(false)
+		try {
+			setSlotsLoading(true)
+			const res = await getDoctorAvailability({
+				hospital_id: selectedHospitalId,
+				date: formatDateForApi(selectedDate),
+			})
+			let processedData: SlotGroup[] = []
+			if (Array.isArray(res)) {
+				processedData = res as SlotGroup[]
+			} else if (res && Array.isArray(res.data)) {
+				processedData = res.data as SlotGroup[]
 			}
+			setAvailableSlotGroups(processedData)
+			setPendingOverrides([])
+		} catch (err) {
+			console.log(err)
+			setAvailableSlotGroups([])
+		} finally {
+			setSlotsLoading(false)
 		}
-
-		fetchAvailability()
-		return () => { active = false }
 	}, [selectedHospitalId, selectedDate])
 
+	useEffect(() => {
+		fetchAvailability()
+	}, [fetchAvailability])
+
 	const dayKey = DAY_KEYS[selectedDate.getDay()]
+	const selectedDateKey = formatDateForApi(selectedDate)
 
 	const allSelectableSlots = useMemo(() => {
 		const slotTimes = availableSlotGroups.flatMap((group) =>
@@ -101,7 +103,7 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 		return Array.from(new Set(slotTimes))
 	}, [availableSlotGroups])
 
-	const todayUnselected: string[] = unselectedSlots[dayKey] ?? apiBlockedSlots
+	const todayUnselected: string[] = unselectedSlotsByDate[selectedDateKey] ?? apiBlockedSlots
 	const selectedSlots: string[] = allSelectableSlots.filter((s) => !todayUnselected.includes(s))
 
 	const slotGroupsForPicker: SlotGroup[] = availableSlotGroups.map((group) => ({
@@ -131,13 +133,10 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 		const newlyBlocked = selectedSlots.filter((s) => !slots.includes(s))
 		const newlyUnblocked = todayUnselected.filter((s) => slots.includes(s))
 
-		const updatedUnselected = [
-			...todayUnselected.filter((s) => !newlyUnblocked.includes(s)),
-			...newlyBlocked,
-		]
+		const updatedUnselected = [...todayUnselected.filter((s) => !newlyUnblocked.includes(s)), ...newlyBlocked]
 
-		const updated: UnselectedSlotsJson = { ...unselectedSlots, [dayKey]: updatedUnselected }
-		setUnselectedSlots(updated)
+		const updated: UnselectedSlotsByDate = { ...unselectedSlotsByDate, [selectedDateKey]: updatedUnselected }
+		setUnselectedSlotsByDate(updated)
 		localStorage.setItem('doctorBlockedSlots', JSON.stringify(updated))
 		onChange({ ...availability, [dayKey]: slots })
 
@@ -184,10 +183,9 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 		stageSlotSelection(slots)
 	}
 
-	// Loops through all pending overrides and calls createSlotOverride for each,
-	// then shows a single toast once all are done
+	// Groups pending overrides into batch payload(s) and calls slot override API.
 	const handleSaveAvailability = async () => {
-		console.log("pendingOverrides:", pendingOverrides)
+		console.log('pendingOverrides:', pendingOverrides)
 		if (pendingOverrides.length === 0) {
 			//  toast.success(pendingSaveToast ?? 'Saved Successfully')
 			setPendingSaveToast(null)
@@ -195,18 +193,41 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 		}
 		setSaveLoading(true)
 		try {
-			let backendMessage =''
-			for (const override of pendingOverrides) {
-				const response = await createSlotOverride(override)
+			let backendMessage = ''
+			const overridesByHospitalAndDate = pendingOverrides.reduce<Record<string, SlotOverrideBatchPayload>>(
+				(acc, override) => {
+					const groupKey = `${override.hospital_id ?? ''}__${override.date}`
+					if (!acc[groupKey]) {
+						acc[groupKey] = {
+							hospital_id: override.hospital_id ?? null,
+							date: override.date,
+							slots: [],
+						}
+					}
+					acc[groupKey].slots.push({
+						start_time: override.start_time,
+						end_time: override.end_time,
+						is_blocked: override.is_blocked,
+					})
+					return acc
+				},
+				{}
+			)
 
-				console.log("API response:", response)
+			const batchPayloads = Object.values(overridesByHospitalAndDate)
+			for (const payload of batchPayloads) {
+				const response = await createSlotOverrideBatch(payload)
 
-				if(response?.message){
-					backendMessage = response.message 
+				console.log('API response:', response)
+
+				if (response?.message) {
+					backendMessage = response.message
 				}
 			}
+
 			setPendingOverrides([])
 			toast.success(backendMessage || pendingSaveToast || 'Saved successfully')
+			await fetchAvailability()
 			setPendingSaveToast(null)
 		} catch (err) {
 			console.error('Save availability error:', err)
@@ -265,12 +286,22 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 										justifyContent: 'center',
 									}}
 								>
-									<Typography variant="caption" sx={{ fontWeight: 700, fontSize: '12px', color: isSelected ? '#fff' : 'primary.main' }}>
+									<Typography
+										variant="caption"
+										sx={{
+											fontWeight: 700,
+											fontSize: '12px',
+											color: isSelected ? '#fff' : 'primary.main',
+										}}
+									>
 										{index + 1}
 									</Typography>
 								</Box>
 								<Box sx={{ flex: 1 }}>
-									<Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', fontSize: '13.5px' }}>
+									<Typography
+										variant="body2"
+										sx={{ fontWeight: 600, color: 'text.primary', fontSize: '13.5px' }}
+									>
 										{hospital.name}
 									</Typography>
 									<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '11.5px' }}>
@@ -334,3 +365,5 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 		</Box>
 	)
 }
+
+
