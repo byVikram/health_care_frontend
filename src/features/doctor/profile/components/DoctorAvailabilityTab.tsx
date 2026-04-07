@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { Box, Typography } from '@mui/material'
 import { toast } from 'react-toastify'
 import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked'
@@ -7,7 +7,7 @@ import AppButton from '../../../../components/common/Button/AppButton'
 import DateSlotPicker, { SlotGroup, TimeSlot } from '../../../../components/common/DateSlotPicker/DateSlotPicker'
 import { DoctorHospital, DoctorAvailability } from '../../../../types/doctor-profile'
 import { customCardStyle } from '../../../../styles/commonStyles'
-import { getDoctorAvailability, createSlotOverride } from '../../../../features/doctor/doctorService'
+import { getDoctorAvailability, createSlotOverride, SlotOverridePayload } from '../../../../features/doctor/doctorService'
 
 interface DoctorAvailabilityTabProps {
 	hospitals: DoctorHospital[]
@@ -35,6 +35,9 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 	const [availableSlotGroups, setAvailableSlotGroups] = useState<SlotGroup[]>([])
 	const [slotsLoading, setSlotsLoading] = useState(false)
 	const [unselectedSlots, setUnselectedSlots] = useState<UnselectedSlotsJson>({})
+	const [pendingOverrides, setPendingOverrides] = useState<SlotOverridePayload[]>([])
+	const [saveLoading, setSaveLoading] = useState(false)
+	const [pendingSaveToast, setPendingSaveToast] = useState<string | null>(null)
 
 	const formatDateForApi = (date: Date) => {
 		const year = date.getFullYear()
@@ -123,8 +126,9 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 		return startTime
 	}
 
-	const handleTimeChange = async (slots: string[]) => {
-		const newlyBlocked   = selectedSlots.filter((s) => !slots.includes(s))
+	// Only updates local UI state — no API call here
+	const stageSlotSelection = (slots: string[]) => {
+		const newlyBlocked = selectedSlots.filter((s) => !slots.includes(s))
 		const newlyUnblocked = todayUnselected.filter((s) => slots.includes(s))
 
 		const updatedUnselected = [
@@ -137,29 +141,78 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 		localStorage.setItem('doctorBlockedSlots', JSON.stringify(updated))
 		onChange({ ...availability, [dayKey]: slots })
 
-		const changedSlots = [
-			...newlyBlocked.map((s)   => ({ start_time: s, end_time: getSlotEndTime(s), is_blocked: true })),
-			...newlyUnblocked.map((s) => ({ start_time: s, end_time: getSlotEndTime(s), is_blocked: false })),
+		// Stage the changed slots as pending overrides (sent to API only on Save)
+		const changedOverrides: SlotOverridePayload[] = [
+			...newlyBlocked.map((s) => ({
+				hospital_id: selectedHospitalId,
+				date: formatDateForApi(selectedDate),
+				start_time: s,
+				end_time: getSlotEndTime(s),
+				is_blocked: true,
+			})),
+			...newlyUnblocked.map((s) => ({
+				hospital_id: selectedHospitalId,
+				date: formatDateForApi(selectedDate),
+				start_time: s,
+				end_time: getSlotEndTime(s),
+				is_blocked: false,
+			})),
 		]
 
-		for (const slot of changedSlots) {
-			try {
-				await createSlotOverride({
-					hospital_id: selectedHospitalId ,
-					date: formatDateForApi(selectedDate),
-					start_time: slot.start_time,
-					end_time: slot.end_time,
-					is_blocked: slot.is_blocked,
-				})
-				if (slot.is_blocked) {
-					toast.error('Slot blocked successfully')
-				} else {
-					toast.success('Slot unblocked successfully')
+		// Merge into pending: if the same slot was toggled multiple times, keep only the latest
+		const initialBlockedSlots = new Set(apiBlockedSlots)
+		setPendingOverrides((prev) => {
+			const filtered = prev.filter(
+				(p) =>
+					!changedOverrides.some(
+						(c) =>
+							c.hospital_id === p.hospital_id &&
+							c.date === p.date &&
+							c.start_time === p.start_time &&
+							c.end_time === p.end_time
+					)
+			)
+			const effectiveOverrides = changedOverrides.filter(
+				(override) => initialBlockedSlots.has(override.start_time) !== override.is_blocked
+			)
+			return [...filtered, ...effectiveOverrides]
+		})
+	}
+
+	const handleTimeChange = (slots: string[]) => {
+		setPendingSaveToast(null)
+		stageSlotSelection(slots)
+	}
+
+	// Loops through all pending overrides and calls createSlotOverride for each,
+	// then shows a single toast once all are done
+	const handleSaveAvailability = async () => {
+		console.log("pendingOverrides:", pendingOverrides)
+		if (pendingOverrides.length === 0) {
+			//  toast.success(pendingSaveToast ?? 'Saved Successfully')
+			setPendingSaveToast(null)
+			return
+		}
+		setSaveLoading(true)
+		try {
+			let backendMessage =''
+			for (const override of pendingOverrides) {
+				const response = await createSlotOverride(override)
+
+				console.log("API response:", response)
+
+				if(response?.message){
+					backendMessage = response.message 
 				}
-			} catch (err) {
-				console.error('Override error:', err)
-				toast.error('Failed to update slot. Please try again.')
 			}
+			setPendingOverrides([])
+			toast.success(backendMessage || pendingSaveToast || 'Saved successfully')
+			setPendingSaveToast(null)
+		} catch (err) {
+			console.error('Save availability error:', err)
+			// toast.error('Failed to save availability. Please try again.')
+		} finally {
+			setSaveLoading(false)
 		}
 	}
 
@@ -249,16 +302,12 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 				availableSlots={slotGroupsForPicker.length > 0 ? slotGroupsForPicker : undefined}
 				loading={slotsLoading}
 				onSelectAll={() => {
-					const updated = { ...unselectedSlots, [dayKey]: [] }
-					setUnselectedSlots(updated)
-					localStorage.setItem('doctorBlockedSlots', JSON.stringify(updated))
-					onChange({ ...availability, [dayKey]: allSelectableSlots })
+					stageSlotSelection(allSelectableSlots)
+					setPendingSaveToast('Selected All Successfully')
 				}}
 				onUnselectAll={() => {
-					const updated = { ...unselectedSlots, [dayKey]: [...allSelectableSlots] }
-					setUnselectedSlots(updated)
-					localStorage.setItem('doctorBlockedSlots', JSON.stringify(updated))
-					onChange({ ...availability, [dayKey]: [] })
+					stageSlotSelection([])
+					setPendingSaveToast('Unselected All Successfully')
 				}}
 			/>
 
@@ -268,13 +317,18 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 					variant="outlined"
 					fullWidth
 					label="Cancel"
-					onClick={() => onChange({ ...availability, [dayKey]: [] })}
+					onClick={() => {
+						onChange({ ...availability, [dayKey]: [] })
+						setPendingOverrides([])
+						setPendingSaveToast(null)
+					}}
 				/>
 				<AppButton
 					variant="contained"
 					fullWidth
 					label="Save Availability"
-					onClick={() => console.log('Saved availability', availability)}
+					loading={saveLoading}
+					onClick={handleSaveAvailability}
 				/>
 			</Box>
 		</Box>
