@@ -16,7 +16,7 @@ import AccountPage from '../features/auth/AccountPage'
 import WelcomePage from '../features/auth/WelcomePage'
 import PortalPage from '../features/portal/PortalPage'
 import NavbarLayout from '../components/layout/NavbarLayout'
-// import TestPage from '../features/auth/test/TestPage'
+import TestPage from '../features/auth/test/TestPage'
 // import DoctorPortalPage from '../features/doctor/DoctorPortalPage'
 // import PatientPortalPage from '../features/patient/PatientPortalPage'
 // import PatientProfilePage from '../features/patient/PatientProfilePage'
@@ -79,6 +79,7 @@ export default function AppRoutes() {
 					{/* <Route path="/dashboard" element={<DashboardPage />} /> */}
 					<Route path="/doctors/:id" element={<DoctorDetailPage />} />
 					<Route path="/doctors/search" element={<DoctorSearchPage />} />
+					<Route path="/test" element={<TestPage/>} />
 
 					{/* Add more protected pages here */}
 				</Route>
