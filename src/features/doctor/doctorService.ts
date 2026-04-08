@@ -90,6 +90,11 @@ export const getDoctorAvailability = async (params: {
 	return res.data
 }
 
+export const createHospital = async (data: Record<string, unknown>) => {
+  const res = await ApiService.post(API_ENDPOINTS.DOCTOR_PROFILE.HOSPITALS, data)
+  return res.data
+}
+
 // ── Slot overrides ────────────────────────────────────────────────────────────
 
 export interface SlotOverridePayload {
@@ -140,6 +145,14 @@ export const createSlotOverrideBatch = async (
 // -- Doctor profile -------------------------------------------------------------
 export const getDoctorProfile = async (): Promise<DoctorProfileApiResponse> => {
 	const res = await ApiService.get<DoctorProfileApiResponse>(API_ENDPOINTS.DOCTOR_PROFILE.DETAILS)
+	return res.data
+}
+
+export const updateProfessionalDetails = async (data: Record<string, unknown>) => {
+	const res = await ApiService.patch(
+		API_ENDPOINTS.DOCTOR_PROFILE.PROFESSIONAL_DETAILS,
+		data
+	)
 	return res.data
 }
 
@@ -224,3 +237,5 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 		availability,
 	}
 }
+
+

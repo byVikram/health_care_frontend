@@ -81,6 +81,7 @@ export default function OtpForm({ contactNumber, onVerify, mode = 'page' }: OtpF
 						id: user.id,
 						name: user.name,
 						email: user.email,
+						avatar: user.avatar, 
 						showQr: user.role === 'patient',
 						profilePath: '/profile',
 					},

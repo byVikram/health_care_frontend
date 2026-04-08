@@ -8,6 +8,10 @@ import AppSelect from '../../../../components/common/Select/AppSelect'
 import { DoctorProfilePersonal } from '../../../../types/doctor-profile'
 import { customCardStyle } from '../../../../styles/commonStyles'
 import AppDatePicker from '../../../../components/common/DatePicker/AppDatePicker'
+import { updateProfessionalDetails } from '../../doctorService'
+import 'react-toastify/dist/ReactToastify.css'
+import { toast } from 'react-toastify'
+
 
 interface DoctorPersonalTabProps {
 	data: DoctorProfilePersonal
@@ -36,17 +40,63 @@ const verifiedAdornment = (
 
 export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabProps) {
 	const [isDirty, setIsDirty] = useState(false)
-	const [showSuccess, setShowSuccess] = useState(false)
+	// const [showSuccess, setShowSuccess] = useState(false)
 	const [saved, setSaved] = useState(data)
 
 	useEffect(() => {
 		setIsDirty(JSON.stringify(data) !== JSON.stringify(saved))
 	}, [data, saved])
 
-	const handleSave = () => {
+	// const handleSave = () => {
+	// 	setSaved(data)
+	// 	setIsDirty(false)
+	// 	setShowSuccess(true)
+	// }
+
+	// const handleSave = async () => {
+	// try {
+	// 	const payload = {
+	// 		name: data.name,
+	// 		location: data.location,
+	// 		gender: data.gender,
+	// 		date_of_birth: data.dateOfBirth,
+	// 		languages: data.languages,
+	// 		email: data.email,
+	// 	}
+
+	// 	await updateProfessionalDetails(payload)
+
+	// 	setSaved(data)
+	// 	setIsDirty(false)
+	// 	setShowSuccess(true)
+	// 	} catch (error) {
+	// 	console.error(error)
+	// }
+	// }
+
+	const handleSave = async () => {
+	try {
+		const payload = {
+			name: data.name,
+			location: data.location,
+			gender: data.gender,
+			date_of_birth: data.dateOfBirth,
+			languages: data.languages,
+			email: data.email,
+		}
+
+		const res = await updateProfessionalDetails(payload)
+
+		if (res) {
+			toast.success("Changes saved successfully!")
+		}
+
 		setSaved(data)
 		setIsDirty(false)
-		setShowSuccess(true)
+	} catch (error) {
+		toast.error("Something went wrong. Please try again.")
+		console.error(error)
+	}
 	}
 	return (
 		<Box
@@ -152,11 +202,11 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 
 				<Grid size={{ xs: 12 }} mt={2} display={'flex'} justifyContent={'flex-end'}></Grid>
 			</Box>
-			<ProfileFormActions
-				isDirty={isDirty}
-				showSuccess={showSuccess}
-				onSave={handleSave}
-				onCloseSnackbar={() => setShowSuccess(false)}
+		    <ProfileFormActions
+			isDirty={isDirty}
+			onSave={handleSave}
+			showSuccess={false}
+			onCloseSnackbar={() => {}}
 			/>
 		</Box>
 	)

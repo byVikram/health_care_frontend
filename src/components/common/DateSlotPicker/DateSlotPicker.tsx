@@ -294,7 +294,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 								variant="caption"
 								sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.5, display: 'block' }}
 							>
-								{group.label} · {group.range}
+								{group.label}
 							</Typography>
 
 							{/* Time slots grid */}

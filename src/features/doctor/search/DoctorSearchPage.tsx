@@ -5,8 +5,6 @@ import { useSearchParams } from 'react-router-dom'
 import { Box, Container, Typography, Grid, InputAdornment, TextField, Chip, Card } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import MicIcon from '@mui/icons-material/Mic'
-import LocationOnIcon from '@mui/icons-material/LocationOn'
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import TuneIcon from '@mui/icons-material/Tune'
 import DoctorSearchCard from './components/DoctorSearchCard'
 import AppSelect from '../../../components/common/Select/AppSelect'
@@ -178,29 +176,6 @@ export default function DoctorSearchPage() {
 			<Box sx={{ bgcolor: 'background.paper', py: 3 }}>
 				<Container maxWidth="lg">
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-						{/* Location pill */}
-						<Box
-							sx={{
-								display: 'flex',
-								alignItems: 'center',
-								gap: 0.5,
-								// bgcolor: "rgba(255,255,255,0.12)",
-								border: '1px solid #000',
-								borderRadius: '10px',
-								px: 1.5,
-								py: 1,
-								cursor: 'pointer',
-								flexShrink: 0,
-								color: '#fff',
-								'&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
-							}}
-						>
-							<LocationOnIcon sx={{ fontSize: 16, color: '#000' }} />
-							<Typography variant="body2" sx={{ fontSize: '13px', fontWeight: 500 }}>
-								Bengaluru, KR Market
-							</Typography>
-							<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />
-						</Box>
 
 						{/* Search input */}
 						<TextField
