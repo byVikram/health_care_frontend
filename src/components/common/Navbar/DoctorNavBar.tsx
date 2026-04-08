@@ -28,7 +28,7 @@ const clinics: Clinic[] = [
 ]
 
 export default function DoctorNavBar({ onProfileClick }: DoctorNavBarProps) {
-	const { role } = useAuth()
+	const { role, user } = useAuth()
 
 	const [selectedClinic, setSelectedClinic] = useState<Clinic>(clinics[0])
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
@@ -218,8 +218,8 @@ export default function DoctorNavBar({ onProfileClick }: DoctorNavBarProps) {
 					{/* Avatar with online dot */}
 					<Box sx={{ position: 'relative' }}>
 						<Avatar
-							src={drImage}
-							sx={{ width: 36, height: 36, border: '2px solid rgba(255,255,255,0.5)' }}
+    							src={user?.avatar || drImage}  
+    							sx={{ width: 36, height: 36, border: '2px solid rgba(255,255,255,0.5)' }}
 						/>
 						<Box
 							sx={{

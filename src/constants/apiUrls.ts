@@ -17,6 +17,8 @@ export const API_ENDPOINTS = {
 	},
 	DOCTOR_PROFILE: {
 		DETAILS: `${BASE_URL}/api/doctors/details`,
+		PROFESSIONAL_DETAILS: `${BASE_URL}/api/doctors/professional-details`,
+		HOSPITALS: `${BASE_URL}/api/doctors/hospitals`,
 	},
 	SPECIALITIES: {
 		LIST: `${BASE_URL}/api/specialities`,

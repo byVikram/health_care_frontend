@@ -13,6 +13,7 @@ export interface VerifyOtpUser {
 	name: string
 	email: string
 	role: 'doctor' | 'patient'
+	avatar?: string
 }
 
 export interface VerifyOtpResponse {

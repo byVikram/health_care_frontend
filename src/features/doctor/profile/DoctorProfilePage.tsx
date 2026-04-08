@@ -1,4 +1,4 @@
-﻿// src/features/doctor/profile/DoctorProfilePage.tsx
+// src/features/doctor/profile/DoctorProfilePage.tsx
 import { useState, useMemo, useEffect } from 'react'
 import { Box, Container, Grid, CircularProgress, Typography } from '@mui/material'
 import AppProfileSidebar from '../../../components/common/ProfileSidebar/AppProfileSidebar'
@@ -15,6 +15,8 @@ import DoctorAvailabilityTab from './components/DoctorAvailabilityTab'
 import { DoctorProfile, DoctorProfilePersonal, DoctorProfileProfessional } from '../../../types/doctor-profile'
 import { customCardStyle } from '../../../styles/commonStyles'
 import { getDoctorProfile, mapDoctorProfileApi } from '../doctorService'
+import { useAuth, setAuth } from '../../../hooks/useAuth'
+import ApiService from '../../../services/apiService'   // ✅ Fix: ApiService import added
 
 const DOCTOR_NAV_ITEMS = [
 	{ id: 'personal', label: 'Personal details', icon: <PersonOutlineIcon fontSize="small" /> },
@@ -42,6 +44,8 @@ export default function DoctorProfilePage() {
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
+	const { role, user, accessToken, refreshToken } = useAuth()
+
 	// ── Fetch on mount ──────────────────────────────────────────────────────────
 	useEffect(() => {
 		getDoctorProfile()
@@ -64,9 +68,31 @@ export default function DoctorProfilePage() {
 	const handleProfessionalChange = (updated: Partial<DoctorProfileProfessional>) =>
 		setDoctor((prev) => (prev ? { ...prev, professional: { ...prev.professional, ...updated } } : prev))
 
-	const handleAvatarChange = (file: File) => {
-		const url = URL.createObjectURL(file)
-		setDoctor((prev) => (prev ? { ...prev, personal: { ...prev.personal, avatar: url } } : prev))
+	const handleAvatarChange = async (file: File) => {
+		// Step 1: show instant local preview in the sidebar
+		const localPreviewUrl = URL.createObjectURL(file)
+		setDoctor((prev) => (prev ? { ...prev, personal: { ...prev.personal, avatar: localPreviewUrl } } : prev))
+
+		try {
+			// Step 2: upload to backend and get real S3 URL
+			const formData = new FormData()
+			formData.append('file', file)
+			const res = await ApiService.post<{ avatar_url: string }>('/api/doctors/upload-avatar', formData)
+			const newAvatarUrl = res.data.avatar_url
+
+			// Step 3: replace blob preview with real URL in doctor state
+			setDoctor((prev) => (prev ? { ...prev, personal: { ...prev.personal, avatar: newAvatarUrl } } : prev))
+
+			// Step 4: update localStorage so DoctorNavBar shows the new photo
+			setAuth(
+				role!,
+				{ ...user!, avatar: newAvatarUrl },
+				accessToken!,
+				refreshToken!
+			)
+		} catch (err) {
+			console.error('Avatar upload failed', err)
+		}
 	}
 
 	const handleHospitalsChange = (hospitals: DoctorProfile['hospitals']) =>

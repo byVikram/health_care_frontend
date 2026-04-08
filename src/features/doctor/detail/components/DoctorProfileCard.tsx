@@ -3,8 +3,8 @@ import { useState } from 'react'
 import { customCardStyle } from '../../../../styles/commonStyles'
 import { Box, Typography, Avatar, Chip, Divider, IconButton, Snackbar, Tooltip } from '@mui/material'
 import { LuMapPin } from 'react-icons/lu'
-import { BsPeople, BsBriefcase, BsStar } from 'react-icons/bs'
-import { LuTrendingUp } from 'react-icons/lu'
+import { BsBriefcase, BsPatchCheckFill, BsCalendarCheck } from 'react-icons/bs'
+
 
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
 import FavoriteIcon from '@mui/icons-material/Favorite'
@@ -186,17 +186,23 @@ export default function DoctorProfileCard({ doctor }: DoctorProfileCardProps) {
 
 				{/* Stats Row */}
 				<Box sx={{ display: 'flex', justifyContent: 'space-around', py: 2.5, px: 2 }}>
-					<StatItem icon={<BsPeople style={{ width: 24, height: 24 }} />} value="0" label="Patients" />
+					<StatItem
+						icon={<BsPatchCheckFill style={{ width: 24, height: 24 }} />}
+						value="Verified"
+						label="Doctor"
+					/>
+					<Divider orientation="vertical" flexItem />
+					<StatItem
+						icon={<BsCalendarCheck style={{ width: 24, height: 24 }} />}
+						value="Today"
+						label="Available"
+					/>
 					<Divider orientation="vertical" flexItem />
 					<StatItem
 						icon={<BsBriefcase style={{ width: 24, height: 24 }} />}
 						value={`${doctor.details.experience_years || 0}+`}
 						label="Experience"
 					/>
-					<Divider orientation="vertical" flexItem />
-					<StatItem icon={<BsStar style={{ width: 24, height: 24 }} />} value="0" label="Ratings" />
-					<Divider orientation="vertical" flexItem />
-					<StatItem icon={<LuTrendingUp style={{ width: 24, height: 24 }} />} value="0" label="Reviews" />
 				</Box>
 			</Box>
 

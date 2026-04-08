@@ -1,49 +1,103 @@
 // src/features/doctor/profile/components/DoctorHospitalsTab.tsx
 import { useState } from 'react'
-import { customCardStyle } from '../../../../styles/commonStyles'
 import { Box, Typography, IconButton, Radio } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
+import { toast } from 'react-toastify'
 import AppButton from '../../../../components/common/Button/AppButton'
 import AppInput from '../../../../components/common/Input/AppInput'
+import { customCardStyle } from '../../../../styles/commonStyles'
 import { DoctorHospital } from '../../../../types/doctor-profile'
+import { createHospital } from '../../doctorService'
 
 interface DoctorHospitalsTabProps {
 	hospitals: DoctorHospital[]
 	onChange: (hospitals: DoctorHospital[]) => void
 }
 
-const EMPTY_FORM = { name: '', location: '', fullAddress: '' }
+const EMPTY_FORM = {
+	name: '',
+	fullAddress: '',
+	phone_number: '',
+	video_consultation_fee: '',
+	offline_consultation_fee: '',
+}
+
+const getSuccessMessage = (response: unknown) => {
+	if (
+		typeof response === 'object' &&
+		response !== null &&
+		'message' in response &&
+		typeof response.message === 'string'
+	) {
+		return response.message
+	}
+
+	return 'Hospital saved successfully'
+}
+
+const getHospitalAddressText = (hospital: DoctorHospital) => {
+	const fullAddress = hospital.fullAddress.trim()
+	const location = hospital.location.trim()
+
+	if (fullAddress && location && fullAddress !== location) {
+		return `${fullAddress} ${location}`.trim()
+	}
+
+	return fullAddress || location
+}
 
 export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospitalsTabProps) {
 	const [showForm, setShowForm] = useState(false)
 	const [form, setForm] = useState(EMPTY_FORM)
+	const [isSaving, setIsSaving] = useState(false)
 
 	const handleSetPrimary = (id: string) => {
 		onChange(hospitals.map((h) => ({ ...h, isPrimary: h.id === id })))
 	}
 
-	const handleSave = () => {
-		if (!form.name.trim()) return
-		const newHospital: DoctorHospital = {
-			id: Date.now().toString(),
-			name: form.name,
-			location: form.location,
-			fullAddress: form.fullAddress,
-			isPrimary: hospitals.length === 0,
-		}
-		onChange([...hospitals, newHospital])
-		setForm(EMPTY_FORM)
-		setShowForm(false)
-	}
+	const handleSave = async () => {
+  	const trimmedName = form.name.trim();
+  	const trimmedAddress = form.fullAddress.trim();
+  	const isPrimary = hospitals.length === 0;
 
-	// -- Add new address form ------------------------------------------
+ 	 if (!trimmedName) {
+   		 toast.error("Hospital name is required");
+    return;
+  	}
+
+  	if (!trimmedAddress) {
+    	toast.error("Full address is required");
+    return;
+  	}
+
+  	setIsSaving(true);
+
+  	try {
+    	const response = await createHospital({
+      		name: trimmedName,
+      		phone_number: form.phone_number.trim(),
+      		full_address: trimmedAddress,
+      		is_primary: isPrimary,
+      		video_consultation_fee: form.video_consultation_fee.trim(),
+      		offline_consultation_fee: form.offline_consultation_fee.trim(),
+    	});
+
+    toast.success(getSuccessMessage(response));
+    window.location.reload();
+
+  	} catch (error) {
+    	console.error("Failed to save hospital", error);
+    	toast.error("Failed to save hospital");
+  	} finally {
+    	setIsSaving(false);
+  	}
+	};
 	if (showForm) {
 		return (
 			<Box sx={{ ...customCardStyle }}>
-				{/* Header */}
 				<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
 					<IconButton
 						size="small"
@@ -65,13 +119,13 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 						label="Enter hospital name"
 						value={form.name}
 						placeholder="e.g. Arogya Clinic"
-						onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+						onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
 					/>
 					<AppInput
-						label="Location"
-						value={form.location}
-						placeholder="e.g. KR Market, Bengaluru"
-						onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))}
+						label="Phone number"
+						value={form.phone_number}
+						placeholder="e.g. +91 98765 43210"
+						onChange={(e) => setForm((prev) => ({ ...prev, phone_number: e.target.value }))}
 					/>
 					<AppInput
 						label="Enter Full address"
@@ -79,26 +133,35 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 						placeholder="Enter complete address"
 						multiline
 						rows={3}
-						onChange={(e) => setForm((p) => ({ ...p, fullAddress: e.target.value }))}
+						onChange={(e) => setForm((prev) => ({ ...prev, fullAddress: e.target.value }))}
+					/>
+					<AppInput
+						label="Video consultation fee"
+						value={form.video_consultation_fee}
+						placeholder="e.g. 500"
+						onChange={(e) =>
+							setForm((prev) => ({ ...prev, video_consultation_fee: e.target.value }))
+						}
+					/>
+					<AppInput
+						label="Offline consultation fee"
+						value={form.offline_consultation_fee}
+						placeholder="e.g. 300"
+						onChange={(e) =>
+							setForm((prev) => ({ ...prev, offline_consultation_fee: e.target.value }))
+						}
 					/>
 				</Box>
 
 				<Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-					<AppButton
-						variant="contained"
-						onClick={handleSave}
-						// sx={{ px: 4, borderRadius: "10px", textTransform: "none", fontWeight: 600 }}
-						label="Save Address"
-					/>
+					<AppButton variant="contained" onClick={handleSave} loading={isSaving} label="Save Address" />
 				</Box>
 			</Box>
 		)
 	}
 
-	// -- Hospital list -------------------------------------------------
 	return (
 		<Box sx={{ ...customCardStyle }}>
-			{/* Header */}
 			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
 				<Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
 					My Hospital
@@ -111,7 +174,6 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 				/>
 			</Box>
 
-			{/* Hospital cards */}
 			{hospitals.length === 0 ? (
 				<Box sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>
 					<HomeOutlinedIcon sx={{ fontSize: 48, mb: 1, opacity: 0.3 }} />
@@ -121,7 +183,6 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
 					{hospitals.map((hospital, index) => (
 						<Box key={hospital.id}>
-							{/* Address label */}
 							<Typography
 								variant="caption"
 								sx={{
@@ -135,9 +196,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 								Address {index + 1}
 							</Typography>
 
-							{/* Card row */}
 							<Box sx={{ display: 'flex', gap: 1 }}>
-								{/* Main card */}
 								<Box
 									sx={{
 										flex: 1,
@@ -164,14 +223,12 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 												variant="caption"
 												sx={{ color: 'text.secondary', fontSize: '12px', lineHeight: 1.5 }}
 											>
-												{hospital.fullAddress}
-												{hospital.location && ` ${hospital.location}`}
+												{getHospitalAddressText(hospital)}
 											</Typography>
 										</Box>
 									</Box>
 								</Box>
 
-								{/* Set as Primary */}
 								<Box
 									sx={{
 										border: '1px solid',
@@ -202,7 +259,6 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 									/>
 								</Box>
 
-								{/* More options */}
 								<Box
 									sx={{
 										border: '1px solid',

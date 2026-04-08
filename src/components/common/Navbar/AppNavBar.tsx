@@ -14,6 +14,8 @@ import {
 } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import CloseIcon from '@mui/icons-material/Close'
+import LocationOnIcon from '@mui/icons-material/LocationOn'
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
 import AppButton from '../Button/AppButton'
@@ -173,6 +175,31 @@ const AppNavBar: React.FC = () => {
 					{/* Right: Log In | Sign up */}
 					{isMdUp ? (
 						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+						{/* Location pill */}
+						<Box
+							sx={{
+								display: 'flex',
+								alignItems: 'center',
+								gap: 0.5,
+								border: '1px solid rgba(255,255,255,0.5)',
+								borderRadius: '10px',
+								px: 1.5,
+								py: 0.5,
+								cursor: 'pointer',
+								color: 'rgba(255,255,255,0.88)',
+								'&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
+							}}
+						>
+							<LocationOnIcon sx={{ fontSize: 15, color: 'rgba(255,255,255,0.8)' }} />
+							<Typography variant='body2' sx={{ fontSize: '13px', fontWeight: 500, color: '#fff' }}>
+								Bengaluru, KR Market
+							</Typography>
+							<KeyboardArrowDownIcon sx={{ fontSize: 15 }} />
+						</Box>
+
+						{/* Vertical Divider */}
+						<Box sx={{ width: '1px', height: '22px', bgcolor: 'rgba(255,255,255,0.3)' }} />
+
 							<Button
 								onClick={() => navigate('/login')}
 								variant="text"
