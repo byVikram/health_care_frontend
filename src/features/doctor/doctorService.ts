@@ -14,6 +14,7 @@ export interface AppointmentParams {
 	limit?: number
 	appointment_date?: string
 	status?: string
+	appSearch?: string
 }
 
 export interface DoctorSearchParams {
@@ -237,5 +238,3 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 		availability,
 	}
 }
-
-

@@ -1,7 +1,8 @@
-import { Box, Card, Grid, InputLabel, MenuItem, Select, Typography} from '@mui/material'
+import { Box, Card, Grid, InputLabel, MenuItem, Typography} from '@mui/material'
 import { useEffect, useState } from 'react'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppButton from '../../../components/common/Button/AppButton'
+import AppSelect from '../../../components/common/Select/AppSelect'
 
 
 const TestPage = () => {
@@ -61,7 +62,7 @@ const TestPage = () => {
 
         <Grid>
               <InputLabel>Color</InputLabel>
-              <Select
+              <AppSelect
                 value={color}
                 label="Color"
                 onChange={(e) => {
@@ -72,7 +73,7 @@ const TestPage = () => {
                 <MenuItem value="blue">Blue</MenuItem>
                 <MenuItem value="green">Green</MenuItem>
                 <MenuItem value="white">White</MenuItem>
-              </Select>
+              </AppSelect>
         </Grid>
 
           <Grid size={12} display="flex" justifyContent="center">

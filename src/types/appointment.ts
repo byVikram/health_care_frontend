@@ -46,3 +46,8 @@ export interface AppointmentsResponse {
 	limit: number
 	pages: number
 }
+
+export interface AppointmentParams {
+  appointment_date?: string;
+  appSearch?: string;  
+}
