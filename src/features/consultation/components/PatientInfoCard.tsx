@@ -9,27 +9,27 @@ interface PatientInfoCardProps {
 	patient: ConsultationPatient
 }
 
-function Label({ children }: { children: React.ReactNode }) {
+function Label({ children, fontSize = '12px' }: { children: React.ReactNode; fontSize?: string }) {
 	return (
-		<Typography component="span" fontSize={'12px'} sx={{ color: 'primary.main', fontWeight: 400 }}>
+		<Typography component="span" fontSize={fontSize} sx={{ color: 'primary.main', fontWeight: 400 }}>
 			{children}
 		</Typography>
 	)
 }
 
-function Value({ children }: { children: React.ReactNode }) {
+function Value({ children, fontSize = '12px' }: { children: React.ReactNode; fontSize?: string }) {
 	return (
-		<Typography component="span" fontWeight={500} fontSize={'12px'} sx={{ color: 'text.primary', ml: 1 }}>
+		<Typography component="span" fontWeight={500} fontSize={fontSize} sx={{ color: 'text.primary', ml: 1 }}>
 			{children}
 		</Typography>
 	)
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, fontSize }: { label: string; value: string; fontSize?: string }) {
 	return (
 		<Box>
-			<Label>{label}</Label>
-			<Value>{value || '�'}</Value>
+			<Label fontSize={fontSize}>{label}</Label>
+			<Value fontSize={fontSize}>{value || '—'}</Value>
 		</Box>
 	)
 }
@@ -54,8 +54,6 @@ export default function PatientInfoCard({ patient }: PatientInfoCardProps) {
 						sx={{
 							width: 80,
 							height: 80,
-							// border: '2px solid',
-							// borderColor: 'primary.main',
 							borderRadius: '8px',
 						}}
 					/>
@@ -167,25 +165,29 @@ export default function PatientInfoCard({ patient }: PatientInfoCardProps) {
 					<Box sx={{ mt: 0.5, display: 'flex', flexDirection: 'column', gap: 0.3 }}>
 						{patient.chronicDiseases.length > 0 ? (
 							patient.chronicDiseases.map((d) => (
-								<Typography key={d} variant="body2" sx={{ fontSize: '13px', color: 'text.primary' }}>
+								<Typography key={d} variant="body2" sx={{ fontSize: '11px', color: 'text.primary' }}>
 									{d}
 								</Typography>
 							))
 						) : (
-							<Typography variant="body2" sx={{ fontSize: '13px', color: 'text.disabled' }}>
+							<Typography variant="body2" sx={{ fontSize: '11px', color: 'text.disabled' }}>
 								None
 							</Typography>
 						)}
 					</Box>
 				</Box>
 
+				<Divider orientation="vertical" flexItem />
+
 				{/* Occupation + Lifestyle */}
 				<Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.6 }}>
-					<Row label="Occupation:" value={patient.occupation} />
-					<Row label="Smoking:" value={patient.smokingStatus} />
-					<Row label="Alcohol:" value={patient.alcoholConsumption} />
-					<Row label="Food preference:" value={patient.dietType} />
+					<Row label="Occupation:" value={patient.occupation} fontSize="11px" />
+					<Row label="Smoking:" value={patient.smokingStatus} fontSize="11px" />
+					<Row label="Alcohol:" value={patient.alcoholConsumption} fontSize="11px" />
+					<Row label="Food preference:" value={patient.dietType} fontSize="11px" />
 				</Box>
+
+				<Divider orientation="vertical" flexItem />
 
 				{/* Allergies */}
 				<Box sx={{ flex: 1 }}>
@@ -193,12 +195,12 @@ export default function PatientInfoCard({ patient }: PatientInfoCardProps) {
 					<Box sx={{ mt: 0.5, display: 'flex', flexDirection: 'column', gap: 0.3 }}>
 						{patient.allergies.length > 0 ? (
 							patient.allergies.map((a) => (
-								<Typography key={a} variant="body2" sx={{ fontSize: '13px', color: 'text.primary' }}>
+								<Typography key={a} variant="body2" sx={{ fontSize: '11px', color: 'text.primary' }}>
 									{a}
 								</Typography>
 							))
 						) : (
-							<Typography variant="body2" sx={{ fontSize: '13px', color: 'text.disabled' }}>
+							<Typography variant="body2" sx={{ fontSize: '11px', color: 'text.disabled' }}>
 								None
 							</Typography>
 						)}

@@ -7,7 +7,7 @@ import { DoctorAppointments } from '../doctor/DoctorAppointments'
 // import { PatientAppointments } from '../patient/patient/PatientAppointments'
 import { useAuth } from '../../hooks/useAuth'
 
-import drImage from '../../assets/Services/doctors-service.png'
+import drImage from '../../assets/Banner/banner.png'
 import videoImage from '../../assets/blog-and-community/video-image.png'
 import adImage from '../../assets/blog-and-community/ad-image.png'
 import AnswerQuestionsSection from '../dashboard/AnswerQuestionsSection'
@@ -62,6 +62,17 @@ export default function PortalPage() {
 	const [apptError, setApptError] = useState('')
 	const [weekDays] = useState(() => buildWeekDays())
 	const selectedDateObj = weekDays[selectedDate]?.dateObj ?? new Date()
+	const [searchQuery, setSearchQuery] = useState('')
+
+	// ── Debounced query — only this is passed to the API ──────
+	const [debouncedQuery, setDebouncedQuery] = useState(searchQuery)
+
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			setDebouncedQuery(searchQuery)
+		}, 300)
+		return () => clearTimeout(timer)
+	}, [searchQuery])
 
 	const formatDateForApi = (date: Date) => {
 		const year = date.getFullYear()
@@ -70,15 +81,17 @@ export default function PortalPage() {
 		return `${year}-${month}-${day}`
 	}
 
-	// const getSelectedAppointmentDate = () => formatDateForApi(selectedDateObj)
-
+	// ── API call depends on debouncedQuery, NOT searchQuery ───
 	useEffect(() => {
 		const fetchAppointments = async () => {
 			try {
 				setApptLoading(true)
 				setApptError('')
 				const dateStr = formatDateForApi(weekDays[selectedDate]?.dateObj ?? new Date())
-				const res = await getAppointments({ appointment_date: dateStr })
+				const res = await getAppointments({
+					appointment_date: dateStr,
+					appSearch: debouncedQuery || "",
+				})
 				if (res.success) {
 					const items = Array.isArray(res.data) ? res.data : []
 					setAppointments(items)
@@ -90,7 +103,7 @@ export default function PortalPage() {
 			}
 		}
 		fetchAppointments()
-	}, [selectedDate, weekDays])
+	}, [selectedDate, weekDays, debouncedQuery])
 
 	return (
 		<Box sx={{ bgcolor: '#f5f7fa' }}>
@@ -213,7 +226,6 @@ export default function PortalPage() {
 												display: 'block',
 												objectFit: 'cover',
 												maxHeight: '480px',
-												// minHeight: '400px',
 												maxWidth: '480px',
 											}}
 										/>
@@ -387,6 +399,8 @@ export default function PortalPage() {
 								apptError={apptError}
 								weekDays={weekDays}
 								selectedDateObj={selectedDateObj}
+								searchQuery={searchQuery}
+								setSearchQuery={setSearchQuery}
 							/>
 						)}
 						{role === USER_ROLES.PATIENT && <PatientAppointments />}
@@ -395,13 +409,9 @@ export default function PortalPage() {
 
 				{/* BOTTOM 50/50: Community & Blogs | Upcoming Events */}
 				<Grid container spacing={3} alignItems="stretch" sx={{ mt: 3 }}>
-					{/* LEFT: Community rows + Blog cards */}
-
 					<Grid size={{ xs: 12, md: 6 }}>
 						<CommunityBlogsSection variant={'column'} />
 					</Grid>
-
-					{/* RIGHT: Event rows + Featured event cards */}
 					<Grid size={{ xs: 12, md: 6 }}>
 						<UpcomingEventsSection variant={'column'} />
 					</Grid>
