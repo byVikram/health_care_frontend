@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Box, Typography, TextField, InputAdornment, Divider, Chip } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
@@ -52,7 +52,7 @@ export function DoctorAppointments({
 }) {
 	// ── Appointment action state ──────────────────────────────────────────────
 	const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({})
-	const [debouncedQuery, setDebouncedQuery] = useState('')
+	// const [debouncedQuery, setDebouncedQuery] = useState('')
 
 	// ── Reschedule drawer state ───────────────────────────────────────────────
 	const [rescheduleOpen, setRescheduleOpen]                 = useState(false)
@@ -168,14 +168,14 @@ export function DoctorAppointments({
 	}
 
 	// ── Search debounce ───────────────────────────────────────────────────────
-	useEffect(() => {
-		const timer = setTimeout(() => setDebouncedQuery(searchQuery), 500)
-		return () => clearTimeout(timer)
-	}, [searchQuery])
+	// useEffect(() => {
+	// 	const timer = setTimeout(() => setDebouncedQuery(searchQuery), 500)
+	// 	return () => clearTimeout(timer)
+	// }, [searchQuery])
 
-	useEffect(() => {
-		console.log('Search API call:', debouncedQuery)
-	}, [debouncedQuery])
+	// useEffect(() => {
+	// 	console.log('Search API call:', debouncedQuery)
+	// }, [debouncedQuery])
 
 	// ── Render ────────────────────────────────────────────────────────────────
 	return (
@@ -392,3 +392,4 @@ export function DoctorAppointments({
 		</Box>
 	)
 }
+

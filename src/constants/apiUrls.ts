@@ -33,6 +33,9 @@ export const API_ENDPOINTS = {
 		ME: `${BASE_URL}/api/patients/me/details`,
 		UPDATE: `${BASE_URL}/api/patients/me/details`,
 	},
+	LOOKUP: {
+		GET: `${BASE_URL}/api/lookup`,
+	},
 	APPOINTMENTS: {
 		GET: `${BASE_URL}/api/appointments`,
 		CREATE: `${BASE_URL}/api/appointments`,
@@ -40,3 +43,5 @@ export const API_ENDPOINTS = {
 		UPDATE: `${BASE_URL}/api/appointments/update-status`,
 	},
 }
+
+

@@ -1,4 +1,4 @@
-// src/features/doctor/profile/DoctorProfilePage.tsx
+﻿// src/features/doctor/profile/DoctorProfilePage.tsx
 import { useState, useMemo, useEffect } from 'react'
 import { Box, Container, Grid, CircularProgress, Typography } from '@mui/material'
 import AppProfileSidebar from '../../../components/common/ProfileSidebar/AppProfileSidebar'
@@ -15,7 +15,7 @@ import DoctorAvailabilityTab from './components/DoctorAvailabilityTab'
 import { DoctorProfile, DoctorProfilePersonal, DoctorProfileProfessional } from '../../../types/doctor-profile'
 import { customCardStyle } from '../../../styles/commonStyles'
 import { getDoctorProfile, mapDoctorProfileApi } from '../doctorService'
-import { useAuth, setAuth } from '../../../hooks/useAuth'
+import { useAuth, setAuth, LookupData } from '../../../hooks/useAuth'
 import ApiService from '../../../services/apiService'   // ✅ Fix: ApiService import added
 
 const DOCTOR_NAV_ITEMS = [
@@ -44,7 +44,7 @@ export default function DoctorProfilePage() {
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
-	const { role, user, accessToken, refreshToken } = useAuth()
+	const { role, user, accessToken, refreshToken, lookupData } = useAuth()
 
 	// ── Fetch on mount ──────────────────────────────────────────────────────────
 	useEffect(() => {
@@ -88,7 +88,8 @@ export default function DoctorProfilePage() {
 				role!,
 				{ ...user!, avatar: newAvatarUrl },
 				accessToken!,
-				refreshToken!
+				refreshToken!,
+				lookupData
 			)
 		} catch (err) {
 			console.error('Avatar upload failed', err)
@@ -169,3 +170,4 @@ export default function DoctorProfilePage() {
 		</Box>
 	)
 }
+

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { getAppointments } from '../doctor/doctorService'
 import { Appointment } from '../../types/appointment'
 
+
 import { DoctorAppointments } from '../doctor/DoctorAppointments'
 // import { PatientAppointments } from '../patient/patient/PatientAppointments'
 import { useAuth } from '../../hooks/useAuth'
@@ -27,6 +28,7 @@ import { PatientAppointments } from '../patient/PatientAppointments'
 import { USER_ROLES } from '../../constants/constants'
 import UpcomingEventsSection from '../dashboard/UpcomingEventsSection'
 import CommunityBlogsSection from '../dashboard/CommunityBlogsSection'
+import { useDebouncedValue } from '../../utils/debounce'
 
 const buildWeekDays = () => {
 	const today = new Date()
@@ -63,16 +65,16 @@ export default function PortalPage() {
 	const [weekDays] = useState(() => buildWeekDays())
 	const selectedDateObj = weekDays[selectedDate]?.dateObj ?? new Date()
 	const [searchQuery, setSearchQuery] = useState('')
+	const debouncedQuery = useDebouncedValue(searchQuery, 300)
 
-	// ── Debounced query — only this is passed to the API ──────
-	const [debouncedQuery, setDebouncedQuery] = useState(searchQuery)
+	// const [debouncedQuery, setDebouncedQuery] = useState(searchQuery)
 
-	useEffect(() => {
-		const timer = setTimeout(() => {
-			setDebouncedQuery(searchQuery)
-		}, 300)
-		return () => clearTimeout(timer)
-	}, [searchQuery])
+	// useEffect(() => {
+	// 	const timer = setTimeout(() => {
+	// 		setDebouncedQuery(searchQuery)
+	// 	}, 300)
+	// 	return () => clearTimeout(timer)
+	// }, [searchQuery])
 
 	const formatDateForApi = (date: Date) => {
 		const year = date.getFullYear()
@@ -81,7 +83,7 @@ export default function PortalPage() {
 		return `${year}-${month}-${day}`
 	}
 
-	// ── API call depends on debouncedQuery, NOT searchQuery ───
+	// ── API call depends on debouncedQuery, 
 	useEffect(() => {
 		const fetchAppointments = async () => {
 			try {
@@ -90,7 +92,7 @@ export default function PortalPage() {
 				const dateStr = formatDateForApi(weekDays[selectedDate]?.dateObj ?? new Date())
 				const res = await getAppointments({
 					appointment_date: dateStr,
-					appSearch: debouncedQuery || "",
+					search: debouncedQuery || "",
 				})
 				if (res.success) {
 					const items = Array.isArray(res.data) ? res.data : []
