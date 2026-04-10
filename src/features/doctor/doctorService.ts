@@ -13,6 +13,7 @@ export interface AppointmentParams {
 	page?: number
 	limit?: number
 	appointment_date?: string
+	search?: string
 	status?: string
 	appSearch?: string
 }

@@ -1,4 +1,4 @@
-// src/components/common/Navbar/DoctorNavBar.tsx
+﻿// src/components/common/Navbar/DoctorNavBar.tsx
 import { useState } from 'react'
 import { Box, Typography, IconButton, Avatar, Menu, MenuItem } from '@mui/material'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
@@ -87,7 +87,7 @@ export default function DoctorNavBar({ onProfileClick }: DoctorNavBarProps) {
 							<Typography sx={{ color: '#fff', fontSize: '13px', fontWeight: 500 }}>
 								{selectedClinic.name}, {selectedClinic.location}
 							</Typography>
-							{clinics.length - 1 && (
+							{clinics.length > 1 && (
 								<Box
 									sx={{
 										bgcolor: 'rgba(255,255,255,0.2)',
@@ -218,8 +218,8 @@ export default function DoctorNavBar({ onProfileClick }: DoctorNavBarProps) {
 					{/* Avatar with online dot */}
 					<Box sx={{ position: 'relative' }}>
 						<Avatar
-    							src={user?.avatar || drImage}  
-    							sx={{ width: 36, height: 36, border: '2px solid rgba(255,255,255,0.5)' }}
+							src={user?.avatar || drImage}
+							sx={{ width: 36, height: 36, border: '2px solid rgba(255,255,255,0.5)' }}
 						/>
 						<Box
 							sx={{
