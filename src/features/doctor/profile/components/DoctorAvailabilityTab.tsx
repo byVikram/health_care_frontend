@@ -1,12 +1,18 @@
-// src/features/doctor/profile/components/DoctorAvailabilityTab.tsx
-import { useState } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { Box, Typography } from '@mui/material'
+import { toast } from 'react-toastify'
 import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked'
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 import AppButton from '../../../../components/common/Button/AppButton'
-import DateSlotPicker from '../../../../components/common/DateSlotPicker/DateSlotPicker'
+import DateSlotPicker, { SlotGroup, TimeSlot } from '../../../../components/common/DateSlotPicker/DateSlotPicker'
 import { DoctorHospital, DoctorAvailability } from '../../../../types/doctor-profile'
 import { customCardStyle } from '../../../../styles/commonStyles'
+import {
+	getDoctorAvailability,
+	createSlotOverrideBatch,
+	SlotOverridePayload,
+	SlotOverrideBatchPayload,
+} from '../../../../features/doctor/doctorService'
 
 interface DoctorAvailabilityTabProps {
 	hospitals: DoctorHospital[]
@@ -14,36 +20,232 @@ interface DoctorAvailabilityTabProps {
 	onChange: (availability: DoctorAvailability) => void
 }
 
-const DAY_KEYS: (keyof DoctorAvailability)[] = [
-	'sunday',
-	'monday',
-	'tuesday',
-	'wednesday',
-	'thursday',
-	'friday',
-	'saturday',
-]
+type UnselectedSlotsByDate = Record<string, string[]>
 
 export default function DoctorAvailabilityTab({ hospitals, availability, onChange }: DoctorAvailabilityTabProps) {
 	const [selectedHospitalId, setSelectedHospitalId] = useState<string>(
 		hospitals.find((h) => h.isPrimary)?.id ?? hospitals[0]?.id ?? ''
 	)
 	const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+	const [availableSlotGroups, setAvailableSlotGroups] = useState<SlotGroup[]>([])
+	const [slotsLoading, setSlotsLoading] = useState(false)
+	const [unselectedSlotsByDate, setUnselectedSlotsByDate] = useState<UnselectedSlotsByDate>({})
+	const [pendingOverrides, setPendingOverrides] = useState<SlotOverridePayload[]>([])
+	const [saveLoading, setSaveLoading] = useState(false)
+	const [pendingSaveToast, setPendingSaveToast] = useState<string | null>(null)
 
-	const dayKey = DAY_KEYS[selectedDate.getDay()]
-	const selectedSlots: string[] = availability[dayKey] ?? []
+	const formatDateForApi = (date: Date) => {
+		const year = date.getFullYear()
+		const month = String(date.getMonth() + 1).padStart(2, '0')
+		const day = String(date.getDate()).padStart(2, '0')
+		return `${year}-${month}-${day}`
+	}
+
+	const getDayKey = (date: Date): keyof DoctorAvailability => {
+		switch (date.getDay()) {
+			case 0:
+				return 'sunday'
+			case 1:
+				return 'monday'
+			case 2:
+				return 'tuesday'
+			case 3:
+				return 'wednesday'
+			case 4:
+				return 'thursday'
+			case 5:
+				return 'friday'
+			default:
+				return 'saturday'
+		}
+	}
+
+	const fetchAvailability = useCallback(async () => {
+		if (!selectedHospitalId || !selectedDate) return
+		try {
+			setSlotsLoading(true)
+			const res = await getDoctorAvailability({
+				hospital_id: selectedHospitalId,
+				date: formatDateForApi(selectedDate),
+			})
+			let processedData: SlotGroup[] = []
+			if (Array.isArray(res)) {
+				processedData = res as SlotGroup[]
+			} else if (res && Array.isArray(res.data)) {
+				processedData = res.data as SlotGroup[]
+			}
+			setAvailableSlotGroups(processedData)
+			setPendingOverrides([])
+		} catch (err) {
+			console.log(err)
+			setAvailableSlotGroups([])
+		} finally {
+			setSlotsLoading(false)
+		}
+	}, [selectedHospitalId, selectedDate])
+
+	useEffect(() => {
+		fetchAvailability()
+	}, [fetchAvailability])
+
+	const dayKey = getDayKey(selectedDate)
+	const selectedDateKey = formatDateForApi(selectedDate)
+
+	const allSelectableSlots = Array.from(
+		new Set(
+			availableSlotGroups.flatMap((group) =>
+				(group.slots ?? [])
+					.filter((slot: TimeSlot) => Boolean(slot.start_time) && slot.can_toggle !== false)
+					.map((slot: TimeSlot) => slot.start_time)
+			)
+		)
+	)
+
+	const apiBlockedSlots = Array.from(
+		new Set(
+			availableSlotGroups.flatMap((group) =>
+				(group.slots ?? [])
+					.filter(
+						(slot: TimeSlot) =>
+							Boolean(slot.start_time) && slot.can_toggle !== false && slot.status === 'BLOCKED'
+					)
+					.map((slot: TimeSlot) => slot.start_time)
+			)
+		)
+	)
+
+	const todayUnselected: string[] = unselectedSlotsByDate[selectedDateKey] ?? apiBlockedSlots
+	const selectedSlots: string[] = allSelectableSlots.filter((s) => !todayUnselected.includes(s))
+
+	const slotGroupsForPicker: SlotGroup[] = availableSlotGroups.map((group) => ({
+		...group,
+		slots: group.slots.map((slot) => {
+			if (slot.can_toggle === false) return slot
+			if (todayUnselected.includes(slot.start_time)) {
+				return { ...slot, status: 'BLOCKED', is_enabled: true }
+			}
+			if (slot.status === 'BLOCKED') {
+				return { ...slot, status: 'AVAILABLE', is_enabled: true }
+			}
+			return slot
+		}),
+	}))
+
+	const getSlotEndTime = (startTime: string): string => {
+		for (const group of availableSlotGroups) {
+			const match = group.slots.find((s) => s.start_time === startTime)
+			if (match) return match.end_time
+		}
+		return startTime
+	}
+
+	const stageSlotSelection = (slots: string[]) => {
+		const newlyBlocked = selectedSlots.filter((s) => !slots.includes(s))
+		const newlyUnblocked = todayUnselected.filter((s) => slots.includes(s))
+
+		const updatedUnselected = [...todayUnselected.filter((s) => !newlyUnblocked.includes(s)), ...newlyBlocked]
+
+		const updated: UnselectedSlotsByDate = { ...unselectedSlotsByDate, [selectedDateKey]: updatedUnselected }
+		setUnselectedSlotsByDate(updated)
+		localStorage.setItem('doctorBlockedSlots', JSON.stringify(updated))
+		onChange({ ...availability, [dayKey]: slots })
+
+		const changedOverrides: SlotOverridePayload[] = [
+			...newlyBlocked.map((s) => ({
+				hospital_id: selectedHospitalId,
+				date: formatDateForApi(selectedDate),
+				start_time: s,
+				end_time: getSlotEndTime(s),
+				is_blocked: true,
+			})),
+			...newlyUnblocked.map((s) => ({
+				hospital_id: selectedHospitalId,
+				date: formatDateForApi(selectedDate),
+				start_time: s,
+				end_time: getSlotEndTime(s),
+				is_blocked: false,
+			})),
+		]
+
+		const initialBlockedSlots = new Set(apiBlockedSlots)
+		setPendingOverrides((prev) => {
+			const filtered = prev.filter(
+				(p) =>
+					!changedOverrides.some(
+						(c) =>
+							c.hospital_id === p.hospital_id &&
+							c.date === p.date &&
+							c.start_time === p.start_time &&
+							c.end_time === p.end_time
+					)
+			)
+			const effectiveOverrides = changedOverrides.filter(
+				(override) => initialBlockedSlots.has(override.start_time) !== override.is_blocked
+			)
+			return [...filtered, ...effectiveOverrides]
+		})
+	}
+
+	const handleTimeChange = (slots: string[]) => {
+		setPendingSaveToast(null)
+		stageSlotSelection(slots)
+	}
+
+	const handleSaveAvailability = async () => {
+		console.log('pendingOverrides:', pendingOverrides)
+		if (pendingOverrides.length === 0) {
+			setPendingSaveToast(null)
+			return
+		}
+		setSaveLoading(true)
+		try {
+			let backendMessage = ''
+			const overridesByHospitalAndDate = pendingOverrides.reduce<Record<string, SlotOverrideBatchPayload>>(
+				(acc, override) => {
+					const groupKey = `${override.hospital_id ?? ''}__${override.date}`
+					if (!acc[groupKey]) {
+						acc[groupKey] = {
+							hospital_id: override.hospital_id ?? null,
+							date: override.date,
+							slots: [],
+						}
+					}
+					acc[groupKey].slots.push({
+						start_time: override.start_time,
+						end_time: override.end_time,
+						is_blocked: override.is_blocked,
+					})
+					return acc
+				},
+				{}
+			)
+
+			const batchPayloads = Object.values(overridesByHospitalAndDate)
+			for (const payload of batchPayloads) {
+				const response = await createSlotOverrideBatch(payload)
+				console.log('API response:', response)
+				if (response?.message) {
+					backendMessage = response.message
+				}
+			}
+
+			setPendingOverrides([])
+			toast.success(backendMessage || pendingSaveToast || 'Saved successfully')
+			await fetchAvailability()
+			setPendingSaveToast(null)
+		} catch (err) {
+			console.error('Save availability error:', err)
+		} finally {
+			setSaveLoading(false)
+		}
+	}
 
 	return (
-		<Box
-			sx={{
-				...customCardStyle,
-			}}
-		>
+		<Box sx={{ ...customCardStyle }}>
 			<Typography variant="h4" sx={{ fontWeight: 700, mb: 3, color: 'text.primary' }}>
 				Availability
 			</Typography>
 
-			{/* Choose Hospital */}
 			<Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary', mb: 1.5, fontSize: '13px' }}>
 				Choose Hospital
 			</Typography>
@@ -98,10 +300,7 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 									</Typography>
 								</Box>
 								<Box sx={{ flex: 1 }}>
-									<Typography
-										variant="body2"
-										sx={{ fontWeight: 600, color: 'text.primary', fontSize: '13.5px' }}
-									>
+									<Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', fontSize: '13.5px' }}>
 										{hospital.name}
 									</Typography>
 									<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '11.5px' }}>
@@ -119,31 +318,45 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 				)}
 			</Box>
 
-			{/* Shared date + time picker � multi-select mode */}
 			<DateSlotPicker
 				multiSelect
 				selectedDate={selectedDate}
 				onDateChange={setSelectedDate}
 				selectedTime={selectedSlots}
-				onTimeChange={(slots) => onChange({ ...availability, [dayKey]: slots })}
+				onTimeChange={handleTimeChange}
 				dateLabel="Select follow up date"
 				timeLabel="Select Follow up time"
 				timeSlotColumns={5}
+				disableBookedSlots={false}
+				availableSlots={slotGroupsForPicker.length > 0 ? slotGroupsForPicker : undefined}
+				loading={slotsLoading}
+				onSelectAll={() => {
+					stageSlotSelection(allSelectableSlots)
+					setPendingSaveToast('Selected All Successfully')
+				}}
+				onUnselectAll={() => {
+					stageSlotSelection([])
+					setPendingSaveToast('Unselected All Successfully')
+				}}
 			/>
 
-			{/* Buttons */}
 			<Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
 				<AppButton
 					variant="outlined"
 					fullWidth
 					label="Cancel"
-					onClick={() => onChange({ ...availability, [dayKey]: [] })}
+					onClick={() => {
+						onChange({ ...availability, [dayKey]: [] })
+						setPendingOverrides([])
+						setPendingSaveToast(null)
+					}}
 				/>
 				<AppButton
 					variant="contained"
 					fullWidth
 					label="Save Availability"
-					onClick={() => console.log('Saved availability', availability)}
+					loading={saveLoading}
+					onClick={handleSaveAvailability}
 				/>
 			</Box>
 		</Box>

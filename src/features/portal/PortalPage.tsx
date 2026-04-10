@@ -3,11 +3,12 @@ import { useState, useEffect } from 'react'
 import { getAppointments } from '../doctor/doctorService'
 import { Appointment } from '../../types/appointment'
 
+
 import { DoctorAppointments } from '../doctor/DoctorAppointments'
 // import { PatientAppointments } from '../patient/patient/PatientAppointments'
 import { useAuth } from '../../hooks/useAuth'
 
-import drImage from '../../assets/Services/doctors-service.png'
+import drImage from '../../assets/Banner/banner.png'
 import videoImage from '../../assets/blog-and-community/video-image.png'
 import adImage from '../../assets/blog-and-community/ad-image.png'
 import AnswerQuestionsSection from '../dashboard/AnswerQuestionsSection'
@@ -27,6 +28,7 @@ import { PatientAppointments } from '../patient/PatientAppointments'
 import { USER_ROLES } from '../../constants/constants'
 import UpcomingEventsSection from '../dashboard/UpcomingEventsSection'
 import CommunityBlogsSection from '../dashboard/CommunityBlogsSection'
+import { useDebouncedValue } from '../../utils/debounce'
 
 const buildWeekDays = () => {
 	const today = new Date()
@@ -62,6 +64,17 @@ export default function PortalPage() {
 	const [apptError, setApptError] = useState('')
 	const [weekDays] = useState(() => buildWeekDays())
 	const selectedDateObj = weekDays[selectedDate]?.dateObj ?? new Date()
+	const [searchQuery, setSearchQuery] = useState('')
+	const debouncedQuery = useDebouncedValue(searchQuery, 300)
+
+	// const [debouncedQuery, setDebouncedQuery] = useState(searchQuery)
+
+	// useEffect(() => {
+	// 	const timer = setTimeout(() => {
+	// 		setDebouncedQuery(searchQuery)
+	// 	}, 300)
+	// 	return () => clearTimeout(timer)
+	// }, [searchQuery])
 
 	const formatDateForApi = (date: Date) => {
 		const year = date.getFullYear()
@@ -70,15 +83,17 @@ export default function PortalPage() {
 		return `${year}-${month}-${day}`
 	}
 
-	// const getSelectedAppointmentDate = () => formatDateForApi(selectedDateObj)
-
+	// ── API call depends on debouncedQuery, 
 	useEffect(() => {
 		const fetchAppointments = async () => {
 			try {
 				setApptLoading(true)
 				setApptError('')
 				const dateStr = formatDateForApi(weekDays[selectedDate]?.dateObj ?? new Date())
-				const res = await getAppointments({ appointment_date: dateStr })
+				const res = await getAppointments({
+					appointment_date: dateStr,
+					search: debouncedQuery || "",
+				})
 				if (res.success) {
 					const items = Array.isArray(res.data) ? res.data : []
 					setAppointments(items)
@@ -90,7 +105,7 @@ export default function PortalPage() {
 			}
 		}
 		fetchAppointments()
-	}, [selectedDate, weekDays])
+	}, [selectedDate, weekDays, debouncedQuery])
 
 	return (
 		<Box sx={{ bgcolor: '#f5f7fa' }}>
@@ -98,7 +113,7 @@ export default function PortalPage() {
 				{/* TOP 50/50: Welcome+Services | Search+Appointments */}
 				<Grid container spacing={3} alignItems="stretch">
 					{/* LEFT */}
-					<Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column', mb: 2 }}>
+					<Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
 						{role === USER_ROLES.DOCTOR && (
 							<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
 								<Box
@@ -198,7 +213,7 @@ export default function PortalPage() {
 							</Box>
 						)}
 
-						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%', flex: 1, mt: 0 }}>
+						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%', flex: 1 }}>
 							{/* Video + Right Services row */}
 							<Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
 								{/* Video Image with dots */}
@@ -213,7 +228,6 @@ export default function PortalPage() {
 												display: 'block',
 												objectFit: 'cover',
 												maxHeight: '480px',
-												// minHeight: '400px',
 												maxWidth: '480px',
 											}}
 										/>
@@ -347,6 +361,7 @@ export default function PortalPage() {
 									overflow: 'hidden',
 									flex: 1,
 									maxHeight: '400px',
+									mt: 2,
 								}}
 							>
 								<Box
@@ -386,6 +401,8 @@ export default function PortalPage() {
 								apptError={apptError}
 								weekDays={weekDays}
 								selectedDateObj={selectedDateObj}
+								searchQuery={searchQuery}
+								setSearchQuery={setSearchQuery}
 							/>
 						)}
 						{role === USER_ROLES.PATIENT && <PatientAppointments />}
@@ -393,14 +410,10 @@ export default function PortalPage() {
 				</Grid>
 
 				{/* BOTTOM 50/50: Community & Blogs | Upcoming Events */}
-				<Grid container spacing={3} alignItems="stretch" sx={{ mt: 1 }}>
-					{/* LEFT: Community rows + Blog cards */}
-
+				<Grid container spacing={3} alignItems="stretch" sx={{ mt: 3 }}>
 					<Grid size={{ xs: 12, md: 6 }}>
 						<CommunityBlogsSection variant={'column'} />
 					</Grid>
-
-					{/* RIGHT: Event rows + Featured event cards */}
 					<Grid size={{ xs: 12, md: 6 }}>
 						<UpcomingEventsSection variant={'column'} />
 					</Grid>

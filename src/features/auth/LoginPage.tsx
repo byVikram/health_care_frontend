@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom'
 import LoginForm from './components/LoginForm'
 import OtpForm from './components/OtpForm'
 import { toast } from 'react-toastify'
+import { ROUTES } from '../../constants/routes'
+
 // import OtpVerified from './components/OtpVerified'
 
 export default function LoginPage() {
@@ -17,7 +19,7 @@ export default function LoginPage() {
 		toast.success('Logged in successfully.')
 		// const role = localStorage.getItem('role')
 		// if (role === 'doctor')
-		navigate('/portal')
+		navigate(ROUTES.PORTAL.HOME)
 		// else navigate('/patient')
 	}
 

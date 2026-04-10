@@ -16,6 +16,8 @@ import AccountPage from '../features/auth/AccountPage'
 import WelcomePage from '../features/auth/WelcomePage'
 import PortalPage from '../features/portal/PortalPage'
 import NavbarLayout from '../components/layout/NavbarLayout'
+import TestPage from '../features/auth/test/TestPage'
+import { ROUTES } from '../constants/routes'
 // import DoctorPortalPage from '../features/doctor/DoctorPortalPage'
 // import PatientPortalPage from '../features/patient/PatientPortalPage'
 // import PatientProfilePage from '../features/patient/PatientProfilePage'
@@ -56,16 +58,16 @@ export default function AppRoutes() {
 			{/* <Route path="/" element={<Navigate to="/dashboard" replace />} /> */}
 
 			{/* Public routes */}
-			<Route path="/login" element={<LoginPage />} />
-			<Route path="/register" element={<RegisterPage />} />
+			<Route path= {ROUTES.AUTH.LOGIN} element={<LoginPage />} />
+			<Route path= {ROUTES.AUTH.REGISTER} element={<RegisterPage />} />
 
-			<Route path="/account" element={<AccountPage />} />
+			<Route path= {ROUTES.PUBLIC.ACCOUNT} element={<AccountPage />} />
 			<Route
-				path="/welcome-doctor"
+				path= {ROUTES.PUBLIC.WELCOME_DOCTOR}
 				element={
 					<WelcomePage
 						onContinue={() => {
-							navigate('/profile')
+							navigate(ROUTES.PORTAL.PROFILE)
 						}}
 					/>
 				}
@@ -74,14 +76,16 @@ export default function AppRoutes() {
 			{/* Protected routes - auth check then layout */}
 			<Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
 				<Route element={<ProtectedLayout />}>
-					<Route path="/" element={<DashboardPage />} />
-					{/* <Route path="/dashboard" element={<DashboardPage />} /> */}
-					<Route path="/doctors/:id" element={<DoctorDetailPage />} />
-					<Route path="/doctors/search" element={<DoctorSearchPage />} />
+					<Route path= {ROUTES.ROOT} element={<DashboardPage />} />
+					<Route path= {ROUTES.DOCTORS.DETAIL} element={<DoctorDetailPage />} />
+					<Route path={ROUTES.DOCTORS.SEARCH}  element={<DoctorSearchPage />} />
+					<Route path={ROUTES.TEST} element={<TestPage/>} />
 
 					{/* Add more protected pages here */}
 				</Route>
 			</Route>
+			
+
 
 			<Route element={<SidebarProtectedLayout />}>
 				{/* <Route path="/portal-patient" element={<PatientProfilePage />} />
@@ -89,9 +93,9 @@ export default function AppRoutes() {
 			</Route>
 
 			<Route element={<LoogedInNavbarLayout />}>
-				<Route path="/portal" element={<PortalPage />} />
-				<Route path="/profile" element={<ProfilePage />} />
-				<Route path="/consultation/:patientId" element={<ConsultationPage />} />
+				<Route path={ROUTES.PORTAL.HOME} element={<PortalPage />} />
+				<Route path={ROUTES.PORTAL.PROFILE} element={<ProfilePage />} />
+				<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
 			</Route>
 
 			{/* 404 */}

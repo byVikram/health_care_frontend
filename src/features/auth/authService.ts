@@ -1,6 +1,7 @@
 ﻿// src/features/auth/authService.ts
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
+import { LookupData } from '../../hooks/useAuth'
 
 export interface SendOtpResponse {
 	success: boolean
@@ -13,6 +14,7 @@ export interface VerifyOtpUser {
 	name: string
 	email: string
 	role: 'doctor' | 'patient'
+	avatar?: string
 }
 
 export interface VerifyOtpResponse {
@@ -25,6 +27,12 @@ export interface VerifyOtpResponse {
 		token_type: string
 		expires_in: number
 	}
+}
+
+export interface VerifyLookupResponse {
+	success: boolean
+	message: string
+	data: LookupData
 }
 
 export interface VerifyRolesResponse {
@@ -59,6 +67,11 @@ export const verifyOtp = async (contactNumber: string, otp: string): Promise<Ver
 		otp,
 	})
 	return res.data
+}
+
+export const getLookupData = async (): Promise<VerifyLookupResponse> => {
+  const res = await ApiService.get<VerifyLookupResponse>(API_ENDPOINTS.LOOKUP.GET)
+  return res.data
 }
 
 export const getRoles = async (): Promise<VerifyRolesResponse> => {

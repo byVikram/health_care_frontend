@@ -6,7 +6,7 @@ import DoctorProfileCard from './components/DoctorProfileCard'
 import HospitalSelector from './components/HospitalSelector'
 import AppointmentTypeSelector from './components/AppointmentTypeSelector'
 import AppButton from '../../../components/common/Button/AppButton'
-import DateSlotPicker from '../../../components/common/DateSlotPicker/DateSlotPicker'
+import DateSlotPicker, { SlotGroup, TimeSlot } from '../../../components/common/DateSlotPicker/DateSlotPicker'
 import AppModal from '../../../components/common/Modal/AppModal'
 import LoginForm from '../../../features/auth/components/LoginForm'
 import RegisterForm from '../../../features/auth/components/RegisterForm'
@@ -15,20 +15,23 @@ import { useAuth } from '../../../hooks/useAuth'
 import { customCardStyle } from '../../../styles/commonStyles'
 import { AppointmentType } from '../../../types/doctor'
 import { DoctorDetailData } from '../../../types/doctor-detail'
-import { createAppointment, getDoctorById } from '../doctorService'
+import { createAppointment, getDoctorById, getDoctorAvailability } from '../doctorService'
 import AppSkeleton from '../../../components/common/Skeleton/AppSkeleton'
 
 export default function DoctorDetailPage() {
 	const [selectedHospital, setSelectedHospital] = useState('')
 	const [selectedType, setSelectedType] = useState<'clinic' | 'video'>('clinic')
 	const [selectedDate, setSelectedDate] = useState(new Date())
-	const [selectedTime, setSelectedTime] = useState('01:00PM')
+	const [selectedTime, setSelectedTime] = useState('')
 	const [showFullAbout, setShowFullAbout] = useState(false)
 	const [booking, setBooking] = useState(false)
 	const [bookingError, setBookingError] = useState<string | null>(null)
 	const [doctorDetail, setDoctorDetail] = useState<DoctorDetailData | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
+
+	const [availableSlotGroups, setAvailableSlotGroups] = useState<SlotGroup[]>([])
+	const [slotsLoading, setSlotsLoading] = useState(false)
 
 	const { id } = useParams<{ id: string }>()
 	const { accessToken } = useAuth()
@@ -61,7 +64,6 @@ export default function DoctorDetailPage() {
 		setAuthContactNumber('')
 	}
 
-	// Direct calculation - no need for useMemo for simple derived data
 	const primaryHospital =
 		doctorDetail?.hospitals.find((h) => h.is_primary) ||
 		(doctorDetail?.hospitals.length ? doctorDetail.hospitals[0] : null)
@@ -69,7 +71,6 @@ export default function DoctorDetailPage() {
 	const selectedHospitalEntry =
 		doctorDetail?.hospitals.find((h) => h.hospital.id === selectedHospital) || primaryHospital
 
-	// Calculate appointment types directly
 	const appointmentTypes: AppointmentType[] = [
 		{
 			id: 'clinic',
@@ -89,21 +90,17 @@ export default function DoctorDetailPage() {
 
 	useEffect(() => {
 		if (!id) return
-
 		let active = true
 
 		const fetchDoctor = async () => {
 			try {
 				setLoading(true)
 				setError(null)
-
 				const res = await getDoctorById(id)
-
 				if (!active) return
-
 				setDoctorDetail(res.data)
 				const primaryHospitalData =
-					res.data.hospitals.find((h) => h.is_primary) ||
+					res.data.hospitals.find((h: { is_primary: boolean }) => h.is_primary) ||
 					(res.data.hospitals.length > 0 ? res.data.hospitals[0] : null)
 				setSelectedHospital(primaryHospitalData?.hospital.id || '')
 			} catch (err) {
@@ -116,25 +113,13 @@ export default function DoctorDetailPage() {
 		}
 
 		fetchDoctor()
-
-		return () => {
-			active = false
-		}
+		return () => { active = false }
 	}, [id])
 
-	const formatSlotTime = (slot: string) => {
-		const [hourText = '0', minuteText = '00'] = slot.split(':')
-		let hour = Number.parseInt(hourText, 10)
-		const suffix = hour >= 12 ? 'PM' : 'AM'
-		hour = hour % 12
-		if (hour === 0) hour = 12
-		return `${String(hour).padStart(2, '0')}:${minuteText}${suffix}`
-	}
-
 	const formatDateForApi = (date: Date) => {
-		const year = date.getFullYear()
+		const year  = date.getFullYear()
 		const month = String(date.getMonth() + 1).padStart(2, '0')
-		const day = String(date.getDate()).padStart(2, '0')
+		const day   = String(date.getDate()).padStart(2, '0')
 		return `${year}-${month}-${day}`
 	}
 
@@ -149,37 +134,55 @@ export default function DoctorDetailPage() {
 		return `${String(hour).padStart(2, '0')}:${mText}`
 	}
 
-	// Calculate available slots directly
-	// const availableSlots =
-	// 	!doctorDetail || !selectedHospital
-	// 		? []
-	// 		: doctorDetail.availability
-	// 				.filter(
-	// 					(slot) =>
-	// 						slot.is_active &&
-	// 						slot.hospital_id === selectedHospital &&
-	// 						slot.day_of_week === selectedDate.getDay()
-	// 				)
-	// 				.map((slot) => formatSlotTime(slot.slot_time))
+	useEffect(() => {
+		if (!id || !selectedHospital || !selectedDate) return
+		let active = true
 
-	const jsDay = selectedDate.getDay() // 0 = Sunday
-	const pythonDay = jsDay === 0 ? 6 : jsDay - 1
+		const fetchAvailability = async () => {
+			try {
+				setSlotsLoading(true)
+				const res = await getDoctorAvailability({
+					doctor_id: id,
+					hospital_id: selectedHospital,
+					date: formatDateForApi(selectedDate),
+				})
+				if (!active) return
+				let processedData: SlotGroup[] = []
+				if (Array.isArray(res)) {
+					processedData = res
+				} else if (res && Array.isArray(res.data)) {
+					processedData = res.data
+				}
+				setAvailableSlotGroups(processedData)
+			} catch (err) {
+				console.log(err)
+				if (!active) return
+				setAvailableSlotGroups([])
+			} finally {
+				if (active) {
+					setSlotsLoading(false)
+				}
+			}
+		}
 
-	const availableSlots =
-		!doctorDetail || !selectedHospital
-			? []
-			: doctorDetail.availability
-					.filter(
-						(slot) =>
-							slot.is_active && slot.hospital_id === selectedHospital && slot.day_of_week === pythonDay
-					)
-					.map((slot) => formatSlotTime(slot.slot_time))
+		fetchAvailability()
+		return () => { active = false }
+	}, [id, selectedHospital, selectedDate])
 
-	// Resolve selected time directly
-	const resolvedSelectedTime =
-		availableSlots.length && availableSlots.includes(selectedTime)
-			? selectedTime
-			: availableSlots[0] || selectedTime
+	const availableSlotStrings: string[] = []
+	if (Array.isArray(availableSlotGroups)) {
+		availableSlotGroups.forEach(group => {
+			if (group.slots && Array.isArray(group.slots)) {
+				group.slots.forEach((s: TimeSlot) => {
+					if (s.status === 'AVAILABLE') {
+						availableSlotStrings.push(s.start_time)
+					}
+				})
+			}
+		})
+	}
+
+	const resolvedSelectedTime = selectedTime
 
 	const aboutText = (() => {
 		const about = doctorDetail?.details?.about
@@ -198,24 +201,17 @@ export default function DoctorDetailPage() {
 	if (error) {
 		return (
 			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-				<Typography variant="h5" sx={{ color: 'error.main' }}>
-					{error}
-				</Typography>
+				<Typography variant="h5" sx={{ color: 'error.main' }}>{error}</Typography>
 			</Box>
 		)
 	}
 
 	const handleBook = async () => {
 		if (!doctorDetail) return
-
-		if (!isAuthenticated) {
-			openAuthModal('login')
-			return
-		}
+		if (!isAuthenticated) { openAuthModal('login'); return }
 
 		setBooking(true)
 		setBookingError(null)
-
 		try {
 			await createAppointment({
 				doctor_id: doctorDetail.id,
@@ -264,16 +260,13 @@ export default function DoctorDetailPage() {
 								<Card sx={{ ...customCardStyle, p: 2 }}>
 									<AppSkeleton variant="text" width={160} height={30} />
 									<AppSkeleton sx={{ mt: 1 }} height={60} />
-
 									<Divider sx={{ my: 2 }} />
 									<AppSkeleton sx={{ mt: 1 }} height={60} />
 								</Card>
-
 								<Card sx={{ ...customCardStyle, p: 2 }}>
 									<AppSkeleton variant="text" width={160} height={30} />
 									<AppSkeleton sx={{ mt: 1 }} height={60} />
 								</Card>
-
 								<Card sx={{ ...customCardStyle, p: 2 }}>
 									<AppSkeleton variant="text" width={160} height={30} />
 									<AppSkeleton sx={{ mt: 1 }} height={60} />
@@ -281,68 +274,33 @@ export default function DoctorDetailPage() {
 							</Box>
 						) : (
 							<Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-								{/* Doctor Profile Card */}
 								{doctorDetail && (
 									<>
 										<DoctorProfileCard doctor={doctorDetail} />
-										{/* About */}
-										<Box
-											sx={{
-												...customCardStyle,
-												p: 3,
-											}}
-										>
-											<Typography variant="h5" sx={{ mb: 1.5 }}>
-												About
-											</Typography>
+										<Box sx={{ ...customCardStyle, p: 3 }}>
+											<Typography variant="h5" sx={{ mb: 1.5 }}>About</Typography>
 											<Typography variant="body2">
 												{aboutText}
 												<Typography
 													component="span"
 													onClick={() => setShowFullAbout(!showFullAbout)}
-													sx={{
-														color: 'primary.main',
-														fontWeight: 600,
-														cursor: 'pointer',
-														ml: 0.5,
-														fontSize: '14px',
-													}}
+													sx={{ color: 'primary.main', fontWeight: 600, cursor: 'pointer', ml: 0.5, fontSize: '14px' }}
 												>
 													{showFullAbout ? 'Show less' : 'Read more'}
 												</Typography>
 											</Typography>
-
 											<Divider sx={{ my: 2 }} />
-
-											<Typography variant="h5" sx={{ mb: 0.5 }}>
-												Working Time
-											</Typography>
-											<Typography variant="body2">
-												{primaryHospital?.working_hours || 'Not available'}
-											</Typography>
+											<Typography variant="h5" sx={{ mb: 0.5 }}>Working Time</Typography>
+											<Typography variant="body2">{primaryHospital?.working_hours || 'Not available'}</Typography>
 										</Box>
-
-										{/* Hospital Selector */}
-										<Box
-											sx={{
-												...customCardStyle,
-												p: 3,
-											}}
-										>
+										<Box sx={{ ...customCardStyle, p: 3 }}>
 											<HospitalSelector
 												hospitals={doctorDetail.hospitals}
 												selected={selectedHospital}
 												onChange={setSelectedHospital}
 											/>
 										</Box>
-
-										{/* Appointment Type */}
-										<Box
-											sx={{
-												...customCardStyle,
-												p: 3,
-											}}
-										>
+										<Box sx={{ ...customCardStyle, p: 3 }}>
 											<AppointmentTypeSelector
 												types={appointmentTypes}
 												selected={selectedType}
@@ -373,13 +331,12 @@ export default function DoctorDetailPage() {
 								onDateChange={setSelectedDate}
 								selectedTime={resolvedSelectedTime}
 								onTimeChange={setSelectedTime}
-								availableSlots={availableSlots}
-								loading={loading}
+								availableSlots={availableSlotGroups.length > 0 ? availableSlotGroups : undefined}
+								loading={slotsLoading || loading}
+								disableBookedSlots={true}
 							/>
 							{bookingError && (
-								<Typography variant="body2" sx={{ color: 'error.main' }}>
-									{bookingError}
-								</Typography>
+								<Typography variant="body2" sx={{ color: 'error.main' }}>{bookingError}</Typography>
 							)}
 							{!loading && (
 								<AppButton label="Book Appointment" fullWidth loading={booking} onClick={handleBook} />
@@ -388,20 +345,13 @@ export default function DoctorDetailPage() {
 					</Grid>
 				</Grid>
 			</Container>
+
 			<AppModal open={authModalOpen} onClose={closeAuthModal} title={authModalTitle} maxWidth="xs" fullWidth>
 				{authModalView === 'login' && (
-					<LoginForm
-						mode="modal"
-						onSubmit={handleAuthNext}
-						onSwitchToRegister={() => setAuthModalView('register')}
-					/>
+					<LoginForm mode="modal" onSubmit={handleAuthNext} onSwitchToRegister={() => setAuthModalView('register')} />
 				)}
 				{authModalView === 'register' && (
-					<RegisterForm
-						mode="modal"
-						onSubmit={handleAuthNext}
-						onSwitchToLogin={() => setAuthModalView('login')}
-					/>
+					<RegisterForm mode="modal" onSubmit={handleAuthNext} onSwitchToLogin={() => setAuthModalView('login')} />
 				)}
 				{authModalView === 'otp' && (
 					<OtpForm mode="modal" contactNumber={authContactNumber} onVerify={handleAuthVerified} />

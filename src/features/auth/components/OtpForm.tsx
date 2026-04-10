@@ -1,9 +1,10 @@
-// features/auth/components/OtpForm.tsx
+﻿// features/auth/components/OtpForm.tsx
 import { Box, Button, Typography, CircularProgress } from '@mui/material'
 import { useState, useEffect, useRef } from 'react'
 // import { useNavigate } from 'react-router-dom'
 import { verifyOtp, sendOtp } from '../authService'
-import { setAuth } from '../../../hooks/useAuth'
+import { setAuth, } from '../../../hooks/useAuth'
+import { getLookupData } from '../authService'
 
 interface OtpFormProps {
 	contactNumber: string
@@ -68,35 +69,48 @@ export default function OtpForm({ contactNumber, onVerify, mode = 'page' }: OtpF
 
 	// -- Verify -----------------------------------------------------------------
 	const handleVerify = async () => {
-		if (!validate()) return
-		setApiError('')
-		setLoading(true)
-		try {
-			const res = await verifyOtp(contactNumber, otp.join(''))
-			if (res.success) {
-				const { user, access_token, refresh_token } = res.data
-				setAuth(
-					user.role,
-					{
-						id: user.id,
-						name: user.name,
-						email: user.email,
-						showQr: user.role === 'patient',
-						profilePath: '/profile',
-					},
-					access_token,
-					refresh_token
-				)
-				onVerify()
-			} else {
-				setApiError(res.message ?? 'Invalid OTP. Please try again.')
-			}
-		} catch {
-			setApiError('Something went wrong. Please try again.')
-		} finally {
-			setLoading(false)
+	if (!validate()) return
+
+	setApiError('')
+	setLoading(true)
+
+	try {
+		const res = await verifyOtp(contactNumber, otp.join(''))
+
+		if (res.success) {
+			const { user, access_token, refresh_token } = res.data
+
+			localStorage.setItem('access_token', access_token)
+
+			const lookupData = await getLookupData();
+			
+			//  Store everything once
+			setAuth(
+				user.role,
+				{
+					id: user.id,
+					name: user.name,
+					email: user.email,
+					avatar: user.avatar,
+					showQr: user.role === 'patient',
+					profilePath: '/profile',
+				},
+				access_token,
+				refresh_token,
+				lookupData.data
+			)
+
+			onVerify()
+			// navigation here
+		} else {
+			setApiError(res.message ?? 'Invalid OTP. Please try again.')
 		}
+	} catch {
+		setApiError('Something went wrong. Please try again.')
+	} finally {
+		setLoading(false)
 	}
+}
 
 	// -- Resend -----------------------------------------------------------------
 	const handleResend = async () => {
@@ -331,3 +345,5 @@ export default function OtpForm({ contactNumber, onVerify, mode = 'page' }: OtpF
 		</Box>
 	)
 }
+
+

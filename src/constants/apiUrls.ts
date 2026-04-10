@@ -12,9 +12,13 @@ export const API_ENDPOINTS = {
 	DOCTORS: {
 		SEARCH: `${BASE_URL}/api/doctors`,
 		DETAIL: (id: string) => `${BASE_URL}/api/doctors/${id}`,
+		AVAILABILITY: `${BASE_URL}/api/doctors/availability`,
+		OVERRIDES: `${BASE_URL}/api/doctors/availability/overrides`,
 	},
 	DOCTOR_PROFILE: {
 		DETAILS: `${BASE_URL}/api/doctors/details`,
+		PROFESSIONAL_DETAILS: `${BASE_URL}/api/doctors/professional-details`,
+		HOSPITALS: `${BASE_URL}/api/doctors/hospitals`,
 	},
 	SPECIALITIES: {
 		LIST: `${BASE_URL}/api/specialities`,
@@ -22,8 +26,15 @@ export const API_ENDPOINTS = {
 	USERS: {
 		GET: `${BASE_URL}/api/users`,
 		CREATE: `${BASE_URL}/api/users`,
-		UPDATE: (id: string | number) => `${BASE_URL}/api/users/${id}`,
+		UPDATE: `${BASE_URL}/api/users/`,
 		DELETE: (id: string | number) => `${BASE_URL}/api/users/${id}`,
+	},
+	PATIENT: {
+		ME: `${BASE_URL}/api/patients/me/details`,
+		UPDATE: `${BASE_URL}/api/patients/me/details`,
+	},
+	LOOKUP: {
+		GET: `${BASE_URL}/api/lookup`,
 	},
 	APPOINTMENTS: {
 		GET: `${BASE_URL}/api/appointments`,
@@ -32,3 +43,5 @@ export const API_ENDPOINTS = {
 		UPDATE: `${BASE_URL}/api/appointments/update-status`,
 	},
 }
+
+
