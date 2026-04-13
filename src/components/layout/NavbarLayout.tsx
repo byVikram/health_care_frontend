@@ -1,11 +1,13 @@
-// src/components/layout/NavbarLayout.tsx
-import { useState, useRef, useEffect, ReactNode } from 'react'
+﻿// src/components/layout/NavbarLayout.tsx
+import React, { useState, useRef, useEffect, ReactNode, cloneElement } from 'react'
 import { Box, Paper, MenuItem, Divider, Typography, Stack, IconButton, Avatar } from '@mui/material'
 import { SwapHoriz as SwapIcon, Check as CheckIcon } from '@mui/icons-material'
 import DoctorNavBar from '../common/Navbar/DoctorNavBar'
 import { clearAuth, useAuth } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { USER_ROLES } from '../../constants/constants'
+import { LookupHospital } from '../../hooks/useAuth'
+
 
 const NAVBAR_HEIGHT = 64
 
@@ -23,7 +25,6 @@ type ProfileMenuItem = { label: string; path: string; danger?: true } | { divide
 function isDividerMenuItem(item: ProfileMenuItem): item is { divider: true } {
 	return 'divider' in item && item.divider === true
 }
-
 const PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
 	{ label: 'My Appointments', path: '#' },
 	{ label: 'My Tests', path: '#' },
@@ -358,6 +359,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 	const { role } = useAuth()
 
 	const [dropdownOpen, setDropdownOpen] = useState(false)
+	const [activeHospital, setActiveHospital] = useState<LookupHospital | null>(null)
 	const [accountSwitcherOpen, setAccountSwitcherOpen] = useState(false)
 
 	// Replace with actual current account from your auth context
@@ -387,48 +389,59 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 		setAccountSwitcherOpen(false)
 	}
 
+	const handleHospitalChange = (e: LookupHospital | null) => {
+		setActiveHospital(e)
+		if (e) localStorage.setItem("active_hospital_id", e.id)
+
+	}
+
 	return (
-		<Box
-			sx={{
-				display: 'flex',
-				flexDirection: 'column',
-				minHeight: '100vh',
-				bgcolor: 'background.default',
-				position: 'relative',
-			}}
-		>
-			{/* Navbar fixed full width */}
-			<Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200 }}>
-				<DoctorNavBar
-					onProfileClick={() => {
-						setAccountSwitcherOpen(false)
-						setDropdownOpen((prev) => !prev)
-					}}
-				/>
-			</Box>
+  		<Box
+    		sx={{
+      		display: 'flex',
+      		flexDirection: 'column',
+    		minHeight: '100vh',
+      		bgcolor: 'background.default',
+      		position: 'relative',
+    		}}
+  		>
+   	 	{/* Navbar fixed full width */}
+    	<Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200 }}>
+      	<DoctorNavBar
+        	onProfileClick={() => {
+          		setAccountSwitcherOpen(false)
+          		setDropdownOpen((prev) => !prev)
+        	}}
+        	onHospitalChange={handleHospitalChange}
+      	/>
+    	</Box>
 
-			{/* Profile dropdown */}
-			{dropdownOpen && (
-				<ProfileDropdown
-					onClose={handleCloseAll}
-					currentAccount={currentAccount}
-					onOpenAccountSwitcher={handleOpenAccountSwitcher}
-					role={role || 'patient'}
-				/>
-			)}
+    	{/* Dropdowns */}
+    	{dropdownOpen && (
+      		<ProfileDropdown
+        		onClose={handleCloseAll}
+        		currentAccount={currentAccount}
+        		onOpenAccountSwitcher={handleOpenAccountSwitcher}
+        		role={role || 'patient'}
+      	/>
+    	)}
 
-			{/* Account switcher dropdown */}
-			{accountSwitcherOpen && (
-				<AccountSwitcher
-					accounts={availableAccounts}
-					currentAccount={currentAccount}
-					onSwitchAccount={handleSwitchAccount}
-					onClose={handleCloseAll}
-				/>
-			)}
+    	{accountSwitcherOpen && (
+      	<AccountSwitcher
+        	accounts={availableAccounts}
+        	currentAccount={currentAccount}
+        	onSwitchAccount={handleSwitchAccount}
+        	onClose={handleCloseAll}
+      	/>
+    	)}
 
-			{/* Page content */}
-			<Box sx={{ flex: 1, mt: `${NAVBAR_HEIGHT}px` }}>{children}</Box>
-		</Box>
-	)
-}
+    	{/* Page content */}
+    	<Box sx={{ flex: 1, mt: `${NAVBAR_HEIGHT}px` }}>
+      	{children && cloneElement(children as React.ReactElement<{ activeHospital: LookupHospital | null }>, { activeHospital })}
+    	</Box>
+  </Box>
+)}
+
+
+
+

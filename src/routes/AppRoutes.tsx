@@ -1,5 +1,5 @@
 // src/routes/AppRoutes.tsx
-import { Routes, Route, Outlet, useNavigate } from 'react-router-dom'
+import {Routes, Route, Outlet, useNavigate } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
 import LoginPage from '../features/auth/LoginPage'
 import RegisterPage from '../features/auth/RegisterPage'
@@ -18,6 +18,7 @@ import PortalPage from '../features/portal/PortalPage'
 import NavbarLayout from '../components/layout/NavbarLayout'
 import TestPage from '../features/auth/test/TestPage'
 import { ROUTES } from '../constants/routes'
+import TestRegister from '../features/auth/test/TestRegister'
 // import DoctorPortalPage from '../features/doctor/DoctorPortalPage'
 // import PatientPortalPage from '../features/patient/PatientPortalPage'
 // import PatientProfilePage from '../features/patient/PatientProfilePage'
@@ -60,7 +61,8 @@ export default function AppRoutes() {
 			{/* Public routes */}
 			<Route path= {ROUTES.AUTH.LOGIN} element={<LoginPage />} />
 			<Route path= {ROUTES.AUTH.REGISTER} element={<RegisterPage />} />
-
+			<Route path={ROUTES.TEST_REGISTER} element={<TestRegister onSubmit={(email) => console.log('Registered:', email)} />} /> 
+			{/* <Route path={ROUTES.TEST_REGISTER} element={<TestRegister />} /> */}
 			<Route path= {ROUTES.PUBLIC.ACCOUNT} element={<AccountPage />} />
 			<Route
 				path= {ROUTES.PUBLIC.WELCOME_DOCTOR}

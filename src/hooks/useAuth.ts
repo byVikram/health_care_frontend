@@ -17,9 +17,9 @@ export interface AuthUser {
 
 // Matches backend GET /api/lookup -> data.hospitals[]
 export interface LookupHospital {
-	id: string | number
-	name: string
-	location: string
+	id: string
+	label: string
+	address?: string
 }
 
 export interface LookupData {
