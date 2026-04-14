@@ -68,7 +68,7 @@ export default function ConsultationPage() {
 	const [activeTab, setActiveTab] = useState(0)
 	const navigate = useNavigate()
 
-	const { patientId} = useParams()
+	const { patientId, appointmentId } = useParams()
 
 	const [appointment, setAppointment] = useState<PatientData | null>(null)
 	const [loading, setLoading] = useState(true)

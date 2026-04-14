@@ -22,12 +22,13 @@ import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 const allActionButtons = [
-	{ icon: ConfirmIcon,    label: 'Confirm',     bg: '#e8f5e9', color: '#4caf50', action: 'confirm'    },
-	{ icon: RejectIcon,     label: 'Reject',      bg: '#ffeeee', color: '#e53935', action: 'reject'     },
-	{ icon: RescheduleIcon, label: 'Reschedule',  bg: '#fff8e8', color: '#f59e0b', action: 'reschedule' },
-	{ icon: ReferIcon,      label: 'Refer',       bg: '#e8f4f8', color: '#0c7c7c', action: 'refer'      },
+	{ icon: ConfirmIcon, label: 'Confirm', bg: '#e8f5e9', color: '#4caf50', action: 'confirm' },
+	{ icon: RejectIcon, label: 'Reject', bg: '#ffeeee', color: '#e53935', action: 'reject' },
+	{ icon: RescheduleIcon, label: 'Reschedule', bg: '#fff8e8', color: '#f59e0b', action: 'reschedule' },
+	{ icon: ReferIcon, label: 'Refer', bg: '#e8f4f8', color: '#0c7c7c', action: 'refer' },
 ]
 
 export function DoctorAppointments({
@@ -51,8 +52,7 @@ export function DoctorAppointments({
 	searchQuery: string
 	setSearchQuery: (value: string) => void
 }) {
-
-	
+	const navigate = useNavigate()
 	// ── Appointment action state ──────────────────────────────────────────────
 	const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({})
 
@@ -64,11 +64,11 @@ export function DoctorAppointments({
 	// const [debouncedQuery, setDebouncedQuery] = useState('')
 
 	// ── Reschedule drawer state ───────────────────────────────────────────────
-	const [rescheduleOpen, setRescheduleOpen]                 = useState(false)
-	const [rescheduleAppt, setRescheduleAppt]                 = useState<Appointment | null>(null)
-	const [rescheduleDate, setRescheduleDate]                 = useState(new Date())
-	const [rescheduleTime, setRescheduleTime]                 = useState('')
-	const [rescheduleSlots, setRescheduleSlots]               = useState<SlotGroup[]>([])
+	const [rescheduleOpen, setRescheduleOpen] = useState(false)
+	const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null)
+	const [rescheduleDate, setRescheduleDate] = useState(new Date())
+	const [rescheduleTime, setRescheduleTime] = useState('')
+	const [rescheduleSlots, setRescheduleSlots] = useState<SlotGroup[]>([])
 	const [rescheduleSlotsLoading, setRescheduleSlotsLoading] = useState(false)
 	const [rescheduleSubmitting, setRescheduleSubmitting]     = useState(false)
 	
@@ -83,7 +83,7 @@ export function DoctorAppointments({
 	useEffect(() => {
 		if (!rescheduleOpen || !rescheduleAppt) return
 
-		const doctorId  = rescheduleAppt.doctor?.id
+		const doctorId = rescheduleAppt.doctor?.id
 		const hospitalId = rescheduleAppt.hospital?.id
 
 		if (!doctorId || !hospitalId) return
@@ -125,7 +125,7 @@ export function DoctorAppointments({
 			const res = await ApiService.patch<{ success: boolean; message: string }>(
 				`${API_ENDPOINTS.APPOINTMENTS.UPDATE}`,
 				{
-					appointment_id:   rescheduleAppt.id,
+					appointment_id: rescheduleAppt.id,
 					appointment_date: dateStr,
 					appointment_time: rescheduleTime,
 				}
@@ -250,10 +250,21 @@ export function DoctorAppointments({
 								'&:hover': { bgcolor: selectedDate === i ? '#0c7c7c' : 'rgba(12,124,124,0.08)' },
 							}}
 						>
-							<Typography sx={{ fontSize: '9px', color: selectedDate === i ? 'rgba(255,255,255,0.8)' : 'text.secondary' }}>
+							<Typography
+								sx={{
+									fontSize: '9px',
+									color: selectedDate === i ? 'rgba(255,255,255,0.8)' : 'text.secondary',
+								}}
+							>
 								{d.day}
 							</Typography>
-							<Typography sx={{ fontSize: '14px', fontWeight: 700, color: selectedDate === i ? '#fff' : d.red ? '#e53935' : 'text.primary' }}>
+							<Typography
+								sx={{
+									fontSize: '14px',
+									fontWeight: 700,
+									color: selectedDate === i ? '#fff' : d.red ? '#e53935' : 'text.primary',
+								}}
+							>
 								{d.date}
 							</Typography>
 						</Box>
@@ -301,6 +312,7 @@ export function DoctorAppointments({
 									gap: 1.5,
 									
 								}}
+								onClick={() => navigate(`/consultation/${apt.patient?.id}/${apt.id}`)}
 							>
 								<Box
 									sx={{
@@ -318,8 +330,22 @@ export function DoctorAppointments({
 								</Box>
 
 								<Box sx={{ flex: 1, minWidth: 0 }}>
-									<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.3, flexWrap: 'wrap' }}>
-										<Typography sx={{ fontWeight: 600, fontSize: '13px', color: isCancelled ? 'text.secondary' : 'text.primary' }}>
+									<Box
+										sx={{
+											display: 'flex',
+											alignItems: 'center',
+											gap: 0.8,
+											mb: 0.3,
+											flexWrap: 'wrap',
+										}}
+									>
+										<Typography
+											sx={{
+												fontWeight: 600,
+												fontSize: '13px',
+												color: isCancelled ? 'text.secondary' : 'text.primary',
+											}}
+										>
 											{patientName}
 										</Typography>
 										<Chip
@@ -329,7 +355,7 @@ export function DoctorAppointments({
 												fontSize: '9px',
 												height: 16,
 												bgcolor: isCancelled ? '#ffeeee' : isConfirmed ? '#e8f5e9' : '#fff8e8',
-												color:   isCancelled ? '#e53935' : isConfirmed ? '#4caf50'  : '#f59e0b',
+												color: isCancelled ? '#e53935' : isConfirmed ? '#4caf50' : '#f59e0b',
 												fontWeight: 600,
 											}}
 										/>
@@ -347,7 +373,17 @@ export function DoctorAppointments({
 								</Box>
 
 								{isCancelled ? (
-									<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: '#ffe0e0', borderRadius: '8px', px: 1.5, py: 0.8 }}>
+									<Box
+										sx={{
+											display: 'flex',
+											alignItems: 'center',
+											gap: 1,
+											bgcolor: '#ffe0e0',
+											borderRadius: '8px',
+											px: 1.5,
+											py: 0.8,
+										}}
+									>
 										<CancelOutlinedIcon sx={{ fontSize: 16, color: '#e53935' }} />
 										<Typography sx={{ fontSize: '10px', color: '#e53935', fontWeight: 600 }}>
 											Patient has canceled the appointment
@@ -376,7 +412,14 @@ export function DoctorAppointments({
 												>
 													<img src={action.icon} width={16} height={16} alt={action.label} />
 												</Box>
-												<Typography sx={{ mt: 0.4, fontSize: '10px', fontWeight: 400, textAlign: 'center' }}>
+												<Typography
+													sx={{
+														mt: 0.4,
+														fontSize: '10px',
+														fontWeight: 400,
+														textAlign: 'center',
+													}}
+												>
 													{action.label}
 												</Typography>
 											</Box>
@@ -408,4 +451,3 @@ export function DoctorAppointments({
 		</Box>
 	)
 }
-
