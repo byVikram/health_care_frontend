@@ -21,6 +21,7 @@ import { getDoctorAvailability } from './doctorService'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
+import { useNavigate } from 'react-router-dom'
 
 const allActionButtons = [
 	{ icon: ConfirmIcon,    label: 'Confirm',     bg: '#e8f5e9', color: '#4caf50', action: 'confirm'    },
@@ -54,6 +55,12 @@ export function DoctorAppointments({
 	
 	// ── Appointment action state ──────────────────────────────────────────────
 	const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({})
+
+	const navigate = useNavigate()
+
+	const handleClick = (patientId: string, appointmentId: string) => {
+    navigate(`/consultation/${patientId}/${appointmentId}`)
+  }
 	// const [debouncedQuery, setDebouncedQuery] = useState('')
 
 	// ── Reschedule drawer state ───────────────────────────────────────────────
@@ -64,6 +71,7 @@ export function DoctorAppointments({
 	const [rescheduleSlots, setRescheduleSlots]               = useState<SlotGroup[]>([])
 	const [rescheduleSlotsLoading, setRescheduleSlotsLoading] = useState(false)
 	const [rescheduleSubmitting, setRescheduleSubmitting]     = useState(false)
+	
 
 	// ── Helpers ───────────────────────────────────────────────────────────────
 	const getStatusLabel = (apt: Appointment): string => {
@@ -278,6 +286,11 @@ export function DoctorAppointments({
 						return (
 							<Box
 								key={apt.id}
+								onClick={() => {
+    								if (apt.patient?.id && apt.id) {
+      								handleClick(apt.patient.id, apt.id)
+    								}
+ 								 }}
 								sx={{
 									p: 1.5,
 									borderRadius: '12px',
@@ -286,6 +299,7 @@ export function DoctorAppointments({
 									display: 'flex',
 									alignItems: 'center',
 									gap: 1.5,
+									
 								}}
 							>
 								<Box

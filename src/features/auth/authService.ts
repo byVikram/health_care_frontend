@@ -45,10 +45,11 @@ export interface VerifyRolesResponse {
 }
 
 export interface CreateUserRequest {
-	contact_number: string
+	contact_number?: number
 	email: string
 	name: string
-	role_id: string
+	role_id?: string
+	password : string
 }
 
 export interface VerifyUserCreationResponse {

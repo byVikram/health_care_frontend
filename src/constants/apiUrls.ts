@@ -26,12 +26,13 @@ export const API_ENDPOINTS = {
 	USERS: {
 		GET: `${BASE_URL}/api/users`,
 		CREATE: `${BASE_URL}/api/users`,
-		UPDATE: `${BASE_URL}/api/users/`,
+		UPDATE: (id: string | number) => `${BASE_URL}/api/users/${id}`,
 		DELETE: (id: string | number) => `${BASE_URL}/api/users/${id}`,
 	},
 	PATIENT: {
 		ME: `${BASE_URL}/api/patients/me/details`,
 		UPDATE: `${BASE_URL}/api/patients/me/details`,
+		GET_BY_ID: (id: string) => `${BASE_URL}/api/patients/${id}/details`,
 	},
 	LOOKUP: {
 		GET: `${BASE_URL}/api/lookup`,

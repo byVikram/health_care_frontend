@@ -32,12 +32,14 @@
 import { API_ENDPOINTS } from "../constants/apiUrls";
 import ApiService from "./apiService";
 
+
+
 export const getUsers = async () => {
   const response = await ApiService.get(API_ENDPOINTS.USERS.GET);
   return response.data;
 };
 
-export const createUser = async (userData: any) => {
+export const createUser = async (userData: Record<string, unknown>) => {
   const response = await ApiService.post(API_ENDPOINTS.USERS.CREATE, userData);
   return response.data;
 };
@@ -50,4 +52,9 @@ export const updateUser = async (id: string | number, userData: Record<string, u
 export const deleteUser = async (id: string | number) => {
   const response = await ApiService.delete(API_ENDPOINTS.USERS.DELETE(id));
   return response.data;
+};
+
+export const getPatientDetails = async (patientId: string) => {
+  const res = await ApiService.get(API_ENDPOINTS.PATIENT.GET_BY_ID(patientId));
+  return res.data;
 };

@@ -1,7 +1,8 @@
 // src/features/consultation/ConsultationPage.tsx
 import { useState } from 'react'
+import { useEffect } from 'react'
 // import { customCardStyle } from '../../styles/commonStyles'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams} from 'react-router-dom'
 import { Box, Container, Typography, Avatar, Tab, Tabs, IconButton } from '@mui/material'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
 import PhoneIcon from '@mui/icons-material/Phone'
@@ -13,7 +14,19 @@ import ShareWith from './components/ShareWith'
 import VitalsTab from './components/VitalsTab'
 import ConsultationNotes from './components/ConsultationNotes'
 import { ConsultationPatient, ConsultationDoctor } from '../../types/consultation'
+import { getPatientDetails } from '../../services/userService'
+import { Patient } from '../../types/patient'
 
+
+interface PatientData {
+  id: string
+  personal: {
+    name: string
+    avatar: string
+    contact_number: string
+    gender: string
+  }
+}
 const MOCK_PATIENT: ConsultationPatient = {
 	id: 'p001',
 	patientId: 'PID1120',
@@ -55,6 +68,30 @@ export default function ConsultationPage() {
 	const [activeTab, setActiveTab] = useState(0)
 	const navigate = useNavigate()
 
+	const { patientId} = useParams()
+
+	const [appointment, setAppointment] = useState<PatientData | null>(null)
+	const [loading, setLoading] = useState(true)
+
+	useEffect(() => {
+  		const fetchData = async () => {
+    		if (!patientId) return
+
+    	try {
+      		const response = await getPatientDetails(patientId) as { data: Patient }
+			setAppointment(response.data)
+    	} catch {
+  			console.error('Error fetching patient')
+    	} finally {
+      		setLoading(false)
+    	}
+  		}
+
+  	fetchData()
+	}, [patientId])
+
+	if (loading) return <div>Loading...</div>
+	
 	return (
 		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
 			{/* Header */}
@@ -84,18 +121,18 @@ export default function ConsultationPage() {
 					</IconButton>
 
 					<Avatar
-						src={MOCK_PATIENT.avatar}
-						alt={MOCK_PATIENT.name}
+						src={appointment?.personal?.avatar}
+  						alt={appointment?.personal?.name}
 						sx={{ width: 40, height: 40, border: '2px solid', borderColor: 'primary.main' }}
 					/>
 
 					<Box>
 						<Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '14px' }}>
-							{MOCK_PATIENT.name}
+							{appointment?.personal?.name}
 						</Typography>
 						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
 							<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '12px' }}>
-								{MOCK_PATIENT.age} years / {MOCK_PATIENT.gender}
+								{appointment?.personal?.gender}
 							</Typography>
 							<Typography variant="caption" sx={{ color: 'text.secondary' }}>
 								|
@@ -103,7 +140,7 @@ export default function ConsultationPage() {
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
 								<PhoneIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
 								<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '12px' }}>
-									{MOCK_PATIENT.phone}
+									{appointment?.personal?.contact_number}
 								</Typography>
 							</Box>
 						</Box>
