@@ -17,6 +17,10 @@ import { getPatientDetails } from '../../services/userService'
 import { Patient } from '../../types/patient'
 import { getAppointmentById } from '../../services/userService'
 import { Appointment } from '../../types/appointment'
+import { useAuth } from '../../hooks/useAuth'
+import { getDoctorProfile, mapDoctorProfileApi } from '../doctor/doctorService'
+import { DoctorProfile } from '../../types/doctor-profile'
+import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
 
 interface PatientDetailsResponse {
 	success: boolean
@@ -28,6 +32,12 @@ interface AppointmentDetailsResponse {
 	success: boolean
 	message: string
 	data: Appointment
+}
+
+interface DoctorProfileResponse {
+	success: boolean
+	message: string
+	data: unknown
 }
 
 const MOCK_DOCTOR: ConsultationDoctor = {
@@ -119,16 +129,53 @@ const mapPatientToConsultationPatient = (patient: Patient): ConsultationPatient 
 	dietType: formatDisplayValue(patient.lifestyle.diet_type),
 })
 
+const mapAppointmentToConsultationDoctor = (
+	appointment: Appointment | null
+): ConsultationDoctor => ({
+	name: appointment?.doctor?.name || MOCK_DOCTOR.name,
+	degree: MOCK_DOCTOR.degree,
+	specialization: MOCK_DOCTOR.specialization,
+	clinicName: appointment?.hospital?.name || MOCK_DOCTOR.clinicName,
+	clinicAddress: appointment?.hospital?.address || MOCK_DOCTOR.clinicAddress,
+})
+
+const mapDoctorProfileToConsultationDoctor = (
+	doctorProfile: DoctorProfile | null,
+	activeHospital: { label: string; address?: string } | null,
+	appointment: Appointment | null
+): ConsultationDoctor => {
+	const primaryHospital = doctorProfile?.hospitals.find((hospital) => hospital.isPrimary) ?? doctorProfile?.hospitals[0]
+
+	return {
+		name: doctorProfile?.personal.name || appointment?.doctor?.name || MOCK_DOCTOR.name,
+		degree: doctorProfile?.professional.degree || MOCK_DOCTOR.degree,
+		specialization:
+			doctorProfile?.professional.specialization_label || doctorProfile?.specialization || MOCK_DOCTOR.specialization,
+		clinicName: activeHospital?.label || primaryHospital?.name || appointment?.hospital?.name || MOCK_DOCTOR.clinicName,
+		clinicAddress:
+			activeHospital?.address ||
+			primaryHospital?.fullAddress ||
+			appointment?.hospital?.address ||
+			MOCK_DOCTOR.clinicAddress,
+	}
+}
+
 export default function ConsultationPage() {
 	const [activeTab, setActiveTab] = useState(0)
 	const navigate = useNavigate()
+	const { lookupData } = useAuth()
 
 	const { patientId, appointmentId } = useParams()
 
 	const [patient, setPatient] = useState<Patient | null>(null)
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const [appointment, setAppointment] = useState<Appointment | null>(null)
+	const [doctorProfile, setDoctorProfile] = useState<DoctorProfile | null>(null)
 	const [loading, setLoading] = useState(true)
+
+	const [rescheduleOpen, setRescheduleOpen] = useState(false)
+	const [rescheduleDate, setRescheduleDate] = useState<Date>(new Date())
+	const [rescheduleTime, setRescheduleTime] = useState('')
+	const [rescheduleSubmitting] = useState(false)
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -138,9 +185,10 @@ export default function ConsultationPage() {
 			}
 
 			try {
-				const [patientRes, appointmentRes] = await Promise.allSettled([
+				const [patientRes, appointmentRes, doctorProfileRes] = await Promise.allSettled([
 					getPatientDetails(patientId) as Promise<PatientDetailsResponse>,
 					getAppointmentById(appointmentId) as Promise<AppointmentDetailsResponse>,
+					getDoctorProfile() as Promise<DoctorProfileResponse>,
 				])
 
 				if (patientRes.status === 'fulfilled') {
@@ -154,6 +202,12 @@ export default function ConsultationPage() {
 				} else {
 					console.error('Error fetching appointment details', appointmentRes.reason)
 				}
+
+				if (doctorProfileRes.status === 'fulfilled' && doctorProfileRes.value.success) {
+					setDoctorProfile(mapDoctorProfileApi(doctorProfileRes.value.data as Parameters<typeof mapDoctorProfileApi>[0]))
+				} else if (doctorProfileRes.status === 'rejected') {
+					console.error('Error fetching doctor profile', doctorProfileRes.reason)
+				}
 			} finally {
 				setLoading(false)
 			}
@@ -166,7 +220,14 @@ export default function ConsultationPage() {
 	if (!patient) return <div>Unable to load patient details.</div>
 
 	const consultationPatient = mapPatientToConsultationPatient(patient)
-	
+	const activeHospitalId = localStorage.getItem('active_hospital_id')
+	const activeHospital =
+		lookupData?.hospitals.find((hospital) => hospital.id === activeHospitalId) ?? lookupData?.hospitals[0] ?? null
+	const consultationDoctor =
+		doctorProfile != null
+			? mapDoctorProfileToConsultationDoctor(doctorProfile, activeHospital, appointment)
+			: mapAppointmentToConsultationDoctor(appointment)
+
 	return (
 		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
 			{/* Header */}
@@ -223,7 +284,7 @@ export default function ConsultationPage() {
 				</Box>
 
 				{/* Right: Follow up button */}
-				<AppButton variant="contained" label="+ Follow up" borderRadius="20px" sx={{ px: 4 }} />
+				<AppButton variant="contained" label="+ Follow up" borderRadius="20px" sx={{ px: 4 }} onClick={() => setRescheduleOpen(true)} />
 			</Box>
 
 			{/* Tabs */}
@@ -256,13 +317,31 @@ export default function ConsultationPage() {
 							<PastMedicalHistory />
 						</Grid>
 						<Grid size={{ xs: 12, md: 6 }} display={'flex'} flexDirection={'column'}>
-							<ConsultationNotes doctor={MOCK_DOCTOR} />
+							<ConsultationNotes doctor={consultationDoctor} />
 							<ShareWith />
 						</Grid>
 					</Grid>
 				)}
 				{activeTab === 1 && <VitalsTab />}
 			</Container>
+			<RescheduleDrawer
+				rescheduleOpen={rescheduleOpen}
+				setRescheduleOpen={setRescheduleOpen}
+				rescheduleAppt={appointment}
+				rescheduleDate={rescheduleDate}
+				setRescheduleDate={setRescheduleDate}
+				rescheduleTime={rescheduleTime}
+				setRescheduleTime={setRescheduleTime}
+				rescheduleSlots={[]}
+				rescheduleSlotsLoading={false}
+				rescheduleSubmitting={rescheduleSubmitting}
+				handleRescheduleConfirm={() => setRescheduleOpen(false)}
+			/>
 		</Box>
 	)
 }
+
+
+
+
+

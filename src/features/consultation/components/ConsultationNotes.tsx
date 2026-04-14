@@ -31,6 +31,16 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 	const contextRef = useRef<CanvasRenderingContext2D | null>(null)
 	const isDrawingRef = useRef(false)
 	const lastPointRef = useRef<{ x: number; y: number } | null>(null)
+	const undoStackRef = useRef<ImageData[]>([])
+	const pendingSnapshotRef = useRef<ImageData | null>(null)
+
+	const captureSnapshot = () => {
+		const canvas = canvasRef.current
+		const context = contextRef.current
+		if (!canvas || !context) return null
+
+		return context.getImageData(0, 0, canvas.width, canvas.height)
+	}
 
 	const prepareCanvas = () => {
 		const canvas = canvasRef.current
@@ -55,6 +65,8 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 		context.strokeStyle = '#0F766E'
 		context.lineWidth = 2
 		contextRef.current = context
+		undoStackRef.current = []
+		pendingSnapshotRef.current = null
 	}
 
 	useEffect(() => {
@@ -80,6 +92,7 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 
 		isDrawingRef.current = true
 		lastPointRef.current = point
+		pendingSnapshotRef.current = captureSnapshot()
 		const canvas = canvasRef.current
 		canvas?.setPointerCapture(event.pointerId)
 	}
@@ -92,6 +105,11 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 		const context = contextRef.current
 		if (!context) return
 
+		if (pendingSnapshotRef.current) {
+			undoStackRef.current.push(pendingSnapshotRef.current)
+			pendingSnapshotRef.current = null
+		}
+
 		context.beginPath()
 		context.moveTo(lastPointRef.current.x, lastPointRef.current.y)
 		context.lineTo(point.x, point.y)
@@ -102,8 +120,17 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 	const stopDrawing = (event: PointerEvent<HTMLCanvasElement>) => {
 		isDrawingRef.current = false
 		lastPointRef.current = null
+		pendingSnapshotRef.current = null
 		const canvas = canvasRef.current
 		canvas?.releasePointerCapture(event.pointerId)
+	}
+
+	const handleUndo = () => {
+		const context = contextRef.current
+		const previousSnapshot = undoStackRef.current.pop()
+		if (!context || !previousSnapshot) return
+
+		context.putImageData(previousSnapshot, 0, 0)
 	}
 
 	return (
@@ -167,6 +194,7 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 					<Tooltip key={i} title={action.label} placement="top">
 						<IconButton
 							size="small"
+							onClick={action.label === 'Undo' ? handleUndo : undefined}
 							sx={{
 								color: 'text.secondary',
 								borderRadius: '6px',

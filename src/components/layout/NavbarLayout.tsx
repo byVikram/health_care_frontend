@@ -356,7 +356,7 @@ interface NavbarLayoutProps {
 }
 
 export default function NavbarLayout({ children }: NavbarLayoutProps) {
-	const { role } = useAuth()
+	const { role, user } = useAuth()
 
 	const [dropdownOpen, setDropdownOpen] = useState(false)
 	const [activeHospital, setActiveHospital] = useState<LookupHospital | null>(null)
@@ -365,6 +365,13 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 	// Replace with actual current account from your auth context
 	const [currentAccount, setCurrentAccount] = useState<Account>(SAMPLE_ACCOUNTS[0])
 	const [availableAccounts] = useState<Account[]>(SAMPLE_ACCOUNTS)
+	const profileAccount: Account = {
+		id: user?.id || currentAccount.id,
+		name: user?.name || currentAccount.name,
+		email: user?.email || currentAccount.email,
+		relation: currentAccount.relation,
+		avatar: user?.avatar || currentAccount.avatar,
+	}
 
 	const handleSwitchAccount = (account: Account) => {
 		setCurrentAccount(account)
@@ -420,7 +427,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
     	{dropdownOpen && (
       		<ProfileDropdown
         		onClose={handleCloseAll}
-        		currentAccount={currentAccount}
+        		currentAccount={profileAccount}
         		onOpenAccountSwitcher={handleOpenAccountSwitcher}
         		role={role || 'patient'}
       	/>
