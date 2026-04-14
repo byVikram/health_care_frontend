@@ -16,6 +16,16 @@ function getWeekDates(start: Date) {
 	})
 }
 
+// function getWeekDates() {
+// 	const today = new Date()
+
+// 	return Array.from({ length: 7 }, (_, i) => {
+// 		const d = new Date(today)
+// 		d.setDate(today.getDate() + i)
+// 		return d
+// 	})
+// }
+
 export type TimeSlot = {
 	start_time: string
 	end_time: string
@@ -164,19 +174,15 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 										onClick={() => !past && onDateChange(date)}
 										sx={{
 											flex: 1,
-											display: 'flex',
-											flexDirection: 'column',
-											alignItems: 'center',
-											gap: 0.5,
-											py: 1,
-											px: 0.5,
+											textAlign: 'center',
+											py: 0.8,
 											borderRadius: '10px',
-											cursor: past ? 'not-allowed' : 'pointer',
-											bgcolor: isSelected ? 'primary.main' : 'transparent',
-											transition: 'all 0.15s',
-											'&:hover': !past
-												? { bgcolor: isSelected ? 'primary.main' : 'rgba(43,111,113,0.08)' }
-												: {},
+											bgcolor: isSelected ? '#0c7c7c' : 'transparent',
+											border: isSelected ? '' : '1px solid #33333366',
+											cursor: 'pointer',
+											maxWidth: '60px',
+											transition: 'background 0.2s',
+											'&:hover': { bgcolor: isSelected ? '#0c7c7c' : 'rgba(12,124,124,0.08)' },
 										}}
 									>
 										<Typography
@@ -305,8 +311,8 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 									const isPatientView = disableBookedSlots
 
 
-										// Patient view: hide BLOCKED slots and doctor-disabled slots entirely
-										if (isPatientView && (slot.status === 'BLOCKED' || !slot.is_enabled)) return null
+									// Patient view: hide BLOCKED slots and doctor-disabled slots entirely
+									if (isPatientView && (slot.status === 'BLOCKED' || !slot.is_enabled)) return null
 
 									const isSelected = isSlotSelected(slot.start_time)
 									// Patient view: grey out OCCUPIED slots; doctor view: no change
@@ -346,9 +352,9 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 													: props.multiSelect
 														? slot.status === 'BLOCKED'
 															? 'error.main' // red for blocked
-														: isSelected
-															? 'success.main' // green = selected by doctor
-															: 'error.main' // red = blocked/unselected by doctor
+															: isSelected
+																? 'success.main' // green = selected by doctor
+																: 'error.main' // red = blocked/unselected by doctor
 														: isSelected
 															? 'primary.main'
 															: 'background.paper',
@@ -356,11 +362,11 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 												'&:hover': isBooked
 													? {} // no hover effect on occupied slots
 													: {
-															borderColor: 'primary.main',
-															bgcolor: isSelected
-																? 'primary.main'
-																: 'rgba(43,111,113,0.06)',
-														},
+														borderColor: 'primary.main',
+														bgcolor: isSelected
+															? 'primary.main'
+															: 'rgba(43,111,113,0.06)',
+													},
 											}}
 										>
 											<Typography
@@ -369,7 +375,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 													// fontSize: '12px',
 													fontWeight: isSelected ? 600 : 400,
 													color: props.multiSelect
-											? '#fff'
+														? '#fff'
 														: isSelected
 															? '#fff'
 															: isBooked
