@@ -56,11 +56,6 @@ export function DoctorAppointments({
 	// ── Appointment action state ──────────────────────────────────────────────
 	const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({})
 
-	const navigate = useNavigate()
-
-	const handleClick = (patientId: string, appointmentId: string) => {
-    navigate(`/consultation/${patientId}/${appointmentId}`)
-  }
 	// const [debouncedQuery, setDebouncedQuery] = useState('')
 
 	// ── Reschedule drawer state ───────────────────────────────────────────────
@@ -70,8 +65,7 @@ export function DoctorAppointments({
 	const [rescheduleTime, setRescheduleTime] = useState('')
 	const [rescheduleSlots, setRescheduleSlots] = useState<SlotGroup[]>([])
 	const [rescheduleSlotsLoading, setRescheduleSlotsLoading] = useState(false)
-	const [rescheduleSubmitting, setRescheduleSubmitting]     = useState(false)
-	
+	const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false)
 
 	// ── Helpers ───────────────────────────────────────────────────────────────
 	const getStatusLabel = (apt: Appointment): string => {
@@ -298,10 +292,10 @@ export function DoctorAppointments({
 							<Box
 								key={apt.id}
 								onClick={() => {
-    								if (apt.patient?.id && apt.id) {
-      								handleClick(apt.patient.id, apt.id)
-    								}
- 								 }}
+									if (apt.patient?.id && apt.id) {
+										navigate(`/consultation/${apt.patient?.id}/${apt.id}`)
+									}
+								}}
 								sx={{
 									p: 1.5,
 									borderRadius: '12px',
@@ -310,9 +304,8 @@ export function DoctorAppointments({
 									display: 'flex',
 									alignItems: 'center',
 									gap: 1.5,
-									
 								}}
-								onClick={() => navigate(`/consultation/${apt.patient?.id}/${apt.id}`)}
+								// onClick={() => navigate(`/consultation/${apt.patient?.id}/${apt.id}`)}
 							>
 								<Box
 									sx={{
