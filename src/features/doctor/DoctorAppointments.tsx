@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Box, Typography, TextField, InputAdornment, Divider, Chip } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
@@ -17,7 +17,8 @@ import ReferIcon from '../../assets/icons/refer.svg'
 import { updateAppointmentsStatus } from '../../features/dashboard/dashboardService'
 import { toast } from 'react-toastify'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
-import { getDoctorAvailability } from './doctorService'
+import { getDoctorAvailability, getDoctorById } from './doctorService'
+import { DoctorDetailHospital } from '../../types/doctor-detail'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
@@ -66,6 +67,25 @@ export function DoctorAppointments({
 	const [rescheduleSlots, setRescheduleSlots] = useState<SlotGroup[]>([])
 	const [rescheduleSlotsLoading, setRescheduleSlotsLoading] = useState(false)
 	const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false)
+	const [rescheduleHospitals, setRescheduleHospitals] = useState<DoctorDetailHospital[]>([])
+	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
+
+	useEffect(() => {
+		if (!rescheduleAppt || !rescheduleOpen) return
+		const fetchDoctorHospitals = async () => {
+			if (rescheduleAppt.doctor?.id) {
+				try {
+					const res = await getDoctorById(rescheduleAppt.doctor.id)
+					if (res.success && res.data) {
+						setRescheduleHospitals(res.data.hospitals)
+					}
+				} catch (err) {
+					console.log('Failed to fetch doctor hospitals')
+				}
+			}
+		}
+		fetchDoctorHospitals()
+	}, [rescheduleAppt, rescheduleOpen])
 
 	// ── Helpers ───────────────────────────────────────────────────────────────
 	const getStatusLabel = (apt: Appointment): string => {
@@ -78,7 +98,7 @@ export function DoctorAppointments({
 		if (!rescheduleOpen || !rescheduleAppt) return
 
 		const doctorId = rescheduleAppt.doctor?.id
-		const hospitalId = rescheduleAppt.hospital?.id
+		const hospitalId = rescheduleHospitalId || rescheduleAppt.hospital?.id
 
 		if (!doctorId || !hospitalId) return
 
@@ -89,14 +109,18 @@ export function DoctorAppointments({
 			setRescheduleSlots([])
 			setRescheduleTime('')
 			try {
-				const data = await getDoctorAvailability({
+				const responseData = await getDoctorAvailability({
 					doctor_id: doctorId,
 					hospital_id: hospitalId,
 					date: dateStr,
 				})
-				if (Array.isArray(data)) {
-					setRescheduleSlots(data as SlotGroup[])
+				let processedData: SlotGroup[] = []
+				if (Array.isArray(responseData)) {
+					processedData = responseData as SlotGroup[]
+				} else if (responseData && Array.isArray((responseData as any).data)) {
+					processedData = (responseData as any).data as SlotGroup[]
 				}
+				setRescheduleSlots(processedData)
 			} catch {
 				toast.error('Could not load available slots.')
 			} finally {
@@ -121,7 +145,8 @@ export function DoctorAppointments({
 				{
 					appointment_id: rescheduleAppt.id,
 					appointment_date: dateStr,
-					appointment_time: rescheduleTime,
+					start_time: rescheduleTime,
+					hospital_id: rescheduleHospitalId || rescheduleAppt.hospital?.id,
 				}
 			)
 			if (res.data?.success) {
@@ -158,9 +183,11 @@ export function DoctorAppointments({
 			if (action === 'reschedule') {
 				const apt = appointments.find((a) => a.id === appointmentId) ?? null
 				setRescheduleAppt(apt)
+				setRescheduleHospitalId(apt?.hospital?.id ?? '')
 				setRescheduleDate(new Date())
 				setRescheduleTime('')
 				setRescheduleSlots([])
+				setRescheduleHospitals([])
 				setRescheduleOpen(true)
 			}
 			if (action === 'refer') {
@@ -328,7 +355,7 @@ export function DoctorAppointments({
 										<Typography
 											sx={{
 												fontWeight: 600,
-												fontSize: '13px',
+												fontSize: '14px',
 												color: isCancelled ? 'text.secondary' : 'text.primary',
 											}}
 										>
@@ -347,13 +374,13 @@ export function DoctorAppointments({
 										/>
 									</Box>
 									<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-										<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-											{apt.appointment_mode ?? 'offline'}
+										<Typography variant='body2'>
+											{apt.patient?.age} years / {apt.patient?.gender}
 										</Typography>
-										<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>|</Typography>
+										<Typography variant='body2'>|</Typography>
 										<AccessTimeIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
-										<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-											{apt.appointment_time ?? '--'}
+										<Typography variant='body2'>
+											{apt.start_time ?? '--'} - {apt.end_time}
 										</Typography>
 									</Box>
 								</Box>
@@ -380,7 +407,10 @@ export function DoctorAppointments({
 										{visibleActions.map((action, i) => (
 											<Box key={i}>
 												<Box
-													onClick={() => handleAction(action.action, apt.id)}
+													onClick={(e) => {
+														e.stopPropagation()
+														handleAction(action.action, apt.id)
+													}}
 													sx={{
 														display: 'flex',
 														flexDirection: 'column',
@@ -433,6 +463,9 @@ export function DoctorAppointments({
 				rescheduleSlotsLoading={rescheduleSlotsLoading}
 				rescheduleSubmitting={rescheduleSubmitting}
 				handleRescheduleConfirm={handleRescheduleConfirm}
+				rescheduleHospitals={rescheduleHospitals}
+				rescheduleHospitalId={rescheduleHospitalId}
+				setRescheduleHospitalId={setRescheduleHospitalId}
 			/>
 		</Box>
 	)

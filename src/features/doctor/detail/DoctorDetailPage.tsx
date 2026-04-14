@@ -218,7 +218,7 @@ export default function DoctorDetailPage() {
 				hospital_id: selectedHospital || undefined,
 				appointment_mode: selectedType === 'clinic' ? 'offline' : 'online',
 				appointment_date: formatDateForApi(selectedDate),
-				appointment_time: formatTimeForApi(resolvedSelectedTime),
+				start_time: formatTimeForApi(resolvedSelectedTime),
 			})
 			alert(
 				`Appointment booked with ${doctorDetail.name} on ${selectedDate.toDateString()} at ${resolvedSelectedTime}`

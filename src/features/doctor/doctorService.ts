@@ -35,7 +35,7 @@ export interface CreateAppointmentPayload {
 	hospital_id?: string
 	appointment_mode: 'offline' | 'online'
 	appointment_date: string
-	appointment_time: string
+	start_time: string
 }
 
 export interface CreateAppointmentResponse {
