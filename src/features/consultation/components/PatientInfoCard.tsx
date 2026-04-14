@@ -49,7 +49,7 @@ export default function PatientInfoCard({ patient }: PatientInfoCardProps) {
 			<Box sx={{ display: 'flex', gap: 2, mb: 2.5 }}>
 				<Box sx={{ position: 'relative', flexShrink: 0 }}>
 					<Avatar
-						src={patient.avatar}
+						src={patient.avatar || undefined}
 						alt={patient.name}
 						sx={{
 							width: 80,
@@ -142,9 +142,11 @@ export default function PatientInfoCard({ patient }: PatientInfoCardProps) {
 						<Typography variant="body2" sx={{ fontWeight: 600, fontSize: '13px' }}>
 							{patient.emergencyContact.name}
 						</Typography>
-						<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '12px' }}>
-							({patient.emergencyContact.relation})
-						</Typography>
+						{patient.emergencyContact.relation && (
+							<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '12px' }}>
+								({patient.emergencyContact.relation})
+							</Typography>
+						)}
 						<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
 							<Typography variant="body2" sx={{ fontSize: '13px' }}>
 								{patient.emergencyContact.number}

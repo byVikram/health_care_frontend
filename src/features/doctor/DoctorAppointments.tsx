@@ -23,6 +23,7 @@ import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { useNavigate } from 'react-router-dom'
 
+
 const allActionButtons = [
 	{ icon: ConfirmIcon, label: 'Confirm', bg: '#e8f5e9', color: '#4caf50', action: 'confirm' },
 	{ icon: RejectIcon, label: 'Reject', bg: '#ffeeee', color: '#e53935', action: 'reject' },
@@ -54,6 +55,7 @@ export function DoctorAppointments({
 	const navigate = useNavigate()
 	// ── Appointment action state ──────────────────────────────────────────────
 	const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({})
+
 	// const [debouncedQuery, setDebouncedQuery] = useState('')
 
 	// ── Reschedule drawer state ───────────────────────────────────────────────
@@ -289,6 +291,11 @@ export function DoctorAppointments({
 						return (
 							<Box
 								key={apt.id}
+								onClick={() => {
+									if (apt.patient?.id && apt.id) {
+										navigate(`/consultation/${apt.patient?.id}/${apt.id}`)
+									}
+								}}
 								sx={{
 									p: 1.5,
 									borderRadius: '12px',
@@ -298,7 +305,7 @@ export function DoctorAppointments({
 									alignItems: 'center',
 									gap: 1.5,
 								}}
-								onClick={() => navigate(`/consultation/${apt.patient?.id}/${apt.id}`)}
+								// onClick={() => navigate(`/consultation/${apt.patient?.id}/${apt.id}`)}
 							>
 								<Box
 									sx={{
