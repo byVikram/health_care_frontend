@@ -58,3 +58,8 @@ export const getPatientDetails = async (patientId: string) => {
   const res = await ApiService.get(API_ENDPOINTS.PATIENT.GET_BY_ID(patientId));
   return res.data;
 };
+
+export const getAppointmentById = async (id: string) => {
+  const res = await ApiService.get(API_ENDPOINTS.APPOINTMENTS.GET_BY_ID(id))
+  return res.data
+};

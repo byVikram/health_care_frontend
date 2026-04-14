@@ -1,8 +1,7 @@
 // src/features/consultation/ConsultationPage.tsx
-import { useState } from 'react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 // import { customCardStyle } from '../../styles/commonStyles'
-import { useNavigate, useParams} from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Box, Container, Typography, Avatar, Tab, Tabs, IconButton } from '@mui/material'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
 import PhoneIcon from '@mui/icons-material/Phone'
@@ -16,44 +15,19 @@ import ConsultationNotes from './components/ConsultationNotes'
 import { ConsultationPatient, ConsultationDoctor } from '../../types/consultation'
 import { getPatientDetails } from '../../services/userService'
 import { Patient } from '../../types/patient'
+import { getAppointmentById } from '../../services/userService'
+import { Appointment } from '../../types/appointment'
 
-
-interface PatientData {
-  id: string
-  personal: {
-    name: string
-    avatar: string
-    contact_number: string
-    gender: string
-  }
+interface PatientDetailsResponse {
+	success: boolean
+	message: string
+	data: Patient
 }
-const MOCK_PATIENT: ConsultationPatient = {
-	id: 'p001',
-	patientId: 'PID1120',
-	name: 'Nitin S H',
-	age: 31,
-	gender: 'Male',
-	phone: '919871236540',
-	phoneVerified: true,
-	email: 'nitin@gmail.com',
-	avatar: 'https://i.pravatar.cc/150?img=11',
-	dateOfBirth: '06 April 1994',
-	maritalStatus: 'Single',
-	weight: '78kg',
-	height: '5 feet 5 inch',
-	bloodGroup: 'A+',
-	address: '#201 1st floor beside colive pg near jeevika hospital bengaluru karnataka-560056',
-	occupation: 'IT Profession',
-	emergencyContact: {
-		name: 'Sachin S H',
-		relation: 'Brother',
-		number: '9876543210',
-	},
-	chronicDiseases: ['Diabetes', 'Hypertension', 'Asthma'],
-	allergies: ['Pet allergy', 'Egg', 'Milk'],
-	smokingStatus: 'Non-smoker',
-	alcoholConsumption: 'Non-drinker',
-	dietType: 'Vegetarian',
+
+interface AppointmentDetailsResponse {
+	success: boolean
+	message: string
+	data: Appointment
 }
 
 const MOCK_DOCTOR: ConsultationDoctor = {
@@ -64,33 +38,134 @@ const MOCK_DOCTOR: ConsultationDoctor = {
 	clinicAddress: '1 main, KR Market, Bengaluru - 580036',
 }
 
+const splitCsv = (value: string) =>
+	value
+		.split(',')
+		.map((item) => item.trim())
+		.filter(Boolean)
+
+const formatDisplayValue = (value: string) =>
+	value
+		.trim()
+		.replace(/[_-]+/g, ' ')
+		.replace(/\b\w/g, (char) => char.toUpperCase())
+
+const formatMetricValue = (value: string, unit: string) => {
+	const trimmedValue = value.trim()
+	if (!trimmedValue) return ''
+
+	return /^-?\d+(\.\d+)?$/.test(trimmedValue) ? `${Number(trimmedValue)} ${unit}` : trimmedValue
+}
+
+const formatDateOfBirth = (dateOfBirth: string) => {
+	if (!dateOfBirth) return ''
+
+	const [year, month, day] = dateOfBirth.split('-').map(Number)
+	const parsedDate = new Date(year, (month || 1) - 1, day || 1)
+
+	return Number.isNaN(parsedDate.getTime())
+		? dateOfBirth
+		: parsedDate.toLocaleDateString('en-GB', {
+				day: '2-digit',
+				month: 'long',
+				year: 'numeric',
+			})
+}
+
+const getAge = (dateOfBirth: string) => {
+	if (!dateOfBirth) return 0
+
+	const [year, month, day] = dateOfBirth.split('-').map(Number)
+	if (!year || !month || !day) return 0
+
+	const today = new Date()
+	let age = today.getFullYear() - year
+	const hasBirthdayPassed =
+		today.getMonth() + 1 > month || (today.getMonth() + 1 === month && today.getDate() >= day)
+
+	if (!hasBirthdayPassed) {
+		age -= 1
+	}
+
+	return age
+}
+
+const mapPatientToConsultationPatient = (patient: Patient): ConsultationPatient => ({
+	id: patient.id,
+	patientId: patient.id,
+	name: patient.personal.name,
+	age: getAge(patient.personal.date_of_birth),
+	gender: formatDisplayValue(patient.personal.gender),
+	phone: patient.personal.contact_number,
+	phoneVerified: patient.personal.contact_verified,
+	email: patient.personal.email,
+	avatar: patient.personal.avatar || '',
+	dateOfBirth: formatDateOfBirth(patient.personal.date_of_birth),
+	maritalStatus: formatDisplayValue(patient.personal.marital_status),
+	weight: formatMetricValue(patient.personal.weight, 'kg'),
+	height: formatMetricValue(patient.personal.height, 'cm'),
+	bloodGroup: patient.personal.blood_group,
+	address: patient.personal.location,
+	occupation: '',
+	emergencyContact: {
+		name: patient.personal.emergency_contact.name,
+		relation: '',
+		number: patient.personal.emergency_contact.number,
+	},
+	chronicDiseases: splitCsv(patient.medical.chronic_conditions),
+	allergies: splitCsv(patient.medical.allergies),
+	smokingStatus: formatDisplayValue(patient.lifestyle.smoking_status),
+	alcoholConsumption: formatDisplayValue(patient.lifestyle.alcohol_consumption),
+	dietType: formatDisplayValue(patient.lifestyle.diet_type),
+})
+
 export default function ConsultationPage() {
 	const [activeTab, setActiveTab] = useState(0)
 	const navigate = useNavigate()
 
 	const { patientId, appointmentId } = useParams()
 
-	const [appointment, setAppointment] = useState<PatientData | null>(null)
+	const [patient, setPatient] = useState<Patient | null>(null)
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	const [appointment, setAppointment] = useState<Appointment | null>(null)
 	const [loading, setLoading] = useState(true)
 
 	useEffect(() => {
-  		const fetchData = async () => {
-    		if (!patientId) return
+		const fetchData = async () => {
+			if (!patientId || !appointmentId) {
+				setLoading(false)
+				return
+			}
 
-    	try {
-      		const response = await getPatientDetails(patientId) as { data: Patient }
-			setAppointment(response.data)
-    	} catch {
-  			console.error('Error fetching patient')
-    	} finally {
-      		setLoading(false)
-    	}
-  		}
+			try {
+				const [patientRes, appointmentRes] = await Promise.allSettled([
+					getPatientDetails(patientId) as Promise<PatientDetailsResponse>,
+					getAppointmentById(appointmentId) as Promise<AppointmentDetailsResponse>,
+				])
 
-  	fetchData()
-	}, [patientId])
+				if (patientRes.status === 'fulfilled') {
+					setPatient(patientRes.value.data)
+				} else {
+					console.error('Error fetching patient details', patientRes.reason)
+				}
+
+				if (appointmentRes.status === 'fulfilled') {
+					setAppointment(appointmentRes.value.data)
+				} else {
+					console.error('Error fetching appointment details', appointmentRes.reason)
+				}
+			} finally {
+				setLoading(false)
+			}
+		}
+
+		fetchData()
+	}, [patientId, appointmentId])
 
 	if (loading) return <div>Loading...</div>
+	if (!patient) return <div>Unable to load patient details.</div>
+
+	const consultationPatient = mapPatientToConsultationPatient(patient)
 	
 	return (
 		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
@@ -121,18 +196,18 @@ export default function ConsultationPage() {
 					</IconButton>
 
 					<Avatar
-						src={appointment?.personal?.avatar}
-  						alt={appointment?.personal?.name}
+						src={patient.personal.avatar || undefined}
+						alt={patient.personal.name}
 						sx={{ width: 40, height: 40, border: '2px solid', borderColor: 'primary.main' }}
 					/>
 
 					<Box>
 						<Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '14px' }}>
-							{appointment?.personal?.name}
+							{patient.personal.name}
 						</Typography>
 						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
 							<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '12px' }}>
-								{appointment?.personal?.gender}
+								{consultationPatient.gender}
 							</Typography>
 							<Typography variant="caption" sx={{ color: 'text.secondary' }}>
 								|
@@ -140,7 +215,7 @@ export default function ConsultationPage() {
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
 								<PhoneIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
 								<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '12px' }}>
-									{appointment?.personal?.contact_number}
+									{patient.personal.contact_number}
 								</Typography>
 							</Box>
 						</Box>
@@ -177,7 +252,7 @@ export default function ConsultationPage() {
 				{activeTab === 0 && (
 					<Grid container spacing={3}>
 						<Grid size={{ xs: 12, md: 6 }}>
-							<PatientInfoCard patient={MOCK_PATIENT} />
+							<PatientInfoCard patient={consultationPatient} />
 							<PastMedicalHistory />
 						</Grid>
 						<Grid size={{ xs: 12, md: 6 }} display={'flex'} flexDirection={'column'}>

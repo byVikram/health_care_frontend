@@ -22,7 +22,7 @@ import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { useNavigate } from 'react-router-dom'
-import { useNavigate } from 'react-router-dom'
+
 
 const allActionButtons = [
 	{ icon: ConfirmIcon, label: 'Confirm', bg: '#e8f5e9', color: '#4caf50', action: 'confirm' },
