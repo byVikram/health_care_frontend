@@ -1,7 +1,7 @@
 // src/features/consultation/ConsultationPage.tsx
 import { useState } from 'react'
 // import { customCardStyle } from '../../styles/commonStyles'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Box, Container, Typography, Avatar, Tab, Tabs, IconButton } from '@mui/material'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
 import PhoneIcon from '@mui/icons-material/Phone'
@@ -54,6 +54,10 @@ const MOCK_DOCTOR: ConsultationDoctor = {
 export default function ConsultationPage() {
 	const [activeTab, setActiveTab] = useState(0)
 	const navigate = useNavigate()
+
+	const { patientId, appointmentId } = useParams()
+
+	console.log(patientId, appointmentId)
 
 	return (
 		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>

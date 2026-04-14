@@ -22,6 +22,6 @@ export const ROUTES = {
 	PORTAL: {
 		HOME: '/portal',
 		PROFILE: '/profile',
-		CONSULTATION: '/consultation/:patientId',
+		CONSULTATION: '/consultation/:patientId/:appointmentId',
 	},
 }
