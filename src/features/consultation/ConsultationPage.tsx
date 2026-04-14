@@ -20,6 +20,7 @@ import { Appointment } from '../../types/appointment'
 import { useAuth } from '../../hooks/useAuth'
 import { getDoctorProfile, mapDoctorProfileApi } from '../doctor/doctorService'
 import { DoctorProfile } from '../../types/doctor-profile'
+import { DoctorDetailHospital } from '../../types/doctor-detail'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
 
 interface PatientDetailsResponse {
@@ -176,6 +177,7 @@ export default function ConsultationPage() {
 	const [rescheduleDate, setRescheduleDate] = useState<Date>(new Date())
 	const [rescheduleTime, setRescheduleTime] = useState('')
 	const [rescheduleSubmitting] = useState(false)
+	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -227,6 +229,24 @@ export default function ConsultationPage() {
 		doctorProfile != null
 			? mapDoctorProfileToConsultationDoctor(doctorProfile, activeHospital, appointment)
 			: mapAppointmentToConsultationDoctor(appointment)
+
+	const rescheduleHospitalsMapped: DoctorDetailHospital[] = (doctorProfile?.hospitals || []).map((h) => ({
+		id: h.id,
+		is_primary: h.isPrimary,
+		video_consultation_fee: h.video_consultation_fee || '',
+		offline_consultation_fee: h.offline_consultation_fee || '',
+		available_days: [],
+		working_hours: '',
+		hospital: {
+			id: h.id,
+			name: h.name,
+			address: h.fullAddress || h.location || '',
+			contact_number: h.phone_number || '',
+			distance: '',
+			latitude: 0,
+			longitude: 0,
+		},
+	}))
 
 	return (
 		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
@@ -336,6 +356,9 @@ export default function ConsultationPage() {
 				rescheduleSlotsLoading={false}
 				rescheduleSubmitting={rescheduleSubmitting}
 				handleRescheduleConfirm={() => setRescheduleOpen(false)}
+				rescheduleHospitals={rescheduleHospitalsMapped}
+				rescheduleHospitalId={rescheduleHospitalId}
+				setRescheduleHospitalId={setRescheduleHospitalId}
 			/>
 		</Box>
 	)
