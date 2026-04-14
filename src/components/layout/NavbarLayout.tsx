@@ -123,7 +123,7 @@ function AccountSwitcher({
 			ref={ref}
 			elevation={3}
 			sx={{
-				position: 'absolute',
+				position: 'fixed',
 				top: `${NAVBAR_HEIGHT}px`,
 				right: 16,
 				minWidth: 280,
@@ -243,7 +243,7 @@ function ProfileDropdown({
 			ref={ref}
 			elevation={3}
 			sx={{
-				position: 'absolute',
+				position: 'fixed',
 				top: `${NAVBAR_HEIGHT}px`,
 				right: 16,
 				minWidth: 280,
