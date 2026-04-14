@@ -1,4 +1,4 @@
-import { Box, Typography, Container, Grid } from '@mui/material'
+﻿import { Box, Typography, Container, Grid } from '@mui/material'
 import { useState, useEffect } from 'react'
 import { getAppointments } from '../doctor/doctorService'
 import { Appointment } from '../../types/appointment'
@@ -13,6 +13,7 @@ import videoImage from '../../assets/blog-and-community/video-image.png'
 import adImage from '../../assets/blog-and-community/ad-image.png'
 import AnswerQuestionsSection from '../dashboard/AnswerQuestionsSection'
 // import DoctorNavBar from '../../components/common/Navbar/DoctorNavBar'
+import { LookupHospital } from '../../hooks/useAuth'
 
 import AppointmentsIcon from '../../assets/quick-services/appointments.svg'
 import PharmacyIcon from '../../assets/quick-services/pharmacy.svg'
@@ -54,7 +55,10 @@ const stats = [
 	{ label: 'Emergency Patients', value: '01' },
 ]
 
-export default function PortalPage() {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export default function PortalPage({ activeHospital = null }: { activeHospital?: LookupHospital | null }) {
+	const activeHospitalId = localStorage.getItem("active_hospital_id")
+
 	const { role } = useAuth()
 	const [activeSlide, setActiveSlide] = useState(0)
 	const totalSlides = 4
@@ -83,7 +87,7 @@ export default function PortalPage() {
 		return `${year}-${month}-${day}`
 	}
 
-	// ── API call depends on debouncedQuery, 
+	// â”€â”€ API call depends on debouncedQuery, 
 	useEffect(() => {
 		const fetchAppointments = async () => {
 			try {
@@ -92,7 +96,8 @@ export default function PortalPage() {
 				const dateStr = formatDateForApi(weekDays[selectedDate]?.dateObj ?? new Date())
 				const res = await getAppointments({
 					appointment_date: dateStr,
-					search: debouncedQuery || "",
+					search: debouncedQuery || undefined,
+					hospital_id: activeHospitalId ?? undefined,
 				})
 				if (res.success) {
 					const items = Array.isArray(res.data) ? res.data : []
@@ -105,7 +110,7 @@ export default function PortalPage() {
 			}
 		}
 		fetchAppointments()
-	}, [selectedDate, weekDays, debouncedQuery])
+	}, [selectedDate, weekDays, debouncedQuery, activeHospitalId])
 
 	return (
 		<Box sx={{ bgcolor: '#f5f7fa' }}>
@@ -425,3 +430,10 @@ export default function PortalPage() {
 		</Box>
 	)
 }
+
+
+
+
+
+
+

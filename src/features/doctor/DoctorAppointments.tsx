@@ -50,6 +50,8 @@ export function DoctorAppointments({
 	searchQuery: string
 	setSearchQuery: (value: string) => void
 }) {
+
+	
 	// ── Appointment action state ──────────────────────────────────────────────
 	const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({})
 	// const [debouncedQuery, setDebouncedQuery] = useState('')

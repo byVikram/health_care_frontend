@@ -17,6 +17,7 @@ export const ROUTES = {
 	},
 
 	TEST: '/test',
+	TEST_REGISTER: '/test-register',
 
 	PORTAL: {
 		HOME: '/portal',
