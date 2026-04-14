@@ -1,5 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { AppBar, Toolbar, Typography, Box, Button, IconButton, Drawer, List, ListItemButton, ListItemText, useMediaQuery } from '@mui/material'
+import {
+	AppBar,
+	Toolbar,
+	Typography,
+	Box,
+	Button,
+	IconButton,
+	Drawer,
+	List,
+	ListItemButton,
+	ListItemText,
+	useMediaQuery,
+} from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import CloseIcon from '@mui/icons-material/Close'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
@@ -25,9 +37,7 @@ const LOCATIONS = [
 	{ label: 'Bengaluru', address: 'Indiranagar' },
 ]
 
-const hashSectionIds = navItems
-	.filter((item) => item.href.startsWith('/#'))
-	.map((item) => item.href.replace('/#', ''))
+const hashSectionIds = navItems.filter((item) => item.href.startsWith('/#')).map((item) => item.href.replace('/#', ''))
 
 const AppNavBar: React.FC = () => {
 	const navigate = useNavigate()
@@ -44,7 +54,7 @@ const AppNavBar: React.FC = () => {
 
 	const selectedLocation = LOCATIONS[selectedIdx]
 
-	// ✅ Derive activeHref from location — no setState inside effect
+	//  Derive activeHref from location — no setState inside effect
 	const activeHref = useMemo(() => {
 		const current = `${location.pathname}${location.hash || ''}`
 		if (location.pathname !== '/') return current
@@ -165,7 +175,6 @@ const AppNavBar: React.FC = () => {
 					{/* Right */}
 					{isMdUp ? (
 						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-
 							{/* Location pill with custom dropdown */}
 							<Box ref={locationRef} sx={{ position: 'relative' }}>
 								<Box
@@ -174,7 +183,7 @@ const AppNavBar: React.FC = () => {
 										display: 'flex',
 										alignItems: 'center',
 										gap: 0.5,
-										border: '1px solid rgba(255,255,255,0.5)',
+										// border: '1px solid rgba(255,255,255,0.5)',
 										borderRadius: '10px',
 										px: 1.5,
 										py: 0.5,
@@ -185,17 +194,15 @@ const AppNavBar: React.FC = () => {
 										userSelect: 'none',
 									}}
 								>
-									<LocationOnIcon sx={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', flexShrink: 0 }} />
-									<Typography variant="body2" sx={{ fontSize: '13px', fontWeight: 500, color: '#fff', whiteSpace: 'nowrap' }}>
+									<LocationOnIcon
+										sx={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', flexShrink: 0 }}
+									/>
+									<Typography
+										variant="body2"
+										sx={{ fontSize: '13px', fontWeight: 500, color: '#fff', whiteSpace: 'nowrap' }}
+									>
 										{selectedLocation.label}, {selectedLocation.address}
 									</Typography>
-									{LOCATIONS.length > 1 && (
-										<Box sx={{ bgcolor: 'rgba(255,255,255,0.2)', borderRadius: '10px', px: 0.8, py: 0.2, ml: 0.25 }}>
-											<Typography sx={{ color: '#fff', fontSize: '11px', fontWeight: 600 }}>
-												+{LOCATIONS.length - 1}
-											</Typography>
-										</Box>
-									)}
 									<KeyboardArrowDownIcon
 										sx={{
 											fontSize: 15,
@@ -212,8 +219,8 @@ const AppNavBar: React.FC = () => {
 										sx={{
 											position: 'absolute',
 											top: 'calc(100% + 8px)',
-											left: 0,
-											minWidth: 300,
+											right: 0,
+											minWidth: 240,
 											bgcolor: '#fff',
 											borderRadius: '12px',
 											boxShadow: '0px 8px 32px rgba(0,0,0,0.15)',
@@ -248,15 +255,38 @@ const AppNavBar: React.FC = () => {
 													}}
 												>
 													<Box>
-														<Typography sx={{ fontSize: '14px', fontWeight: isSelected ? 600 : 400, color: '#1a1a1a', lineHeight: 1.35 }}>
+														<Typography
+															sx={{
+																fontSize: '14px',
+																fontWeight: isSelected ? 600 : 400,
+																color: '#1a1a1a',
+																lineHeight: 1.35,
+															}}
+														>
 															{loc.label}
 														</Typography>
-														<Typography sx={{ fontSize: '12px', color: '#888', lineHeight: 1.3, mt: 0.15 }}>
+														<Typography
+															sx={{
+																fontSize: '12px',
+																color: '#888',
+																lineHeight: 1.3,
+																mt: 0.15,
+															}}
+														>
 															{loc.address}
 														</Typography>
 													</Box>
 													{isSelected && (
-														<Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#13C0C5', flexShrink: 0, ml: 2 }} />
+														<Box
+															sx={{
+																width: 10,
+																height: 10,
+																borderRadius: '50%',
+																bgcolor: '#13C0C5',
+																flexShrink: 0,
+																ml: 2,
+															}}
+														/>
 													)}
 												</Box>
 											)
@@ -316,7 +346,10 @@ const AppNavBar: React.FC = () => {
 					{navItems.map((item) => (
 						<ListItemButton
 							key={item.href}
-							onClick={() => { handleDrawerToggle(); handleNavClick(item.href) }}
+							onClick={() => {
+								handleDrawerToggle()
+								handleNavClick(item.href)
+							}}
 							sx={{ borderRadius: 1, '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' } }}
 						>
 							<ListItemText
@@ -332,7 +365,10 @@ const AppNavBar: React.FC = () => {
 				</List>
 				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, mb: 2 }}>
 					<Button
-						onClick={() => { handleDrawerToggle(); navigate('/login') }}
+						onClick={() => {
+							handleDrawerToggle()
+							navigate('/login')
+						}}
 						variant="text"
 						sx={{ color: 'rgba(255,255,255,0.9)', textTransform: 'none' }}
 					>
@@ -341,7 +377,10 @@ const AppNavBar: React.FC = () => {
 					<AppButton
 						variant="text"
 						label="Sign up"
-						onClick={() => { handleDrawerToggle(); navigate('/register') }}
+						onClick={() => {
+							handleDrawerToggle()
+							navigate('/register')
+						}}
 						borderRadius="20px"
 					/>
 				</Box>

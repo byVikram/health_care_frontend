@@ -44,5 +44,3 @@ export const API_ENDPOINTS = {
 		GET_BY_ID: (id: string | number) => `${BASE_URL}/api/appointments/${id}`,
 	},
 }
-
-

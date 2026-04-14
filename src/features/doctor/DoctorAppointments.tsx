@@ -171,15 +171,6 @@ export function DoctorAppointments({
 		}
 	}
 
-	// ── Search debounce ───────────────────────────────────────────────────────
-	// useEffect(() => {
-	// 	const timer = setTimeout(() => setDebouncedQuery(searchQuery), 500)
-	// 	return () => clearTimeout(timer)
-	// }, [searchQuery])
-
-	// useEffect(() => {
-	// 	console.log('Search API call:', debouncedQuery)
-	// }, [debouncedQuery])
 
 	// ── Render ────────────────────────────────────────────────────────────────
 	return (
@@ -239,14 +230,16 @@ export function DoctorAppointments({
 								py: 0.8,
 								borderRadius: '10px',
 								bgcolor: selectedDate === i ? '#0c7c7c' : 'transparent',
+								border: selectedDate === i ? '' : '1px solid #33333366',
 								cursor: 'pointer',
+								maxWidth: '60px',
 								transition: 'background 0.2s',
 								'&:hover': { bgcolor: selectedDate === i ? '#0c7c7c' : 'rgba(12,124,124,0.08)' },
 							}}
 						>
 							<Typography
 								sx={{
-									fontSize: '9px',
+									fontSize: '12px',
 									color: selectedDate === i ? 'rgba(255,255,255,0.8)' : 'text.secondary',
 								}}
 							>
@@ -256,7 +249,7 @@ export function DoctorAppointments({
 								sx={{
 									fontSize: '14px',
 									fontWeight: 700,
-									color: selectedDate === i ? '#fff' : d.red ? '#e53935' : 'text.primary',
+									color: selectedDate === i ? '#fff' : d.red ? '#e53935' : 'text.secondary',
 								}}
 							>
 								{d.date}
@@ -305,7 +298,7 @@ export function DoctorAppointments({
 									alignItems: 'center',
 									gap: 1.5,
 								}}
-								// onClick={() => navigate(`/consultation/${apt.patient?.id}/${apt.id}`)}
+							// onClick={() => navigate(`/consultation/${apt.patient?.id}/${apt.id}`)}
 							>
 								<Box
 									sx={{
