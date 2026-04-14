@@ -1,4 +1,4 @@
-import { Box, Typography, Container, Grid } from '@mui/material'
+﻿import { Box, Typography, Container, Grid } from '@mui/material'
 import { useState, useEffect } from 'react'
 import { getAppointments } from '../doctor/doctorService'
 import { Appointment } from '../../types/appointment'
@@ -13,6 +13,7 @@ import videoImage from '../../assets/blog-and-community/video-image.png'
 import adImage from '../../assets/blog-and-community/ad-image.png'
 import AnswerQuestionsSection from '../dashboard/AnswerQuestionsSection'
 // import DoctorNavBar from '../../components/common/Navbar/DoctorNavBar'
+import { LookupHospital } from '../../hooks/useAuth'
 
 import AppointmentsIcon from '../../assets/quick-services/appointments.svg'
 import PharmacyIcon from '../../assets/quick-services/pharmacy.svg'
@@ -33,7 +34,7 @@ import { useDebouncedValue } from '../../utils/debounce'
 const buildWeekDays = () => {
 	const today = new Date()
 	const days = []
-	for (let i = 0; i < 7; i += 1) {
+	for (let i = 0; i < 8; i += 1) {
 		const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i)
 		const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short' })
 		const isWeekend = d.getDay() === 0 || d.getDay() === 6
@@ -48,14 +49,17 @@ const buildWeekDays = () => {
 }
 
 const stats = [
-	{ label: 'Total Patients', value: '20' },
-	{ label: 'New Patients', value: '06' },
-	{ label: 'Follow up Patients', value: '03' },
-	{ label: 'Emergency Patients', value: '01' },
+	{ label: 'Total Patients', value: '20', color: '#4264D0' },
+	{ label: 'New Patients', value: '06', color: '#2B982B' },
+	{ label: 'Follow up Patients', value: '03', color: '#EA7F06' },
+	{ label: 'Emergency Patients', value: '01', color: '#DE3B40' },
 ]
 
-export default function PortalPage() {
-	const { role } = useAuth()
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export default function PortalPage({ activeHospital = null }: { activeHospital?: LookupHospital | null }) {
+	const activeHospitalId = localStorage.getItem("active_hospital_id")
+
+	const { role, user } = useAuth()
 	const [activeSlide, setActiveSlide] = useState(0)
 	const totalSlides = 4
 	const [selectedDate, setSelectedDate] = useState(0)
@@ -67,15 +71,6 @@ export default function PortalPage() {
 	const [searchQuery, setSearchQuery] = useState('')
 	const debouncedQuery = useDebouncedValue(searchQuery, 300)
 
-	// const [debouncedQuery, setDebouncedQuery] = useState(searchQuery)
-
-	// useEffect(() => {
-	// 	const timer = setTimeout(() => {
-	// 		setDebouncedQuery(searchQuery)
-	// 	}, 300)
-	// 	return () => clearTimeout(timer)
-	// }, [searchQuery])
-
 	const formatDateForApi = (date: Date) => {
 		const year = date.getFullYear()
 		const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -83,7 +78,6 @@ export default function PortalPage() {
 		return `${year}-${month}-${day}`
 	}
 
-	// ── API call depends on debouncedQuery, 
 	useEffect(() => {
 		const fetchAppointments = async () => {
 			try {
@@ -92,7 +86,8 @@ export default function PortalPage() {
 				const dateStr = formatDateForApi(weekDays[selectedDate]?.dateObj ?? new Date())
 				const res = await getAppointments({
 					appointment_date: dateStr,
-					search: debouncedQuery || "",
+					search: debouncedQuery || undefined,
+					hospital_id: activeHospitalId ?? undefined,
 				})
 				if (res.success) {
 					const items = Array.isArray(res.data) ? res.data : []
@@ -105,7 +100,7 @@ export default function PortalPage() {
 			}
 		}
 		fetchAppointments()
-	}, [selectedDate, weekDays, debouncedQuery])
+	}, [selectedDate, weekDays, debouncedQuery, activeHospitalId])
 
 	return (
 		<Box sx={{ bgcolor: '#f5f7fa' }}>
@@ -124,17 +119,17 @@ export default function PortalPage() {
 										py: 2,
 										display: 'flex',
 										alignItems: 'center',
-										// gap: 2,
+										gap: 2,
 									}}
 								>
 									<Box
 										component="img"
-										src={drImage}
+										src={user?.avatar || drImage}
 										alt="Dr. Ashika Rao"
 										sx={{
 											width: 85,
 											height: 85,
-											borderRadius: '12px',
+											borderRadius: '8px',
 											objectFit: 'cover',
 											flexShrink: 0,
 										}}
@@ -147,18 +142,21 @@ export default function PortalPage() {
 												justifyContent: 'space-between',
 											}}
 										>
-											<Box>
+											<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
 												<Typography
-													sx={{ color: '#4fd1c5', fontSize: '12px', fontWeight: 500 }}
+													sx={{ color: '#4fd1c5', fontSize: '16px', fontWeight: 500 }}
 												>
 													Welcome
 												</Typography>
-												<Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '17px' }}>
-													Dr. Arjun Sharma
+
+												<Typography
+													sx={{ color: '#fff', fontWeight: 600, fontSize: '16px' }}
+												>
+													{user?.name}
 												</Typography>
 											</Box>
-											<Box
-												sx={{
+											{/* <Box
+												sx={{?
 													bgcolor: 'rgba(255,255,255,0.15)',
 													borderRadius: '8px',
 													px: 1.5,
@@ -168,7 +166,7 @@ export default function PortalPage() {
 												<Typography sx={{ color: '#fff', fontSize: '11px', fontWeight: 600 }}>
 													ID: 143265
 												</Typography>
-											</Box>
+											</Box> */}
 										</Box>
 										<Box sx={{ display: 'flex', gap: 1 }}>
 											{stats.map((stat, i) => (
@@ -197,7 +195,7 @@ export default function PortalPage() {
 													</Typography>
 													<Typography
 														sx={{
-															color: '#0c7c7c',
+															color: stat.color,
 															fontWeight: 700,
 															fontSize: '20px',
 															lineHeight: 1,
@@ -425,3 +423,10 @@ export default function PortalPage() {
 		</Box>
 	)
 }
+
+
+
+
+
+
+

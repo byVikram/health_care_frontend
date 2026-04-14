@@ -14,7 +14,7 @@ import { PatientAppointments } from './PatientAppointments'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AppButton from '../../components/common/Button/AppButton'
 
-import drImage from '../../../../assets/Services/doctors-service.png'
+// import drImage from '../../../../assets/Services/doctors-service.png'
 // import patientImage from '../../assets/Banner/patient.png'
 // import patientImage from '../../assets/Banner/banner.png'
 import videoImage from '../../assets/blog-and-community/video-image.png'
@@ -92,101 +92,9 @@ const eventList = [
 
 export default function PatientPortalPage() {
 	const [activeSlide, setActiveSlide] = useState(0)
-	// const totalSlides = 4
-	// const [selectedDate, setSelectedDate] = useState(2)
 
 	return (
 		<Box sx={{ bgcolor: '#f5f7fa' }}>
-			{/* Patient Header */}
-			{/* <Box
-				sx={{
-					background: 'linear-gradient(160deg, #0f5c5c 0%, #0c7c7c 60%, #0a9494 100%)',
-					px: 3,
-					pt: 2.5,
-					pb: 2.5,
-					position: 'sticky',
-					top: 0,
-					zIndex: 200,
-					display: 'flex',
-					flexDirection: 'column',
-					gap: 2,
-				}}
-			>
-				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-					<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-						<Avatar
-							src={patientImage}
-							sx={{ width: 56, height: 56, border: '2px solid rgba(255,255,255,0.5)' }}
-						/>
-						<Box>
-							<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-								<Typography sx={{ color: '#4fd1c5', fontWeight: 700, fontSize: '22px' }}>
-									Hello,
-								</Typography>
-								<Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '22px' }}>Nitin</Typography>
-							</Box>
-							<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, cursor: 'pointer' }}>
-								<LocationOnIcon sx={{ color: '#fff', fontSize: 15 }} />
-								<Typography sx={{ color: '#fff', fontSize: '13px', fontWeight: 500 }}>
-									KR Market
-								</Typography>
-								<KeyboardArrowDownIcon sx={{ color: '#fff', fontSize: 16 }} />
-							</Box>
-						</Box>
-					</Box>
-					<Box sx={{ display: 'flex', gap: 1 }}>
-						<Box
-							sx={{
-								bgcolor: '#fff',
-								borderRadius: '12px',
-								width: 44,
-								height: 44,
-								display: 'flex',
-								alignItems: 'center',
-								justifyContent: 'center',
-								cursor: 'pointer',
-								boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-							}}
-						>
-							<NotificationsNoneOutlinedIcon sx={{ fontSize: 22, color: '#4caf50' }} />
-						</Box>
-						<Box
-							sx={{
-								bgcolor: '#fff',
-								borderRadius: '12px',
-								width: 44,
-								height: 44,
-								display: 'flex',
-								alignItems: 'center',
-								justifyContent: 'center',
-								cursor: 'pointer',
-								boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-							}}
-						>
-							<FavoriteBorderIcon sx={{ fontSize: 22, color: '#e53935' }} />
-						</Box>
-					</Box>
-				</Box>
-				<Box
-					sx={{
-						bgcolor: 'rgba(255,255,255,0.15)',
-						borderRadius: '14px',
-						px: 2,
-						py: 1.2,
-						display: 'flex',
-						alignItems: 'center',
-						gap: 1.5,
-						border: '1px solid rgba(255,255,255,0.3)',
-					}}
-				>
-					<SearchIcon sx={{ color: '#fff', fontSize: 22 }} />
-					<Typography sx={{ flex: 1, color: 'rgba(255,255,255,0.7)', fontSize: '15px' }}>
-						Search Doctors/Symptoms
-					</Typography>
-					<MicNoneOutlinedIcon sx={{ color: '#fff', fontSize: 22, cursor: 'pointer' }} />
-				</Box>
-			</Box> */}
-
 			<Container maxWidth="lg" sx={{ py: 3 }}>
 				{/* TOP 50/50: Welcome+Services | Search+Appointments */}
 				<Grid container spacing={3} alignItems="stretch" sx={{ alignItems: 'stretch' }}>
@@ -368,14 +276,11 @@ export default function PatientPortalPage() {
 						</Box>
 					</Grid>
 
-
-			</Grid>
-		</Grid>
-
-		{/* Full width appointments */}
-		<Box sx={{ mt: 3 }}>
-			<PatientAppointments />
-		</Box>
+					{/* RIGHT */}
+					<Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+						<PatientAppointments />
+					</Grid>
+				</Grid>
 
 				{/* BOTTOM 50/50: Community & Blogs | Upcoming Events */}
 				<Grid container spacing={3} alignItems="stretch" sx={{ mt: 1 }}>
@@ -603,7 +508,6 @@ export default function PatientPortalPage() {
 												overflow: 'hidden',
 												display: 'flex',
 												flexDirection: 'column',
-												// flex: 1,
 												'&:hover': { boxShadow: '0 6px 16px rgba(0,0,0,0.10)' },
 											}}
 										>
@@ -671,161 +575,6 @@ export default function PatientPortalPage() {
 				{/* Health Expert Answers Section */}
 				<HealthQuestionsSection />
 			</Container>
-			{/* Draggable AI Chatbot Button */}
-			{/* <AIChatBot /> */}
 		</Box>
 	)
 }
-
-// function AIChatBot() {
-// 	const [pos, setPos] = React.useState({ x: window.innerWidth - 90, y: window.innerHeight - 140 })
-// 	const [dragging, setDragging] = React.useState(false)
-// 	const [open, setOpen] = React.useState(false)
-// 	const offset = React.useRef({ x: 0, y: 0 })
-
-// 	const onMouseDown = (e: React.MouseEvent) => {
-// 		setDragging(true)
-// 		offset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y }
-// 		e.preventDefault()
-// 	}
-
-// 	React.useEffect(() => {
-// 		const onMouseMove = (e: MouseEvent) => {
-// 			if (!dragging) return
-// 			setPos({ x: e.clientX - offset.current.x, y: e.clientY - offset.current.y })
-// 		}
-// 		const onMouseUp = () => setDragging(false)
-// 		window.addEventListener('mousemove', onMouseMove)
-// 		window.addEventListener('mouseup', onMouseUp)
-// 		return () => {
-// 			window.removeEventListener('mousemove', onMouseMove)
-// 			window.removeEventListener('mouseup', onMouseUp)
-// 		}
-// 	}, [dragging])
-
-// 	return (
-// 		<>
-// 			<Box
-// 				onMouseDown={onMouseDown}
-// 				onClick={() => !dragging && setOpen((o) => !o)}
-// 				sx={{
-// 					position: 'fixed',
-// 					left: pos.x,
-// 					top: pos.y,
-// 					width: 90,
-// 					height: 90,
-// 					borderRadius: '50%',
-// 					background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
-// 					display: 'flex',
-// 					alignItems: 'center',
-// 					justifyContent: 'center',
-// 					cursor: dragging ? 'grabbing' : 'grab',
-// 					zIndex: 9999,
-// 					boxShadow: '0 4px 20px rgba(124,58,237,0.5)',
-// 					userSelect: 'none',
-// 					'&:hover': { transform: 'scale(1.08)' },
-// 					transition: 'transform 0.2s ease',
-// 				}}
-// 			>
-// 				<Box
-// 					component="img"
-// 					src={AiChatBotImg}
-// 					alt="AI Chatbot"
-// 					sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-// 				/>
-// 			</Box>
-
-// 			{/* Chat Panel */}
-// 			{open && (
-// 				<Box
-// 					sx={{
-// 						position: 'fixed',
-// 						left: pos.x - 280,
-// 						top: pos.y - 380,
-// 						width: 320,
-// 						height: 400,
-// 						bgcolor: '#fff',
-// 						borderRadius: '16px',
-// 						boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-// 						zIndex: 9998,
-// 						display: 'flex',
-// 						flexDirection: 'column',
-// 						overflow: 'hidden',
-// 					}}
-// 				>
-// 					<Box
-// 						sx={{
-// 							bgcolor: 'linear-gradient(135deg, #7c3aed, #a855f7)',
-// 							background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
-// 							px: 2.5,
-// 							py: 2,
-// 							display: 'flex',
-// 							alignItems: 'center',
-// 							justifyContent: 'space-between',
-// 						}}
-// 					>
-// 						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-// 							<Box
-// 								component="img"
-// 								src={AiChatBotImg}
-// 								alt="AI"
-// 								sx={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }}
-// 							/>
-// 							<Box>
-// 								<Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '14px' }}>
-// 									Whisper AI
-// 								</Typography>
-// 								<Typography sx={{ color: 'rgba(255,255,255,0.8)', fontSize: '11px' }}>
-// 									Ask me anything
-// 								</Typography>
-// 							</Box>
-// 						</Box>
-// 						<Box
-// 							onClick={() => setOpen(false)}
-// 							sx={{ color: '#fff', cursor: 'pointer', fontSize: '20px', lineHeight: 1 }}
-// 						>
-// 							?
-// 						</Box>
-// 					</Box>
-// 					<Box sx={{ flex: 1, p: 2, overflowY: 'auto', bgcolor: '#f5f7fa' }}>
-// 						<Box sx={{ bgcolor: '#e8f5e9', borderRadius: '10px', px: 2, py: 1.5, mb: 1, maxWidth: '85%' }}>
-// 							<Typography sx={{ fontSize: '13px', color: '#333' }}>
-// 								?? Hi! I'm your Whisper AI assistant. How can I help you today?
-// 							</Typography>
-// 						</Box>
-// 					</Box>
-// 					<Box sx={{ px: 2, py: 1.5, borderTop: '1px solid #e0e0e0', display: 'flex', gap: 1 }}>
-// 						<Box
-// 							component="input"
-// 							placeholder="Type a message..."
-// 							sx={{
-// 								flex: 1,
-// 								border: '1px solid #e0e0e0',
-// 								borderRadius: '8px',
-// 								px: 1.5,
-// 								py: 1,
-// 								fontSize: '13px',
-// 								outline: 'none',
-// 								'&:focus': { borderColor: '#7c3aed' },
-// 							}}
-// 						/>
-// 						<Box
-// 							sx={{
-// 								bgcolor: '#7c3aed',
-// 								borderRadius: '8px',
-// 								px: 1.5,
-// 								display: 'flex',
-// 								alignItems: 'center',
-// 								cursor: 'pointer',
-// 							}}
-// 						>
-// 							<Typography sx={{ color: '#fff', fontSize: '16px' }}>?</Typography>
-// 						</Box>
-// 					</Box>
-// 				</Box>
-// 			)}
-// 		</>
-// 	)
-// }
-
-

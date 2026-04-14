@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
 	AppBar,
 	Toolbar,
@@ -22,101 +22,104 @@ import AppButton from '../Button/AppButton'
 
 const navItems = [
 	{ label: 'Home', href: '/#home' },
-	// { label: 'About', href: '#about' },
 	{ label: 'Services', href: '/#services' },
 	{ label: 'Find doctors', href: '/doctors/search' },
 	{ label: 'Community', href: '/#community' },
-	// { label: 'Blog & Media', href: '/#blog-media' },
-	// { label: 'Events', href: '#events' },
 	{ label: 'Contact', href: '/#contact' },
 	{ label: 'Demo', href: '#' },
 ]
+
+const LOCATIONS = [
+	{ label: 'Bengaluru', address: 'KR Market' },
+	{ label: 'Bengaluru', address: 'Koramangala' },
+	{ label: 'Bengaluru', address: 'Whitefield' },
+	{ label: 'Bengaluru', address: 'Jayanagar' },
+	{ label: 'Bengaluru', address: 'Indiranagar' },
+]
+
+const hashSectionIds = navItems.filter((item) => item.href.startsWith('/#')).map((item) => item.href.replace('/#', ''))
 
 const AppNavBar: React.FC = () => {
 	const navigate = useNavigate()
 	const location = useLocation()
 	const theme = useTheme()
 	const isMdUp = useMediaQuery(theme.breakpoints.up('md'))
+
 	const [mobileOpen, setMobileOpen] = useState(false)
-	const [activeHref, setActiveHref] = useState<string>('/#home')
+	const [locationOpen, setLocationOpen] = useState(false)
+	const [selectedIdx, setSelectedIdx] = useState(0)
+	// Only used while scrolling on the home page
+	const [scrollActiveHref, setScrollActiveHref] = useState<string>('/#home')
+	const locationRef = useRef<HTMLDivElement>(null)
 
-	const handleDrawerToggle = () => setMobileOpen((prev) => !prev)
-	const handleNavClick = (href: string) => {
-		setActiveHref(href)
-		if (href === '#') return
-		// debugger
-		if (href.startsWith('/#')) {
-			if (location.pathname === '/') {
-				const targetId = href.replace('/#', '')
-				const target = document.getElementById(targetId)
-				if (target) {
-					target.scrollIntoView({ behavior: 'smooth', block: 'start' })
-				}
-				window.history.replaceState(null, '', href)
-				return
-			}
-			navigate('/')
-			window.location.hash = href.replace('/#', '')
-			return
-		}
+	const selectedLocation = LOCATIONS[selectedIdx]
 
-		navigate(href)
-	}
-
-	const hashSectionIds = useMemo(
-		() => navItems.filter((item) => item.href.startsWith('/#')).map((item) => item.href.replace('/#', '')),
-		[]
-	)
-
-	useEffect(() => {
+	//  Derive activeHref from location — no setState inside effect
+	const activeHref = useMemo(() => {
 		const current = `${location.pathname}${location.hash || ''}`
-		if (current !== '/') {
-			setActiveHref(current)
-			return
-		}
+		if (location.pathname !== '/') return current
+		if (location.hash) return `/${location.hash}`
+		// On home page with no hash, use scroll tracking result
+		return scrollActiveHref
+	}, [location.pathname, location.hash, scrollActiveHref])
 
-		if (location.hash) {
-			setActiveHref(`/${location.hash}`)
-		} else {
-			setActiveHref('/#home')
+	// Close location dropdown when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (e: MouseEvent) => {
+			if (locationRef.current && !locationRef.current.contains(e.target as Node)) {
+				setLocationOpen(false)
+			}
 		}
-	}, [location.pathname, location.hash])
+		document.addEventListener('mousedown', handleClickOutside)
+		return () => document.removeEventListener('mousedown', handleClickOutside)
+	}, [])
 
+	// Scroll tracking — only runs on home page
 	useEffect(() => {
 		if (location.pathname !== '/') return
-
 		let ticking = false
 		const updateActive = () => {
 			if (ticking) return
 			ticking = true
-
 			window.requestAnimationFrame(() => {
 				const offset = isMdUp ? 96 : 80
 				let current = '/#home'
-
 				for (const id of hashSectionIds) {
 					const el = document.getElementById(id)
 					if (!el) continue
 					const top = el.getBoundingClientRect().top
-					if (top - offset <= 0) {
-						current = `/#${id}`
-					}
+					if (top - offset <= 0) current = `/#${id}`
 				}
-
-				setActiveHref(current)
+				setScrollActiveHref(current)
 				ticking = false
 			})
 		}
-
 		window.addEventListener('scroll', updateActive, { passive: true })
 		window.addEventListener('resize', updateActive)
 		updateActive()
-
 		return () => {
 			window.removeEventListener('scroll', updateActive)
 			window.removeEventListener('resize', updateActive)
 		}
-	}, [hashSectionIds, isMdUp, location.pathname])
+	}, [isMdUp, location.pathname])
+
+	const handleDrawerToggle = () => setMobileOpen((prev) => !prev)
+
+	const handleNavClick = (href: string) => {
+		if (href === '#') return
+		if (href.startsWith('/#')) {
+			if (location.pathname === '/') {
+				const targetId = href.replace('/#', '')
+				const target = document.getElementById(targetId)
+				if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+				window.history.replaceState(null, '', href)
+				return
+			}
+			navigate(href)
+			return
+		}
+		navigate(href)
+	}
 
 	return (
 		<AppBar position="sticky" sx={{ bgcolor: 'primary.dark', padding: 1, boxShadow: 'none' }}>
@@ -132,7 +135,6 @@ const AppNavBar: React.FC = () => {
 				<Toolbar sx={{ justifyContent: 'space-between', minHeight: '52px !important', px: 2 }}>
 					{/* Left: Logo + Divider + Nav Links */}
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-						{/* Logo */}
 						<Box
 							sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}
 							onClick={() => navigate('/')}
@@ -145,10 +147,8 @@ const AppNavBar: React.FC = () => {
 							</Typography>
 						</Box>
 
-						{/* Vertical Divider */}
 						{isMdUp && <Box sx={{ width: '1px', height: '22px', bgcolor: 'rgba(255,255,255,0.3)' }} />}
 
-						{/* Nav Links */}
 						{isMdUp && (
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: 3.5 }}>
 								{navItems.map((item) => (
@@ -172,33 +172,130 @@ const AppNavBar: React.FC = () => {
 						)}
 					</Box>
 
-					{/* Right: Log In | Sign up */}
+					{/* Right */}
 					{isMdUp ? (
 						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-						{/* Location pill */}
-						<Box
-							sx={{
-								display: 'flex',
-								alignItems: 'center',
-								gap: 0.5,
-								border: '1px solid rgba(255,255,255,0.5)',
-								borderRadius: '10px',
-								px: 1.5,
-								py: 0.5,
-								cursor: 'pointer',
-								color: 'rgba(255,255,255,0.88)',
-								'&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-							}}
-						>
-							<LocationOnIcon sx={{ fontSize: 15, color: 'rgba(255,255,255,0.8)' }} />
-							<Typography variant='body2' sx={{ fontSize: '13px', fontWeight: 500, color: '#fff' }}>
-								Bengaluru, KR Market
-							</Typography>
-							<KeyboardArrowDownIcon sx={{ fontSize: 15 }} />
-						</Box>
+							{/* Location pill with custom dropdown */}
+							<Box ref={locationRef} sx={{ position: 'relative' }}>
+								<Box
+									onClick={() => setLocationOpen((prev) => !prev)}
+									sx={{
+										display: 'flex',
+										alignItems: 'center',
+										gap: 0.5,
+										// border: '1px solid rgba(255,255,255,0.5)',
+										borderRadius: '10px',
+										px: 1.5,
+										py: 0.5,
+										cursor: 'pointer',
+										bgcolor: locationOpen ? 'rgba(255,255,255,0.1)' : 'transparent',
+										'&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
+										transition: 'background 0.15s',
+										userSelect: 'none',
+									}}
+								>
+									<LocationOnIcon
+										sx={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', flexShrink: 0 }}
+									/>
+									<Typography
+										variant="body2"
+										sx={{ fontSize: '13px', fontWeight: 500, color: '#fff', whiteSpace: 'nowrap' }}
+									>
+										{selectedLocation.label}, {selectedLocation.address}
+									</Typography>
+									<KeyboardArrowDownIcon
+										sx={{
+											fontSize: 15,
+											color: '#fff',
+											transition: 'transform 0.2s',
+											transform: locationOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+										}}
+									/>
+								</Box>
 
-						{/* Vertical Divider */}
-						<Box sx={{ width: '1px', height: '22px', bgcolor: 'rgba(255,255,255,0.3)' }} />
+								{/* Dropdown */}
+								{locationOpen && (
+									<Box
+										sx={{
+											position: 'absolute',
+											top: 'calc(100% + 8px)',
+											right: 0,
+											minWidth: 240,
+											bgcolor: '#fff',
+											borderRadius: '12px',
+											boxShadow: '0px 8px 32px rgba(0,0,0,0.15)',
+											zIndex: 9999,
+											overflow: 'hidden',
+											py: 0.75,
+											animation: 'dropFadeIn 0.15s ease',
+											'@keyframes dropFadeIn': {
+												from: { opacity: 0, transform: 'translateY(-6px)' },
+												to: { opacity: 1, transform: 'translateY(0)' },
+											},
+										}}
+									>
+										{LOCATIONS.map((loc, idx) => {
+											const isSelected = selectedIdx === idx
+											return (
+												<Box
+													key={idx}
+													onClick={() => {
+														setSelectedIdx(idx)
+														setLocationOpen(false)
+													}}
+													sx={{
+														display: 'flex',
+														alignItems: 'center',
+														justifyContent: 'space-between',
+														px: 2.5,
+														py: 1.1,
+														cursor: 'pointer',
+														'&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+														transition: 'background 0.1s',
+													}}
+												>
+													<Box>
+														<Typography
+															sx={{
+																fontSize: '14px',
+																fontWeight: isSelected ? 600 : 400,
+																color: '#1a1a1a',
+																lineHeight: 1.35,
+															}}
+														>
+															{loc.label}
+														</Typography>
+														<Typography
+															sx={{
+																fontSize: '12px',
+																color: '#888',
+																lineHeight: 1.3,
+																mt: 0.15,
+															}}
+														>
+															{loc.address}
+														</Typography>
+													</Box>
+													{isSelected && (
+														<Box
+															sx={{
+																width: 10,
+																height: 10,
+																borderRadius: '50%',
+																bgcolor: '#13C0C5',
+																flexShrink: 0,
+																ml: 2,
+															}}
+														/>
+													)}
+												</Box>
+											)
+										})}
+									</Box>
+								)}
+							</Box>
+
+							<Box sx={{ width: '1px', height: '22px', bgcolor: 'rgba(255,255,255,0.3)' }} />
 
 							<Button
 								onClick={() => navigate('/login')}
@@ -215,10 +312,8 @@ const AppNavBar: React.FC = () => {
 								Log In
 							</Button>
 
-							{/* Vertical Divider */}
 							<Box sx={{ width: '1px', height: '22px', bgcolor: 'rgba(255,255,255,0.3)' }} />
 
-							{/* Sign Up Button */}
 							<AppButton
 								variant="text"
 								label="Sign up"
@@ -233,18 +328,13 @@ const AppNavBar: React.FC = () => {
 					)}
 				</Toolbar>
 			</Box>
+
+			{/* Mobile Drawer */}
 			<Drawer
 				anchor="right"
 				open={mobileOpen}
 				onClose={handleDrawerToggle}
-				PaperProps={{
-					sx: {
-						width: 280,
-						bgcolor: 'primary.dark',
-						color: 'white',
-						px: 2,
-					},
-				}}
+				PaperProps={{ sx: { width: 280, bgcolor: 'primary.dark', color: 'white', px: 2 } }}
 			>
 				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2 }}>
 					<Typography sx={{ fontWeight: 700, fontStyle: 'italic' }}>Whisper AI</Typography>
@@ -260,10 +350,7 @@ const AppNavBar: React.FC = () => {
 								handleDrawerToggle()
 								handleNavClick(item.href)
 							}}
-							sx={{
-								borderRadius: 1,
-								'&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
-							}}
+							sx={{ borderRadius: 1, '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' } }}
 						>
 							<ListItemText
 								primary={item.label}
@@ -283,11 +370,7 @@ const AppNavBar: React.FC = () => {
 							navigate('/login')
 						}}
 						variant="text"
-						sx={{
-							color: 'rgba(255,255,255,0.9)',
-							textTransform: 'none',
-							// justifyContent: 'flex-start',
-						}}
+						sx={{ color: 'rgba(255,255,255,0.9)', textTransform: 'none' }}
 					>
 						Log In
 					</Button>

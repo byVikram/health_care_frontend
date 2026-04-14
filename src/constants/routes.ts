@@ -17,10 +17,11 @@ export const ROUTES = {
 	},
 
 	TEST: '/test',
+	TEST_REGISTER: '/test-register',
 
 	PORTAL: {
 		HOME: '/portal',
 		PROFILE: '/profile',
-		CONSULTATION: '/consultation/:patientId',
+		CONSULTATION: '/consultation/:patientId/:appointmentId',
 	},
 }

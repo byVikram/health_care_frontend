@@ -64,120 +64,126 @@ export default function AnswerQuestionsSection() {
 			{/* 4 Question Cards */}
 			<Box sx={{ display: 'flex', gap: 2.5, justifyContent: 'center' }}>
 				{questions.map((q) => (
-					<Box
-						key={q.id}
-						sx={{
-							flex: '1 1 0',
-							bgcolor: '#fff',
-							border: '1px solid #e0e0e0',
-							borderRadius: '12px',
-							p: 2,
-							display: 'flex',
-							flexDirection: 'column',
-							gap: 1.5,
-							transition: 'box-shadow 0.2s ease',
-							'&:hover': { boxShadow: '0 4px 16px rgba(0,0,0,0.08)' },
-						}}
-					>
-						{/* Top: Avatar + Info + Time */}
-						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-							<Avatar src={q.avatar} sx={{ width: 40, height: 40 }} />
-							<Box sx={{ flex: 1 }}>
-								<Typography sx={{ fontSize: '12px', fontWeight: 600, color: 'text.primary' }}>
-									Asked for {q.gender},
-								</Typography>
-								<Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>
-									{q.age}, {q.location}
-								</Typography>
-							</Box>
-							<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>{q.time}</Typography>
-						</Box>
-
-						{/* Question */}
-						<Typography sx={{ fontWeight: 700, fontSize: '15px', color: 'text.primary', lineHeight: 1.4 }}>
-							{q.question}
-						</Typography>
-
-						{/* Description */}
-						<Typography sx={{ fontSize: '13px', color: 'text.secondary', lineHeight: 1.5, flex: 1 }}>
-							{q.description}
-						</Typography>
-
-						{/* Bottom: Answers + Doctor Avatars */}
+					<Box display={'flex'} flexDirection={'column'}>
 						<Box
+							key={q.id}
 							sx={{
+								flex: '1 1 0',
+								bgcolor: '#fff',
+								border: '1px solid #e0e0e0',
+								borderRadius: '12px',
+								overflow: 'clip',
 								display: 'flex',
-								alignItems: 'center',
-								justifyContent: 'space-between',
-								borderTop: '1px solid #f0f0f0',
-								pt: 1.5,
+								flexDirection: 'column',
+								gap: 1.5,
+								transition: 'box-shadow 0.2s ease',
+								'&:hover': { boxShadow: '0 4px 16px rgba(0,0,0,0.08)' },
 							}}
 						>
-							<Box>
-								<Typography sx={{ fontSize: '13px', fontWeight: 600, color: 'text.primary' }}>
-									{q.answers} answers
+							<Box sx={{ p: 2 }}>
+								{/* Top: Avatar + Info + Time */}
+								<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+									<Avatar src={q.avatar} sx={{ width: 40, height: 40 }} />
+									<Box sx={{ flex: 1 }}>
+										<Typography sx={{ fontSize: '12px', fontWeight: 600, color: 'text.primary' }}>
+											Asked for {q.gender},
+										</Typography>
+										<Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>
+											{q.age}, {q.location}
+										</Typography>
+									</Box>
+									<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>{q.time}</Typography>
+								</Box>
+
+								{/* Question */}
+
+								<Typography mt={2} variant="body1" fontWeight={600} fontSize={14}>
+									{q.question}
 								</Typography>
-								<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-									from other doctors
+
+								{/* Description */}
+								<Typography mt={2} variant="body2">
+									{q.description}
 								</Typography>
 							</Box>
-							<Box sx={{ display: 'flex', alignItems: 'center' }}>
-								<Avatar
-									src="https://i.pravatar.cc/30?img=12"
-									sx={{ width: 28, height: 28, border: '2px solid #fff' }}
-								/>
-								<Avatar
-									src="https://i.pravatar.cc/30?img=13"
-									sx={{ width: 28, height: 28, border: '2px solid #fff', ml: -1 }}
-								/>
-								<Box
-									sx={{
-										width: 28,
-										height: 28,
-										borderRadius: '50%',
-										bgcolor: '#0c7c7c',
-										display: 'flex',
-										alignItems: 'center',
-										justifyContent: 'center',
-										ml: -1,
-										border: '2px solid #fff',
-									}}
-								>
-									<Typography sx={{ fontSize: '10px', color: '#fff', fontWeight: 700 }}>
-										6+
+
+							{/* Bottom: Answers + Doctor Avatars */}
+							<Box
+								sx={{
+									display: 'flex',
+									alignItems: 'center',
+									justifyContent: 'space-between',
+									borderTop: '1px solid #f0f0f0',
+									py: 1.5,
+									px: 3,
+									background: '#DDE1E2',
+								}}
+							>
+								<Box>
+									<Typography sx={{ fontSize: '13px', fontWeight: 600, color: 'text.primary' }}>
+										{q.answers} answers
 									</Typography>
+									<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
+										from other doctors
+									</Typography>
+								</Box>
+								<Box sx={{ display: 'flex', alignItems: 'center' }}>
+									<Avatar
+										src="https://i.pravatar.cc/30?img=12"
+										sx={{ width: 28, height: 28, border: '2px solid #fff' }}
+									/>
+									<Avatar
+										src="https://i.pravatar.cc/30?img=13"
+										sx={{ width: 28, height: 28, border: '2px solid #fff', ml: -1 }}
+									/>
+									<Box
+										sx={{
+											width: 28,
+											height: 28,
+											borderRadius: '50%',
+											bgcolor: '#0c7c7c',
+											display: 'flex',
+											alignItems: 'center',
+											justifyContent: 'center',
+											ml: -1,
+											border: '2px solid #fff',
+										}}
+									>
+										<Typography sx={{ fontSize: '10px', color: '#fff', fontWeight: 700 }}>
+											6+
+										</Typography>
+									</Box>
 								</Box>
 							</Box>
 						</Box>
 
-						{/* Answer now textarea */}
-						<TextField
-							placeholder="Answer now..."
-							multiline
-							rows={3}
-							fullWidth
-							variant="outlined"
-							sx={{
-								mt: 1,
-								'& .MuiOutlinedInput-root': {
-									borderRadius: '8px',
-									fontSize: '13px',
-								},
-							}}
-						/>
+						<Box>
+							<TextField
+								placeholder="Answer now..."
+								multiline
+								rows={3}
+								fullWidth
+								sx={{
+									mt: 2,
+									'& .MuiOutlinedInput-root': {
+										background: '#fff',
+										borderRadius: '8px',
+										fontSize: '13px',
+									},
+								}}
+							/>
 
-						{/* Submit Button */}
-						<AppButton
-							label="Submit"
-							sx={{
-								bgcolor: '#0c7c7c',
-								color: '#fff',
-								borderRadius: '8px',
-								fontSize: '13px',
-								py: 1,
-								'&:hover': { bgcolor: '#0f4c4c' },
-							}}
-						/>
+							{/* Submit Button */}
+							<AppButton
+								label="Submit"
+								fullWidth
+								sx={{
+									mt: 2,
+									// color: '#fff',
+									borderRadius: '20px',
+								}}
+							/>
+						</Box>
 					</Box>
 				))}
 			</Box>

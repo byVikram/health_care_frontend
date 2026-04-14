@@ -14,6 +14,7 @@ export interface AppointmentParams {
 	limit?: number
 	appointment_date?: string
 	search?: string
+	hospital_id?: string
 	status?: string
 	appSearch?: string
 }

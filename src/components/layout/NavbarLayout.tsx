@@ -1,11 +1,12 @@
 // src/components/layout/NavbarLayout.tsx
-import { useState, useRef, useEffect, ReactNode } from 'react'
+import React, { useState, useRef, useEffect, ReactNode, cloneElement } from 'react'
 import { Box, Paper, MenuItem, Divider, Typography, Stack, IconButton, Avatar } from '@mui/material'
 import { SwapHoriz as SwapIcon, Check as CheckIcon } from '@mui/icons-material'
 import DoctorNavBar from '../common/Navbar/DoctorNavBar'
 import { clearAuth, useAuth } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { USER_ROLES } from '../../constants/constants'
+import { LookupHospital } from '../../hooks/useAuth'
 
 const NAVBAR_HEIGHT = 64
 
@@ -23,8 +24,7 @@ type ProfileMenuItem = { label: string; path: string; danger?: true } | { divide
 function isDividerMenuItem(item: ProfileMenuItem): item is { divider: true } {
 	return 'divider' in item && item.divider === true
 }
-
-const PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
+const PATIENT_PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
 	{ label: 'My Appointments', path: '#' },
 	{ label: 'My Tests', path: '#' },
 	{ label: 'My Medicine Orders', path: '#' },
@@ -32,13 +32,27 @@ const PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
 	{ label: 'My Online Consultations', path: '#' },
 	{ label: 'My Feedback', path: '#' },
 	{ divider: true },
-	{ label: 'Edit Profile', path: '/profile' },
+	{ label: 'Profile', path: '/profile' },
 	{ label: 'Settings', path: '#' },
-
 	{ divider: true },
-
 	{ label: 'Logout', path: '/logout', danger: true },
 ]
+
+const DOCTOR_PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
+	{ label: 'My Appointments', path: '#' },
+	{ label: 'My Consultations', path: '#' },
+	{ label: 'My Patients', path: '#' },
+	{ divider: true },
+	{ label: 'Profile', path: '/profile' },
+	{ label: 'Settings', path: '#' },
+	{ divider: true },
+	{ label: 'Logout', path: '/logout', danger: true },
+]
+
+const getProfileMenuItems = (role: string): readonly ProfileMenuItem[] => {
+	if (role === USER_ROLES.DOCTOR) return DOCTOR_PROFILE_MENU_ITEMS
+	return PATIENT_PROFILE_MENU_ITEMS
+}
 
 // Sample accounts data - replace with actual data from your auth context
 const SAMPLE_ACCOUNTS: Account[] = [
@@ -299,8 +313,7 @@ function ProfileDropdown({
 				)}
 			</Box>
 
-			{/* Menu Items */}
-			{PROFILE_MENU_ITEMS.map((item, idx) => {
+			{getProfileMenuItems(role).map((item, idx) => {
 				if (isDividerMenuItem(item)) {
 					return <Divider key={`divider-${idx}`} sx={{ my: 0.5 }} />
 				}
@@ -355,14 +368,22 @@ interface NavbarLayoutProps {
 }
 
 export default function NavbarLayout({ children }: NavbarLayoutProps) {
-	const { role } = useAuth()
+	const { role, user } = useAuth()
 
 	const [dropdownOpen, setDropdownOpen] = useState(false)
+	const [activeHospital, setActiveHospital] = useState<LookupHospital | null>(null)
 	const [accountSwitcherOpen, setAccountSwitcherOpen] = useState(false)
 
 	// Replace with actual current account from your auth context
 	const [currentAccount, setCurrentAccount] = useState<Account>(SAMPLE_ACCOUNTS[0])
 	const [availableAccounts] = useState<Account[]>(SAMPLE_ACCOUNTS)
+	const profileAccount: Account = {
+		id: user?.id || currentAccount.id,
+		name: user?.name || currentAccount.name,
+		email: user?.email || currentAccount.email,
+		relation: currentAccount.relation,
+		avatar: user?.avatar || currentAccount.avatar,
+	}
 
 	const handleSwitchAccount = (account: Account) => {
 		setCurrentAccount(account)
@@ -387,6 +408,11 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 		setAccountSwitcherOpen(false)
 	}
 
+	const handleHospitalChange = (e: LookupHospital | null) => {
+		setActiveHospital(e)
+		if (e) localStorage.setItem('active_hospital_id', e.id)
+	}
+
 	return (
 		<Box
 			sx={{
@@ -404,20 +430,20 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 						setAccountSwitcherOpen(false)
 						setDropdownOpen((prev) => !prev)
 					}}
+					onHospitalChange={handleHospitalChange}
 				/>
 			</Box>
 
-			{/* Profile dropdown */}
-			{dropdownOpen && (
-				<ProfileDropdown
-					onClose={handleCloseAll}
-					currentAccount={currentAccount}
-					onOpenAccountSwitcher={handleOpenAccountSwitcher}
-					role={role || 'patient'}
-				/>
-			)}
+    	{/* Dropdowns */}
+    	{dropdownOpen && (
+      		<ProfileDropdown
+        		onClose={handleCloseAll}
+        		currentAccount={profileAccount}
+        		onOpenAccountSwitcher={handleOpenAccountSwitcher}
+        		role={role || 'patient'}
+      	/>
+    	)}
 
-			{/* Account switcher dropdown */}
 			{accountSwitcherOpen && (
 				<AccountSwitcher
 					accounts={availableAccounts}
@@ -428,7 +454,12 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 			)}
 
 			{/* Page content */}
-			<Box sx={{ flex: 1, mt: `${NAVBAR_HEIGHT}px` }}>{children}</Box>
+			<Box sx={{ flex: 1, mt: `${NAVBAR_HEIGHT}px` }}>
+				{children &&
+					cloneElement(children as React.ReactElement<{ activeHospital: LookupHospital | null }>, {
+						activeHospital,
+					})}
+			</Box>
 		</Box>
 	)
 }
