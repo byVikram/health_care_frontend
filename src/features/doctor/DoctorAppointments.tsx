@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Box, Typography, TextField, InputAdornment, Divider, Chip } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
@@ -79,7 +79,8 @@ export function DoctorAppointments({
 					if (res.success && res.data) {
 						setRescheduleHospitals(res.data.hospitals)
 					}
-				} catch (err) {
+				} catch {
+					// Fix 1: removed unused 'err' variable
 					console.log('Failed to fetch doctor hospitals')
 				}
 			}
@@ -117,8 +118,9 @@ export function DoctorAppointments({
 				let processedData: SlotGroup[] = []
 				if (Array.isArray(responseData)) {
 					processedData = responseData as SlotGroup[]
-				} else if (responseData && Array.isArray((responseData as any).data)) {
-					processedData = (responseData as any).data as SlotGroup[]
+				} else if (responseData && Array.isArray((responseData as { data: SlotGroup[] }).data)) {
+					// Fix 2: replaced 'any' with a typed assertion
+					processedData = (responseData as { data: SlotGroup[] }).data
 				}
 				setRescheduleSlots(processedData)
 			} catch {
@@ -129,7 +131,8 @@ export function DoctorAppointments({
 		}
 
 		fetchSlots()
-	}, [rescheduleDate, rescheduleOpen, rescheduleAppt])
+	// Fix 3: added rescheduleHospitalId to dependency array
+	}, [rescheduleDate, rescheduleOpen, rescheduleAppt, rescheduleHospitalId])
 
 	// ── Submit reschedule ─────────────────────────────────────────────────────
 	const handleRescheduleConfirm = async () => {
@@ -140,13 +143,15 @@ export function DoctorAppointments({
 		setRescheduleSubmitting(true)
 		try {
 			const dateStr = rescheduleDate.toISOString().split('T')[0]
-			const res = await ApiService.patch<{ success: boolean; message: string }>(
-				`${API_ENDPOINTS.APPOINTMENTS.UPDATE}`,
+			const res = await ApiService.post<{ success: boolean; message: string }>(
+				`${API_ENDPOINTS.APPOINTMENTS.RESCHEDULE}`,
 				{
-					appointment_id: rescheduleAppt.id,
+					appointment_id:rescheduleAppt.id,
 					appointment_date: dateStr,
-					start_time: rescheduleTime,
-					hospital_id: rescheduleHospitalId || rescheduleAppt.hospital?.id,
+    				start_time: rescheduleTime,
+    				end_time: null,
+    				hospital_id: rescheduleHospitalId || rescheduleAppt.hospital?.id,
+    				reason: "Doctor unavailable",
 				}
 			)
 			if (res.data?.success) {
@@ -319,8 +324,10 @@ export function DoctorAppointments({
 								sx={{
 									p: 1.5,
 									borderRadius: '12px',
-									border: isCancelled ? '1px solid #f5c6c6' : '1px solid #e0e0e0',
-									bgcolor: isCancelled ? '#fff5f5' : '#fff',
+									// position: 'relative',
+									// border: isCancelled ? '1px solid #f9f5f5f3' : '1px solid #faf7f7',
+									opacity: isCancelled ? 0.5 : 1,
+									bgcolor: '#fff',
 									display: 'flex',
 									alignItems: 'center',
 									gap: 1.5,
@@ -332,7 +339,7 @@ export function DoctorAppointments({
 										width: 30,
 										height: 30,
 										borderRadius: '6px',
-										bgcolor: isCancelled ? '#f5c6c6' : '#e8f5e9',
+										bgcolor: '#f5f5f5',
 										display: 'flex',
 										alignItems: 'center',
 										justifyContent: 'center',
@@ -384,25 +391,38 @@ export function DoctorAppointments({
 										</Typography>
 									</Box>
 								</Box>
-
+                                 {/* <Divider orientation="vertical" flexItem sx={{ mx: 1 }} /> */}
+								{/* <Box
+  									sx={{
+   									position: 'absolute',
+    								left: '58%',
+    								top: '50%',
+    								transform: 'translate(-50%, -50%)',
+    								width: '2px',
+    								height: '40px',
+    								bgcolor: '#e0e0e0',
+  									}}
+								/> */}
 								{isCancelled ? (
 									<Box
 										sx={{
 											display: 'flex',
 											alignItems: 'center',
 											gap: 1,
-											bgcolor: '#ffe0e0',
+											bgcolor: '#e8c7c7',
 											borderRadius: '8px',
 											px: 1.5,
 											py: 0.8,
+											// pl: 2,
 										}}
-									>
+									> 
 										<CancelOutlinedIcon sx={{ fontSize: 16, color: '#e53935' }} />
 										<Typography sx={{ fontSize: '10px', color: '#e53935', fontWeight: 600 }}>
-											Patient has canceled the appointment
+											Doctor rejected the appointment
 										</Typography>
 									</Box>
 								) : (
+									
 									<Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
 										{visibleActions.map((action, i) => (
 											<Box key={i}>

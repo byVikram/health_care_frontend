@@ -1,4 +1,4 @@
-﻿// src/types/appointment.ts
+// src/types/appointment.ts
 
 export type AppointmentStatusValue = 'pending' | 'confirmed' | 'completed' | 'cancelled' | string
 
