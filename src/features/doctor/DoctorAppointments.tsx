@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from 'react'
-import { Box, Typography, TextField, InputAdornment, Divider, Chip } from '@mui/material'
+import { Box, Typography, TextField, InputAdornment, Divider, Chip, Popover } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
@@ -23,7 +23,7 @@ import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { useNavigate } from 'react-router-dom'
-
+import AppButton from '../../components/common/Button/AppButton'
 
 const allActionButtons = [
 	{ icon: ConfirmIcon, label: 'Confirm', bg: '#e8f5e9', color: '#4caf50', action: 'confirm' },
@@ -54,12 +54,23 @@ export function DoctorAppointments({
 	setSearchQuery: (value: string) => void
 }) {
 	const navigate = useNavigate()
-	// ── Appointment action state ──────────────────────────────────────────────
+	// Appointment action state
 	const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({})
 
-	// const [debouncedQuery, setDebouncedQuery] = useState('')
+	// Reject confirmation popover state
+	const [rejectAnchorEl, setRejectAnchorEl] = useState<HTMLElement | null>(null)
+	const [pendingRejectId, setPendingRejectId] = useState<string | null>(null)
 
-	// ── Reschedule drawer state ───────────────────────────────────────────────
+	useEffect(() => {
+		const shouldRefresh = sessionStorage.getItem('refreshAppointments')
+
+		if (shouldRefresh === 'true') {
+			sessionStorage.removeItem('refreshAppointments')
+			window.location.reload()
+		}
+	}, [])
+
+	// Reschedule drawer state
 	const [rescheduleOpen, setRescheduleOpen] = useState(false)
 	const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null)
 	const [rescheduleDate, setRescheduleDate] = useState(new Date())
@@ -80,7 +91,6 @@ export function DoctorAppointments({
 						setRescheduleHospitals(res.data.hospitals)
 					}
 				} catch {
-					// Fix 1: removed unused 'err' variable
 					console.log('Failed to fetch doctor hospitals')
 				}
 			}
@@ -88,13 +98,13 @@ export function DoctorAppointments({
 		fetchDoctorHospitals()
 	}, [rescheduleAppt, rescheduleOpen])
 
-	// ── Helpers ───────────────────────────────────────────────────────────────
+	// Helpers
 	const getStatusLabel = (apt: Appointment): string => {
 		if (localStatuses[apt.id]) return localStatuses[apt.id]
 		return typeof apt.status === 'string' ? apt.status : (apt.status?.label ?? 'pending')
 	}
 
-	// ── Fetch slots whenever the reschedule date changes ─────────────────────
+	// Fetch slots whenever the reschedule date changes
 	useEffect(() => {
 		if (!rescheduleOpen || !rescheduleAppt) return
 
@@ -119,7 +129,6 @@ export function DoctorAppointments({
 				if (Array.isArray(responseData)) {
 					processedData = responseData as SlotGroup[]
 				} else if (responseData && Array.isArray((responseData as { data: SlotGroup[] }).data)) {
-					// Fix 2: replaced 'any' with a typed assertion
 					processedData = (responseData as { data: SlotGroup[] }).data
 				}
 				setRescheduleSlots(processedData)
@@ -131,10 +140,9 @@ export function DoctorAppointments({
 		}
 
 		fetchSlots()
-	// Fix 3: added rescheduleHospitalId to dependency array
 	}, [rescheduleDate, rescheduleOpen, rescheduleAppt, rescheduleHospitalId])
 
-	// ── Submit reschedule ─────────────────────────────────────────────────────
+	// Submit reschedule
 	const handleRescheduleConfirm = async () => {
 		if (!rescheduleAppt || !rescheduleTime) {
 			toast.warning('Please select a time slot before confirming.')
@@ -146,12 +154,12 @@ export function DoctorAppointments({
 			const res = await ApiService.post<{ success: boolean; message: string }>(
 				`${API_ENDPOINTS.APPOINTMENTS.RESCHEDULE}`,
 				{
-					appointment_id:rescheduleAppt.id,
+					appointment_id: rescheduleAppt.id,
 					appointment_date: dateStr,
-    				start_time: rescheduleTime,
-    				end_time: null,
-    				hospital_id: rescheduleHospitalId || rescheduleAppt.hospital?.id,
-    				reason: "Doctor unavailable",
+					start_time: rescheduleTime,
+					end_time: null,
+					hospital_id: rescheduleHospitalId || rescheduleAppt.hospital?.id,
+					reason: 'Doctor unavailable',
 				}
 			)
 			if (res.data?.success) {
@@ -168,8 +176,8 @@ export function DoctorAppointments({
 		}
 	}
 
-	// ── Action button handler ─────────────────────────────────────────────────
-	const handleAction = async (action: string, appointmentId: string) => {
+	// Action button handler
+	const handleAction = async (action: string, appointmentId: string, anchorEl?: HTMLElement | null) => {
 		try {
 			if (action === 'confirm') {
 				const res = await updateAppointmentsStatus(appointmentId, '3f9a2c8e-7b61-4d2a-9a3f-5c8e1b2d4f90')
@@ -179,11 +187,8 @@ export function DoctorAppointments({
 				}
 			}
 			if (action === 'reject') {
-				const res = await updateAppointmentsStatus(appointmentId, 'a7d4e1c2-9f6b-4c83-b2e1-6f3a9d8c7b12')
-				if (res.success) {
-					toast.success(res.message)
-					setLocalStatuses((prev) => ({ ...prev, [appointmentId]: 'cancelled' }))
-				}
+				setPendingRejectId(appointmentId)
+				setRejectAnchorEl(anchorEl ?? null)
 			}
 			if (action === 'reschedule') {
 				const apt = appointments.find((a) => a.id === appointmentId) ?? null
@@ -203,8 +208,29 @@ export function DoctorAppointments({
 		}
 	}
 
+	// Confirm reject after popover confirmation
+	const handleConfirmReject = async () => {
+		if (!pendingRejectId) return
+		setRejectAnchorEl(null)
+		try {
+			const res = await updateAppointmentsStatus(pendingRejectId, 'a7d4e1c2-9f6b-4c83-b2e1-6f3a9d8c7b12')
+			if (res.success) {
+				toast.success(res.message)
+				setLocalStatuses((prev) => ({ ...prev, [pendingRejectId]: 'cancelled' }))
+			}
+		} catch {
+			toast.error('Something went wrong. Please try again.')
+		} finally {
+			setPendingRejectId(null)
+		}
+	}
 
-	// ── Render ────────────────────────────────────────────────────────────────
+	const handleCancelReject = () => {
+		setRejectAnchorEl(null)
+		setPendingRejectId(null)
+	}
+
+	// Render
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
 			<Box>
@@ -242,10 +268,39 @@ export function DoctorAppointments({
 					<Typography sx={{ fontWeight: 700, fontSize: '17px', color: 'text.primary' }}>
 						Today's Appointments
 					</Typography>
-					<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+						<AppButton
+							label="Today"
+							variant="outlined"
+							size="small"
+							onClick={() => {
+								const todayIndex = weekDays.findIndex(
+									(d) => d.dateObj.toDateString() === new Date().toDateString()
+								)
+								if (todayIndex !== -1) {
+									setSelectedDate(todayIndex)
+								}
+							}}
+							sx={{
+								borderRadius: '15px',
+								border: '1px solid #0c7c7c',
+								color: '#0c7c7c',
+								textTransform: 'none',
+								fontWeight: 500,
+								px: 1.5,
+								py: 0.6,
+								minWidth: 'auto',
+								'&:hover': {
+									borderColor: '#0c7c7c',
+									backgroundColor: '#eef1f1',
+								},
+							}}
+						/>
+
 						<Typography sx={{ fontSize: '13px', color: '#0c7c7c', fontWeight: 600 }}>
 							{selectedDateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
 						</Typography>
+
 						<ChevronRightIcon sx={{ fontSize: 18, color: '#0c7c7c' }} />
 					</Box>
 				</Box>
@@ -324,15 +379,12 @@ export function DoctorAppointments({
 								sx={{
 									p: 1.5,
 									borderRadius: '12px',
-									// position: 'relative',
-									// border: isCancelled ? '1px solid #f9f5f5f3' : '1px solid #faf7f7',
 									opacity: isCancelled ? 0.5 : 1,
 									bgcolor: '#fff',
 									display: 'flex',
 									alignItems: 'center',
 									gap: 1.5,
 								}}
-							// onClick={() => navigate(`/consultation/${apt.patient?.id}/${apt.id}`)}
 							>
 								<Box
 									sx={{
@@ -381,28 +433,17 @@ export function DoctorAppointments({
 										/>
 									</Box>
 									<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-										<Typography variant='body2'>
+										<Typography variant="body2">
 											{apt.patient?.age} years / {apt.patient?.gender}
 										</Typography>
-										<Typography variant='body2'>|</Typography>
+										<Typography variant="body2">|</Typography>
 										<AccessTimeIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
-										<Typography variant='body2'>
+										<Typography variant="body2">
 											{apt.start_time ?? '--'} - {apt.end_time}
 										</Typography>
 									</Box>
 								</Box>
-                                 {/* <Divider orientation="vertical" flexItem sx={{ mx: 1 }} /> */}
-								{/* <Box
-  									sx={{
-   									position: 'absolute',
-    								left: '58%',
-    								top: '50%',
-    								transform: 'translate(-50%, -50%)',
-    								width: '2px',
-    								height: '40px',
-    								bgcolor: '#e0e0e0',
-  									}}
-								/> */}
+
 								{isCancelled ? (
 									<Box
 										sx={{
@@ -413,23 +454,21 @@ export function DoctorAppointments({
 											borderRadius: '8px',
 											px: 1.5,
 											py: 0.8,
-											// pl: 2,
 										}}
-									> 
+									>
 										<CancelOutlinedIcon sx={{ fontSize: 16, color: '#e53935' }} />
 										<Typography sx={{ fontSize: '10px', color: '#e53935', fontWeight: 600 }}>
 											Doctor rejected the appointment
 										</Typography>
 									</Box>
 								) : (
-									
 									<Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
 										{visibleActions.map((action, i) => (
 											<Box key={i}>
 												<Box
 													onClick={(e) => {
 														e.stopPropagation()
-														handleAction(action.action, apt.id)
+														handleAction(action.action, apt.id, e.currentTarget as HTMLElement)
 													}}
 													sx={{
 														display: 'flex',
@@ -470,7 +509,89 @@ export function DoctorAppointments({
 				</Box>
 			</Box>
 
-			{/* ── Reschedule drawer ── */}
+			{/* Reject Confirmation Popover */}
+			<Popover
+				open={Boolean(rejectAnchorEl)}
+				anchorEl={rejectAnchorEl}
+				onClose={handleCancelReject}
+				anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+				transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+				disableScrollLock
+				sx={{ zIndex: 9999 }}
+				PaperProps={{
+					sx: {
+						borderRadius: '16px',
+						px: 3,
+						py: 3,
+						maxWidth: 300,
+						width: 280,
+						textAlign: 'center',
+						boxShadow: '0px 8px 40px rgba(0,0,0,0.18)',
+						mt: 1,
+						overflow: 'visible',
+						'&::before': {
+							content: '""',
+							position: 'absolute',
+							top: -8,
+							left: '50%',
+							transform: 'translateX(-50%)',
+							width: 0,
+							height: 0,
+							borderLeft: '9px solid transparent',
+							borderRight: '9px solid transparent',
+							borderBottom: '9px solid #fff',
+							filter: 'drop-shadow(0px -2px 2px rgba(0,0,0,0.06))',
+						},
+					},
+				}}
+			>
+				<Typography sx={{ fontWeight: 700, fontSize: '16px', color: 'text.primary', mb: 0.5 }}>
+					Are you sure?
+				</Typography>
+				<Typography sx={{ fontSize: '14px', color: 'text.primary', fontWeight: 600, mb: 3 }}>
+					You want to reject appointment
+				</Typography>
+				<Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center' }}>
+					<Box
+						onClick={handleCancelReject}
+						sx={{
+							flex: 1,
+							py: 1.2,
+							border: '2px solid #0c7c7c',
+							borderRadius: '50px',
+							color: '#0c7c7c',
+							fontWeight: 600,
+							fontSize: '13px',
+							cursor: 'pointer',
+							textAlign: 'center',
+							transition: 'background 0.2s',
+							'&:hover': { bgcolor: 'rgba(12,124,124,0.06)' },
+						}}
+					>
+						Cancel
+					</Box>
+					<Box
+						onClick={handleConfirmReject}
+						sx={{
+							flex: 1,
+							py: 1.2,
+							bgcolor: '#e53935',
+							borderRadius: '50px',
+							color: '#fff',
+							fontWeight: 600,
+							fontSize: '13px',
+							cursor: 'pointer',
+							textAlign: 'center',
+							transition: 'opacity 0.2s',
+							'&:hover': { opacity: 0.88 },
+						}}
+					>
+						Yes, Reject
+					</Box>
+				</Box>
+			</Popover>
+
+			{/* Reschedule drawer */}
 			<RescheduleDrawer
 				rescheduleOpen={rescheduleOpen}
 				setRescheduleOpen={setRescheduleOpen}

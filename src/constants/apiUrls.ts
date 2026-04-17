@@ -19,6 +19,7 @@ export const API_ENDPOINTS = {
 		DETAILS: `${BASE_URL}/api/doctors/details`,
 		PROFESSIONAL_DETAILS: `${BASE_URL}/api/doctors/professional-details`,
 		HOSPITALS: `${BASE_URL}/api/doctors/hospitals`,
+		DELETE_ACCOUNT: `${BASE_URL}/api/doctors/profile`
 	},
 	SPECIALITIES: {
 		LIST: `${BASE_URL}/api/specialities`,

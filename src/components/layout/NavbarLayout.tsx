@@ -410,7 +410,10 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 
 	const handleHospitalChange = (e: LookupHospital | null) => {
 		setActiveHospital(e)
-		if (e) localStorage.setItem('active_hospital_id', e.id)
+		if (e) {
+			localStorage.setItem('active_hospital_id', e.id)
+			window.dispatchEvent(new Event('hospital-changed'))
+		}
 	}
 
 	return (
