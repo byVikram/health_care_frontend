@@ -9,7 +9,6 @@ import { DoctorAppointments } from '../doctor/DoctorAppointments'
 import { useAuth } from '../../hooks/useAuth'
 
 import drImage from '../../assets/Banner/banner.png'
-import videoImage from '../../assets/blog-and-community/video-image.png'
 import adImage from '../../assets/blog-and-community/ad-image.png'
 import AnswerQuestionsSection from '../dashboard/AnswerQuestionsSection'
 // import DoctorNavBar from '../../components/common/Navbar/DoctorNavBar'
@@ -57,12 +56,13 @@ const stats = [
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default function PortalPage({ activeHospital = null }: { activeHospital?: LookupHospital | null }) {
-	const activeHospitalId = localStorage.getItem("active_hospital_id")
-
 	const { role, user } = useAuth()
 	const [activeSlide, setActiveSlide] = useState(0)
 	const totalSlides = 4
 	const [selectedDate, setSelectedDate] = useState(0)
+	const [activeHospitalId, setActiveHospitalId] = useState<string | null>(() =>
+		localStorage.getItem('active_hospital_id')
+	)
 	const [appointments, setAppointments] = useState<Appointment[]>([])
 	const [apptLoading, setApptLoading] = useState(true)
 	const [apptError, setApptError] = useState('')
@@ -77,6 +77,26 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 		const day = String(date.getDate()).padStart(2, '0')
 		return `${year}-${month}-${day}`
 	}
+
+	useEffect(() => {
+		const syncActiveHospital = () => {
+			setActiveHospitalId(localStorage.getItem('active_hospital_id'))
+		}
+
+		const onStorage = (event: StorageEvent) => {
+			if (event.key === null || event.key === 'active_hospital_id') {
+				syncActiveHospital()
+			}
+		}
+
+		window.addEventListener('hospital-changed', syncActiveHospital)
+		window.addEventListener('storage', onStorage)
+
+		return () => {
+			window.removeEventListener('hospital-changed', syncActiveHospital)
+			window.removeEventListener('storage', onStorage)
+		}
+	}, [])
 
 	useEffect(() => {
 		const fetchAppointments = async () => {
@@ -215,7 +235,7 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 							{/* Video + Right Services row */}
 							<Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
 								{/* Video Image with dots */}
-								<Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+								{/* <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
 									<Box sx={{ borderRadius: '16px', overflow: 'hidden' }}>
 										<Box
 											component="img"
@@ -230,7 +250,6 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 											}}
 										/>
 									</Box>
-									{/* Slider dots */}
 									<Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, pt: 1.5 }}>
 										{Array.from({ length: 5 }).map((_, i) => (
 											<Box
@@ -245,7 +264,8 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 											/>
 										))}
 									</Box>
-								</Box>
+								</Box> */}
+								{/* TODO:  */}
 
 								{/* Right vertical services: Emergency, Ambulance, Blood Bank, ICU */}
 								<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 1 }}>

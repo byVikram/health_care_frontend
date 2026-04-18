@@ -300,7 +300,10 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 									</Typography>
 								</Box>
 								<Box sx={{ flex: 1 }}>
-									<Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', fontSize: '13.5px' }}>
+									<Typography
+										variant="body2"
+										sx={{ fontWeight: 600, color: 'text.primary', fontSize: '13.5px' }}
+									>
 										{hospital.name}
 									</Typography>
 									<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '11.5px' }}>
@@ -316,6 +319,29 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 						)
 					})
 				)}
+			</Box>
+			<Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: -4 }}>
+				<AppButton
+					label="Today"
+					variant="outlined"
+					size="small"
+					onClick={() => setSelectedDate(new Date())}
+					sx={{
+						borderRadius: '10px',
+						border: '1px solid #0c7c7c',
+						color: '#0c7c7c',
+						textTransform: 'none',
+						fontWeight: 500,
+						px: 1.5,
+						py: 0.4,
+						minWidth: 'auto',
+						 mt: 0.5, 
+						'&:hover': {
+							borderColor: '#0c7c7c',
+							backgroundColor: '#e0f2f1',
+						},
+					}}
+				/>
 			</Box>
 
 			<DateSlotPicker

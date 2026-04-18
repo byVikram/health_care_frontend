@@ -12,6 +12,7 @@ import DoctorPersonalTab from './components/DoctorPersonalTab'
 import DoctorProfessionalTab from './components/DoctorProfessionalTab'
 import DoctorHospitalsTab from './components/DoctorHospitalsTab'
 import DoctorAvailabilityTab from './components/DoctorAvailabilityTab'
+import DoctorSettingTab from './components/DoctorSettingTab'
 import { DoctorProfile, DoctorProfilePersonal, DoctorProfileProfessional } from '../../../types/doctor-profile'
 import { customCardStyle } from '../../../styles/commonStyles'
 import { getDoctorProfile, mapDoctorProfileApi } from '../doctorService'
@@ -138,6 +139,8 @@ export default function DoctorProfilePage() {
 						onChange={handleAvailabilityChange}
 					/>
 				)
+			case 'settings':
+				return <DoctorSettingTab />
 			default:
 				return (
 					<Box sx={{ ...customCardStyle, p: 4, color: 'text.secondary', textAlign: 'center' }}>
@@ -170,4 +173,6 @@ export default function DoctorProfilePage() {
 		</Box>
 	)
 }
+
+
 
