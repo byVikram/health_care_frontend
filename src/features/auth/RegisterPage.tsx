@@ -1,5 +1,4 @@
 // features/auth/RegisterPage.tsx
-// features/auth/RegisterPage.tsx
 import { Box } from '@mui/material'
 import { useState } from 'react'
 // import { useNavigate } from 'react-router-dom'

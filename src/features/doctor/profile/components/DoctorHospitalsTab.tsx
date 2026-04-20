@@ -11,6 +11,7 @@ import AppInput from '../../../../components/common/Input/AppInput'
 import { customCardStyle } from '../../../../styles/commonStyles'
 import { DoctorHospital } from '../../../../types/doctor-profile'
 import { createHospital } from '../../doctorService'
+import { MenuItem, Checkbox, FormControlLabel, TextField } from '@mui/material'
 
 interface DoctorHospitalsTabProps {
 	hospitals: DoctorHospital[]
@@ -53,48 +54,57 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 	const [showForm, setShowForm] = useState(false)
 	const [form, setForm] = useState(EMPTY_FORM)
 	const [isSaving, setIsSaving] = useState(false)
+	const [startTime, setStartTime] = useState('09:00')
+	const [endTime, setEndTime] = useState('18:00')
+	const [notAvailable, setNotAvailable] = useState(false)
+
+	const timeOptions = Array.from({ length: 48 }, (_, i) => {
+		const hours = String(Math.floor(i / 2)).padStart(2, '0')
+		const minutes = i % 2 === 0 ? '00' : '30'
+		return `${hours}:${minutes}`
+	})
+
 
 	const handleSetPrimary = (id: string) => {
 		onChange(hospitals.map((h) => ({ ...h, isPrimary: h.id === id })))
 	}
 
 	const handleSave = async () => {
-  	const trimmedName = form.name.trim();
-  	const trimmedAddress = form.fullAddress.trim();
-  	const isPrimary = hospitals.length === 0;
+		const trimmedName = form.name.trim()
+		const trimmedAddress = form.fullAddress.trim()
+		const isPrimary = hospitals.length === 0
 
- 	 if (!trimmedName) {
-   		 toast.error("Hospital name is required");
-    return;
-  	}
+		if (!trimmedName) {
+			toast.error('Hospital name is required')
+			return
+		}
 
-  	if (!trimmedAddress) {
-    	toast.error("Full address is required");
-    return;
-  	}
+		if (!trimmedAddress) {
+			toast.error('Full address is required')
+			return
+		}
 
-  	setIsSaving(true);
+		setIsSaving(true)
 
-  	try {
-    	const response = await createHospital({
-      		name: trimmedName,
-      		phone_number: form.phone_number.trim(),
-      		full_address: trimmedAddress,
-      		is_primary: isPrimary,
-      		video_consultation_fee: form.video_consultation_fee.trim(),
-      		offline_consultation_fee: form.offline_consultation_fee.trim(),
-    	});
+		try {
+			const response = await createHospital({
+				name: trimmedName,
+				phone_number: form.phone_number.trim(),
+				full_address: trimmedAddress,
+				is_primary: isPrimary,
+				video_consultation_fee: form.video_consultation_fee.trim(),
+				offline_consultation_fee: form.offline_consultation_fee.trim(),
+			})
 
-    toast.success(getSuccessMessage(response));
-    window.location.reload();
-
-  	} catch (error) {
-    	console.error("Failed to save hospital", error);
-    	toast.error("Failed to save hospital");
-  	} finally {
-    	setIsSaving(false);
-  	}
-	};
+			toast.success(getSuccessMessage(response))
+			window.location.reload()
+		} catch (error) {
+			console.error('Failed to save hospital', error)
+			toast.error('Failed to save hospital')
+		} finally {
+			setIsSaving(false)
+		}
+	}
 	if (showForm) {
 		return (
 			<Box sx={{ ...customCardStyle }}>
@@ -110,7 +120,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 						<ArrowBackIosNewIcon sx={{ fontSize: 15 }} />
 					</IconButton>
 					<Typography variant="h6" sx={{ fontWeight: 700, fontSize: '16px' }}>
-						Add new address
+						Add new Hospital Details 
 					</Typography>
 				</Box>
 
@@ -139,22 +149,64 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 						label="Video consultation fee"
 						value={form.video_consultation_fee}
 						placeholder="e.g. 500"
-						onChange={(e) =>
-							setForm((prev) => ({ ...prev, video_consultation_fee: e.target.value }))
-						}
+						onChange={(e) => setForm((prev) => ({ ...prev, video_consultation_fee: e.target.value }))}
 					/>
 					<AppInput
 						label="Offline consultation fee"
 						value={form.offline_consultation_fee}
 						placeholder="e.g. 300"
-						onChange={(e) =>
-							setForm((prev) => ({ ...prev, offline_consultation_fee: e.target.value }))
-						}
+						onChange={(e) => setForm((prev) => ({ ...prev, offline_consultation_fee: e.target.value }))}
 					/>
+					{/* 🔹 Availability Section */}
+					<Box sx={{ mt: 0.5}}>
+						<Typography sx={{ fontWeight: 400, fontSize: '14px' }}>Working Hours</Typography>
+
+						<Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+							<TextField
+								select
+								label="Start Time"
+								value={startTime}
+								onChange={(e) => setStartTime(e.target.value)}
+								size="small"
+								sx={{ width: 150 }}
+								disabled={notAvailable}
+							>
+								{timeOptions.map((time) => (
+									<MenuItem key={time} value={time}>
+										{time}
+									</MenuItem>
+								))}
+							</TextField>
+
+							<TextField
+								select
+								label="End Time"
+								value={endTime}
+								onChange={(e) => setEndTime(e.target.value)}
+								size="small"
+								sx={{ width: 150 }}
+								disabled={notAvailable}
+							>
+								{timeOptions.map((time) => (
+									<MenuItem key={time} value={time}>
+										{time}
+									</MenuItem>
+								))}
+							</TextField>
+						</Box>
+
+						<FormControlLabel
+							control={
+								<Checkbox checked={notAvailable} onChange={(e) => setNotAvailable(e.target.checked)} />
+							}
+							label="Not available for entire day"
+							sx={{ mt: 1 , fontWeight: 400, fontSize: '13px'}}
+						/>
+					</Box>
 				</Box>
 
 				<Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-					<AppButton variant="contained" onClick={handleSave} loading={isSaving} label="Save Address" />
+					<AppButton variant="contained" onClick={handleSave} loading={isSaving} label="Save Details " />
 				</Box>
 			</Box>
 		)

@@ -1,4 +1,4 @@
-﻿// src/constants/apiUrls.ts
+// src/constants/apiUrls.ts
 export const BASE_URL = import.meta.env.VITE_API_ENDPOINT as string
 
 export const API_ENDPOINTS = {
@@ -19,7 +19,7 @@ export const API_ENDPOINTS = {
 		DETAILS: `${BASE_URL}/api/doctors/details`,
 		PROFESSIONAL_DETAILS: `${BASE_URL}/api/doctors/professional-details`,
 		HOSPITALS: `${BASE_URL}/api/doctors/hospitals`,
-		DELETE_ACCOUNT: `${BASE_URL}/api/doctors/profile`
+		DELETE_ACCOUNT: `${BASE_URL}/api/doctors/profile`,
 	},
 	SPECIALITIES: {
 		LIST: `${BASE_URL}/api/specialities`,
@@ -38,11 +38,15 @@ export const API_ENDPOINTS = {
 	LOOKUP: {
 		GET: `${BASE_URL}/api/lookup`,
 	},
+	DOCTORS_FAVOURITES: {
+		GET: `${BASE_URL}/api/doctors/favourites`,
+		TOGGLE: (publicId: string) => `${BASE_URL}/api/doctors/favourites/${publicId}`,
+	},
 	APPOINTMENTS: {
 		GET: `${BASE_URL}/api/appointments`,
 		CREATE: `${BASE_URL}/api/appointments`,
 		UPDATE: `${BASE_URL}/api/appointments/update-status`,
 		GET_BY_ID: (id: string | number) => `${BASE_URL}/api/appointments/${id}`,
-		RESCHEDULE:  `${BASE_URL}/api/appointments/reschedule`,
+		RESCHEDULE: `${BASE_URL}/api/appointments/reschedule`,
 	},
 }

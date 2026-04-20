@@ -11,8 +11,11 @@ import { useAuth } from '../../hooks/useAuth'
 import drImage from '../../assets/Banner/banner.png'
 import adImage from '../../assets/blog-and-community/ad-image.png'
 import AnswerQuestionsSection from '../dashboard/AnswerQuestionsSection'
+import videoImage from '../../assets/blog-and-community/video-image.png';
+import DashboardCarousel from '../../components/common/Carousel/DashboardCarousel'
 // import DoctorNavBar from '../../components/common/Navbar/DoctorNavBar'
 import { LookupHospital } from '../../hooks/useAuth'
+
 
 import AppointmentsIcon from '../../assets/quick-services/appointments.svg'
 import PharmacyIcon from '../../assets/quick-services/pharmacy.svg'
@@ -234,37 +237,10 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%', flex: 1 }}>
 							{/* Video + Right Services row */}
 							<Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-								{/* Video Image with dots */}
-								{/* <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-									<Box sx={{ borderRadius: '16px', overflow: 'hidden' }}>
-										<Box
-											component="img"
-											src={videoImage}
-											alt="Video"
-											sx={{
-												width: '100%',
-												display: 'block',
-												objectFit: 'cover',
-												maxHeight: '480px',
-												maxWidth: '480px',
-											}}
-										/>
-									</Box>
-									<Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, pt: 1.5 }}>
-										{Array.from({ length: 5 }).map((_, i) => (
-											<Box
-												key={i}
-												sx={{
-													width: i === 0 ? 20 : 10,
-													height: 10,
-													borderRadius: '5px',
-													bgcolor: i === 0 ? '#0c7c7c' : '#d0d0d0',
-													transition: 'all 0.3s ease',
-												}}
-											/>
-										))}
-									</Box>
-								</Box> */}
+								{/* Video Image Carousel */}
+								<Box sx={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+									<DashboardCarousel images={[videoImage, videoImage, videoImage, videoImage]} />
+								</Box>
 								{/* TODO:  */}
 
 								{/* Right vertical services: Emergency, Ambulance, Blood Bank, ICU */}
