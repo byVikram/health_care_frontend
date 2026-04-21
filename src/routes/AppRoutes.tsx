@@ -1,4 +1,4 @@
-﻿// src/routes/AppRoutes.tsx
+// src/routes/AppRoutes.tsx
 import {Routes, Route, Outlet, useNavigate } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
 import LoginPage from '../features/auth/LoginPage'
@@ -19,11 +19,8 @@ import NavbarLayout from '../components/layout/NavbarLayout'
 import TestPage from '../features/auth/test/TestPage'
 import { ROUTES } from '../constants/routes'
 import TestRegister from '../features/auth/test/TestRegister'
-// import DoctorPortalPage from '../features/doctor/DoctorPortalPage'
-// import PatientPortalPage from '../features/patient/PatientPortalPage'
-// import PatientProfilePage from '../features/patient/PatientProfilePage'
+import OnBoardingScreens from '../features/auth/onboarding/OnBoardingScreens'
 
-// Wraps all protected pages inside MainLayout
 function ProtectedLayout() {
 	return (
 		<MainLayout>
@@ -32,7 +29,6 @@ function ProtectedLayout() {
 	)
 }
 
-// Wraps doctor + patient pages with sidebar
 function SidebarProtectedLayout() {
 	return (
 		<SidebarLayout>
@@ -48,51 +44,45 @@ function LoogedInNavbarLayout() {
 		</NavbarLayout>
 	)
 }
+
 export default function AppRoutes() {
 	const isAuthenticated = true
-
 	const navigate = useNavigate()
 
 	return (
 		<Routes>
-			{/* Redirect root to dashboard */}
-			{/* <Route path="/" element={<Navigate to="/dashboard" replace />} /> */}
-
 			{/* Public routes */}
-			<Route path= {ROUTES.AUTH.LOGIN} element={<LoginPage />} />
-			<Route path= {ROUTES.AUTH.REGISTER} element={<RegisterPage />} />
-			<Route path={ROUTES.TEST_REGISTER} element={<TestRegister onSubmit={(email) => console.log('Registered:', email)} />} /> 
-			{/* <Route path={ROUTES.TEST_REGISTER} element={<TestRegister />} /> */}
-			<Route path= {ROUTES.PUBLIC.ACCOUNT} element={<AccountPage />} />
+			<Route path={ROUTES.AUTH.LOGIN} element={<LoginPage />} />
+			<Route path={ROUTES.AUTH.REGISTER} element={<RegisterPage />} />
+			<Route path={ROUTES.TEST_REGISTER} element={<TestRegister onSubmit={(email) => console.log('Registered:', email)} />} />
+			<Route path={ROUTES.PUBLIC.ACCOUNT} element={<AccountPage />} />
 			<Route
-				path= {ROUTES.PUBLIC.WELCOME_DOCTOR}
+				path={ROUTES.PUBLIC.WELCOME_DOCTOR}
+				element={<WelcomePage onContinue={() => navigate(ROUTES.PORTAL.PROFILE)} />}
+			/>
+
+			{/* Onboarding */}
+			<Route
+				path={ROUTES.ONBOARDING}
 				element={
-					<WelcomePage
-						onContinue={() => {
-							navigate(ROUTES.PORTAL.PROFILE)
-						}}
+					<OnBoardingScreens
+						role="PATIENT"
+						onFinish={() => navigate(ROUTES.AUTH.REGISTER)}
 					/>
 				}
 			/>
 
-			{/* Protected routes - auth check then layout */}
+			{/* Protected routes */}
 			<Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
 				<Route element={<ProtectedLayout />}>
-					<Route path= {ROUTES.ROOT} element={<DashboardPage />} />
-					<Route path= {ROUTES.DOCTORS.DETAIL} element={<DoctorDetailPage />} />
-					<Route path={ROUTES.DOCTORS.SEARCH}  element={<DoctorSearchPage />} />
-					<Route path={ROUTES.TEST} element={<TestPage/>} />
-
-					{/* Add more protected pages here */}
+					<Route path={ROUTES.ROOT} element={<DashboardPage />} />
+					<Route path={ROUTES.DOCTORS.DETAIL} element={<DoctorDetailPage />} />
+					<Route path={ROUTES.DOCTORS.SEARCH} element={<DoctorSearchPage />} />
+					<Route path={ROUTES.TEST} element={<TestPage />} />
 				</Route>
 			</Route>
-			
 
-
-			<Route element={<SidebarProtectedLayout />}>
-				{/* <Route path="/portal-patient" element={<PatientProfilePage />} />
-				<Route path="/patient" element={<PatientPortalPage />} /> */}
-			</Route>
+			<Route element={<SidebarProtectedLayout />} />
 
 			<Route element={<LoogedInNavbarLayout />}>
 				<Route path={ROUTES.PORTAL.HOME} element={<PortalPage />} />
@@ -100,7 +90,6 @@ export default function AppRoutes() {
 				<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
 			</Route>
 
-			{/* 404 */}
 			<Route path="*" element={<NotFoundPage />} />
 		</Routes>
 	)

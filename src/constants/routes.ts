@@ -19,6 +19,8 @@ export const ROUTES = {
 	TEST: '/test',
 	TEST_REGISTER: '/test-register',
 
+	ONBOARDING: '/onboarding',
+
 	PORTAL: {
 		HOME: '/portal',
 		PROFILE: '/profile',
