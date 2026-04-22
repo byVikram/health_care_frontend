@@ -3,10 +3,21 @@ import { useState } from 'react'
 import { Box, Typography, IconButton } from '@mui/material'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import LocalHospitalOutlinedIcon from '@mui/icons-material/LocalHospitalOutlined'
+import VideocamOutlinedIcon from '@mui/icons-material/VideocamOutlined'
 import AppSkeleton from '../Skeleton/AppSkeleton'
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+function to12hr(time24: string): string {
+	const [hStr, mStr] = time24.split(':')
+	const h = parseInt(hStr, 10)
+	const m = mStr ?? '00'
+	const suffix = h >= 12 ? 'PM' : 'AM'
+	const h12 = h % 12 === 0 ? 12 : h % 12
+	return `${h12}:${m} ${suffix}`
+}
 
 function getWeekDates(start: Date) {
 	return Array.from({ length: 7 }, (_, i) => {
@@ -56,6 +67,10 @@ type CommonProps = {
 	disableBookedSlots?: boolean
 	onSelectAll?: () => void
 	onUnselectAll?: () => void
+	selectedAppointmentType?: 'clinic' | 'video'
+	onAppointmentTypeChange?: (type: 'clinic' | 'video') => void
+	clinicPrice?: number
+	videoPrice?: number
 }
 
 type DateSlotPickerProps = CommonProps & (SingleProps | MultiProps)
@@ -75,6 +90,10 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		disableBookedSlots,
 		onSelectAll,
 		onUnselectAll,
+		selectedAppointmentType,
+		onAppointmentTypeChange,
+		clinicPrice,
+		videoPrice,
 	} = props
 
 	const today = new Date()
@@ -110,6 +129,79 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 
 	const slotsToRender = availableSlots ?? []
 	const isDoctorView = !!(onSelectAll && onUnselectAll)
+	const timeLegend = isDoctorView ? (
+		<Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+			<Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+				<Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
+					<Box sx={{ width: 14, height: 14, borderRadius: "3px", bgcolor: "success.main", flexShrink: 0 }} />
+					<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Available</Typography>
+				</Box>
+				<Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
+					<Box sx={{ width: 14, height: 14, borderRadius: "3px", bgcolor: "error.main", flexShrink: 0 }} />
+					<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Blocked</Typography>
+				</Box>
+				<Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
+					<Box sx={{ width: 14, height: 14, borderRadius: "3px", bgcolor: "rgba(0,0,0,0.08)", border: "1.5px solid", borderColor: "divider", flexShrink: 0 }} />
+					<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Booked</Typography>
+				</Box>
+			</Box>
+			<Box sx={{ display: "flex", gap: 1 }}>
+				<Box
+					onClick={onSelectAll}
+					sx={{
+						cursor: "pointer",
+						fontSize: "12px",
+						fontWeight: 500,
+						color: "primary.main",
+						border: "1.5px solid",
+						borderColor: "primary.main",
+						borderRadius: "8px",
+						px: 1.5,
+						py: 0.4,
+						userSelect: "none",
+						"&:hover": { bgcolor: "rgba(43,111,113,0.06)" },
+					}}
+				>
+					Select All
+				</Box>
+				<Box
+					onClick={onUnselectAll}
+					sx={{
+						cursor: "pointer",
+						fontSize: "12px",
+						fontWeight: 500,
+						color: "text.secondary",
+						border: "1.5px solid",
+						borderColor: "divider",
+						borderRadius: "8px",
+						px: 1.5,
+						py: 0.4,
+						userSelect: "none",
+						"&:hover": { bgcolor: "rgba(0,0,0,0.04)" },
+					}}
+				>
+					Unselect All
+				</Box>
+			</Box>
+		</Box>
+	) : (
+		<Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+			<Box
+				sx={{
+					width: 14,
+					height: 14,
+					borderRadius: "3px",
+					bgcolor: "rgba(0,0,0,0.08)",
+					border: "1.5px solid",
+					borderColor: "divider",
+					flexShrink: 0,
+				}}
+			/>
+			<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>
+				Booked
+			</Typography>
+		</Box>
+	)
 
 	return (
 		<Box>
@@ -212,89 +304,77 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 						</Box>
 					</Box>
 
-					{/* Time label row */}
-					<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+					{/* Appointment type pill toggle */}
+					{onAppointmentTypeChange && (
+						<Box sx={{ mb: 2, mt: 1 }}>
+							{!isDoctorView && (
+								<Typography variant="h5" sx={{ fontWeight: 600, mb: 1.5 }}>Type of Appointment</Typography>
+							)}
+							<Box sx={{ display: "flex", justifyContent: "flex-start", width: isDoctorView ? "auto" : "100%" }}>
+								<Box sx={{
+									display: "flex",
+									bgcolor: "primary.main",
+									borderRadius: "50px",
+									p: "3px",
+									gap: "3px",
+									width: isDoctorView ? "auto" : "100%",
+								}}>
+									<Box
+										onClick={() => onAppointmentTypeChange("clinic")}
+										sx={{
+											display: "flex", alignItems: "center", flexDirection: "column",
+											justifyContent: "center",
+											flex: isDoctorView ? "0 0 auto" : 1,
+											px: 1.8, py: 0.4,
+											borderRadius: "50px",
+											cursor: "pointer",
+											bgcolor: selectedAppointmentType === "clinic" ? "#fff" : "transparent",
+											transition: "all 0.2s",
+											userSelect: "none",
+										}}
+									>
+										<Typography sx={{ fontSize: "12px", fontWeight: 600, color: selectedAppointmentType === "clinic" ? "text.primary" : "#fff", lineHeight: 1.3 }}>
+											Clinic Visit
+										</Typography>
+										{clinicPrice !== undefined && (
+											<Typography sx={{ fontSize: "10px", fontWeight: 500, color: selectedAppointmentType === "clinic" ? "text.secondary" : "rgba(255,255,255,0.8)", lineHeight: 1.2 }}>
+												₹{clinicPrice}
+											</Typography>
+										)}
+									</Box>
+									<Box
+										onClick={() => onAppointmentTypeChange("video")}
+										sx={{
+											display: "flex", alignItems: "center", flexDirection: "column",
+											justifyContent: "center",
+											flex: isDoctorView ? "0 0 auto" : 1,
+											px: 1.8, py: 0.4,
+											borderRadius: "50px",
+											cursor: "pointer",
+											bgcolor: selectedAppointmentType === "video" ? "#fff" : "transparent",
+											transition: "all 0.2s",
+											userSelect: "none",
+										}}
+									>
+										<Typography sx={{ fontSize: "12px", fontWeight: 600, color: selectedAppointmentType === "video" ? "text.primary" : "#fff", lineHeight: 1.3 }}>
+											Video Call
+										</Typography>
+										{videoPrice !== undefined && (
+											<Typography sx={{ fontSize: "10px", fontWeight: 500, color: selectedAppointmentType === "video" ? "text.secondary" : "rgba(255,255,255,0.8)", lineHeight: 1.2 }}>
+												₹{videoPrice}
+											</Typography>
+										)}
+									</Box>
+								</Box>
+							</Box>
+						</Box>
+					)}
+
+					<Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2, flexWrap: "wrap", gap: 1 }}>
 						<Typography variant="h5" sx={{ fontWeight: 600 }}>
 							{timeLabel}
 						</Typography>
-
-						{isDoctorView ? (
-							/* Doctor view: 3 legends + Select All / Unselect All */
-							<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-								{/* Legends */}
-								<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-									<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-										<Box sx={{ width: 14, height: 14, borderRadius: '3px', bgcolor: 'success.main', flexShrink: 0 }} />
-										<Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>Available</Typography>
-									</Box>
-									<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-										<Box sx={{ width: 14, height: 14, borderRadius: '3px', bgcolor: 'error.main', flexShrink: 0 }} />
-										<Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>Blocked</Typography>
-									</Box>
-									<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-										<Box sx={{ width: 14, height: 14, borderRadius: '3px', bgcolor: 'rgba(0,0,0,0.08)', border: '1.5px solid', borderColor: 'divider', flexShrink: 0 }} />
-										<Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>Booked</Typography>
-									</Box>
-								</Box>
-								{/* Buttons */}
-								<Box sx={{ display: 'flex', gap: 1 }}>
-									<Box
-										onClick={onSelectAll}
-										sx={{
-											cursor: 'pointer',
-											fontSize: '12px',
-											fontWeight: 500,
-											color: 'primary.main',
-											border: '1.5px solid',
-											borderColor: 'primary.main',
-											borderRadius: '8px',
-											px: 1.5,
-											py: 0.4,
-											userSelect: 'none',
-											'&:hover': { bgcolor: 'rgba(43,111,113,0.06)' },
-										}}
-									>
-										Select All
-									</Box>
-									<Box
-										onClick={onUnselectAll}
-										sx={{
-											cursor: 'pointer',
-											fontSize: '12px',
-											fontWeight: 500,
-											color: 'text.secondary',
-											border: '1.5px solid',
-											borderColor: 'divider',
-											borderRadius: '8px',
-											px: 1.5,
-											py: 0.4,
-											userSelect: 'none',
-											'&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
-										}}
-									>
-										Unselect All
-									</Box>
-								</Box>
-							</Box>
-						) : (
-							/* Patient view: only grey Booked legend */
-							<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-								<Box
-									sx={{
-										width: 14,
-										height: 14,
-										borderRadius: '3px',
-										bgcolor: 'rgba(0,0,0,0.08)',
-										border: '1.5px solid',
-										borderColor: 'divider',
-										flexShrink: 0,
-									}}
-								/>
-								<Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-									Booked
-								</Typography>
-							</Box>
-						)}
+						{timeLegend}
 					</Box>
 
 					{/* No slots message */}
@@ -377,7 +457,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 																: 'text.primary',
 												}}
 											>
-												{slot.start_time}
+												{to12hr(slot.start_time)}
 											</Typography>
 										</Box>
 									)

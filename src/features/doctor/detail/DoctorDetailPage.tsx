@@ -4,10 +4,11 @@ import { useParams } from 'react-router-dom'
 import { Box, Container, Typography, Divider, Grid, Card } from '@mui/material'
 import DoctorProfileCard from './components/DoctorProfileCard'
 import HospitalSelector from './components/HospitalSelector'
-import AppointmentTypeSelector from './components/AppointmentTypeSelector'
+// import AppointmentTypeSelector from './components/AppointmentTypeSelector'
 import AppButton from '../../../components/common/Button/AppButton'
 import DateSlotPicker, { SlotGroup, TimeSlot } from '../../../components/common/DateSlotPicker/DateSlotPicker'
 import AppModal from '../../../components/common/Modal/AppModal'
+import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
 import LoginForm from '../../../features/auth/components/LoginForm'
 import RegisterForm from '../../../features/auth/components/RegisterForm'
 import OtpForm from '../../../features/auth/components/OtpForm'
@@ -26,6 +27,8 @@ export default function DoctorDetailPage() {
 	const [showFullAbout, setShowFullAbout] = useState(false)
 	const [booking, setBooking] = useState(false)
 	const [bookingError, setBookingError] = useState<string | null>(null)
+	const [bookingSuccessModal, setBookingSuccessModal] = useState(false)
+	const [bookingSuccessMsg, setBookingSuccessMsg] = useState('')
 	const [doctorDetail, setDoctorDetail] = useState<DoctorDetailData | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
@@ -220,9 +223,8 @@ export default function DoctorDetailPage() {
 				appointment_date: formatDateForApi(selectedDate),
 				start_time: formatTimeForApi(resolvedSelectedTime),
 			})
-			alert(
-				`Appointment booked with ${doctorDetail.name} on ${selectedDate.toDateString()} at ${resolvedSelectedTime}`
-			)
+			setBookingSuccessMsg(`Appointment booked with ${doctorDetail.name} on ${selectedDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} at ${resolvedSelectedTime}`)
+			setBookingSuccessModal(true)
 		} catch (err) {
 			console.log(err)
 			setBookingError('Failed to book appointment')
@@ -300,13 +302,13 @@ export default function DoctorDetailPage() {
 												onChange={setSelectedHospital}
 											/>
 										</Box>
-										<Box sx={{ ...customCardStyle, p: 3 }}>
+										{/* <Box sx={{ ...customCardStyle, p: 3 }}>
 											<AppointmentTypeSelector
 												types={appointmentTypes}
 												selected={selectedType}
 												onChange={setSelectedType}
 											/>
-										</Box>
+										</Box> */}
 									</>
 								)}
 							</Box>
@@ -334,6 +336,10 @@ export default function DoctorDetailPage() {
 								availableSlots={availableSlotGroups.length > 0 ? availableSlotGroups : undefined}
 								loading={slotsLoading || loading}
 								disableBookedSlots={true}
+								selectedAppointmentType={selectedType}
+								onAppointmentTypeChange={setSelectedType}
+								clinicPrice={appointmentTypes[0]?.price}
+								videoPrice={appointmentTypes[1]?.price}
 							/>
 							{bookingError && (
 								<Typography variant="body2" sx={{ color: 'error.main' }}>{bookingError}</Typography>
@@ -346,7 +352,9 @@ export default function DoctorDetailPage() {
 				</Grid>
 			</Container>
 
-			<AppModal open={authModalOpen} onClose={closeAuthModal} title={authModalTitle} maxWidth="xs" fullWidth>
+			<AppModal
+				open={authModalOpen} onClose={closeAuthModal} title={authModalTitle} maxWidth="xs" fullWidth
+			>
 				{authModalView === 'login' && (
 					<LoginForm mode="modal" onSubmit={handleAuthNext} onSwitchToRegister={() => setAuthModalView('register')} />
 				)}
@@ -357,6 +365,17 @@ export default function DoctorDetailPage() {
 					<OtpForm mode="modal" contactNumber={authContactNumber} onVerify={handleAuthVerified} />
 				)}
 			</AppModal>
+
+			<ConfirmModal
+				open={bookingSuccessModal}
+				onClose={() => setBookingSuccessModal(false)}
+				onConfirm={() => setBookingSuccessModal(false)}
+				variant="success"
+				title="Appointment Confirmed!"
+				description={bookingSuccessMsg}
+				confirmLabel="Done"
+				cancelLabel="Close"
+			/>
 		</Box>
 	)
 }

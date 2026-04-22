@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Box, Typography } from '@mui/material'
 import { toast } from 'react-toastify'
 import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked'
@@ -33,6 +33,7 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 	const [pendingOverrides, setPendingOverrides] = useState<SlotOverridePayload[]>([])
 	const [saveLoading, setSaveLoading] = useState(false)
 	const [pendingSaveToast, setPendingSaveToast] = useState<string | null>(null)
+	const [selectedAppointmentType, setSelectedAppointmentType] = useState<'clinic' | 'video'>('clinic')
 
 	const formatDateForApi = (date: Date) => {
 		const year = date.getFullYear()
@@ -364,8 +365,9 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 					stageSlotSelection([])
 					setPendingSaveToast('Unselected All Successfully')
 				}}
+			selectedAppointmentType={selectedAppointmentType}
+			onAppointmentTypeChange={setSelectedAppointmentType}
 			/>
-
 			<Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
 				<AppButton
 					variant="outlined"

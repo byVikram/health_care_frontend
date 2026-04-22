@@ -26,6 +26,8 @@ import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { useNavigate } from 'react-router-dom'
 import AppButton from '../../components/common/Button/AppButton'
 
+const trimTime = (t?: string | null) => t ? t.slice(0, 5) : '--'
+
 const allActionButtons = [
 	{ icon: ConfirmIcon, label: 'Confirm', bg: '#e8f5e9', color: '#4caf50', action: 'confirm' },
 	{ icon: RejectIcon, label: 'Reject', bg: '#ffeeee', color: '#e53935', action: 'reject' },
@@ -444,7 +446,7 @@ export function DoctorAppointments({
 										<Typography variant="body2">|</Typography>
 										<AccessTimeIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
 										<Typography variant="body2">
-											{apt.start_time ?? '--'} - {apt.end_time}
+											{trimTime(apt.start_time)} - {trimTime(apt.end_time)}
 										</Typography>
 									</Box>
 								</Box>

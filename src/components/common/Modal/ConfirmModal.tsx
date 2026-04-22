@@ -1,6 +1,6 @@
 // src/components/common/Modal/ConfirmModal.tsx
 
-import { Dialog, Box, Typography, ButtonProps } from "@mui/material";
+import { Dialog, Box, Typography } from "@mui/material";
 import {
 	DeleteOutline,
 	WarningAmberOutlined,
@@ -34,7 +34,7 @@ interface ConfirmModalProps {
 
 const VARIANT_CONFIG: Record<
 	ConfirmVariant,
-	{ icon: ReactNode; iconBg: string; confirmColor: ButtonProps["color"] }
+	{ icon: ReactNode; iconBg: string; confirmColor: 'primary' | 'secondary' | 'error' | 'success' | 'warning' | 'info' | 'inherit' }
 > = {
 	delete: {
 		icon: <DeleteOutline fontSize="inherit" />,

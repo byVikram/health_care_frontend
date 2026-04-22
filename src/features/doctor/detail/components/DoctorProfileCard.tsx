@@ -94,17 +94,6 @@ export default function DoctorProfileCard({ doctor }: DoctorProfileCardProps) {
 							</Typography>
 
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-								<Chip
-									label={`ID: ${doctor.id}`}
-									size="small"
-									sx={{
-										bgcolor: '#e8f5f5',
-										color: 'primary.main',
-										fontWeight: 600,
-										fontSize: '11px',
-										height: 22,
-									}}
-								/>
 
 								{/* Heart Icon */}
 								<Tooltip title={isFavourited ? 'Remove from favourites' : 'Add to favourites'}>
@@ -186,12 +175,6 @@ export default function DoctorProfileCard({ doctor }: DoctorProfileCardProps) {
 
 				{/* Stats Row */}
 				<Box sx={{ display: 'flex', justifyContent: 'space-around', py: 2.5, px: 2 }}>
-					<StatItem
-						icon={<BsPatchCheckFill style={{ width: 24, height: 24 }} />}
-						value="Verified"
-						label="Doctor"
-					/>
-					<Divider orientation="vertical" flexItem />
 					<StatItem
 						icon={<BsCalendarCheck style={{ width: 24, height: 24 }} />}
 						value="Today"

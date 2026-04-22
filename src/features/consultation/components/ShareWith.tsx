@@ -1,4 +1,4 @@
-﻿// src/features/consultation/components/ShareWith.tsx
+// src/features/consultation/components/ShareWith.tsx
 import { useState } from 'react'
 import { Box, Typography, Grid } from '@mui/material'
 import PhoneIcon from '@mui/icons-material/Phone'
@@ -34,11 +34,6 @@ const AREA_OPTIONS = [
 	{ value: 'kr_puram', label: 'KR Puram' },
 	{ value: 'whitefield', label: 'Whitefield' },
 	{ value: 'marathalli', label: 'Marathalli' },
-]
-const LOCALITY_OPTIONS = [
-	{ value: 'chikpet', label: 'Chikpet' },
-	{ value: 'kr_market', label: 'KR Market' },
-	{ value: 'indiranagar', label: 'Indiranagar' },
 ]
 
 interface Place {
@@ -80,7 +75,6 @@ export default function ShareWith() {
 	const [activeTab, setActiveTab] = useState('laboratory')
 	const [city, setCity] = useState('')
 	const [area, setArea] = useState('')
-	const [locality, setLocality] = useState('')
 
 	return (
 		<Box sx={{ ...customCardStyle, mt: 2 }}>
@@ -147,7 +141,7 @@ export default function ShareWith() {
 				Select address
 			</Typography>
 			<Grid container spacing={1.5} sx={{ mb: 2.5 }}>
-				<Grid size={{ xs: 4 }}>
+				<Grid size={{ xs: 6 }}>
 					<AppSelect
 						label="City"
 						value={city}
@@ -157,22 +151,12 @@ export default function ShareWith() {
 						size="small"
 					/>
 				</Grid>
-				<Grid size={{ xs: 4 }}>
+				<Grid size={{ xs: 6 }}>
 					<AppSelect
 						label="Area"
 						value={area}
 						options={AREA_OPTIONS}
 						onChange={(e) => setArea(e.target.value as string)}
-						size="small"
-					/>
-				</Grid>
-				<Grid size={{ xs: 4 }}>
-					<AppSelect
-						label="Locality"
-						value={locality}
-						options={LOCALITY_OPTIONS}
-						// placeholder="Locality"
-						onChange={(e) => setLocality(e.target.value as string)}
 						size="small"
 					/>
 				</Grid>

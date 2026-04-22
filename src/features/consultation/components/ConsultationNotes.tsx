@@ -4,11 +4,9 @@ import { Box, Typography, Divider, IconButton, Tooltip } from '@mui/material'
 import UndoIcon from '@mui/icons-material/Undo'
 import RedoIcon from '@mui/icons-material/Redo'
 import TextFieldsIcon from '@mui/icons-material/TextFields'
-import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined'
 import CameraAltOutlinedIcon from '@mui/icons-material/CameraAltOutlined'
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted'
 import { ConsultationDoctor } from '../../../types/consultation'
 
 interface ConsultationNotesProps {
@@ -19,11 +17,9 @@ const TOOLBAR_ACTIONS = [
 	{ icon: <UndoIcon fontSize="small" />, label: 'Undo' },
 	{ icon: <RedoIcon fontSize="small" />, label: 'Redo' },
 	{ icon: <TextFieldsIcon fontSize="small" />, label: 'Text' },
-	{ icon: <EmojiEmotionsOutlinedIcon fontSize="small" />, label: 'Emoji' },
 	{ icon: <CameraAltOutlinedIcon fontSize="small" />, label: 'Camera' },
 	{ icon: <ImageOutlinedIcon fontSize="small" />, label: 'Image' },
 	{ icon: <MicNoneOutlinedIcon fontSize="small" />, label: 'Voice' },
-	{ icon: <FormatListBulletedIcon fontSize="small" />, label: 'List' },
 ]
 
 export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
