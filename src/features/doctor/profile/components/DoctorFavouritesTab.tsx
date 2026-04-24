@@ -11,6 +11,7 @@ import { customCardStyle } from '../../../../styles/commonStyles'
 import { getDoctors, getFavouriteDoctors, toggleFavouriteDoctor, FavouriteDoctor } from '../../doctorService'
 import { DoctorSearchItem } from '../../../../types/doctor-search'
 import { toast } from 'react-toastify'
+import AppSkeleton from '../../../../components/common/Skeleton/AppSkeleton'
 
 type DoctorRow = {
 	id: string
@@ -44,6 +45,38 @@ function mapSearchToRow(s: DoctorSearchItem): DoctorRow {
 		experience_years: s.experience_years,
 		specialities: s.specialities,
 	}
+}
+
+// Skeleton placeholder for a single doctor card row
+function DoctorRowSkeleton() {
+	return (
+		<Box
+			sx={{
+				display: 'flex',
+				alignItems: 'center',
+				gap: 2,
+				px: 2,
+				py: 1.5,
+				borderRadius: '12px',
+			}}
+		>
+			{/* Avatar skeleton */}
+			<AppSkeleton variant="circular" width={52} height={52} sx={{ flexShrink: 0 }} />
+
+			{/* Info skeleton */}
+			<Box sx={{ flex: 1, minWidth: 0 }}>
+				<AppSkeleton width="55%" height={18} sx={{ mb: 0.8 }} />
+				<AppSkeleton width="35%" height={14} sx={{ mb: 0.8 }} />
+				<Box sx={{ display: 'flex', gap: 1.5 }}>
+					<AppSkeleton width={70} height={12} />
+					<AppSkeleton width={80} height={12} />
+				</Box>
+			</Box>
+
+			{/* Bookmark skeleton */}
+			<AppSkeleton variant="circular" width={28} height={28} sx={{ flexShrink: 0 }} />
+		</Box>
+	)
 }
 
 function DoctorRowCard({
@@ -174,8 +207,7 @@ export default function DoctorFavouritesTab() {
 	const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set())
 
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-	const isSearching = searchQuery.trim().length > 0
-
+	const isSearching = searchQuery.trim().length >= 3
 	useEffect(() => {
 		getFavouriteDoctors()
 			.then((res) => {
@@ -191,7 +223,7 @@ export default function DoctorFavouritesTab() {
 	useEffect(() => {
 		if (debounceRef.current) clearTimeout(debounceRef.current)
 
-		if (!searchQuery.trim()) {
+		if (searchQuery.trim().length < 3) {
 			setSearchResults([])
 			setSearchLoading(false)
 			return
@@ -304,26 +336,31 @@ export default function DoctorFavouritesTab() {
 						>
 							Search Results
 						</Typography>
-						{searchLoading && <CircularProgress size={12} />}
 					</Box>
 
-					{!searchLoading && filteredSearchResults.length === 0 && (
+					{searchLoading ? (
+						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+							{[1, 2, 3].map((i) => (
+								<DoctorRowSkeleton key={i} />
+							))}
+						</Box>
+					) : filteredSearchResults.length === 0 ? (
 						<Typography variant="body2" sx={{ color: 'text.disabled', textAlign: 'center', py: 3 }}>
 							No doctors found
 						</Typography>
+					) : (
+						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+							{filteredSearchResults.map((doc) => (
+								<DoctorRowCard
+									key={doc.id}
+									doctor={doc}
+									isFavourited={favouriteIds.has(doc.id)}
+									toggling={togglingIds.has(doc.id)}
+									onToggle={handleToggle}
+								/>
+							))}
+						</Box>
 					)}
-
-					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-						{filteredSearchResults.map((doc) => (
-							<DoctorRowCard
-								key={doc.id}
-								doctor={doc}
-								isFavourited={favouriteIds.has(doc.id)}
-								toggling={togglingIds.has(doc.id)}
-								onToggle={handleToggle}
-							/>
-						))}
-					</Box>
 				</Box>
 			)}
 
@@ -347,8 +384,10 @@ export default function DoctorFavouritesTab() {
 				</Box>
 
 				{favLoading ? (
-					<Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-						<CircularProgress size={28} sx={{ color: 'primary.main' }} />
+					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+						{[1, 2].map((i) => (
+							<DoctorRowSkeleton key={i} />
+						))}
 					</Box>
 				) : favourites.length === 0 ? (
 					<Box sx={{ textAlign: 'center', py: 5 }}>

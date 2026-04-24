@@ -3,8 +3,8 @@ import { useState } from 'react'
 import { Box, Typography, IconButton } from '@mui/material'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import LocalHospitalOutlinedIcon from '@mui/icons-material/LocalHospitalOutlined'
-import VideocamOutlinedIcon from '@mui/icons-material/VideocamOutlined'
+// import LocalHospitalOutlinedIcon from '@mui/icons-material/LocalHospitalOutlined'
+// import VideocamOutlinedIcon from '@mui/icons-material/VideocamOutlined'
 import AppSkeleton from '../Skeleton/AppSkeleton'
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -110,7 +110,12 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 	const isSameDay = (a: Date, b: Date) =>
 		a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()
 
-	const isPast = (d: Date) => { if (!disablePast) return false; const today0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()); const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate()); return d0 < today0 }
+	const isPast = (d: Date) => {
+		if (!disablePast) return false
+		const today0 = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+		const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+		return d0 < today0
+	}
 
 	const isSlotSelected = (slot: string): boolean => {
 		if (props.multiSelect) return (props.selectedTime as string[]).includes(slot)
@@ -129,37 +134,59 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 
 	const slotsToRender = availableSlots ?? []
 	const isDoctorView = !!(onSelectAll && onUnselectAll)
+	const legendItems = [
+		{
+			label: 'Available',
+			color: 'success.main',
+		},
+		{
+			label: 'Blocked',
+			color: 'error.main',
+		},
+		{
+			label: 'Booked',
+			color: 'rgba(0,0,0,0.08)',
+			border: '1.5px solid',
+			borderColor: 'divider',
+		},
+	]
 	const timeLegend = isDoctorView ? (
-		<Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
-			<Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-				<Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
-					<Box sx={{ width: 14, height: 14, borderRadius: "3px", bgcolor: "success.main", flexShrink: 0 }} />
-					<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Available</Typography>
-				</Box>
-				<Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
-					<Box sx={{ width: 14, height: 14, borderRadius: "3px", bgcolor: "error.main", flexShrink: 0 }} />
-					<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Blocked</Typography>
-				</Box>
-				<Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
-					<Box sx={{ width: 14, height: 14, borderRadius: "3px", bgcolor: "rgba(0,0,0,0.08)", border: "1.5px solid", borderColor: "divider", flexShrink: 0 }} />
-					<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Booked</Typography>
-				</Box>
+		<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+				{legendItems.map((item) => (
+					<Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+						<Box
+							sx={{
+								width: 14,
+								height: 14,
+								borderRadius: '3px',
+								bgcolor: item.color,
+								border: item.border,
+								borderColor: item.borderColor,
+								flexShrink: 0,
+							}}
+						/>
+						<Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+							{item.label}
+						</Typography>
+					</Box>
+				))}
 			</Box>
-			<Box sx={{ display: "flex", gap: 1 }}>
+			<Box sx={{ display: 'flex', gap: 1 }}>
 				<Box
 					onClick={onSelectAll}
 					sx={{
-						cursor: "pointer",
-						fontSize: "12px",
+						cursor: 'pointer',
+						fontSize: '12px',
 						fontWeight: 500,
-						color: "primary.main",
-						border: "1.5px solid",
-						borderColor: "primary.main",
-						borderRadius: "8px",
+						color: 'primary.main',
+						border: '1.5px solid',
+						borderColor: 'primary.main',
+						borderRadius: '8px',
 						px: 1.5,
 						py: 0.4,
-						userSelect: "none",
-						"&:hover": { bgcolor: "rgba(43,111,113,0.06)" },
+						userSelect: 'none',
+						'&:hover': { bgcolor: 'rgba(43,111,113,0.06)' },
 					}}
 				>
 					Select All
@@ -167,17 +194,17 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 				<Box
 					onClick={onUnselectAll}
 					sx={{
-						cursor: "pointer",
-						fontSize: "12px",
+						cursor: 'pointer',
+						fontSize: '12px',
 						fontWeight: 500,
-						color: "text.secondary",
-						border: "1.5px solid",
-						borderColor: "divider",
-						borderRadius: "8px",
+						color: 'text.secondary',
+						border: '1.5px solid',
+						borderColor: 'divider',
+						borderRadius: '8px',
 						px: 1.5,
 						py: 0.4,
-						userSelect: "none",
-						"&:hover": { bgcolor: "rgba(0,0,0,0.04)" },
+						userSelect: 'none',
+						'&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
 					}}
 				>
 					Unselect All
@@ -185,19 +212,19 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 			</Box>
 		</Box>
 	) : (
-		<Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+		<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
 			<Box
 				sx={{
 					width: 14,
 					height: 14,
-					borderRadius: "3px",
-					bgcolor: "rgba(0,0,0,0.08)",
-					border: "1.5px solid",
-					borderColor: "divider",
+					borderRadius: '3px',
+					bgcolor: 'rgba(0,0,0,0.08)',
+					border: '1.5px solid',
+					borderColor: 'divider',
 					flexShrink: 0,
 				}}
 			/>
-			<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>
+			<Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
 				Booked
 			</Typography>
 		</Box>
@@ -308,59 +335,109 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 					{onAppointmentTypeChange && (
 						<Box sx={{ mb: 2, mt: 1 }}>
 							{!isDoctorView && (
-								<Typography variant="h5" sx={{ fontWeight: 600, mb: 1.5 }}>Type of Appointment</Typography>
+								<Typography variant="h5" sx={{ fontWeight: 600, mb: 1.5 }}>
+									Type of Appointment
+								</Typography>
 							)}
-							<Box sx={{ display: "flex", justifyContent: "flex-start", width: isDoctorView ? "auto" : "100%" }}>
-								<Box sx={{
-									display: "flex",
-									bgcolor: "primary.main",
-									borderRadius: "50px",
-									p: "3px",
-									gap: "3px",
-									width: isDoctorView ? "auto" : "100%",
-								}}>
+							<Box
+								sx={{
+									display: 'flex',
+									justifyContent: 'flex-start',
+									width: isDoctorView ? 'auto' : '100%',
+								}}
+							>
+								<Box
+									sx={{
+										display: 'flex',
+										bgcolor: 'primary.main',
+										borderRadius: '50px',
+										p: '3px',
+										gap: '3px',
+										width: isDoctorView ? 'auto' : '100%',
+									}}
+								>
 									<Box
-										onClick={() => onAppointmentTypeChange("clinic")}
+										onClick={() => onAppointmentTypeChange('clinic')}
 										sx={{
-											display: "flex", alignItems: "center", flexDirection: "column",
-											justifyContent: "center",
-											flex: isDoctorView ? "0 0 auto" : 1,
-											px: 1.8, py: 0.4,
-											borderRadius: "50px",
-											cursor: "pointer",
-											bgcolor: selectedAppointmentType === "clinic" ? "#fff" : "transparent",
-											transition: "all 0.2s",
-											userSelect: "none",
+											display: 'flex',
+											alignItems: 'center',
+											flexDirection: 'column',
+											justifyContent: 'center',
+											flex: isDoctorView ? '0 0 auto' : 1,
+											px: 1.8,
+											py: 0.4,
+											borderRadius: '50px',
+											cursor: 'pointer',
+											bgcolor: selectedAppointmentType === 'clinic' ? '#fff' : 'transparent',
+											transition: 'all 0.2s',
+											userSelect: 'none',
 										}}
 									>
-										<Typography sx={{ fontSize: "12px", fontWeight: 600, color: selectedAppointmentType === "clinic" ? "text.primary" : "#fff", lineHeight: 1.3 }}>
+										<Typography
+											sx={{
+												fontSize: '12px',
+												fontWeight: 600,
+												color: selectedAppointmentType === 'clinic' ? 'text.primary' : '#fff',
+												lineHeight: 1.3,
+											}}
+										>
 											Clinic Visit
 										</Typography>
 										{clinicPrice !== undefined && (
-											<Typography sx={{ fontSize: "10px", fontWeight: 500, color: selectedAppointmentType === "clinic" ? "text.secondary" : "rgba(255,255,255,0.8)", lineHeight: 1.2 }}>
+											<Typography
+												sx={{
+													fontSize: '10px',
+													fontWeight: 500,
+													color:
+														selectedAppointmentType === 'clinic'
+															? 'text.secondary'
+															: 'rgba(255,255,255,0.8)',
+													lineHeight: 1.2,
+												}}
+											>
 												₹{clinicPrice}
 											</Typography>
 										)}
 									</Box>
 									<Box
-										onClick={() => onAppointmentTypeChange("video")}
+										onClick={() => onAppointmentTypeChange('video')}
 										sx={{
-											display: "flex", alignItems: "center", flexDirection: "column",
-											justifyContent: "center",
-											flex: isDoctorView ? "0 0 auto" : 1,
-											px: 1.8, py: 0.4,
-											borderRadius: "50px",
-											cursor: "pointer",
-											bgcolor: selectedAppointmentType === "video" ? "#fff" : "transparent",
-											transition: "all 0.2s",
-											userSelect: "none",
+											display: 'flex',
+											alignItems: 'center',
+											flexDirection: 'column',
+											justifyContent: 'center',
+											flex: isDoctorView ? '0 0 auto' : 1,
+											px: 1.8,
+											py: 0.4,
+											borderRadius: '50px',
+											cursor: 'pointer',
+											bgcolor: selectedAppointmentType === 'video' ? '#fff' : 'transparent',
+											transition: 'all 0.2s',
+											userSelect: 'none',
 										}}
 									>
-										<Typography sx={{ fontSize: "12px", fontWeight: 600, color: selectedAppointmentType === "video" ? "text.primary" : "#fff", lineHeight: 1.3 }}>
+										<Typography
+											sx={{
+												fontSize: '12px',
+												fontWeight: 600,
+												color: selectedAppointmentType === 'video' ? 'text.primary' : '#fff',
+												lineHeight: 1.3,
+											}}
+										>
 											Video Call
 										</Typography>
 										{videoPrice !== undefined && (
-											<Typography sx={{ fontSize: "10px", fontWeight: 500, color: selectedAppointmentType === "video" ? "text.secondary" : "rgba(255,255,255,0.8)", lineHeight: 1.2 }}>
+											<Typography
+												sx={{
+													fontSize: '10px',
+													fontWeight: 500,
+													color:
+														selectedAppointmentType === 'video'
+															? 'text.secondary'
+															: 'rgba(255,255,255,0.8)',
+													lineHeight: 1.2,
+												}}
+											>
 												₹{videoPrice}
 											</Typography>
 										)}
@@ -370,7 +447,16 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 						</Box>
 					)}
 
-					<Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2, flexWrap: "wrap", gap: 1 }}>
+					<Box
+						sx={{
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'space-between',
+							mb: 2,
+							flexWrap: 'wrap',
+							gap: 1,
+						}}
+					>
 						<Typography variant="h5" sx={{ fontWeight: 600 }}>
 							{timeLabel}
 						</Typography>
@@ -437,11 +523,11 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 												'&:hover': isBooked
 													? {}
 													: {
-														borderColor: 'primary.main',
-														bgcolor: isSelected
-															? 'primary.main'
-															: 'rgba(43,111,113,0.06)',
-													},
+															borderColor: 'primary.main',
+															bgcolor: isSelected
+																? 'primary.main'
+																: 'rgba(43,111,113,0.06)',
+														},
 											}}
 										>
 											<Typography

@@ -1,4 +1,4 @@
-// src/features/doctor/profile/components/DoctorHospitalsTab.tsx
+﻿// src/features/doctor/profile/components/DoctorHospitalsTab.tsx
 import { useState } from 'react'
 import { Box, Typography, IconButton, Radio } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
@@ -9,9 +9,9 @@ import { toast } from 'react-toastify'
 import AppButton from '../../../../components/common/Button/AppButton'
 import AppInput from '../../../../components/common/Input/AppInput'
 import { customCardStyle } from '../../../../styles/commonStyles'
-import { DoctorHospital } from '../../../../types/doctor-profile'
+import type { DoctorHospital } from '../../../../types/doctor-profile'
 import { createHospital } from '../../doctorService'
-import { MenuItem, Checkbox, FormControlLabel, TextField } from '@mui/material'
+import { MenuItem, TextField } from '@mui/material'
 
 interface DoctorHospitalsTabProps {
 	hospitals: DoctorHospital[]
@@ -50,20 +50,48 @@ const getHospitalAddressText = (hospital: DoctorHospital) => {
 	return fullAddress || location
 }
 
+// Generate time options for a given hour range (inclusive start, exclusive end)
+// Generate time options for a given hour range; value = 24h, label = 12h AM/PM
+const makeTimeOptions = (startHour: number, endHour: number) => {
+	const options: { value: string; label: string }[] = []
+	for (let h = startHour; h <= endHour; h++) {
+		for (const m of ['00', '30']) {
+			if (h === endHour && m === '30') break
+			const value = String(h).padStart(2, '0') + ':' + m
+			const period = h < 12 ? 'AM' : 'PM'
+			const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h
+			const label = h12 + ':' + m + ' ' + period
+			options.push({ value, label })
+		}
+	}
+	return options
+}
+
+const morningOptions   = makeTimeOptions(8, 12)   // 8:00 AM - 12:00 PM
+const afternoonOptions = makeTimeOptions(12, 17)  // 12:00 PM - 5:00 PM
+const eveningOptions   = makeTimeOptions(17, 21)  // 5:00 PM - 9:00 PM
+
+const durationOptions = [10, 15, 20, 25, 30]
+
 export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospitalsTabProps) {
 	const [showForm, setShowForm] = useState(false)
 	const [form, setForm] = useState(EMPTY_FORM)
 	const [isSaving, setIsSaving] = useState(false)
-	const [startTime, setStartTime] = useState('09:00')
-	const [endTime, setEndTime] = useState('18:00')
-	const [notAvailable, setNotAvailable] = useState(false)
 
-	const timeOptions = Array.from({ length: 48 }, (_, i) => {
-		const hours = String(Math.floor(i / 2)).padStart(2, '0')
-		const minutes = i % 2 === 0 ? '00' : '30'
-		return `${hours}:${minutes}`
-	})
+	// Morning shift
+	const [morningStart, setMorningStart] = useState('08:00')
+	const [morningEnd, setMorningEnd]     = useState('12:00')
 
+	// Afternoon shift
+	const [afternoonStart, setAfternoonStart] = useState('12:00')
+	const [afternoonEnd, setAfternoonEnd]     = useState('17:00')
+
+	// Evening shift
+	const [eveningStart, setEveningStart] = useState('17:00')
+	const [eveningEnd, setEveningEnd]     = useState('21:00')
+
+	// Slot duration
+	const [slotDuration, setSlotDuration] = useState(15)
 
 	const handleSetPrimary = (id: string) => {
 		onChange(hospitals.map((h) => ({ ...h, isPrimary: h.id === id })))
@@ -105,6 +133,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 			setIsSaving(false)
 		}
 	}
+
 	if (showForm) {
 		return (
 			<Box sx={{ ...customCardStyle }}>
@@ -120,7 +149,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 						<ArrowBackIosNewIcon sx={{ fontSize: 15 }} />
 					</IconButton>
 					<Typography variant="h6" sx={{ fontWeight: 700, fontSize: '16px' }}>
-						Add new Hospital Details 
+						Add new Hospital Details
 					</Typography>
 				</Box>
 
@@ -157,56 +186,92 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 						placeholder="e.g. 300"
 						onChange={(e) => setForm((prev) => ({ ...prev, offline_consultation_fee: e.target.value }))}
 					/>
-					{/* 🔹 Availability Section */}
-					<Box sx={{ mt: 0.5}}>
-						<Typography sx={{ fontWeight: 400, fontSize: '14px' }}>Working Hours</Typography>
 
-						<Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
-							<TextField
-								select
-								label="Start Time"
-								value={startTime}
-								onChange={(e) => setStartTime(e.target.value)}
-								size="small"
-								sx={{ width: 150 }}
-								disabled={notAvailable}
-							>
-								{timeOptions.map((time) => (
-									<MenuItem key={time} value={time}>
-										{time}
-									</MenuItem>
-								))}
-							</TextField>
+					{/* Working Hours */}
+					<Box sx={{ mt: 0.5 }}>
+						<Typography sx={{ fontWeight: 600, fontSize: '14px', mb: 1.5 }}>Working Hours</Typography>
 
+						{/* Morning */}
+						<Box sx={{ mb: 2 }}>
+							<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>Morning</Typography>
+							<Box sx={{ display: 'flex', gap: 2 }}>
+								<TextField
+									select label="Start Time" value={morningStart}
+									onChange={(e) => setMorningStart(e.target.value)}
+									size="small" sx={{ width: 150 }}
+								>
+									{morningOptions.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+								</TextField>
+								<TextField
+									select label="End Time" value={morningEnd}
+									onChange={(e) => setMorningEnd(e.target.value)}
+									size="small" sx={{ width: 150 }}
+								>
+									{morningOptions.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+								</TextField>
+							</Box>
+						</Box>
+
+						{/* Afternoon */}
+						<Box sx={{ mb: 2 }}>
+							<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>Afternoon</Typography>
+							<Box sx={{ display: 'flex', gap: 2 }}>
+								<TextField
+									select label="Start Time" value={afternoonStart}
+									onChange={(e) => setAfternoonStart(e.target.value)}
+									size="small" sx={{ width: 150 }}
+								>
+									{afternoonOptions.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+								</TextField>
+								<TextField
+									select label="End Time" value={afternoonEnd}
+									onChange={(e) => setAfternoonEnd(e.target.value)}
+									size="small" sx={{ width: 150 }}
+								>
+									{afternoonOptions.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+								</TextField>
+							</Box>
+						</Box>
+
+						{/* Evening */}
+						<Box sx={{ mb: 2 }}>
+							<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>Evening</Typography>
+							<Box sx={{ display: 'flex', gap: 2 }}>
+								<TextField
+									select label="Start Time" value={eveningStart}
+									onChange={(e) => setEveningStart(e.target.value)}
+									size="small" sx={{ width: 150 }}
+								>
+									{eveningOptions.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+								</TextField>
+								<TextField
+									select label="End Time" value={eveningEnd}
+									onChange={(e) => setEveningEnd(e.target.value)}
+									size="small" sx={{ width: 150 }}
+								>
+									{eveningOptions.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+								</TextField>
+							</Box>
+						</Box>
+
+						{/* Slot Duration */}
+						<Box>
+							<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>Slot Duration</Typography>
 							<TextField
-								select
-								label="End Time"
-								value={endTime}
-								onChange={(e) => setEndTime(e.target.value)}
-								size="small"
-								sx={{ width: 150 }}
-								disabled={notAvailable}
+								select label="Duration" value={slotDuration}
+								onChange={(e) => setSlotDuration(Number(e.target.value))}
+								size="small" sx={{ width: 150 }}
 							>
-								{timeOptions.map((time) => (
-									<MenuItem key={time} value={time}>
-										{time}
-									</MenuItem>
+								{durationOptions.map((d) => (
+									<MenuItem key={d} value={d}>{d} mins</MenuItem>
 								))}
 							</TextField>
 						</Box>
-
-						<FormControlLabel
-							control={
-								<Checkbox checked={notAvailable} onChange={(e) => setNotAvailable(e.target.checked)} />
-							}
-							label="Not available for entire day"
-							sx={{ mt: 1 , fontWeight: 400, fontSize: '13px'}}
-						/>
 					</Box>
 				</Box>
 
 				<Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-					<AppButton variant="contained" onClick={handleSave} loading={isSaving} label="Save Details " />
+					<AppButton variant="contained" onClick={handleSave} loading={isSaving} label="Save Details" />
 				</Box>
 			</Box>
 		)

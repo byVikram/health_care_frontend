@@ -374,7 +374,7 @@ export default function DoctorDetailPage() {
 				title="Appointment Confirmed!"
 				description={bookingSuccessMsg}
 				confirmLabel="Done"
-				cancelLabel="Close"
+				hideCancelButton
 			/>
 		</Box>
 	)

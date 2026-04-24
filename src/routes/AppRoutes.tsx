@@ -19,7 +19,7 @@ import NavbarLayout from '../components/layout/NavbarLayout'
 import TestPage from '../features/auth/test/TestPage'
 import { ROUTES } from '../constants/routes'
 import TestRegister from '../features/auth/test/TestRegister'
-import OnBoardingScreens from '../features/auth/onboarding/OnBoardingScreens'
+import OnBoardingPage from '../features/auth/onboarding/OnBoardingPage'
 
 function ProtectedLayout() {
 	return (
@@ -65,7 +65,7 @@ export default function AppRoutes() {
 			<Route
 				path={ROUTES.ONBOARDING}
 				element={
-					<OnBoardingScreens
+					<OnBoardingPage
 						role="PATIENT"
 						onFinish={() => navigate(ROUTES.AUTH.REGISTER)}
 					/>

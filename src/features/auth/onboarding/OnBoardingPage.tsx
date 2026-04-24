@@ -1,9 +1,10 @@
-// features/auth/onboarding/OnBoardingScreens.tsx
+// features/auth/onboarding/OnBoardingPage.tsx
 import { useState } from 'react'
-import { Box, Typography, Button } from '@mui/material'
+import { Box, Typography} from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight'
 import { onboardingData, UserRole } from '../../../data/onboardingData'
+import AppButton from '../../../components/common/Button/AppButton'
 
 interface Props {
 	role: UserRole
@@ -79,9 +80,10 @@ export default function OnBoardingScreens({ role, onFinish }: Props) {
 					/>
 
 					{/* Skip with double-chevron — plain text, no background */}
-					<Button
+					<AppButton
 						onClick={onFinish}
 						endIcon={<KeyboardDoubleArrowRightIcon sx={{ fontSize: '1.2rem !important' }} />}
+						disableRipple
 						sx={{
 							color: '#fff',
 							fontWeight: 500,
@@ -97,10 +99,9 @@ export default function OnBoardingScreens({ role, onFinish }: Props) {
 								opacity: 0.8,
 							},
 						}}
-						disableRipple
 					>
 						Skip
-					</Button>
+					</AppButton>
 				</Box>
 
 				{/* Image */}
@@ -146,7 +147,7 @@ export default function OnBoardingScreens({ role, onFinish }: Props) {
 				</Box>
 
 				{/* Next / Get Started button */}
-				<Button
+				<AppButton
 					fullWidth
 					onClick={handleNext}
 					sx={{
@@ -157,11 +158,13 @@ export default function OnBoardingScreens({ role, onFinish }: Props) {
 						py: 1.5,
 						borderRadius: 2,
 						textTransform: 'none',
-						'&:hover': { bgcolor: '#f0fafa' },
+						'&:hover': {
+							bgcolor: '#f0fafa',
+						},
 					}}
 				>
 					{isLast ? 'Get Started' : 'Next'}
-				</Button>
+				</AppButton>
 			</Box>
 		</Box>
 	)
