@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Box, Typography, TextField, InputAdornment, Divider, Chip, Popover } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
@@ -8,6 +8,7 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
 import HomeIcon from '@mui/icons-material/Home'
+import VideocamIcon from '@mui/icons-material/Videocam'
 import { Appointment } from '../../types/appointment'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import ConfirmIcon from '../../assets/icons/confirm.svg'
@@ -24,6 +25,8 @@ import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { useNavigate } from 'react-router-dom'
 import AppButton from '../../components/common/Button/AppButton'
+
+const trimTime = (t?: string | null) => t ? t.slice(0, 5) : '--'
 
 const allActionButtons = [
 	{ icon: ConfirmIcon, label: 'Confirm', bg: '#e8f5e9', color: '#4caf50', action: 'confirm' },
@@ -243,21 +246,25 @@ export function DoctorAppointments({
 					value={searchQuery}
 					onChange={(e) => setSearchQuery(e.target.value)}
 					size="small"
-					InputProps={{
-						startAdornment: (
-							<InputAdornment position="start">
-								<SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-							</InputAdornment>
-						),
-						endAdornment: (
-							<InputAdornment position="end">
-								<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-									<MicNoneOutlinedIcon sx={{ fontSize: 20, color: '#0c7c7c', cursor: 'pointer' }} />
-									<Box sx={{ width: '1px', height: '18px', bgcolor: '#e0e0e0' }} />
-									<QrCodeScannerIcon sx={{ fontSize: 20, color: '#0c7c7c', cursor: 'pointer' }} />
-								</Box>
-							</InputAdornment>
-						),
+					slotProps={{
+						input: {
+							startAdornment: (
+								<InputAdornment position="start">
+									<SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+								</InputAdornment>
+							),
+							endAdornment: (
+								<InputAdornment position="end">
+									<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+										<MicNoneOutlinedIcon
+											sx={{ fontSize: 20, color: '#0c7c7c', cursor: 'pointer' }}
+										/>
+										<Box sx={{ width: '1px', height: '18px', bgcolor: '#e0e0e0' }} />
+										<QrCodeScannerIcon sx={{ fontSize: 20, color: '#0c7c7c', cursor: 'pointer' }} />
+									</Box>
+								</InputAdornment>
+							),
+						},
 					}}
 					sx={{ '& fieldset': { borderRadius: '10px' } }}
 				/>
@@ -398,7 +405,7 @@ export function DoctorAppointments({
 										flexShrink: 0,
 									}}
 								>
-									<HomeIcon sx={{ fontSize: 17, color: isCancelled ? '#b0b0b0' : '#0c7c7c' }} />
+									{apt.appointment_mode === 'online' ? (<VideocamIcon sx={{ fontSize: 17, color: isCancelled ? '#b0b0b0' : '#0c7c7c' }} />) : (<HomeIcon sx={{ fontSize: 17, color: isCancelled ? '#b0b0b0' : '#0c7c7c' }} />)}
 								</Box>
 
 								<Box sx={{ flex: 1, minWidth: 0 }}>
@@ -439,7 +446,7 @@ export function DoctorAppointments({
 										<Typography variant="body2">|</Typography>
 										<AccessTimeIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
 										<Typography variant="body2">
-											{apt.start_time ?? '--'} - {apt.end_time}
+											{trimTime(apt.start_time)} - {trimTime(apt.end_time)}
 										</Typography>
 									</Box>
 								</Box>
@@ -468,7 +475,11 @@ export function DoctorAppointments({
 												<Box
 													onClick={(e) => {
 														e.stopPropagation()
-														handleAction(action.action, apt.id, e.currentTarget as HTMLElement)
+														handleAction(
+															action.action,
+															apt.id,
+															e.currentTarget as HTMLElement
+														)
 													}}
 													sx={{
 														display: 'flex',

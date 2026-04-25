@@ -1,9 +1,8 @@
 // src/features/doctor/components/DoctorSearchCard.tsx
-import { Box, Typography, Avatar, Chip } from '@mui/material'
+import { Box, Typography, Avatar } from '@mui/material'
 import StarIcon from '@mui/icons-material/Star'
 import WorkIcon from '@mui/icons-material/Work'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
-import ThumbUpIcon from '@mui/icons-material/ThumbUp'
 import AppButton from '../../../../components/common/Button/AppButton'
 import { DoctorSearchItem } from '../../../../types/doctor-search'
 import { useNavigate } from 'react-router-dom'
@@ -13,21 +12,27 @@ interface DoctorSearchCardProps {
 	recommended?: boolean
 }
 
-export default function DoctorSearchCard({ doctor, recommended = false }: DoctorSearchCardProps) {
+export default function DoctorSearchCard({ doctor }: DoctorSearchCardProps) {
 	const navigate = useNavigate()
 	const specialization = doctor.specialities?.[0] || 'General'
 	const avatar = doctor.avatar_s3_key || ''
 	const clinicName = doctor.location || 'Clinic'
 	const experience = doctor.experience_years || 0
 
+	const handleCardClick = () => {
+		navigate(`/doctors/${doctor.id}`)
+	}
+
 	return (
 		<Box
+			onClick={handleCardClick}
 			sx={{
 				bgcolor: 'background.paper',
 				border: '1px solid',
 				borderColor: 'divider',
 				borderRadius: '8px',
 				overflow: 'hidden',
+				cursor: 'pointer',
 				transition: 'box-shadow 0.2s, transform 0.2s',
 				'&:hover': {
 					boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
@@ -48,25 +53,6 @@ export default function DoctorSearchCard({ doctor, recommended = false }: Doctor
 						'& img': { objectFit: 'cover', objectPosition: 'top', height: '100%' },
 					}}
 				/>
-				{/* People Recommended Badge */}
-				{recommended && (
-					<Chip
-						icon={<ThumbUpIcon sx={{ fontSize: '11px !important', color: '#fff !important' }} />}
-						label="People Recommended"
-						size="small"
-						sx={{
-							position: 'absolute',
-							top: 14,
-							left: 14,
-							bgcolor: '#07B60A',
-							// bgcolor: "primary.main",
-							color: '#fff',
-							fontSize: '10px',
-							borderRadius: '4px',
-							'& .MuiChip-icon': { color: '#fff' },
-						}}
-					/>
-				)}
 			</Box>
 
 			{/* Info area */}
@@ -114,7 +100,10 @@ export default function DoctorSearchCard({ doctor, recommended = false }: Doctor
 				<AppButton
 					label="Book Now"
 					fullWidth
-					onClick={() => navigate(`/doctors/${doctor.id}`)}
+					onClick={(e) => {
+						e.stopPropagation()
+						navigate(`/doctors/${doctor.id}`)
+					}}
 					sx={{ borderRadius: '10px', py: 0.8 }}
 				/>
 			</Box>

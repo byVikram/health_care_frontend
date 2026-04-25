@@ -1,67 +1,66 @@
 // src/components/common/Modal/ConfirmModal.tsx
 
-import { Dialog, Box, Typography, ButtonProps } from "@mui/material";
-import {
-	DeleteOutline,
-	WarningAmberOutlined,
-	CheckCircleOutline,
-	InfoOutlined,
-	HelpOutline,
-} from "@mui/icons-material";
-import { ReactNode } from "react";
-import AppButton from "../Button/AppButton";
+import { Dialog, Box, Typography } from '@mui/material'
+import { DeleteOutline, WarningAmberOutlined, CheckCircleOutline, InfoOutlined, HelpOutline } from '@mui/icons-material'
+import { ReactNode } from 'react'
+import AppButton from '../Button/AppButton'
 
-type ConfirmVariant = "delete" | "warning" | "success" | "info" | "confirm";
+type ConfirmVariant = 'delete' | 'warning' | 'success' | 'info' | 'confirm'
 
 interface ConfirmModalProps {
-	open: boolean;
-	onClose: () => void;
-	onConfirm?: () => void;
+	open: boolean
+	onClose: () => void
+	onConfirm?: () => void
 
-	title?: string;
-	description?: string;
+	title?: string
+	description?: string
 
-	variant?: ConfirmVariant;
+	variant?: ConfirmVariant
 
-	confirmLabel?: string;
-	cancelLabel?: string;
+	confirmLabel?: string
+	cancelLabel?: string
 
-	loading?: boolean;
+	loading?: boolean
+	hideCancelButton?: boolean
 
 	/** optional overrides */
-	icon?: ReactNode;
+	icon?: ReactNode
 }
 
 const VARIANT_CONFIG: Record<
 	ConfirmVariant,
-	{ icon: ReactNode; iconBg: string; confirmColor: ButtonProps["color"] }
+	{
+		icon: ReactNode
+		iconBg: string
+		confirmColor: 'primary' | 'secondary' | 'error' | 'success' | 'warning' | 'info' | 'inherit'
+	}
 > = {
 	delete: {
 		icon: <DeleteOutline fontSize="inherit" />,
-		iconBg: "#ef5350",
-		confirmColor: "error",
+		iconBg: '#ef5350',
+		confirmColor: 'error',
 	},
 	warning: {
 		icon: <WarningAmberOutlined fontSize="inherit" />,
-		iconBg: "#f57c00",
-		confirmColor: "warning",
+		iconBg: '#f57c00',
+		confirmColor: 'warning',
 	},
 	success: {
 		icon: <CheckCircleOutline fontSize="inherit" />,
-		iconBg: "#2e7d32",
-		confirmColor: "success",
+		iconBg: '#2e7d32',
+		confirmColor: 'success',
 	},
 	info: {
 		icon: <InfoOutlined fontSize="inherit" />,
-		iconBg: "#0288d1",
-		confirmColor: "info",
+		iconBg: '#0288d1',
+		confirmColor: 'info',
 	},
 	confirm: {
 		icon: <HelpOutline fontSize="inherit" />,
-		iconBg: "#546e7a",
-		confirmColor: "primary",
+		iconBg: '#546e7a',
+		confirmColor: 'primary',
 	},
-};
+}
 
 export default function ConfirmModal({
 	open,
@@ -69,15 +68,16 @@ export default function ConfirmModal({
 	onConfirm,
 	title,
 	description,
-	variant = "confirm",
-	confirmLabel = "Confirm",
-	cancelLabel = "Cancel",
+	variant = 'confirm',
+	confirmLabel = 'Confirm',
+	cancelLabel = 'Cancel',
 	loading = false,
+	hideCancelButton = false,
 	icon,
 }: ConfirmModalProps) {
-	const config = VARIANT_CONFIG[variant];
+	const config = VARIANT_CONFIG[variant]
 
-	const finalIcon = icon ?? config.icon;
+	const finalIcon = icon ?? config.icon
 
 	return (
 		<Dialog
@@ -85,20 +85,22 @@ export default function ConfirmModal({
 			onClose={onClose}
 			maxWidth="xs"
 			fullWidth
-			PaperProps={{
-				sx: {
-					borderRadius: "20px",
-					boxShadow: "0 24px 64px rgba(0,0,0,0.12)",
-					overflow: "hidden",
+			slotProps={{
+				paper: {
+					sx: {
+						borderRadius: '20px',
+						boxShadow: '0 24px 64px rgba(0,0,0,0.12)',
+						overflow: 'hidden',
+					},
 				},
 			}}
 		>
 			<Box
 				sx={{
-					display: "flex",
-					flexDirection: "column",
-					alignItems: "center",
-					textAlign: "center",
+					display: 'flex',
+					flexDirection: 'column',
+					alignItems: 'center',
+					textAlign: 'center',
 					px: 4,
 					pt: 4.5,
 					pb: 4,
@@ -109,12 +111,12 @@ export default function ConfirmModal({
 					sx={{
 						width: 68,
 						height: 68,
-						borderRadius: "50%",
+						borderRadius: '50%',
 						bgcolor: config.iconBg,
-						color: "#fff",
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "center",
+						color: '#fff',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
 						fontSize: 32,
 						mb: 0.5,
 						boxShadow: `0 8px 24px ${config.iconBg}55`,
@@ -124,30 +126,19 @@ export default function ConfirmModal({
 				</Box>
 
 				{title && (
-					<Typography
-						variant="h5"
-						sx={{ fontWeight: 700, color: "text.primary", lineHeight: 1.3 }}
-					>
+					<Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', lineHeight: 1.3 }}>
 						{title}
 					</Typography>
 				)}
 
 				{description && (
-					<Typography
-						variant="body2"
-						sx={{ color: "text.secondary", lineHeight: 1.65, maxWidth: 300 }}
-					>
+					<Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.65, maxWidth: 300 }}>
 						{description}
 					</Typography>
 				)}
 
-				<Box sx={{ display: "flex", gap: 1.5, mt: 1, width: "100%" }}>
-					<AppButton
-						variant="outlined"
-						label={cancelLabel}
-						fullWidth
-						onClick={onClose}
-					/>
+			<Box sx={{ display: 'flex', gap: 1.5, mt: 1, width: '100%', justifyContent: 'center', }}>
+				{!hideCancelButton && <AppButton variant='outlined' label={cancelLabel} fullWidth onClick={onClose} />}
 
 					<AppButton
 						color={config.confirmColor}
@@ -155,9 +146,10 @@ export default function ConfirmModal({
 						fullWidth
 						loading={loading}
 						onClick={onConfirm}
+						sx={{maxWidth:'280px'}}
 					/>
 				</Box>
 			</Box>
 		</Dialog>
-	);
+	)
 }

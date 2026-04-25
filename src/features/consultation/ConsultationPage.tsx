@@ -304,7 +304,7 @@ export default function ConsultationPage() {
 				</Box>
 
 				{/* Right: Follow up button */}
-				<AppButton variant="contained" label="+ Follow up" borderRadius="20px" sx={{ px: 4 }} onClick={() => setRescheduleOpen(true)} />
+				<AppButton variant="contained" label="+ Reconnect" borderRadius="20px" sx={{ px: 4 }} onClick={() => setRescheduleOpen(true)} />
 			</Box>
 
 			{/* Tabs */}
