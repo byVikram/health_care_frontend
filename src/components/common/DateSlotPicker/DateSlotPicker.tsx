@@ -1,10 +1,8 @@
-// src/components/common/DateSlotPicker/DateSlotPicker.tsx
+﻿// src/components/common/DateSlotPicker/DateSlotPicker.tsx
 import { useState } from 'react'
 import { Box, Typography, IconButton } from '@mui/material'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-// import LocalHospitalOutlinedIcon from '@mui/icons-material/LocalHospitalOutlined'
-// import VideocamOutlinedIcon from '@mui/icons-material/VideocamOutlined'
 import AppSkeleton from '../Skeleton/AppSkeleton'
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -61,6 +59,7 @@ type CommonProps = {
 	dateLabel?: string
 	timeLabel?: string
 	disablePast?: boolean
+	compactAppointmentToggle?: boolean
 	timeSlotColumns?: number
 	availableSlots?: SlotGroup[]
 	loading?: boolean
@@ -71,6 +70,11 @@ type CommonProps = {
 	onAppointmentTypeChange?: (type: 'clinic' | 'video') => void
 	clinicPrice?: number
 	videoPrice?: number
+	/** When true, hides the time label, legend and slot grid entirely */
+	hideSlots?: boolean
+	hideNavigation?: boolean
+	hideMonthLabel?: boolean
+	// hideDateNumber?: boolean
 }
 
 type DateSlotPickerProps = CommonProps & (SingleProps | MultiProps)
@@ -84,6 +88,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		dateLabel = 'Select Date',
 		timeLabel = 'Select Time',
 		disablePast = true,
+		compactAppointmentToggle = false,
 		timeSlotColumns = 4,
 		availableSlots,
 		loading = false,
@@ -94,6 +99,10 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		onAppointmentTypeChange,
 		clinicPrice,
 		videoPrice,
+		hideSlots = false,
+		hideNavigation = false,
+		hideMonthLabel = false,
+		// hideDateNumber = false,
 	} = props
 
 	const today = new Date()
@@ -134,21 +143,11 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 
 	const slotsToRender = availableSlots ?? []
 	const isDoctorView = !!(onSelectAll && onUnselectAll)
+	const useCompactAppointmentToggle = compactAppointmentToggle || isDoctorView
 	const legendItems = [
-		{
-			label: 'Available',
-			color: 'success.main',
-		},
-		{
-			label: 'Blocked',
-			color: 'error.main',
-		},
-		{
-			label: 'Booked',
-			color: 'rgba(0,0,0,0.08)',
-			border: '1.5px solid',
-			borderColor: 'divider',
-		},
+		{ label: 'Available', color: 'success.main' },
+		{ label: 'Blocked', color: 'error.main' },
+		{ label: 'Booked', color: 'rgba(0,0,0,0.08)', border: '1.5px solid', borderColor: 'divider' },
 	]
 	const timeLegend = isDoctorView ? (
 		<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -236,40 +235,50 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 				<AppSkeleton height={360} />
 			) : (
 				<>
-					{/* Date label */}
-					<Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
-						{dateLabel}
-					</Typography>
+					{/* Date label - only shown when non-empty */}
+					{dateLabel && (
+						<Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
+							{dateLabel}
+						</Typography>
+					)}
 
 					{/* Week calendar */}
 					<Box sx={{ p: 2, mb: 3 }}>
 						{/* Month nav */}
 						<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-							<IconButton
-								size="small"
-								onClick={() => {
-									const d = new Date(weekStart)
-									d.setDate(d.getDate() - 7)
-									setWeekStart(d)
-								}}
-								sx={{ color: 'text.secondary', '&:focus': { outline: 'none' } }}
-							>
-								<ChevronLeftIcon />
-							</IconButton>
-							<Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-								{monthLabel}
-							</Typography>
-							<IconButton
-								size="small"
-								onClick={() => {
-									const d = new Date(weekStart)
-									d.setDate(d.getDate() + 7)
-									setWeekStart(d)
-								}}
-								sx={{ color: 'text.secondary', '&:focus': { outline: 'none' } }}
-							>
-								<ChevronRightIcon />
-							</IconButton>
+							{!hideNavigation && (
+								<IconButton
+									size="small"
+									onClick={() => {
+										const d = new Date(weekStart)
+										d.setDate(d.getDate() - 7)
+										setWeekStart(d)
+									}}
+									sx={{ color: 'text.secondary', '&:focus': { outline: 'none' } }}
+								>
+									<ChevronLeftIcon />
+								</IconButton>
+							)}
+
+							{!hideMonthLabel && (
+								<Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+									{monthLabel}
+								</Typography>
+							)}
+
+							{!hideNavigation && (
+								<IconButton
+									size="small"
+									onClick={() => {
+										const d = new Date(weekStart)
+										d.setDate(d.getDate() + 7)
+										setWeekStart(d)
+									}}
+									sx={{ color: 'text.secondary', '&:focus': { outline: 'none' } }}
+								>
+									<ChevronRightIcon />
+								</IconButton>
+							)}
 						</Box>
 
 						{/* Day strip */}
@@ -343,7 +352,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 								sx={{
 									display: 'flex',
 									justifyContent: 'flex-start',
-									width: isDoctorView ? 'auto' : '100%',
+									width: useCompactAppointmentToggle ? 'auto' : '100%',
 								}}
 							>
 								<Box
@@ -353,7 +362,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 										borderRadius: '50px',
 										p: '3px',
 										gap: '3px',
-										width: isDoctorView ? 'auto' : '100%',
+										width: useCompactAppointmentToggle ? 'auto' : '100%',
 									}}
 								>
 									<Box
@@ -363,7 +372,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 											alignItems: 'center',
 											flexDirection: 'column',
 											justifyContent: 'center',
-											flex: isDoctorView ? '0 0 auto' : 1,
+											flex: useCompactAppointmentToggle ? '0 0 auto' : 1,
 											px: 1.8,
 											py: 0.4,
 											borderRadius: '50px',
@@ -395,7 +404,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 													lineHeight: 1.2,
 												}}
 											>
-												₹{clinicPrice}
+												&#8377; {clinicPrice}
 											</Typography>
 										)}
 									</Box>
@@ -406,7 +415,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 											alignItems: 'center',
 											flexDirection: 'column',
 											justifyContent: 'center',
-											flex: isDoctorView ? '0 0 auto' : 1,
+											flex: useCompactAppointmentToggle ? '0 0 auto' : 1,
 											px: 1.8,
 											py: 0.4,
 											borderRadius: '50px',
@@ -438,7 +447,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 													lineHeight: 1.2,
 												}}
 											>
-												₹{videoPrice}
+												&#8377; {videoPrice}
 											</Typography>
 										)}
 									</Box>
@@ -447,110 +456,124 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 						</Box>
 					)}
 
-					<Box
-						sx={{
-							display: 'flex',
-							alignItems: 'center',
-							justifyContent: 'space-between',
-							mb: 2,
-							flexWrap: 'wrap',
-							gap: 1,
-						}}
-					>
-						<Typography variant="h5" sx={{ fontWeight: 600 }}>
-							{timeLabel}
-						</Typography>
-						{timeLegend}
-					</Box>
-
-					{/* No slots message */}
-					{availableSlots && availableSlots.length === 0 && (
-						<Typography variant="body2" sx={{ color: 'text.secondary', mt: 2 }}>
-							No slots available for the selected day.
-						</Typography>
-					)}
-
-					{/* Time slots grouped by period */}
-					{slotsToRender.map((group) => (
-						<Box key={group.label} sx={{ mb: 2 }}>
-							<Typography
-								variant="caption"
-								sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.5, display: 'block' }}
-							>
-								{group.label}
-							</Typography>
-
+					{/* Time label + legend + slot grid — hidden when hideSlots=true */}
+					{!hideSlots && (
+						<>
 							<Box
-								sx={{ display: 'grid', gridTemplateColumns: `repeat(${timeSlotColumns}, 1fr)`, gap: 1 }}
+								sx={{
+									display: 'flex',
+									alignItems: 'center',
+									justifyContent: 'space-between',
+									mb: 2,
+									flexWrap: 'wrap',
+									gap: 1,
+								}}
 							>
-								{group.slots.map((slot) => {
-									const isPatientView = disableBookedSlots
-
-									// Patient view: hide BLOCKED slots and doctor-disabled slots entirely
-									if (isPatientView && (slot.status === 'BLOCKED' || !slot.is_enabled)) return null
-
-									const isSelected = isSlotSelected(slot.start_time)
-									const isBooked = slot.is_booked
-									const isDisabled = !slot.is_enabled
-
-									return (
-										<Box
-											key={slot.start_time}
-											onClick={() => {
-												if (isBooked || isDisabled) return
-												handleSlotClick(slot.start_time)
-											}}
-											sx={{
-												py: 0.6,
-												px: 0.4,
-												textAlign: 'center',
-												border: '1.5px solid',
-												borderColor: isSelected ? 'primary.main' : 'divider',
-												borderRadius: '8px',
-												cursor: isBooked ? 'default' : isDisabled ? 'not-allowed' : 'pointer',
-												bgcolor: isBooked
-													? 'rgba(0,0,0,0.08)'
-													: props.multiSelect
-														? slot.status === 'BLOCKED'
-															? 'error.main'
-															: isSelected
-																? 'success.main'
-																: 'error.main'
-														: isSelected
-															? 'primary.main'
-															: 'background.paper',
-												transition: 'all 0.15s',
-												'&:hover': isBooked
-													? {}
-													: {
-															borderColor: 'primary.main',
-															bgcolor: isSelected
-																? 'primary.main'
-																: 'rgba(43,111,113,0.06)',
-														},
-											}}
-										>
-											<Typography
-												variant="body1"
-												sx={{
-													fontWeight: isSelected ? 600 : 400,
-													color: props.multiSelect
-														? '#fff'
-														: isSelected
-															? '#fff'
-															: isBooked
-																? 'text.disabled'
-																: 'text.primary',
-												}}
-											>
-												{to12hr(slot.start_time)}
-											</Typography>
-										</Box>
-									)
-								})}
+								<Typography variant="h5" sx={{ fontWeight: 600 }}>
+									{timeLabel}
+								</Typography>
+								{timeLegend}
 							</Box>
-						</Box>
-					))}
+
+							{/* No slots message */}
+							{availableSlots && availableSlots.length === 0 && (
+								<Typography variant="body2" sx={{ color: 'text.secondary', mt: 2 }}>
+									No slots available for the selected day.
+								</Typography>
+							)}
+
+							{/* Time slots grouped by period */}
+							{slotsToRender.map((group) => (
+								<Box key={group.label} sx={{ mb: 2 }}>
+									<Typography
+										variant="caption"
+										sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.5, display: 'block' }}
+									>
+										{group.label}
+									</Typography>
+
+									<Box
+										sx={{
+											display: 'grid',
+											gridTemplateColumns: `repeat(${timeSlotColumns}, 1fr)`,
+											gap: 1,
+										}}
+									>
+										{group.slots.map((slot) => {
+											const isPatientView = disableBookedSlots
+
+											// Patient view: hide BLOCKED slots and doctor-disabled slots entirely
+											if (isPatientView && (slot.status === 'BLOCKED' || !slot.is_enabled))
+												return null
+
+											const isSelected = isSlotSelected(slot.start_time)
+											const isBooked = slot.is_booked
+											const isDisabled = !slot.is_enabled
+
+											return (
+												<Box
+													key={slot.start_time}
+													onClick={() => {
+														if (isBooked || isDisabled) return
+														handleSlotClick(slot.start_time)
+													}}
+													sx={{
+														py: 0.6,
+														px: 0.4,
+														textAlign: 'center',
+														border: '1.5px solid',
+														borderColor: isSelected ? 'primary.main' : 'divider',
+														borderRadius: '8px',
+														cursor: isBooked
+															? 'default'
+															: isDisabled
+																? 'not-allowed'
+																: 'pointer',
+														bgcolor: isBooked
+															? 'rgba(0,0,0,0.08)'
+															: props.multiSelect
+																? slot.status === 'BLOCKED'
+																	? 'error.main'
+																	: isSelected
+																		? 'success.main'
+																		: 'error.main'
+																: isSelected
+																	? 'primary.main'
+																	: 'background.paper',
+														transition: 'all 0.15s',
+														'&:hover': isBooked
+															? {}
+															: {
+																	borderColor: 'primary.main',
+																	bgcolor: isSelected
+																		? 'primary.main'
+																		: 'rgba(43,111,113,0.06)',
+																},
+													}}
+												>
+													<Typography
+														variant="body1"
+														sx={{
+															fontWeight: isSelected ? 600 : 400,
+															color: props.multiSelect
+																? '#fff'
+																: isSelected
+																	? '#fff'
+																	: isBooked
+																		? 'text.disabled'
+																		: 'text.primary',
+														}}
+													>
+														{to12hr(slot.start_time)}
+													</Typography>
+												</Box>
+											)
+										})}
+									</Box>
+								</Box>
+							))}
+						</>
+					)}
 				</>
 			)}
 		</Box>

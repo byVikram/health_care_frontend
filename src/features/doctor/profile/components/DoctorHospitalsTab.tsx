@@ -12,10 +12,23 @@ import { customCardStyle } from '../../../../styles/commonStyles'
 import type { DoctorHospital } from '../../../../types/doctor-profile'
 import { createHospital } from '../../doctorService'
 import { MenuItem, TextField } from '@mui/material'
+import DateSlotPicker from '../../../../components/common/DateSlotPicker/DateSlotPicker'
 
 interface DoctorHospitalsTabProps {
 	hospitals: DoctorHospital[]
 	onChange: (hospitals: DoctorHospital[]) => void
+}
+
+type AppointmentType = 'clinic' | 'video'
+
+type WorkingHoursState = {
+	morningStart: string
+	morningEnd: string
+	afternoonStart: string
+	afternoonEnd: string
+	eveningStart: string
+	eveningEnd: string
+	slotDuration: number
 }
 
 const EMPTY_FORM = {
@@ -35,22 +48,18 @@ const getSuccessMessage = (response: unknown) => {
 	) {
 		return response.message
 	}
-
 	return 'Hospital saved successfully'
 }
 
 const getHospitalAddressText = (hospital: DoctorHospital) => {
 	const fullAddress = hospital.fullAddress.trim()
 	const location = hospital.location.trim()
-
 	if (fullAddress && location && fullAddress !== location) {
 		return `${fullAddress} ${location}`.trim()
 	}
-
 	return fullAddress || location
 }
 
-// Generate time options for a given hour range (inclusive start, exclusive end)
 // Generate time options for a given hour range; value = 24h, label = 12h AM/PM
 const makeTimeOptions = (startHour: number, endHour: number) => {
 	const options: { value: string; label: string }[] = []
@@ -67,31 +76,66 @@ const makeTimeOptions = (startHour: number, endHour: number) => {
 	return options
 }
 
-const morningOptions   = makeTimeOptions(8, 12)   // 8:00 AM - 12:00 PM
-const afternoonOptions = makeTimeOptions(12, 17)  // 12:00 PM - 5:00 PM
-const eveningOptions   = makeTimeOptions(17, 21)  // 5:00 PM - 9:00 PM
-
+const morningOptions = makeTimeOptions(8, 12)
+const afternoonOptions = makeTimeOptions(12, 17)
+const eveningOptions = makeTimeOptions(17, 21)
 const durationOptions = [10, 15, 20, 25, 30]
+
+const timeSections = [
+	{
+		label: 'Morning',
+		startKey: 'morningStart',
+		endKey: 'morningEnd',
+		options: morningOptions,
+	},
+	{
+		label: 'Afternoon',
+		startKey: 'afternoonStart',
+		endKey: 'afternoonEnd',
+		options: afternoonOptions,
+	},
+	{
+		label: 'Evening',
+		startKey: 'eveningStart',
+		endKey: 'eveningEnd',
+		options: eveningOptions,
+	},
+] as const
+
+const DEFAULT_WORKING_HOURS: WorkingHoursState = {
+	morningStart: '08:00',
+	morningEnd: '12:00',
+	afternoonStart: '12:00',
+	afternoonEnd: '17:00',
+	eveningStart: '17:00',
+	eveningEnd: '21:00',
+	slotDuration: 15,
+}
 
 export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospitalsTabProps) {
 	const [showForm, setShowForm] = useState(false)
 	const [form, setForm] = useState(EMPTY_FORM)
 	const [isSaving, setIsSaving] = useState(false)
 
-	// Morning shift
-	const [morningStart, setMorningStart] = useState('08:00')
-	const [morningEnd, setMorningEnd]     = useState('12:00')
+	const [workingHoursByType, setWorkingHoursByType] = useState<Record<AppointmentType, WorkingHoursState>>({
+		clinic: { ...DEFAULT_WORKING_HOURS },
+		video: { ...DEFAULT_WORKING_HOURS },
+	})
 
-	// Afternoon shift
-	const [afternoonStart, setAfternoonStart] = useState('12:00')
-	const [afternoonEnd, setAfternoonEnd]     = useState('17:00')
+	const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+	const [selectedAppointmentType, setSelectedAppointmentType] = useState<AppointmentType>('clinic')
 
-	// Evening shift
-	const [eveningStart, setEveningStart] = useState('17:00')
-	const [eveningEnd, setEveningEnd]     = useState('21:00')
+	const selectedWorkingHours = workingHoursByType[selectedAppointmentType]
 
-	// Slot duration
-	const [slotDuration, setSlotDuration] = useState(15)
+	const updateWorkingHours = <K extends keyof WorkingHoursState>(field: K, value: WorkingHoursState[K]) => {
+		setWorkingHoursByType((prev) => ({
+			...prev,
+			[selectedAppointmentType]: {
+				...prev[selectedAppointmentType],
+				[field]: value,
+			},
+		}))
+	}
 
 	const handleSetPrimary = (id: string) => {
 		onChange(hospitals.map((h) => ({ ...h, isPrimary: h.id === id })))
@@ -106,14 +150,12 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 			toast.error('Hospital name is required')
 			return
 		}
-
 		if (!trimmedAddress) {
 			toast.error('Full address is required')
 			return
 		}
 
 		setIsSaving(true)
-
 		try {
 			const response = await createHospital({
 				name: trimmedName,
@@ -123,7 +165,6 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 				video_consultation_fee: form.video_consultation_fee.trim(),
 				offline_consultation_fee: form.offline_consultation_fee.trim(),
 			})
-
 			toast.success(getSuccessMessage(response))
 			window.location.reload()
 		} catch (error) {
@@ -189,83 +230,90 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 
 					{/* Working Hours */}
 					<Box sx={{ mt: 0.5 }}>
-						<Typography sx={{ fontWeight: 600, fontSize: '14px', mb: 1.5 }}>Working Hours</Typography>
-
-						{/* Morning */}
-						<Box sx={{ mb: 2 }}>
-							<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>Morning</Typography>
-							<Box sx={{ display: 'flex', gap: 2 }}>
-								<TextField
-									select label="Start Time" value={morningStart}
-									onChange={(e) => setMorningStart(e.target.value)}
-									size="small" sx={{ width: 150 }}
-								>
-									{morningOptions.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
-								</TextField>
-								<TextField
-									select label="End Time" value={morningEnd}
-									onChange={(e) => setMorningEnd(e.target.value)}
-									size="small" sx={{ width: 150 }}
-								>
-									{morningOptions.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
-								</TextField>
-							</Box>
+						<Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+							<Typography sx={{ fontWeight: 500, fontSize: '16px' }}>Working Hours</Typography>
 						</Box>
 
-						{/* Afternoon */}
+						{/* Date strip + Clinic/Video toggle — right after the Working Hours title */}
 						<Box sx={{ mb: 2 }}>
-							<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>Afternoon</Typography>
-							<Box sx={{ display: 'flex', gap: 2 }}>
-								<TextField
-									select label="Start Time" value={afternoonStart}
-									onChange={(e) => setAfternoonStart(e.target.value)}
-									size="small" sx={{ width: 150 }}
-								>
-									{afternoonOptions.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
-								</TextField>
-								<TextField
-									select label="End Time" value={afternoonEnd}
-									onChange={(e) => setAfternoonEnd(e.target.value)}
-									size="small" sx={{ width: 150 }}
-								>
-									{afternoonOptions.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
-								</TextField>
-							</Box>
+							<DateSlotPicker
+								selectedDate={selectedDate}
+								onDateChange={setSelectedDate}
+								selectedTime=""
+								onTimeChange={() => {}}
+								dateLabel=""
+								disablePast={false}
+								compactAppointmentToggle
+								hideSlots
+								hideNavigation
+								hideMonthLabel
+								// hideDateNumber
+								selectedAppointmentType={selectedAppointmentType}
+								onAppointmentTypeChange={setSelectedAppointmentType}
+							/>
 						</Box>
 
-						{/* Evening */}
-						<Box sx={{ mb: 2 }}>
-							<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>Evening</Typography>
-							<Box sx={{ display: 'flex', gap: 2 }}>
+						<Box key={selectedAppointmentType}>
+							{timeSections.map((section) => (
+								<Box key={section.label} sx={{ mb: 2 }}>
+									<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>
+										{section.label}
+									</Typography>
+
+									<Box sx={{ display: 'flex', gap: 2 }}>
+										<TextField
+											select
+											label="Start Time"
+											value={selectedWorkingHours[section.startKey]}
+											onChange={(e) => updateWorkingHours(section.startKey, e.target.value)}
+											size="small"
+											sx={{ width: 150 }}
+										>
+											{section.options.map((o) => (
+												<MenuItem key={o.value} value={o.value}>
+													{o.label}
+												</MenuItem>
+											))}
+										</TextField>
+
+										<TextField
+											select
+											label="End Time"
+											value={selectedWorkingHours[section.endKey]}
+											onChange={(e) => updateWorkingHours(section.endKey, e.target.value)}
+											size="small"
+											sx={{ width: 150 }}
+										>
+											{section.options.map((o) => (
+												<MenuItem key={o.value} value={o.value}>
+													{o.label}
+												</MenuItem>
+											))}
+										</TextField>
+									</Box>
+								</Box>
+							))}
+
+							{/* Slot Duration */}
+							<Box>
+								<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>
+									Slot Duration
+								</Typography>
 								<TextField
-									select label="Start Time" value={eveningStart}
-									onChange={(e) => setEveningStart(e.target.value)}
-									size="small" sx={{ width: 150 }}
+									select
+									label="Duration"
+									value={selectedWorkingHours.slotDuration}
+									onChange={(e) => updateWorkingHours('slotDuration', Number(e.target.value))}
+									size="small"
+									sx={{ width: 150 }}
 								>
-									{eveningOptions.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
-								</TextField>
-								<TextField
-									select label="End Time" value={eveningEnd}
-									onChange={(e) => setEveningEnd(e.target.value)}
-									size="small" sx={{ width: 150 }}
-								>
-									{eveningOptions.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+									{durationOptions.map((d) => (
+										<MenuItem key={d} value={d}>
+											{d} mins
+										</MenuItem>
+									))}
 								</TextField>
 							</Box>
-						</Box>
-
-						{/* Slot Duration */}
-						<Box>
-							<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>Slot Duration</Typography>
-							<TextField
-								select label="Duration" value={slotDuration}
-								onChange={(e) => setSlotDuration(Number(e.target.value))}
-								size="small" sx={{ width: 150 }}
-							>
-								{durationOptions.map((d) => (
-									<MenuItem key={d} value={d}>{d} mins</MenuItem>
-								))}
-							</TextField>
 						</Box>
 					</Box>
 				</Box>

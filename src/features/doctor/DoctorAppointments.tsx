@@ -1,5 +1,15 @@
 import { useState, useEffect } from 'react'
-import { Box, Typography, TextField, InputAdornment, Divider, Chip, Popover } from '@mui/material'
+import {
+	Box,
+	Typography,
+	InputAdornment,
+	Divider,
+	Chip,
+	Popover,
+	Dialog,
+	DialogContent,
+	TextField,
+} from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
@@ -25,8 +35,9 @@ import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { useNavigate } from 'react-router-dom'
 import AppButton from '../../components/common/Button/AppButton'
+import OtpForm from '../auth/components/OtpForm'
 
-const trimTime = (t?: string | null) => t ? t.slice(0, 5) : '--'
+const trimTime = (t?: string | null) => (t ? t.slice(0, 5) : '--')
 
 const allActionButtons = [
 	{ icon: ConfirmIcon, label: 'Confirm', bg: '#e8f5e9', color: '#4caf50', action: 'confirm' },
@@ -57,6 +68,10 @@ export function DoctorAppointments({
 	setSearchQuery: (value: string) => void
 }) {
 	const navigate = useNavigate()
+
+	const [otpModalOpen, setOtpModalOpen] = useState(false)
+	const [selectedAppointmentId, setSelectedAppointmentId] = useState('')
+	const [selectedPatientId, setSelectedPatientId] = useState('')
 	// Appointment action state
 	const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({})
 
@@ -228,6 +243,23 @@ export function DoctorAppointments({
 		}
 	}
 
+	const handleStartConsultation = async (appointmentId: string, patientId: string) => {
+		try {
+			const res = await ApiService.post<{ success: boolean }>(
+				`${API_ENDPOINTS.APPOINTMENTS.GET_BY_ID(appointmentId)}/start-consultation`,
+				{}
+			)
+
+			if (res.data.success) {
+				setSelectedAppointmentId(appointmentId)
+				setSelectedPatientId(patientId)
+				setOtpModalOpen(true)
+			}
+		} catch {
+			toast.error('Failed to generate OTP')
+		}
+	}
+
 	const handleCancelReject = () => {
 		setRejectAnchorEl(null)
 		setPendingRejectId(null)
@@ -244,7 +276,7 @@ export function DoctorAppointments({
 					fullWidth
 					placeholder="Search Patient ID, Name..."
 					value={searchQuery}
-					onChange={(e) => setSearchQuery(e.target.value)}
+					onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
 					size="small"
 					slotProps={{
 						input: {
@@ -380,7 +412,7 @@ export function DoctorAppointments({
 								key={apt.id}
 								onClick={() => {
 									if (apt.patient?.id && apt.id) {
-										navigate(`/consultation/${apt.patient?.id}/${apt.id}`)
+										handleStartConsultation(apt.id, apt.patient.id)
 									}
 								}}
 								sx={{
@@ -405,7 +437,13 @@ export function DoctorAppointments({
 										flexShrink: 0,
 									}}
 								>
-									{apt.appointment_mode === 'online' ? (<VideocamIcon sx={{ fontSize: 17, color: isCancelled ? '#b0b0b0' : '#0c7c7c' }} />) : (<HomeIcon sx={{ fontSize: 17, color: isCancelled ? '#b0b0b0' : '#0c7c7c' }} />)}
+									{apt.appointment_mode === 'online' ? (
+										<VideocamIcon
+											sx={{ fontSize: 17, color: isCancelled ? '#b0b0b0' : '#0c7c7c' }}
+										/>
+									) : (
+										<HomeIcon sx={{ fontSize: 17, color: isCancelled ? '#b0b0b0' : '#0c7c7c' }} />
+									)}
 								</Box>
 
 								<Box sx={{ flex: 1, minWidth: 0 }}>
@@ -619,6 +657,26 @@ export function DoctorAppointments({
 				rescheduleHospitalId={rescheduleHospitalId}
 				setRescheduleHospitalId={setRescheduleHospitalId}
 			/>
+
+			<Dialog open={otpModalOpen} onClose={() => setOtpModalOpen(false)} maxWidth="xs" fullWidth>
+				<DialogContent sx={{ pt: 3 }}>
+					<OtpForm
+						contactNumber=""
+						mode="modal"
+						onVerify={() => {
+							setOtpModalOpen(false)
+							navigate(`/consultation/${selectedPatientId}/${selectedAppointmentId}`)
+						}}
+						onCustomVerify={async (otp: string) => {
+							const res = await ApiService.post<{ success: boolean }>(
+								`${API_ENDPOINTS.APPOINTMENTS.GET_BY_ID(selectedAppointmentId)}/verify-otp`,
+								{ otp }
+							)
+							return res.data.success
+						}}
+					/>
+				</DialogContent>
+			</Dialog>
 		</Box>
 	)
 }
