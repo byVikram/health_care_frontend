@@ -5,6 +5,7 @@ import AddIcon from '@mui/icons-material/Add'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
+import CloseIcon from '@mui/icons-material/Close'
 import { toast } from 'react-toastify'
 import AppButton from '../../../../components/common/Button/AppButton'
 import AppInput from '../../../../components/common/Input/AppInput'
@@ -21,13 +22,18 @@ interface DoctorHospitalsTabProps {
 
 type AppointmentType = 'clinic' | 'video'
 
+// A single time slot: start + end
+type TimeSlot = { start: string; end: string }
+
+// Per-section slots (1–3)
+type SectionSlots = {
+	morning: TimeSlot[]
+	afternoon: TimeSlot[]
+	evening: TimeSlot[]
+}
+
 type WorkingHoursState = {
-	morningStart: string
-	morningEnd: string
-	afternoonStart: string
-	afternoonEnd: string
-	eveningStart: string
-	eveningEnd: string
+	sections: SectionSlots
 	slotDuration: number
 }
 
@@ -61,56 +67,61 @@ const getHospitalAddressText = (hospital: DoctorHospital) => {
 }
 
 // Generate time options for a given hour range; value = 24h, label = 12h AM/PM
-const makeTimeOptions = (startHour: number, endHour: number) => {
+// Generate time options for a given hour range with a custom step in minutes
+const makeTimeOptions = (startHour: number, endHour: number, stepMins: number = 30) => {
 	const options: { value: string; label: string }[] = []
-	for (let h = startHour; h <= endHour; h++) {
-		for (const m of ['00', '30']) {
-			if (h === endHour && m === '30') break
-			const value = String(h).padStart(2, '0') + ':' + m
-			const period = h < 12 ? 'AM' : 'PM'
-			const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h
-			const label = h12 + ':' + m + ' ' + period
-			options.push({ value, label })
-		}
+	const totalStartMins = startHour * 60
+	const totalEndMins = endHour * 60
+	for (let mins = totalStartMins; mins < totalEndMins; mins += stepMins) {
+		const h = Math.floor(mins / 60)
+		const m = mins % 60
+		const value = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0')
+		const period = h < 12 ? 'AM' : 'PM'
+		const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h
+		const label = h12 + ':' + String(m).padStart(2, '0') + ' ' + period
+		options.push({ value, label })
 	}
 	return options
 }
 
-const morningOptions = makeTimeOptions(8, 12)
-const afternoonOptions = makeTimeOptions(12, 17)
-const eveningOptions = makeTimeOptions(17, 21)
+// Snap a HH:MM time string to the nearest multiple of stepMins
+const snapToStep = (time: string, stepMins: number): string => {
+	const [h, m] = time.split(':').map(Number)
+	const totalMins = h * 60 + m
+	const snapped = Math.round(totalMins / stepMins) * stepMins
+	const sh = Math.floor(snapped / 60)
+	const sm = snapped % 60
+	return String(sh).padStart(2, '0') + ':' + String(sm).padStart(2, '0')
+}
+
 const durationOptions = [10, 15, 20, 25, 30]
 
-const timeSections = [
+const SECTION_META = [
 	{
+		key: 'morning' as const,
 		label: 'Morning',
-		startKey: 'morningStart',
-		endKey: 'morningEnd',
-		options: morningOptions,
+		startHour: 8,
+		endHour: 12,
+		defaultStart: '08:00',
+		defaultEnd: '10:00',
 	},
 	{
+		key: 'afternoon' as const,
 		label: 'Afternoon',
-		startKey: 'afternoonStart',
-		endKey: 'afternoonEnd',
-		options: afternoonOptions,
+		startHour: 12,
+		endHour: 17,
+		defaultStart: '12:00',
+		defaultEnd: '14:00',
 	},
 	{
+		key: 'evening' as const,
 		label: 'Evening',
-		startKey: 'eveningStart',
-		endKey: 'eveningEnd',
-		options: eveningOptions,
+		startHour: 17,
+		endHour: 21,
+		defaultStart: '17:00',
+		defaultEnd: '19:00',
 	},
-] as const
-
-const DEFAULT_WORKING_HOURS: WorkingHoursState = {
-	morningStart: '08:00',
-	morningEnd: '12:00',
-	afternoonStart: '12:00',
-	afternoonEnd: '17:00',
-	eveningStart: '17:00',
-	eveningEnd: '21:00',
-	slotDuration: 15,
-}
+]
 
 export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospitalsTabProps) {
 	const [showForm, setShowForm] = useState(false)
@@ -118,23 +129,121 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 	const [isSaving, setIsSaving] = useState(false)
 
 	const [workingHoursByType, setWorkingHoursByType] = useState<Record<AppointmentType, WorkingHoursState>>({
-		clinic: { ...DEFAULT_WORKING_HOURS },
-		video: { ...DEFAULT_WORKING_HOURS },
+		clinic: {
+			sections: {
+				morning: [{ start: '08:00', end: '10:00' }],
+				afternoon: [{ start: '12:00', end: '14:00' }],
+				evening: [{ start: '17:00', end: '19:00' }],
+			},
+			slotDuration: 15,
+		},
+		video: {
+			sections: {
+				morning: [{ start: '08:00', end: '10:00' }],
+				afternoon: [{ start: '12:00', end: '14:00' }],
+				evening: [{ start: '17:00', end: '19:00' }],
+			},
+			slotDuration: 15,
+		},
 	})
 
 	const [selectedDate, setSelectedDate] = useState<Date>(new Date())
 	const [selectedAppointmentType, setSelectedAppointmentType] = useState<AppointmentType>('clinic')
+	const [followUpDays, setFollowUpDays] = useState(7)
+	const [rescheduleCutoff, setRescheduleCutoff] = useState(2)
 
 	const selectedWorkingHours = workingHoursByType[selectedAppointmentType]
 
-	const updateWorkingHours = <K extends keyof WorkingHoursState>(field: K, value: WorkingHoursState[K]) => {
-		setWorkingHoursByType((prev) => ({
-			...prev,
-			[selectedAppointmentType]: {
-				...prev[selectedAppointmentType],
-				[field]: value,
-			},
-		}))
+	// Add a new slot to a section (max 3). New slot starts at previous slot's end time.
+	const addSlot = (sectionKey: keyof SectionSlots) => {
+		setWorkingHoursByType((prev) => {
+			const current = prev[selectedAppointmentType]
+			const slots = current.sections[sectionKey]
+			if (slots.length >= 3) return prev
+			const prevEnd = slots[slots.length - 1].end
+			const stepMins = current.slotDuration
+			const [eh, em] = prevEnd.split(':').map(Number)
+			const newEndMins = eh * 60 + em + stepMins
+			const meta = SECTION_META.find((me) => me.key === sectionKey)!
+			const sectionEndMins = meta.endHour * 60
+			const clampedMins = Math.min(newEndMins, sectionEndMins)
+			const newEnd =
+				String(Math.floor(clampedMins / 60)).padStart(2, '0') + ':' + String(clampedMins % 60).padStart(2, '0')
+			return {
+				...prev,
+				[selectedAppointmentType]: {
+					...current,
+					sections: {
+						...current.sections,
+						[sectionKey]: [...slots, { start: prevEnd, end: newEnd }],
+					},
+				},
+			}
+		})
+	}
+
+	// Remove a slot by index (only slots 1+ can be removed, not index 0)
+	const removeSlot = (sectionKey: keyof SectionSlots, slotIndex: number) => {
+		setWorkingHoursByType((prev) => {
+			const current = prev[selectedAppointmentType]
+			const slots = current.sections[sectionKey]
+			if (slotIndex === 0) return prev
+			return {
+				...prev,
+				[selectedAppointmentType]: {
+					...current,
+					sections: {
+						...current.sections,
+						[sectionKey]: slots.filter((_, i) => i !== slotIndex),
+					},
+				},
+			}
+		})
+	}
+
+	// Update start or end time of a specific slot
+	const updateSlotTime = (
+		sectionKey: keyof SectionSlots,
+		slotIndex: number,
+		field: 'start' | 'end',
+		value: string
+	) => {
+		setWorkingHoursByType((prev) => {
+			const current = prev[selectedAppointmentType]
+			const slots = current.sections[sectionKey].map((slot, i) =>
+				i === slotIndex ? { ...slot, [field]: value } : slot
+			)
+			return {
+				...prev,
+				[selectedAppointmentType]: {
+					...current,
+					sections: { ...current.sections, [sectionKey]: slots },
+				},
+			}
+		})
+	}
+
+	const updateSlotDuration = (value: number) => {
+		setWorkingHoursByType((prev) => {
+			const current = prev[selectedAppointmentType]
+			// Snap all existing slot times to the new step so selected values stay valid
+			const snappedSections = Object.fromEntries(
+				Object.entries(current.sections).map(([sKey, slots]) => [
+					sKey,
+					(slots as TimeSlot[]).map((slot) => ({
+						start: snapToStep(slot.start, value),
+						end: snapToStep(slot.end, value),
+					})),
+				])
+			) as SectionSlots
+			return {
+				...prev,
+				[selectedAppointmentType]: {
+					sections: snappedSections,
+					slotDuration: value,
+				},
+			}
+		})
 	}
 
 	const handleSetPrimary = (id: string) => {
@@ -231,10 +340,10 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 					{/* Working Hours */}
 					<Box sx={{ mt: 0.5 }}>
 						<Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-							<Typography sx={{ fontWeight: 500, fontSize: '16px' }}>Working Hours</Typography>
+							<Typography sx={{ fontWeight: 700, fontSize: '18px' }}>Working Hours</Typography>
 						</Box>
 
-						{/* Date strip + Clinic/Video toggle — right after the Working Hours title */}
+						{/* Date strip + Clinic/Video toggle */}
 						<Box sx={{ mb: 2 }}>
 							<DateSlotPicker
 								selectedDate={selectedDate}
@@ -247,52 +356,129 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 								hideSlots
 								hideNavigation
 								hideMonthLabel
-								// hideDateNumber
+								hideDateNumber
 								selectedAppointmentType={selectedAppointmentType}
 								onAppointmentTypeChange={setSelectedAppointmentType}
 							/>
 						</Box>
 
 						<Box key={selectedAppointmentType}>
-							{timeSections.map((section) => (
-								<Box key={section.label} sx={{ mb: 2 }}>
-									<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>
-										{section.label}
-									</Typography>
+							{SECTION_META.map((section) => {
+								const slots = selectedWorkingHours.sections[section.key]
+								const canAdd = slots.length < 3
 
-									<Box sx={{ display: 'flex', gap: 2 }}>
-										<TextField
-											select
-											label="Start Time"
-											value={selectedWorkingHours[section.startKey]}
-											onChange={(e) => updateWorkingHours(section.startKey, e.target.value)}
-											size="small"
-											sx={{ width: 150 }}
-										>
-											{section.options.map((o) => (
-												<MenuItem key={o.value} value={o.value}>
-													{o.label}
-												</MenuItem>
-											))}
-										</TextField>
+								return (
+									<Box key={section.label} sx={{ mb: 2 }}>
+										<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>
+											{section.label}
+										</Typography>
 
-										<TextField
-											select
-											label="End Time"
-											value={selectedWorkingHours[section.endKey]}
-											onChange={(e) => updateWorkingHours(section.endKey, e.target.value)}
-											size="small"
-											sx={{ width: 150 }}
-										>
-											{section.options.map((o) => (
-												<MenuItem key={o.value} value={o.value}>
-													{o.label}
-												</MenuItem>
-											))}
-										</TextField>
+										{/* All slots in a single row */}
+										<Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.5 }}>
+											{slots.map((slot, slotIdx) => {
+												const stepMins = selectedWorkingHours.slotDuration
+												// Build options dynamically from slot duration
+												const allOptions = makeTimeOptions(
+													section.startHour,
+													section.endHour,
+													stepMins
+												)
+												// For slots after the first, only allow start >= previous slot's end
+												const startOptions =
+													slotIdx === 0
+														? allOptions
+														: allOptions.filter((o) => o.value >= slots[slotIdx - 1].end)
+												const endOptions = allOptions.filter((o) => o.value > slot.start)
+
+												return (
+													<Box
+														key={slotIdx}
+														sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+													>
+														<TextField
+															select
+															label="Start Time"
+															value={slot.start}
+															onChange={(e) =>
+																updateSlotTime(
+																	section.key,
+																	slotIdx,
+																	'start',
+																	e.target.value
+																)
+															}
+															size="small"
+															sx={{ width: 140 }}
+														>
+															{startOptions.map((o) => (
+																<MenuItem key={o.value} value={o.value}>
+																	{o.label}
+																</MenuItem>
+															))}
+														</TextField>
+
+														<TextField
+															select
+															label="End Time"
+															value={slot.end}
+															onChange={(e) =>
+																updateSlotTime(
+																	section.key,
+																	slotIdx,
+																	'end',
+																	e.target.value
+																)
+															}
+															size="small"
+															sx={{ width: 140 }}
+														>
+															{endOptions.map((o) => (
+																<MenuItem key={o.value} value={o.value}>
+																	{o.label}
+																</MenuItem>
+															))}
+														</TextField>
+
+														{/* × button — only on slots 2 and 3 */}
+														{slotIdx > 0 && (
+															<IconButton
+																size="small"
+																onClick={() => removeSlot(section.key, slotIdx)}
+																sx={{
+																	color: 'text.secondary',
+																	'&:hover': { color: 'error.main' },
+																	'&:focus': { outline: 'none' },
+																}}
+															>
+																<CloseIcon sx={{ fontSize: 16 }} />
+															</IconButton>
+														)}
+
+														{/* + button — only on the last slot and if < 3 */}
+														{slotIdx === slots.length - 1 && canAdd && (
+															<IconButton
+																size="small"
+																onClick={() => addSlot(section.key)}
+																sx={{
+																	color: 'primary.main',
+																	border: '1px solid',
+																	borderColor: 'primary.main',
+																	borderRadius: '6px',
+																	p: 0.4,
+																	'&:hover': { bgcolor: 'rgba(43,111,113,0.08)' },
+																	'&:focus': { outline: 'none' },
+																}}
+															>
+																<AddIcon sx={{ fontSize: 18 }} />
+															</IconButton>
+														)}
+													</Box>
+												)
+											})}
+										</Box>
 									</Box>
-								</Box>
-							))}
+								)
+							})}
 
 							{/* Slot Duration */}
 							<Box>
@@ -303,7 +489,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 									select
 									label="Duration"
 									value={selectedWorkingHours.slotDuration}
-									onChange={(e) => updateWorkingHours('slotDuration', Number(e.target.value))}
+									onChange={(e) => updateSlotDuration(Number(e.target.value))}
 									size="small"
 									sx={{ width: 150 }}
 								>
@@ -315,6 +501,55 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 								</TextField>
 							</Box>
 						</Box>
+					</Box>
+				</Box>
+				{/* Appointment Rules */}
+				<Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+					<Typography sx={{ fontWeight: 700, fontSize: '18px' }}>Appointment Rules</Typography>
+
+					{/* Free Follow-up Days */}
+					<Box>
+						<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>
+							Free Follow-up Validity
+						</Typography>
+
+						<TextField
+							select
+							value={followUpDays}
+							onChange={(e) => setFollowUpDays(Number(e.target.value))}
+							size="small"
+							sx={{ width: 180 }}
+						>
+							<MenuItem value={0}>No Follow-up</MenuItem>
+							<MenuItem value={3}>3 Days</MenuItem>
+							<MenuItem value={5}>5 Days</MenuItem>
+							<MenuItem value={7}>7 Days</MenuItem>
+							<MenuItem value={10}>10 Days</MenuItem>
+							<MenuItem value={15}>15 Days</MenuItem>
+						</TextField>
+					</Box>
+
+					{/* Reschedule Cutoff */}
+					<Box>
+						<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>
+							Reschedule Allowed Until
+						</Typography>
+
+						<TextField
+							select
+							value={rescheduleCutoff}
+							onChange={(e) => setRescheduleCutoff(Number(e.target.value))}
+							size="small"
+							sx={{ width: 180 }}
+						>
+							<MenuItem value={1}>1 Hour Before</MenuItem>
+							<MenuItem value={2}>2 Hours Before</MenuItem>
+							<MenuItem value={3}>3 Hours Before</MenuItem>
+							<MenuItem value={4}>4 Hours Before</MenuItem>
+							<MenuItem value={6}>6 Hours Before</MenuItem>
+							<MenuItem value={12}>12 Hours Before</MenuItem>
+							<MenuItem value={24}>1 Day Before</MenuItem>
+						</TextField>
 					</Box>
 				</Box>
 

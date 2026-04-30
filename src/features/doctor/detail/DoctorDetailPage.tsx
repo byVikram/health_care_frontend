@@ -1,6 +1,6 @@
 // src/features/doctor/DoctorDetailPage.tsx
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { Box, Container, Typography, Divider, Grid, Card } from '@mui/material'
 import DoctorProfileCard from './components/DoctorProfileCard'
 import HospitalSelector from './components/HospitalSelector'
@@ -12,12 +12,15 @@ import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
 import LoginForm from '../../../features/auth/components/LoginForm'
 import RegisterForm from '../../../features/auth/components/RegisterForm'
 import OtpForm from '../../../features/auth/components/OtpForm'
-import { useAuth } from '../../../hooks/useAuth'
+
 import { customCardStyle } from '../../../styles/commonStyles'
 import { AppointmentType } from '../../../types/doctor'
 import { DoctorDetailData } from '../../../types/doctor-detail'
-import { createAppointment, getDoctorById, getDoctorAvailability } from '../doctorService'
+import { getDoctorById, getDoctorAvailability } from '../doctorService'
 import AppSkeleton from '../../../components/common/Skeleton/AppSkeleton'
+import ConsentForm from '../../appointments/components/ConsentForm'
+import { useAuth } from '../../../hooks/useAuth'
+
 
 export default function DoctorDetailPage() {
 	const [selectedHospital, setSelectedHospital] = useState('')
@@ -25,10 +28,13 @@ export default function DoctorDetailPage() {
 	const [selectedDate, setSelectedDate] = useState(new Date())
 	const [selectedTime, setSelectedTime] = useState('')
 	const [showFullAbout, setShowFullAbout] = useState(false)
-	const [booking, setBooking] = useState(false)
-	const [bookingError, setBookingError] = useState<string | null>(null)
+
+
 	const [bookingSuccessModal, setBookingSuccessModal] = useState(false)
-	const [bookingSuccessMsg, setBookingSuccessMsg] = useState('')
+	const [consentOpen, setConsentOpen] = useState(false)
+	const [pendingBooking, setPendingBooking] = useState(false)
+
+
 	const [doctorDetail, setDoctorDetail] = useState<DoctorDetailData | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
@@ -37,18 +43,20 @@ export default function DoctorDetailPage() {
 	const [slotsLoading, setSlotsLoading] = useState(false)
 
 	const { id } = useParams<{ id: string }>()
-	const { accessToken } = useAuth()
-	const isAuthenticated = Boolean(accessToken)
+
+	const navigate = useNavigate()
+
 
 	const [authModalOpen, setAuthModalOpen] = useState(false)
 	const [authModalView, setAuthModalView] = useState<'login' | 'register' | 'otp'>('login')
 	const [authContactNumber, setAuthContactNumber] = useState('')
+	const { accessToken } = useAuth()
 
-	const openAuthModal = (view: 'login' | 'register') => {
-		setAuthModalView(view)
-		setAuthModalOpen(true)
-		setAuthContactNumber('')
-	}
+
+
+
+
+
 
 	const closeAuthModal = () => {
 		setAuthModalOpen(false)
@@ -65,6 +73,9 @@ export default function DoctorDetailPage() {
 		setAuthModalOpen(false)
 		setAuthModalView('login')
 		setAuthContactNumber('')
+		// After login, open consent form automatically
+		setPendingBooking(false)
+		setConsentOpen(true)
 	}
 
 	const primaryHospital =
@@ -116,13 +127,15 @@ export default function DoctorDetailPage() {
 		}
 
 		fetchDoctor()
-		return () => { active = false }
+		return () => {
+			active = false
+		}
 	}, [id])
 
 	const formatDateForApi = (date: Date) => {
-		const year  = date.getFullYear()
+		const year = date.getFullYear()
 		const month = String(date.getMonth() + 1).padStart(2, '0')
-		const day   = String(date.getDate()).padStart(2, '0')
+		const day = String(date.getDate()).padStart(2, '0')
 		return `${year}-${month}-${day}`
 	}
 
@@ -169,12 +182,14 @@ export default function DoctorDetailPage() {
 		}
 
 		fetchAvailability()
-		return () => { active = false }
+		return () => {
+			active = false
+		}
 	}, [id, selectedHospital, selectedDate])
 
 	const availableSlotStrings: string[] = []
 	if (Array.isArray(availableSlotGroups)) {
-		availableSlotGroups.forEach(group => {
+		availableSlotGroups.forEach((group) => {
 			if (group.slots && Array.isArray(group.slots)) {
 				group.slots.forEach((s: TimeSlot) => {
 					if (s.status === 'AVAILABLE') {
@@ -204,34 +219,13 @@ export default function DoctorDetailPage() {
 	if (error) {
 		return (
 			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-				<Typography variant="h5" sx={{ color: 'error.main' }}>{error}</Typography>
+				<Typography variant="h5" sx={{ color: 'error.main' }}>
+					{error}
+				</Typography>
 			</Box>
 		)
 	}
 
-	const handleBook = async () => {
-		if (!doctorDetail) return
-		if (!isAuthenticated) { openAuthModal('login'); return }
-
-		setBooking(true)
-		setBookingError(null)
-		try {
-			await createAppointment({
-				doctor_id: doctorDetail.id,
-				hospital_id: selectedHospital || undefined,
-				appointment_mode: selectedType === 'clinic' ? 'offline' : 'online',
-				appointment_date: formatDateForApi(selectedDate),
-				start_time: formatTimeForApi(resolvedSelectedTime),
-			})
-			setBookingSuccessMsg(`Appointment booked with ${doctorDetail.name} on ${selectedDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} at ${resolvedSelectedTime}`)
-			setBookingSuccessModal(true)
-		} catch (err) {
-			console.log(err)
-			setBookingError('Failed to book appointment')
-		} finally {
-			setBooking(false)
-		}
-	}
 
 	return (
 		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
@@ -280,20 +274,32 @@ export default function DoctorDetailPage() {
 									<>
 										<DoctorProfileCard doctor={doctorDetail} />
 										<Box sx={{ ...customCardStyle, p: 3 }}>
-											<Typography variant="h5" sx={{ mb: 1.5 }}>About</Typography>
+											<Typography variant="h5" sx={{ mb: 1.5 }}>
+												About
+											</Typography>
 											<Typography variant="body2">
 												{aboutText}
 												<Typography
 													component="span"
 													onClick={() => setShowFullAbout(!showFullAbout)}
-													sx={{ color: 'primary.main', fontWeight: 600, cursor: 'pointer', ml: 0.5, fontSize: '14px' }}
+													sx={{
+														color: 'primary.main',
+														fontWeight: 600,
+														cursor: 'pointer',
+														ml: 0.5,
+														fontSize: '14px',
+													}}
 												>
 													{showFullAbout ? 'Show less' : 'Read more'}
 												</Typography>
 											</Typography>
 											<Divider sx={{ my: 2 }} />
-											<Typography variant="h5" sx={{ mb: 0.5 }}>Working Time</Typography>
-											<Typography variant="body2">{primaryHospital?.working_hours || 'Not available'}</Typography>
+											<Typography variant="h5" sx={{ mb: 0.5 }}>
+												Working Time
+											</Typography>
+											<Typography variant="body2">
+												{primaryHospital?.working_hours || 'Not available'}
+											</Typography>
 										</Box>
 										<Box sx={{ ...customCardStyle, p: 3 }}>
 											<HospitalSelector
@@ -341,30 +347,74 @@ export default function DoctorDetailPage() {
 								clinicPrice={appointmentTypes[0]?.price}
 								videoPrice={appointmentTypes[1]?.price}
 							/>
-							{bookingError && (
-								<Typography variant="body2" sx={{ color: 'error.main' }}>{bookingError}</Typography>
-							)}
+
+
+
+
+
 							{!loading && (
-								<AppButton label="Book Appointment" fullWidth loading={booking} onClick={handleBook} />
+								<AppButton
+									label="Book Appointment"
+									fullWidth
+						loading={false}
+											onClick={() => {
+												if (!accessToken) {
+													setPendingBooking(true)
+													setAuthModalOpen(true)
+												} else {
+													setConsentOpen(true)
+												}
+											}}
+								/>
 							)}
 						</Box>
 					</Grid>
 				</Grid>
 			</Container>
 
-			<AppModal
-				open={authModalOpen} onClose={closeAuthModal} title={authModalTitle} maxWidth="xs" fullWidth
-			>
+			<AppModal open={authModalOpen} onClose={closeAuthModal} title={authModalTitle} maxWidth="xs" fullWidth>
 				{authModalView === 'login' && (
-					<LoginForm mode="modal" onSubmit={handleAuthNext} onSwitchToRegister={() => setAuthModalView('register')} />
+					<LoginForm
+						mode="modal"
+						onSubmit={handleAuthNext}
+						onSwitchToRegister={() => setAuthModalView('register')}
+					/>
 				)}
 				{authModalView === 'register' && (
-					<RegisterForm mode="modal" onSubmit={handleAuthNext} onSwitchToLogin={() => setAuthModalView('login')} />
+					<RegisterForm
+						mode="modal"
+						onSubmit={handleAuthNext}
+						onSwitchToLogin={() => setAuthModalView('login')}
+					/>
 				)}
 				{authModalView === 'otp' && (
 					<OtpForm mode="modal" contactNumber={authContactNumber} onVerify={handleAuthVerified} />
 				)}
 			</AppModal>
+
+			<ConsentForm
+				open={consentOpen}
+				onClose={() => setConsentOpen(false)}
+			onAgree={() => {
+				setConsentOpen(false)
+				navigate('/payment', { state: {
+					doctorName: doctorDetail?.name ?? '',
+					avatarUrl: doctorDetail?.details?.avatar_s3_key ?? '',
+					specialty: doctorDetail?.specialities?.[0] ?? 'Doctor',
+					date: selectedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+					time: resolvedSelectedTime,
+					appointmentType: selectedType === 'clinic' ? 'Clinic Visit' : 'Video Call',
+					location: (selectedHospitalEntry?.hospital?.name ?? '') + ', ' + (selectedHospitalEntry?.hospital?.address ?? ''),
+					consultationFee: selectedType === 'clinic' ? (appointmentTypes[0]?.price ?? 0) : (appointmentTypes[1]?.price ?? 0),
+					serviceFee: 0,
+					doctorId: doctorDetail?.id ?? '',
+					hospitalId: selectedHospital,
+					appointmentMode: selectedType === 'clinic' ? 'offline' : 'online',
+					appointmentDate: formatDateForApi(selectedDate),
+					startTime: formatTimeForApi(resolvedSelectedTime),
+				} })
+			}}
+			/>
 
 			<ConfirmModal
 				open={bookingSuccessModal}
@@ -372,7 +422,7 @@ export default function DoctorDetailPage() {
 				onConfirm={() => setBookingSuccessModal(false)}
 				variant="success"
 				title="Appointment Confirmed!"
-				description={bookingSuccessMsg}
+
 				confirmLabel="Done"
 				hideCancelButton
 			/>

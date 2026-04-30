@@ -1,4 +1,4 @@
-﻿// src/routes/AppRoutes.tsx
+// src/routes/AppRoutes.tsx
 import { Routes, Route, Outlet } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
 import LoginPage from '../features/auth/LoginPage'
@@ -6,6 +6,7 @@ import RegisterPage from '../features/auth/RegisterPage'
 import DashboardPage from '../features/dashboard/DashboardPage'
 import DoctorDetailPage from '../features/doctor/detail/DoctorDetailPage'
 import DoctorSearchPage from '../features/doctor/search/DoctorSearchPage'
+import PaymentPage from '../features/appointments/PaymentPage'
 import ProfilePage from '../features/profile/ProfilePage'
 import NotFoundPage from '../components/common/NotFoundPage'
 import MainLayout from '../components/layout/MainLayout'
@@ -112,6 +113,7 @@ export default function AppRoutes() {
 					<Route path={ROUTES.ROOT} element={<DashboardPage />} />
 					<Route path={ROUTES.DOCTORS.DETAIL} element={<DoctorDetailPage />} />
 					<Route path={ROUTES.DOCTORS.SEARCH} element={<DoctorSearchPage />} />
+				<Route path={ROUTES.PAYMENT} element={<PaymentPage />} />
 					<Route path={ROUTES.TEST} element={<TestPage />} />
 				</Route>
 			</Route>

@@ -1,6 +1,6 @@
-﻿// src/features/consultation/components/VitalsTab.tsx
+// src/features/consultation/components/VitalsTab.tsx
 import { useState } from 'react'
-import { Box, Typography, Grid, Table, TableBody, TableCell, TableHead, TableRow, IconButton, Fab } from '@mui/material'
+import { Box, Typography, Grid, Table, TableBody, TableCell, TableHead, TableRow, IconButton, Fab, Divider } from '@mui/material'
 import ThermostatIcon from '@mui/icons-material/Thermostat'
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined'
 import WaterDropOutlinedIcon from '@mui/icons-material/WaterDropOutlined'
@@ -34,9 +34,21 @@ const VITAL_STATS: VitalStat[] = [
 	{ id: 'temp', label: 'Body Temperature', value: '98.6', unit: 'F', date: '17/04/25' },
 	{ id: 'bp', label: 'Blood Pressure', value: '180/80', unit: 'mm/Hg', date: '17/04/25' },
 	{ id: 'glucose', label: 'Blood Glucose Level', value: '85', unit: 'mm/dL', date: '17/04/2025' },
-	{ id: 'weight', label: 'Weight', value: '45', unit: 'Kg', date: '17/04/2025' },
 	{ id: 'spo2', label: 'Oxygen Saturation (spO2)', value: '79', unit: '%', date: '17/04/2025' },
 ]
+
+// Weight/Height/BMI data (kept separate as it needs a custom card)
+const WEIGHT_KG = 45
+const HEIGHT_CM = 165
+const BMI = parseFloat((WEIGHT_KG / Math.pow(HEIGHT_CM / 100, 2)).toFixed(1))
+const BMI_DATE = '17/04/2025'
+
+function getBmiCategory(bmi: number): { label: string; color: string } {
+	if (bmi < 18.5) return { label: 'Underweight', color: '#f57c00' }
+	if (bmi < 25) return { label: 'Normal', color: '#388e3c' }
+	if (bmi < 30) return { label: 'Overweight', color: '#f57c00' }
+	return { label: 'Obese', color: '#d32f2f' }
+}
 
 const VITAL_ICONS: Record<string, React.ReactNode> = {
 	temp: <ThermostatIcon sx={{ fontSize: 28, color: '#e53935' }} />,
@@ -328,7 +340,7 @@ const TAB_CONFIGS: TabConfig[] = [
 
 function VitalStatCard({ stat }: { stat: VitalStat }) {
 	return (
-		<Box sx={{ ...customCardStyle, p: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+		<Box sx={{ ...customCardStyle, p: 1.5, display: 'flex', alignItems: 'center', gap: 1.5, height: '100%', boxSizing: 'border-box' }}>
 			<Box sx={{ flexShrink: 0 }}>{VITAL_ICONS[stat.id]}</Box>
 			<Box sx={{ flex: 1 }}>
 				<Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
@@ -346,6 +358,79 @@ function VitalStatCard({ stat }: { stat: VitalStat }) {
 			<Typography variant="caption" sx={{ fontSize: '10px', color: 'text.disabled', alignSelf: 'flex-start' }}>
 				{stat.date}
 			</Typography>
+		</Box>
+	)
+}
+
+function WeightBmiCard() {
+	const { label: bmiLabel, color: bmiColor } = getBmiCategory(BMI)
+	return (
+		<Box
+			sx={{
+				...customCardStyle,
+				p: 1.5,
+				height: '100%',
+				boxSizing: 'border-box',
+				display: 'flex',
+				flexDirection: 'column',
+				justifyContent: 'space-between',
+			}}
+		>
+			{/* Header row: icon + date */}
+			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+				<FitnessCenterOutlinedIcon sx={{ fontSize: 22, color: '#5c6bc0' }} />
+				<Typography variant="caption" sx={{ fontSize: '10px', color: 'text.disabled' }}>
+					{BMI_DATE}
+				</Typography>
+			</Box>
+
+			{/* Three metrics in a row */}
+			<Box sx={{ display: 'flex', alignItems: 'stretch', gap: 0 }}>
+				{/* Weight */}
+				<Box sx={{ flex: 1, textAlign: 'center' }}>
+					<Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 0.3 }}>
+						<Typography sx={{ fontWeight: 700, fontSize: '15px', color: 'text.primary' }}>
+							{WEIGHT_KG}
+						</Typography>
+						<Typography variant="caption" sx={{ fontSize: '10px', color: 'text.secondary' }}>Kg</Typography>
+					</Box>
+					<Typography variant="caption" sx={{ fontSize: '10px', color: 'text.secondary', display: 'block' }}>
+						Weight
+					</Typography>
+				</Box>
+
+				<Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+
+				{/* Height */}
+				<Box sx={{ flex: 1, textAlign: 'center' }}>
+					<Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 0.3 }}>
+						<Typography sx={{ fontWeight: 700, fontSize: '15px', color: 'text.primary' }}>
+							{HEIGHT_CM}
+						</Typography>
+						<Typography variant="caption" sx={{ fontSize: '10px', color: 'text.secondary' }}>cm</Typography>
+					</Box>
+					<Typography variant="caption" sx={{ fontSize: '10px', color: 'text.secondary', display: 'block' }}>
+						Height
+					</Typography>
+				</Box>
+
+				<Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+
+				{/* BMI */}
+				<Box sx={{ flex: 1, textAlign: 'center' }}>
+					<Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 0.3 }}>
+						<Typography sx={{ fontWeight: 700, fontSize: '15px', color: bmiColor }}>
+							{BMI}
+						</Typography>
+					</Box>
+					<Typography variant="caption" sx={{ fontSize: '10px', color: 'text.secondary', display: 'block' }}>
+						BMI
+					</Typography>
+					<Typography variant="caption" sx={{ fontSize: '9px', color: bmiColor, fontWeight: 600, display: 'block' }}>
+						{bmiLabel}
+					</Typography>
+				</Box>
+			</Box>
 		</Box>
 	)
 }
@@ -378,12 +463,16 @@ export default function VitalsTab() {
 
 	return (
 		<Box sx={{ position: 'relative' }}>
-			<Grid container spacing={1.5} sx={{ mb: 3 }}>
+			<Grid container spacing={1.5} sx={{ mb: 3 }} alignItems="stretch">
 				{VITAL_STATS.map((stat) => (
 					<Grid key={stat.id} size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
 						<VitalStatCard stat={stat} />
 					</Grid>
 				))}
+				{/* Weight / Height / BMI card occupies same slot width as others */}
+				<Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
+					<WeightBmiCard />
+				</Grid>
 			</Grid>
 
 			<Box sx={{ ...customCardStyle, p: 0, overflow: 'hidden' }}>

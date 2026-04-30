@@ -9,6 +9,7 @@ import {
 	Dialog,
 	DialogContent,
 	TextField,
+	Tooltip,
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
@@ -17,6 +18,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import HomeIcon from '@mui/icons-material/Home'
 import VideocamIcon from '@mui/icons-material/Videocam'
 import { Appointment } from '../../types/appointment'
@@ -476,6 +478,72 @@ export function DoctorAppointments({
 												fontWeight: 600,
 											}}
 										/>
+
+										{/* Symptoms info tooltip — always shown on every card */}
+										{(() => {
+											const key = 'symptoms_' + apt.doctor?.id + '_' + apt.appointment_date + '_' + (apt.start_time ? apt.start_time.slice(0, 5) : '')
+											const raw = sessionStorage.getItem(key)
+											let info: { symptoms?: string; duration?: string; severity?: string } = {}
+											let hasSymptoms = false
+											if (raw) {
+												try {
+													info = JSON.parse(raw)
+													hasSymptoms = !!(info.symptoms || info.duration || info.severity)
+												} catch { /* ignore */ }
+											}
+											const severityColors: Record<string, string> = { mild: '#4caf50', moderate: '#f59e0b', severe: '#e53935' }
+											return (
+												<Tooltip
+													arrow
+													placement="bottom-start"
+													slotProps={{ tooltip: { sx: { bgcolor: 'transparent', p: 0, boxShadow: 'none' } }, arrow: { sx: { color: 'background.paper' } } }}
+													title={
+														<Box sx={{ bgcolor: 'background.paper', borderRadius: '12px', border: '1px solid', borderColor: 'divider', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', p: 2, minWidth: 220, maxWidth: 280 }}>
+															<Typography fontSize={12} fontWeight={700} color="text.primary" mb={1.2}>Patient Symptoms</Typography>
+															{hasSymptoms ? (
+																<>
+																	{info.symptoms && (
+																		<Box mb={0.8}>
+																			<Typography fontSize={10} color="text.disabled" fontWeight={600} textTransform="uppercase" letterSpacing={0.5}>Symptoms</Typography>
+																			<Typography fontSize={12} color="text.primary" mt={0.3}>{info.symptoms}</Typography>
+																		</Box>
+																	)}
+																	{info.duration && (
+																		<Box mb={0.8}>
+																			<Typography fontSize={10} color="text.disabled" fontWeight={600} textTransform="uppercase" letterSpacing={0.5}>Duration</Typography>
+																			<Typography fontSize={12} color="text.primary" mt={0.3}>{info.duration}</Typography>
+																		</Box>
+																	)}
+																	{info.severity && (
+																		<Box>
+																			<Typography fontSize={10} color="text.disabled" fontWeight={600} textTransform="uppercase" letterSpacing={0.5}>Severity</Typography>
+																			<Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, mt: 0.4, px: 1, py: 0.3, borderRadius: '20px', bgcolor: (severityColors[info.severity] ?? '#9e9e9e') + '22', border: '1px solid', borderColor: severityColors[info.severity] ?? '#9e9e9e' }}>
+																				<Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: severityColors[info.severity] ?? '#9e9e9e' }} />
+																				<Typography fontSize={11} fontWeight={700} color={severityColors[info.severity] ?? '#9e9e9e'} textTransform="capitalize">{info.severity}</Typography>
+																			</Box>
+																		</Box>
+																	)}
+																</>
+															) : (
+																<Typography fontSize={12} color="text.secondary" fontStyle="italic">No symptoms entered by patient.</Typography>
+															)}
+														</Box>
+													}
+												>
+													<InfoOutlinedIcon
+														onClick={(e) => e.stopPropagation()}
+														sx={{
+															fontSize: 14,
+															color: hasSymptoms ? '#0c7c7c' : 'text.disabled',
+															cursor: 'pointer',
+															'&:hover': { color: 'primary.main' },
+															verticalAlign: 'middle',
+															ml: 0.3,
+														}}
+													/>
+												</Tooltip>
+											)
+										})()}
 									</Box>
 									<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
 										<Typography variant="body2">

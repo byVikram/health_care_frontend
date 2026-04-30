@@ -353,7 +353,7 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 				selectedTime={selectedSlots}
 				onTimeChange={handleTimeChange}
 				dateLabel="Select follow up date"
-				timeLabel="Select Follow up time"
+				
 				timeSlotColumns={5}
 				disableBookedSlots={false}
 				availableSlots={slotGroupsForPicker.length > 0 ? slotGroupsForPicker : undefined}

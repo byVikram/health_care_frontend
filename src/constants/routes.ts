@@ -22,6 +22,8 @@ export const ROUTES = {
 	ROLE_SELECT: '/role-select',
 	ONBOARDING: '/onboarding',
 
+	PAYMENT: '/payment',
+
 	PORTAL: {
 		HOME: '/portal',
 		PROFILE: '/profile',

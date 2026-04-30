@@ -74,7 +74,7 @@ type CommonProps = {
 	hideSlots?: boolean
 	hideNavigation?: boolean
 	hideMonthLabel?: boolean
-	// hideDateNumber?: boolean
+	hideDateNumber?: boolean
 }
 
 type DateSlotPickerProps = CommonProps & (SingleProps | MultiProps)
@@ -102,7 +102,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		hideSlots = false,
 		hideNavigation = false,
 		hideMonthLabel = false,
-		// hideDateNumber = false,
+		hideDateNumber = false,
 	} = props
 
 	const today = new Date()
@@ -295,11 +295,16 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 											flex: 1,
 											textAlign: 'center',
 											py: 0.8,
+											minHeight: '58px',
 											borderRadius: '10px',
 											bgcolor: isSelected ? '#0c7c7c' : 'transparent',
 											border: isSelected ? '' : '1px solid #33333366',
 											cursor: 'pointer',
 											maxWidth: '60px',
+											display: 'flex',
+											flexDirection: 'column',
+											alignItems: 'center',
+											justifyContent: 'center',
 											transition: 'background 0.2s',
 											'&:hover': { bgcolor: isSelected ? '#0c7c7c' : 'rgba(12,124,124,0.08)' },
 										}}
@@ -307,8 +312,8 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 										<Typography
 											variant="caption"
 											sx={{
-												fontSize: '11px',
-												fontWeight: 500,
+												fontSize: hideDateNumber ? '13px' : '11px',
+												fontWeight: hideDateNumber ? 600 : 500,
 												color: isSelected
 													? 'rgba(255,255,255,0.8)'
 													: past
@@ -318,22 +323,24 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 										>
 											{DAYS[date.getDay()]}
 										</Typography>
-										<Typography
-											variant="body2"
-											sx={{
-												fontWeight: 700,
-												fontSize: '15px',
-												color: isSelected
-													? '#fff'
-													: past
-														? 'text.disabled'
-														: isSat
-															? 'error.main'
-															: 'text.primary',
-											}}
-										>
-											{date.getDate()}
-										</Typography>
+										{!hideDateNumber && (
+											<Typography
+												variant="body2"
+												sx={{
+													fontWeight: 700,
+													fontSize: '15px',
+													color: isSelected
+														? '#fff'
+														: past
+															? 'text.disabled'
+															: isSat
+																? 'error.main'
+																: 'text.primary',
+												}}
+											>
+												{date.getDate()}
+											</Typography>
+										)}
 									</Box>
 								)
 							})}
@@ -343,11 +350,9 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 					{/* Appointment type pill toggle */}
 					{onAppointmentTypeChange && (
 						<Box sx={{ mb: 2, mt: 1 }}>
-							{!isDoctorView && (
-								<Typography variant="h5" sx={{ fontWeight: 600, mb: 1.5 }}>
-									Type of Appointment
-								</Typography>
-							)}
+						<Typography variant="body2" sx={{ fontWeight: 500, mb: 1.5, color: 'text.secondary', fontSize: '13px' }}>
+							Type of Appointment
+						</Typography>
 							<Box
 								sx={{
 									display: 'flex',
