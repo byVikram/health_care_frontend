@@ -58,6 +58,7 @@ type CommonProps = {
 	onDateChange: (date: Date) => void
 	dateLabel?: string
 	timeLabel?: string
+	hideNavigation?: boolean
 	disablePast?: boolean
 	compactAppointmentToggle?: boolean
 	timeSlotColumns?: number
@@ -71,10 +72,6 @@ type CommonProps = {
 	clinicPrice?: number
 	videoPrice?: number
 	/** When true, hides the time label, legend and slot grid entirely */
-	hideSlots?: boolean
-	hideNavigation?: boolean
-	hideMonthLabel?: boolean
-	hideDateNumber?: boolean
 }
 
 type DateSlotPickerProps = CommonProps & (SingleProps | MultiProps)
@@ -87,6 +84,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		onDateChange,
 		dateLabel = 'Select Date',
 		timeLabel = 'Select Time',
+		hideNavigation = false,
 		disablePast = true,
 		compactAppointmentToggle = false,
 		timeSlotColumns = 4,
@@ -99,10 +97,6 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		onAppointmentTypeChange,
 		clinicPrice,
 		videoPrice,
-		hideSlots = false,
-		hideNavigation = false,
-		hideMonthLabel = false,
-		hideDateNumber = false,
 	} = props
 
 	const today = new Date()
@@ -245,7 +239,14 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 					{/* Week calendar */}
 					<Box sx={{ p: 2, mb: 3 }}>
 						{/* Month nav */}
-						<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+						<Box
+							sx={{
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: hideNavigation ? 'center' : 'space-between',
+								mb: 1.5,
+							}}
+						>
 							{!hideNavigation && (
 								<IconButton
 									size="small"
@@ -260,11 +261,12 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 								</IconButton>
 							)}
 
-							{!hideMonthLabel && (
-								<Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-									{monthLabel}
-								</Typography>
-							)}
+							<Typography
+								variant="body2"
+								sx={{ fontWeight: 600, color: 'text.primary', fontSize: hideNavigation ? '16px' : undefined }}
+							>
+								{monthLabel}
+							</Typography>
 
 							{!hideNavigation && (
 								<IconButton
@@ -312,8 +314,8 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 										<Typography
 											variant="caption"
 											sx={{
-												fontSize: hideDateNumber ? '13px' : '11px',
-												fontWeight: hideDateNumber ? 600 : 500,
+												fontSize: '13px',
+												fontWeight: 600,
 												color: isSelected
 													? 'rgba(255,255,255,0.8)'
 													: past
@@ -323,7 +325,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 										>
 											{DAYS[date.getDay()]}
 										</Typography>
-										{!hideDateNumber && (
+										
 											<Typography
 												variant="body2"
 												sx={{
@@ -340,7 +342,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 											>
 												{date.getDate()}
 											</Typography>
-										)}
+										
 									</Box>
 								)
 							})}
@@ -462,7 +464,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 					)}
 
 					{/* Time label + legend + slot grid — hidden when hideSlots=true */}
-					{!hideSlots && (
+					
 						<>
 							<Box
 								sx={{
@@ -578,7 +580,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 								</Box>
 							))}
 						</>
-					)}
+					
 				</>
 			)}
 		</Box>

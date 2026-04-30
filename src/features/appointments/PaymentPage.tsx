@@ -581,7 +581,7 @@ export default function PaymentPage() {
 						<Typography fontWeight={700} fontSize={16} color="#fff">
 							Share Symptoms Before Your Appointment
 						</Typography>
-						<Typography fontSize={12} color="rgba(255,255,255,0.8)" mt={0.5}>
+						<Typography variant = "body2" fontSize={12} color="rgba(255,255,255,0.8)" mt={0.5}>
 							Help your doctor understand your condition better by adding symptoms or concerns before the
 							consultation.
 						</Typography>
@@ -591,7 +591,7 @@ export default function PaymentPage() {
 					<Box sx={{ px: 3, py: 2.5, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
 						{/* Symptoms textarea */}
 						<Box>
-							<Typography fontSize={13} fontWeight={600} color="text.primary" mb={0.8}>
+							<Typography variant = "body2" fontSize={13} fontWeight={600} color="text.primary" mb={0.8}>
 								Symptoms / Reason for Visit
 							</Typography>
 

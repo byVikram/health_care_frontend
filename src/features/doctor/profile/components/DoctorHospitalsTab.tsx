@@ -13,7 +13,6 @@ import { customCardStyle } from '../../../../styles/commonStyles'
 import type { DoctorHospital } from '../../../../types/doctor-profile'
 import { createHospital } from '../../doctorService'
 import { MenuItem, TextField } from '@mui/material'
-import DateSlotPicker from '../../../../components/common/DateSlotPicker/DateSlotPicker'
 
 interface DoctorHospitalsTabProps {
 	hospitals: DoctorHospital[]
@@ -96,6 +95,16 @@ const snapToStep = (time: string, stepMins: number): string => {
 
 const durationOptions = [10, 15, 20, 25, 30]
 
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+const getWeekDates = (start: Date) => {
+	return Array.from({ length: 7 }, (_, i) => {
+		const d = new Date(start)
+		d.setDate(start.getDate() + i)
+		return d
+	})
+}
+
 const SECTION_META = [
 	{
 		key: 'morning' as const,
@@ -148,6 +157,21 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 	})
 
 	const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+	const [weekStart] = useState(() => {
+	const today = new Date()
+	const d = new Date(today)
+	d.setDate(today.getDate() - today.getDay())
+	return d
+	})
+
+	const weekDates = getWeekDates(weekStart)
+
+	const isSameDay = (a: Date, b: Date) =>
+	a.getDate() === b.getDate() &&
+	a.getMonth() === b.getMonth() &&
+	a.getFullYear() === b.getFullYear()
+
+
 	const [selectedAppointmentType, setSelectedAppointmentType] = useState<AppointmentType>('clinic')
 	const [followUpDays, setFollowUpDays] = useState(7)
 	const [rescheduleCutoff, setRescheduleCutoff] = useState(2)
@@ -344,22 +368,126 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 						</Box>
 
 						{/* Date strip + Clinic/Video toggle */}
-						<Box sx={{ mb: 2 }}>
-							<DateSlotPicker
-								selectedDate={selectedDate}
-								onDateChange={setSelectedDate}
-								selectedTime=""
-								onTimeChange={() => {}}
-								dateLabel=""
-								disablePast={false}
-								compactAppointmentToggle
-								hideSlots
-								hideNavigation
-								hideMonthLabel
-								hideDateNumber
-								selectedAppointmentType={selectedAppointmentType}
-								onAppointmentTypeChange={setSelectedAppointmentType}
-							/>
+						<Box sx={{ mb: 3 }}>
+							{/* Days */}
+							<Box
+								sx={{
+									display: 'flex',
+									justifyContent: 'space-between',
+									gap: 0.9,
+									width: '100%',
+									mb: 3,
+								}}
+							>
+								{weekDates.map((date) => {
+									const isSelected = isSameDay(date, selectedDate)
+
+									return (
+										<Box
+											key={date.toISOString()}
+											onClick={() => setSelectedDate(date)}
+											sx={{
+												flex: 1,
+												maxWidth: '58px',
+												minHeight: '58px',
+												py: 0.8,
+												borderRadius: '12px',
+												border: '1px solid',
+												borderColor: isSelected ? '#0c7c7c' : '#D7D7D7',
+												bgcolor: isSelected ? '#0c7c7c' : '#fff',
+												display: 'flex',
+												alignItems: 'center',
+												justifyContent: 'center',
+												cursor: 'pointer',
+												transition: 'all 0.2s ease',
+												'&:hover': {
+													borderColor: '#0c7c7c',
+													bgcolor: isSelected ? '#0c7c7c' : '#F7FAFA',
+												},
+											}}
+										>
+											<Typography
+												sx={{
+													fontSize: '16px',
+													fontWeight: 500,
+													color: isSelected ? '#fff' : '#5F6B76',
+												}}
+											>
+												{DAYS[date.getDay()]}
+											</Typography>
+										</Box>
+									)
+								})}
+							</Box>
+
+							{/* Appointment Type */}
+							<Box>
+								<Typography
+									sx={{
+										fontSize: '14px',
+										fontWeight: 500,
+										color: '#5F6B76',
+										mb: 1.2,
+									}}
+								>
+									Type of Appointment
+								</Typography>
+
+								<Box
+									sx={{
+										display: 'inline-flex',
+										alignItems: 'center',
+										bgcolor: '#0c7c7c',
+										borderRadius: '999px',
+										p: '3px',
+										gap: '3px',
+									}}
+								>
+									<Box
+										onClick={() => setSelectedAppointmentType('clinic')}
+										sx={{
+											px: 2.3,
+											py: 0.5,
+											borderRadius: '999px',
+											cursor: 'pointer',
+											bgcolor: selectedAppointmentType === 'clinic' ? '#fff' : 'transparent',
+											transition: 'all 0.2s',
+										}}
+									>
+										<Typography
+											sx={{
+												fontSize: '13px',
+												fontWeight: 600,
+												color: selectedAppointmentType === 'clinic' ? '#111' : '#fff',
+											}}
+										>
+											Clinic Visit
+										</Typography>
+									</Box>
+
+									<Box
+										onClick={() => setSelectedAppointmentType('video')}
+										sx={{
+											px: 2.3,
+											py: 0.7,
+											borderRadius: '999px',
+											cursor: 'pointer',
+											bgcolor: selectedAppointmentType === 'video' ? '#fff' : 'transparent',
+											transition: 'all 0.2s',
+										}}
+									>
+										<Typography
+											sx={{
+												fontSize: '13px',
+												fontWeight: 600,
+												color: selectedAppointmentType === 'video' ? '#111' : '#fff',
+											}}
+										>
+											Video Call
+										</Typography>
+									</Box>
+								</Box>
+							</Box>
 						</Box>
 
 						<Box key={selectedAppointmentType}>
