@@ -1,9 +1,8 @@
 ﻿import { useState, useEffect, useCallback } from 'react'
 import { Box, Typography } from '@mui/material'
 import { toast } from 'react-toastify'
-import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked'
-import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 import AppButton from '../../../../components/common/Button/AppButton'
+import AppSelect from '../../../../components/common/Select/AppSelect'
 import DateSlotPicker, { SlotGroup, TimeSlot } from '../../../../components/common/DateSlotPicker/DateSlotPicker'
 import { DoctorHospital, DoctorAvailability } from '../../../../types/doctor-profile'
 import { customCardStyle } from '../../../../styles/commonStyles'
@@ -35,6 +34,7 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 	const [pendingSaveToast, setPendingSaveToast] = useState<string | null>(null)
 	const [selectedAppointmentType, setSelectedAppointmentType] = useState<'clinic' | 'video'>('clinic')
 	const [toggleRefreshing, setToggleRefreshing] = useState(false)
+
 
 	const formatDateForApi = (date: Date) => {
 		const year = date.getFullYear()
@@ -242,86 +242,36 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 		}
 	}
 
+
+
 	return (
 		<Box sx={{ ...customCardStyle }}>
 			<Typography variant="h4" sx={{ fontWeight: 700, mb: 3, color: 'text.primary' }}>
 				Availability
 			</Typography>
 
-			<Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary', mb: 1.5, fontSize: '13px' }}>
-				Choose Hospital
-			</Typography>
-			<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 3 }}>
-				{hospitals.length === 0 ? (
-					<Typography variant="caption" sx={{ color: 'text.disabled' }}>
-						No hospitals added. Please add a hospital first.
+			{/* Hospital dropdown */}
+			{hospitals.length === 0 ? (
+				<Typography variant="caption" sx={{ color: "text.disabled" }}>
+					No hospitals added. Please add a hospital first.
+				</Typography>
+			) : (
+				<Box sx={{ mb: 3 }}>
+					<Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary', mb: 1 }}>
+						Choose Hospital
 					</Typography>
-				) : (
-					hospitals.map((hospital, index) => {
-						const isSelected = selectedHospitalId === hospital.id
-						return (
-							<Box
-								key={hospital.id}
-								onClick={() => setSelectedHospitalId(hospital.id)}
-								sx={{
-									display: 'flex',
-									alignItems: 'center',
-									gap: 2,
-									border: '1px solid',
-									borderRadius: '12px',
-									px: 2,
-									py: 1.5,
-									cursor: 'pointer',
-									borderColor: isSelected ? 'primary.main' : 'divider',
-									bgcolor: isSelected ? 'rgba(43,111,113,0.04)' : 'background.paper',
-									transition: 'all 0.15s',
-									'&:hover': { borderColor: 'primary.main' },
-								}}
-							>
-								<Box
-									sx={{
-										width: 28,
-										height: 28,
-										borderRadius: '50%',
-										flexShrink: 0,
-										bgcolor: isSelected ? 'primary.main' : 'rgba(43,111,113,0.1)',
-										display: 'flex',
-										alignItems: 'center',
-										justifyContent: 'center',
-									}}
-								>
-									<Typography
-										variant="caption"
-										sx={{
-											fontWeight: 700,
-											fontSize: '12px',
-											color: isSelected ? '#fff' : 'primary.main',
-										}}
-									>
-										{index + 1}
-									</Typography>
-								</Box>
-								<Box sx={{ flex: 1 }}>
-									<Typography
-										variant="body2"
-										sx={{ fontWeight: 600, color: 'text.primary', fontSize: '13.5px' }}
-									>
-										{hospital.name}
-									</Typography>
-									<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '11.5px' }}>
-										{hospital.fullAddress}
-									</Typography>
-								</Box>
-								{isSelected ? (
-									<RadioButtonCheckedIcon sx={{ color: 'primary.main', fontSize: 22 }} />
-								) : (
-									<RadioButtonUncheckedIcon sx={{ color: 'text.disabled', fontSize: 22 }} />
-								)}
-							</Box>
-						)
-					})
-				)}
-			</Box>
+				<AppSelect
+					value={selectedHospitalId}
+					onChange={(e) => setSelectedHospitalId(e.target.value as string)}
+					options={hospitals.map((h) => ({ value: h.id, label: h.name }))}
+					size="small"
+					sx={{
+						'& .MuiOutlinedInput-root': { borderRadius: '10px' },
+					}}
+				/>
+				</Box>
+			)}
+
 			<Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: -4 }}>
 				<AppButton
 					label="Today"

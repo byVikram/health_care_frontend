@@ -1,4 +1,4 @@
-// src/features/doctor/DoctorDetailPage.tsx
+﻿// src/features/doctor/DoctorDetailPage.tsx
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Box, Container, Typography, Divider, Grid, Card } from '@mui/material'
@@ -33,6 +33,7 @@ export default function DoctorDetailPage() {
 	const [bookingSuccessModal, setBookingSuccessModal] = useState(false)
 	const [consentOpen, setConsentOpen] = useState(false)
 	const [pendingBooking, setPendingBooking] = useState(false)
+	
 
 
 	const [doctorDetail, setDoctorDetail] = useState<DoctorDetailData | null>(null)
@@ -52,12 +53,6 @@ export default function DoctorDetailPage() {
 	const [authContactNumber, setAuthContactNumber] = useState('')
 	const { accessToken } = useAuth()
 
-
-
-
-
-
-
 	const closeAuthModal = () => {
 		setAuthModalOpen(false)
 		setAuthModalView('login')
@@ -74,8 +69,10 @@ export default function DoctorDetailPage() {
 		setAuthModalView('login')
 		setAuthContactNumber('')
 		// After login, open consent form automatically
-		setPendingBooking(false)
-		setConsentOpen(true)
+		if (pendingBooking) {
+    		setConsentOpen(true)
+    		setPendingBooking(false)
+  		}
 	}
 
 	const primaryHospital =

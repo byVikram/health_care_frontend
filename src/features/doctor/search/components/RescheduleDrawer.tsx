@@ -1,8 +1,7 @@
 import { Drawer, Box, Typography, IconButton } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
-import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked'
-import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 import AppButton from '../../../../components/common/Button/AppButton'
+import AppSelect from '../../../../components/common/Select/AppSelect'
 import DateSlotPicker, { SlotGroup } from '../../../../components/common/DateSlotPicker/DateSlotPicker'
 import { Appointment } from '../../../../types/appointment'
 import { DoctorDetailHospital } from '../../../../types/doctor-detail'
@@ -64,7 +63,17 @@ export default function RescheduleDrawer({
 			}}
 		>
 			{/* Header */}
-			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+			<Box
+				sx={{
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'space-between',
+					px: 3,
+					py: 2,
+					borderBottom: '1px solid',
+					borderColor: 'divider',
+				}}
+			>
 				<Box>
 					<Typography sx={{ fontWeight: 700, fontSize: '16px', color: 'text.primary' }}>
 						Reschedule Appointment
@@ -84,60 +93,15 @@ export default function RescheduleDrawer({
 					<Typography sx={{ fontWeight: 600, fontSize: '14px', mb: 1, color: 'text.primary' }}>
 						Choose Hospital
 					</Typography>
-					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-						{rescheduleHospitals.map((h, i) => {
-							const isSelected = rescheduleHospitalId === h.hospital.id
-							return (
-								<Box
-									key={h.id}
-									onClick={() => setRescheduleHospitalId(h.hospital.id)}
-									sx={{
-										display: 'flex',
-										alignItems: 'center',
-										gap: 1.5,
-										p: 1.5,
-										borderRadius: '8px',
-										border: '1px solid',
-										borderColor: isSelected ? 'primary.main' : 'divider',
-										bgcolor: isSelected ? 'rgba(79, 209, 197, 0.05)' : 'background.paper',
-										cursor: 'pointer',
-									}}
-								>
-									<Box
-										sx={{
-											width: 26,
-											height: 26,
-											bgcolor: isSelected ? '#3d7b7b' : '#0c7c7c',
-											color: '#fff',
-											borderRadius: '50% 50% 50% 0',
-											transform: 'rotate(-45deg)',
-											display: 'flex',
-											alignItems: 'center',
-											justifyContent: 'center',
-											flexShrink: 0,
-										}}
-									>
-										<Typography sx={{ transform: 'rotate(45deg)', fontSize: '12px', fontWeight: 600 }}>
-											{i + 1}
-										</Typography>
-									</Box>
-									<Box sx={{ flex: 1 }}>
-										<Typography sx={{ fontSize: '14px', fontWeight: 600, color: 'text.primary' }}>
-											{h.hospital.name}
-										</Typography>
-										<Typography sx={{ fontSize: '11px', color: 'text.secondary', mt: 0.2 }}>
-											{h.hospital.address}
-										</Typography>
-									</Box>
-									{isSelected ? (
-										<RadioButtonCheckedIcon sx={{ color: '#3d7b7b', fontSize: 20 }} />
-									) : (
-										<RadioButtonUncheckedIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
-									)}
-								</Box>
-							)
-						})}
-					</Box>
+					<AppSelect
+						value={rescheduleHospitalId}
+						onChange={(e) => setRescheduleHospitalId(e.target.value as string)}
+						options={rescheduleHospitals.map((h) => ({ value: h.hospital.id, label: h.hospital.name }))}
+						size="small"
+						sx={{
+							'& .MuiOutlinedInput-root': { borderRadius: '10px' },
+						}}
+					/>
 				</Box>
 
 				<DateSlotPicker

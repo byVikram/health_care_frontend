@@ -1,159 +1,195 @@
-﻿import { Box, Typography, Chip, Stack, Paper } from '@mui/material'
+import { Box, Typography, Chip, Stack, Paper, CircularProgress } from '@mui/material'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
-// import PersonIcon from '@mui/icons-material/Person'
-import StarIcon from '@mui/icons-material/Star'
 import VideocamIcon from '@mui/icons-material/Videocam'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
-// import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-// import MoreVertIcon from '@mui/icons-material/MoreVert'
+import { useEffect, useState } from 'react'
+import { getAppointments, getDoctorAvailability, getDoctorById } from '../doctor/doctorService'
+import { Appointment } from '../../types/appointment'
 import drImage from '../../assets/Services/doctors-service.png'
+import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
+import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
+import { DoctorDetailHospital } from '../../types/doctor-detail'
+import ApiService from '../../services/apiService'
+import { API_ENDPOINTS } from '../../constants/apiUrls'
+import { toast } from 'react-toastify'
+import AppModal from '../../components/common/Modal/AppModal'
+import AppButton from '../../components/common/Button/AppButton'
+import AppInput from '../../components/common/Input/AppInput'
+import { customScrollbar } from '../../styles/commonStyles'
 
-interface Appointment {
-	id: number
-	doctor: {
-		name: string
-		specialty: string
-		rating: number
-		imageUrl: string
-		qualification: string
-	}
-	appointment: {
-		date: string
-		time: string
-		dateTime: string
-		duration: number
-		type: 'In-person' | 'Virtual'
-		status: 'confirmed' | 'pending' | 'cancelled' | 'completed'
-		statusText: string
-		statusColor: string
-		statusBgColor: string
-	}
-	location: {
-		clinic: string
-		address: string
-		meetingLink?: string
-	}
-	actions: {
-		canReschedule: boolean
-		canCancel: boolean
-		canJoin: boolean
-	}
+
+const STATUS_STYLES: Record<string, { color: string; bgColor: string; text: string }> = {
+	confirmed: { color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)', text: 'Confirmed' },
+	pending: { color: '#f59e0b', bgColor: 'rgba(245, 158, 11, 0.1)', text: 'Pending' },
+	cancelled: { color: '#ef4444', bgColor: 'rgba(239, 68, 68, 0.1)', text: 'Cancelled' },
+	completed: { color: '#6366f1', bgColor: 'rgba(99, 102, 241, 0.1)', text: 'Completed' },
+	rescheduled: { color: '#8b5cf6', bgColor: 'rgba(139, 92, 246, 0.1)', text: 'Rescheduled' },
 }
 
-const appointmentsData: Appointment[] = [
-	{
-		id: 1,
-		doctor: {
-			name: 'Dr. Ashika Rao',
-			specialty: 'Dental Consultation',
-			rating: 4.9,
-			imageUrl: drImage,
-			qualification: 'BDS, MDS',
-		},
-		appointment: {
-			date: 'Mon, 26 July',
-			time: '02:30 PM',
-			dateTime: '2024-07-26T14:30:00',
-			duration: 30,
-			type: 'In-person',
-			status: 'confirmed',
-			statusText: 'Confirmed',
-			statusColor: '#10b981',
-			statusBgColor: 'rgba(16, 185, 129, 0.1)',
-		},
-		location: {
-			clinic: 'City Dental Care',
-			address: '123 Healthcare Ave, Downtown',
-		},
-		actions: {
-			canReschedule: true,
-			canCancel: true,
-			canJoin: false,
-		},
-	},
-	{
-		id: 2,
-		doctor: {
-			name: 'Dr. Ramesh Kumar',
-			specialty: 'Cardiology Consultation',
-			rating: 4.7,
-			imageUrl: drImage,
-			qualification: 'MD, DM Cardiology',
-		},
-		appointment: {
-			date: 'Wed, 28 July',
-			time: '10:00 AM',
-			dateTime: '2024-07-28T10:00:00',
-			duration: 45,
-			type: 'Virtual',
-			status: 'pending',
-			statusText: 'Pending',
-			statusColor: '#f59e0b',
-			statusBgColor: 'rgba(245, 158, 11, 0.1)',
-		},
-		location: {
-			clinic: 'Heart Care Center',
-			address: '456 Medical Plaza, Westside',
-			meetingLink: 'https://meet.example.com/dr-ramesh',
-		},
-		actions: {
-			canReschedule: true,
-			canCancel: true,
-			canJoin: true,
-		},
-	},
-	{
-		id: 3,
-		doctor: {
-			name: 'Dr. Priya Nair',
-			specialty: 'Pediatric Consultation',
-			rating: 4.8,
-			imageUrl: drImage,
-			qualification: 'MBBS, MD Pediatrics',
-		},
-		appointment: {
-			date: 'Fri, 30 July',
-			time: '11:00 AM',
-			dateTime: '2024-07-30T11:00:00',
-			duration: 30,
-			type: 'In-person',
-			status: 'confirmed',
-			statusText: 'Confirmed',
-			statusColor: '#10b981',
-			statusBgColor: 'rgba(16, 185, 129, 0.1)',
-		},
-		location: {
-			clinic: 'Little Stars Clinic',
-			address: '789 Child Care Lane, Uptown',
-		},
-		actions: {
-			canReschedule: true,
-			canCancel: true,
-			canJoin: false,
-		},
-	},
-]
+const getStatusStyle = (status: string) =>
+	STATUS_STYLES[status?.toLowerCase()] ?? { color: '#64748b', bgColor: '#f1f5f9', text: status }
+
+const formatDate = (dateStr: string) => {
+	const d = new Date(dateStr)
+	return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long' })
+}
+
+const formatTime = (timeStr: string) => {
+	const [h, m] = timeStr.split(':').map(Number)
+	const suffix = h >= 12 ? 'PM' : 'AM'
+	const hour = h > 12 ? h - 12 : h === 0 ? 12 : h
+	return `${String(hour).padStart(2, '0')}:${String(m).padStart(2, '0')} ${suffix}`
+}
 
 export function PatientAppointments() {
-	const handleReschedule = (appointment: Appointment) => {
-		console.log('Reschedule appointment:', appointment)
-		alert(`Reschedule appointment with ${appointment.doctor.name}`)
+	const [appointments, setAppointments] = useState<Appointment[]>([])
+	const [loading, setLoading] = useState(true)
+	const [error, setError] = useState('')
+	const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({})
+
+	const [cancelOpen, setCancelOpen] = useState(false)
+	const [cancelAppt, setCancelAppt] = useState<Appointment | null>(null)
+	const [cancelReason, setCancelReason] = useState('')
+
+	const [rescheduleOpen, setRescheduleOpen] = useState(false)
+	const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null)
+	const [rescheduleDate, setRescheduleDate] = useState<Date>(new Date())
+	const [rescheduleTime, setRescheduleTime] = useState('')
+	const [rescheduleSlots, setRescheduleSlots] = useState<SlotGroup[]>([])
+	const [rescheduleSlotsLoading, setRescheduleSlotsLoading] = useState(false)
+	const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false)
+	const [rescheduleHospitals, setRescheduleHospitals] = useState<DoctorDetailHospital[]>([])
+	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
+
+	useEffect(() => {
+		const fetchData = async () => {
+			try {
+				setLoading(true)
+				setError('')
+				const res = await getAppointments({ limit: 10 })
+				if (res.success) {
+					setAppointments(Array.isArray(res.data) ? res.data : [])
+				} else {
+					setError(res.message ?? 'Failed to load appointments')
+				}
+			} catch {
+				setError('Failed to load appointments')
+			} finally {
+				setLoading(false)
+			}
+		}
+
+		fetchData()
+	}, [])
+
+	useEffect(() => {
+		if (!rescheduleAppt || !rescheduleOpen) return
+
+		const fetchDoctorHospitals = async () => {
+			if (rescheduleAppt.doctor?.id) {
+				try {
+					const res = await getDoctorById(rescheduleAppt.doctor.id)
+					if (res.success && res.data) {
+						setRescheduleHospitals(res.data.hospitals)
+					}
+				} catch {
+					console.log('Failed to fetch doctor hospitals')
+				}
+			}
+		}
+
+		fetchDoctorHospitals()
+	}, [rescheduleAppt, rescheduleOpen])
+
+	useEffect(() => {
+		if (!rescheduleOpen || !rescheduleAppt) return
+
+		const doctorId = rescheduleAppt.doctor?.id
+		const hospitalId = rescheduleHospitalId || rescheduleAppt.hospital?.id
+
+		if (!doctorId || !hospitalId) return
+
+		const dateStr = rescheduleDate.toISOString().split('T')[0]
+
+		const fetchSlots = async () => {
+			setRescheduleSlotsLoading(true)
+			setRescheduleSlots([])
+			setRescheduleTime('')
+			try {
+				const responseData = await getDoctorAvailability({
+					doctor_id: doctorId,
+					hospital_id: hospitalId,
+					date: dateStr,
+				})
+				let processedData: SlotGroup[] = []
+				if (Array.isArray(responseData)) {
+					processedData = responseData as SlotGroup[]
+				} else if (responseData && Array.isArray((responseData as { data: SlotGroup[] }).data)) {
+					processedData = (responseData as { data: SlotGroup[] }).data
+				}
+				setRescheduleSlots(processedData)
+			} catch {
+				toast.error('Could not load available slots.')
+			} finally {
+				setRescheduleSlotsLoading(false)
+			}
+		}
+
+		fetchSlots()
+	}, [rescheduleDate, rescheduleOpen, rescheduleAppt, rescheduleHospitalId])
+
+	const statusOf = (appt: Appointment) =>
+		localStatuses[appt.id] ||
+		(typeof appt.status === 'string' ? appt.status : ((appt.status as { label: string })?.label ?? 'pending'))
+
+	const handleOpenReschedule = (appt: Appointment) => {
+		setRescheduleAppt(appt)
+		setRescheduleHospitalId(appt.hospital?.id ?? '')
+		setRescheduleDate(new Date())
+		setRescheduleTime('')
+		setRescheduleSlots([])
+		setRescheduleHospitals([])
+		setRescheduleOpen(true)
 	}
 
-	const handleCancel = (appointment: Appointment) => {
-		console.log('Cancel appointment:', appointment)
-		alert(`Cancel appointment with ${appointment.doctor.name}`)
-	}
+	const handleRescheduleConfirm = async () => {
+		if (!rescheduleAppt || !rescheduleTime) {
+			toast.warning('Please select a time slot before confirming.')
+			return
+		}
 
-	const handleJoin = (appointment: Appointment) => {
-		console.log('Join meeting:', appointment.location.meetingLink)
-		window.open(appointment.location.meetingLink, '_blank')
+		setRescheduleSubmitting(true)
+		try {
+			const dateStr = rescheduleDate.toISOString().split('T')[0]
+			const res = await ApiService.post<{ success: boolean; message: string }>(
+				`${API_ENDPOINTS.APPOINTMENTS.RESCHEDULE}`,
+				{
+					appointment_id: rescheduleAppt.id,
+					appointment_date: dateStr,
+					start_time: rescheduleTime,
+					end_time: null,
+					hospital_id: rescheduleHospitalId || rescheduleAppt.hospital?.id,
+					reason: 'Patient requested reschedule',
+				}
+			)
+
+			if (res.data?.success) {
+				toast.success(res.data.message || 'Appointment rescheduled!')
+				setLocalStatuses((prev) => ({ ...prev, [rescheduleAppt.id]: 'rescheduled' }))
+				setRescheduleOpen(false)
+			} else {
+				toast.error(res.data?.message || 'Reschedule failed. Please try again.')
+			}
+		} catch {
+			toast.error('Something went wrong. Please try again.')
+		} finally {
+			setRescheduleSubmitting(false)
+		}
 	}
 
 	return (
 		<Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-			{/* Compact Header */}
 			<Box sx={{ mb: 2, flexShrink: 0 }}>
 				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
 					<Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.25rem', color: 'text.primary' }}>
@@ -161,7 +197,7 @@ export function PatientAppointments() {
 					</Typography>
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
 						<Chip
-							label={`${appointmentsData.length}`}
+							label={appointments.length}
 							size="small"
 							sx={{
 								bgcolor: '#0c7c7c',
@@ -171,10 +207,7 @@ export function PatientAppointments() {
 								height: '24px',
 							}}
 						/>
-						<Typography
-							sx={{ fontSize: '12px', color: '#0c7c7c', fontWeight: 500, cursor: 'pointer' }}
-							onClick={() => alert('View all appointments')}
-						>
+						<Typography sx={{ fontSize: '12px', color: '#0c7c7c', fontWeight: 500, cursor: 'pointer' }}>
 							See All
 						</Typography>
 					</Box>
@@ -184,241 +217,308 @@ export function PatientAppointments() {
 				</Typography>
 			</Box>
 
-			{/* Scrollable Appointments List */}
-			<Box sx={{ flex: 1, overflowY: 'auto', pr: 0.5 }}>
-				<Stack spacing={1.5}>
-					{appointmentsData.map((appointment) => (
-						<Paper
-							key={appointment.id}
-							elevation={0}
-							sx={{
-								borderRadius: '16px',
-								bgcolor: '#ffffff',
-								border: '1px solid',
-								borderColor: appointment.appointment.status === 'cancelled' ? '#fee2e2' : '#f0f2f5',
-								transition: 'all 0.2s ease',
-								cursor: 'pointer',
-								'&:hover': {
-									borderColor: '#0c7c7c',
-									boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-								},
-							}}
-						>
-							{/* Status Indicator */}
-							{appointment.appointment.status !== 'cancelled' && (
-								<Box
+			<Box sx={{ flex: 1, overflowY: 'auto', pr: 0.5 , ...customScrollbar}}>
+				{loading && (
+					<Box sx={{ display: 'flex', justifyContent: 'center', pt: 4 }}>
+						<CircularProgress size={28} sx={{ color: '#0c7c7c' }} />
+					</Box>
+				)}
+				{!loading && error && (
+					<Typography sx={{ color: 'error.main', fontSize: '13px', textAlign: 'center', pt: 3 }}>
+						{error}
+					</Typography>
+				)}
+				{!loading && !error && appointments.length === 0 && (
+					<Typography sx={{ color: 'text.secondary', fontSize: '13px', textAlign: 'center', pt: 3 }}>
+						No upcoming appointments.
+					</Typography>
+				)}
+				{!loading && !error && appointments.length > 0 && (
+					<Stack spacing={1.5}>
+						{appointments.map((appt) => {
+							const status = statusOf(appt)
+							const style = getStatusStyle(status)
+							const isVirtual = appt.appointment_mode === 'online'
+							const canJoin = isVirtual && status === 'confirmed'
+							const canAct = status !== 'cancelled' && status !== 'completed'
+
+							return (
+								<Paper
+									key={appt.id}
+									elevation={0}
 									sx={{
-										height: '3px',
-										bgcolor: appointment.appointment.statusColor,
-										borderTopLeftRadius: '16px',
-										borderTopRightRadius: '16px',
+										borderRadius: '16px',
+										bgcolor: '#ffffff',
+										border: '1px solid',
+										borderColor: status === 'cancelled' ? '#fee2e2' : '#f0f2f5',
+										transition: 'all 0.2s ease',
+										cursor: 'pointer',
+										'&:hover': { borderColor: '#0c7c7c', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
 									}}
-								/>
-							)}
-
-							<Box sx={{ p: 1.5 }}>
-								{/* Row 1: Doctor & Status */}
-								<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-									<Box
-										sx={{
-											width: 48,
-											height: 48,
-											borderRadius: '50%',
-											overflow: 'hidden',
-											border: '2px solid',
-											borderColor: appointment.appointment.statusColor,
-											flexShrink: 0,
-										}}
-									>
-										<Box
-											component="img"
-											src={appointment.doctor.imageUrl}
-											alt={appointment.doctor.name}
-											sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-										/>
-									</Box>
-
-									<Box sx={{ flex: 1 }}>
+								>
+									{status !== 'cancelled' && (
 										<Box
 											sx={{
-												display: 'flex',
-												alignItems: 'center',
-												justifyContent: 'space-between',
-												mb: 0.25,
+												height: '3px',
+												bgcolor: style.color,
+												borderTopLeftRadius: '16px',
+												borderTopRightRadius: '16px',
 											}}
-										>
-											<Typography
-												sx={{ fontWeight: 700, fontSize: '14px', color: 'text.primary' }}
-											>
-												{appointment.doctor.name}
-											</Typography>
-											<Chip
-												label={appointment.appointment.statusText}
-												size="small"
+										/>
+									)}
+									<Box sx={{ p: 1.5 }}>
+										<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+											<Box
 												sx={{
-													bgcolor: appointment.appointment.statusBgColor,
-													color: appointment.appointment.statusColor,
-													fontWeight: 600,
-													fontSize: '10px',
-													height: '22px',
-													borderRadius: '8px',
+													width: 48,
+													height: 48,
+													borderRadius: '50%',
+													overflow: 'hidden',
+													border: '2px solid',
+													borderColor: style.color,
+													flexShrink: 0,
 												}}
-											/>
-										</Box>
-										<Typography sx={{ fontSize: '11px', color: 'text.secondary', mb: 0.5 }}>
-											{appointment.doctor.specialty}
-										</Typography>
-										<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-											<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-												<StarIcon sx={{ color: '#fbbf24', fontSize: '12px' }} />
-												<Typography
-													sx={{ fontWeight: 600, fontSize: '11px', color: 'text.primary' }}
+											>
+												<Box
+													component="img"
+													src={drImage}
+													alt={appt.doctor.name}
+													sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+												/>
+											</Box>
+											<Box sx={{ flex: 1 }}>
+												<Box
+													sx={{
+														display: 'flex',
+														alignItems: 'center',
+														justifyContent: 'space-between',
+														mb: 0.25,
+													}}
 												>
-													{appointment.doctor.rating}
+													<Typography
+														sx={{
+															fontWeight: 700,
+															fontSize: '14px',
+															color: 'text.primary',
+														}}
+													>
+														{appt.doctor.name}
+													</Typography>
+													<Chip
+														label={style.text}
+														size="small"
+														sx={{
+															bgcolor: style.bgColor,
+															color: style.color,
+															fontWeight: 600,
+															fontSize: '10px',
+															height: '22px',
+															borderRadius: '8px',
+														}}
+													/>
+												</Box>
+												<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
+													Consultation
 												</Typography>
 											</Box>
-											<Typography sx={{ fontSize: '10px', color: 'text.secondary' }}>
-												• {appointment.doctor.qualification}
-											</Typography>
 										</Box>
-									</Box>
-								</Box>
 
-								{/* Row 2: Date & Time */}
-								<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1, flexWrap: 'wrap' }}>
-									<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-										<CalendarTodayIcon sx={{ color: 'text.secondary', fontSize: '12px' }} />
-										<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-											{appointment.appointment.date}
-										</Typography>
-									</Box>
-									<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-										<AccessTimeIcon sx={{ color: 'text.secondary', fontSize: '12px' }} />
-										<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-											{appointment.appointment.time}
-										</Typography>
-									</Box>
-									<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-										{appointment.appointment.type === 'Virtual' ? (
-											<VideocamIcon sx={{ color: 'text.secondary', fontSize: '12px' }} />
-										) : (
-											<LocationOnIcon sx={{ color: 'text.secondary', fontSize: '12px' }} />
+										<Box
+											sx={{
+												display: 'flex',
+												alignItems: 'center',
+												gap: 1.5,
+												mb: 1,
+												flexWrap: 'wrap',
+											}}
+										>
+											<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+												<CalendarTodayIcon sx={{ color: 'text.secondary', fontSize: '12px' }} />
+												<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
+													{formatDate(appt.appointment_date)}
+												</Typography>
+											</Box>
+											<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+												<AccessTimeIcon sx={{ color: 'text.secondary', fontSize: '12px' }} />
+												<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
+													{formatTime(appt.start_time)}
+												</Typography>
+											</Box>
+											<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+												{isVirtual ? (
+													<VideocamIcon sx={{ color: 'text.secondary', fontSize: '12px' }} />
+												) : (
+													<LocationOnIcon
+														sx={{ color: 'text.secondary', fontSize: '12px' }}
+													/>
+												)}
+												<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
+													{isVirtual ? 'Virtual' : 'In-person'}
+												</Typography>
+											</Box>
+										</Box>
+
+										{appt.hospital && (
+											<Box sx={{ mb: 1.5, p: 0.75, bgcolor: '#f8fafc', borderRadius: '8px' }}>
+												<Typography
+													sx={{
+														fontSize: '10px',
+														color: 'text.secondary',
+														display: 'flex',
+														alignItems: 'center',
+														gap: 0.5,
+													}}
+												>
+													<LocationOnIcon sx={{ fontSize: '10px' }} />
+													{appt.hospital.name} | {appt.hospital.address?.split(',')[0]}
+												</Typography>
+											</Box>
 										)}
-										<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-											{appointment.appointment.type}
-										</Typography>
+
+										{canAct && (
+											<Box sx={{ display: 'flex', gap: 1 }}>
+												{canJoin && (
+													<Box
+														component="button"
+														type="button"
+														sx={{
+															flex: 1,
+															background:
+																'linear-gradient(135deg, #0f4c4c 0%, #0c7c7c 100%)',
+															border: 'none',
+															borderRadius: '10px',
+															py: 0.75,
+															display: 'flex',
+															alignItems: 'center',
+															justifyContent: 'center',
+															gap: 0.5,
+															cursor: 'pointer',
+															transition: 'all 0.2s ease',
+															'&:hover': {
+																transform: 'translateY(-1px)',
+																boxShadow: '0 4px 8px rgba(12,124,124,0.2)',
+															},
+														}}
+													>
+														<VideocamIcon sx={{ fontSize: '12px', color: '#fff' }} />
+														<Typography
+															sx={{ fontWeight: 600, fontSize: '11px', color: '#fff' }}
+														>
+															Join
+														</Typography>
+													</Box>
+												)}
+												<Box
+													component="button"
+													type="button"
+													onClick={() => handleOpenReschedule(appt)}
+													sx={{
+														flex: 1,
+														bgcolor: '#fff',
+														border: '1px solid #e2e8f0',
+														borderRadius: '10px',
+														py: 0.75,
+														display: 'flex',
+														alignItems: 'center',
+														justifyContent: 'center',
+														cursor: 'pointer',
+														transition: 'all 0.2s ease',
+														'&:hover': { bgcolor: '#f8fafc', borderColor: '#0c7c7c' },
+													}}
+												>
+													<Typography
+														sx={{
+															fontWeight: 500,
+															fontSize: '11px',
+															color: 'text.primary',
+														}}
+													>
+														Reschedule
+													</Typography>
+												</Box>
+												<Box
+													component="button"
+													type="button"
+													onClick={() => {
+														setCancelAppt(appt)
+														setCancelOpen(true)
+													}}
+													sx={{
+														flex: 1,
+														bgcolor: '#fff',
+														border: '1px solid #fee2e2',
+														borderRadius: '10px',
+														py: 0.75,
+														display: 'flex',
+														alignItems: 'center',
+														justifyContent: 'center',
+														cursor: 'pointer',
+														transition: 'all 0.2s ease',
+														'&:hover': { bgcolor: '#fef2f2', borderColor: '#ef4444' },
+													}}
+												>
+													<Typography
+														sx={{ fontWeight: 500, fontSize: '11px', color: '#ef4444' }}
+													>
+														Cancel
+													</Typography>
+												</Box>
+											</Box>
+										)}
 									</Box>
-								</Box>
-
-								{/* Row 3: Location/Clinic (Compact) */}
-								<Box sx={{ mb: 1.5, p: 0.75, bgcolor: '#f8fafc', borderRadius: '8px' }}>
-									<Typography
-										sx={{
-											fontSize: '10px',
-											color: 'text.secondary',
-											display: 'flex',
-											alignItems: 'center',
-											gap: 0.5,
-										}}
-									>
-										<LocationOnIcon sx={{ fontSize: '10px' }} />
-										{appointment.location.clinic} • {appointment.location.address.split(',')[0]}
-									</Typography>
-								</Box>
-
-								{/* Row 4: Action Buttons (Compact) */}
-								<Box sx={{ display: 'flex', gap: 1 }}>
-									{appointment.actions.canJoin && (
-										<Box
-											component="button"
-											onClick={() => handleJoin(appointment)}
-											sx={{
-												flex: 1,
-												background: 'linear-gradient(135deg, #0f4c4c 0%, #0c7c7c 100%)',
-												border: 'none',
-												borderRadius: '10px',
-												py: 0.75,
-												display: 'flex',
-												alignItems: 'center',
-												justifyContent: 'center',
-												gap: 0.5,
-												cursor: 'pointer',
-												transition: 'all 0.2s ease',
-												'&:hover': {
-													transform: 'translateY(-1px)',
-													boxShadow: '0 4px 8px rgba(12, 124, 124, 0.2)',
-												},
-											}}
-										>
-											<VideocamIcon sx={{ fontSize: '12px', color: '#fff' }} />
-											<Typography sx={{ fontWeight: 600, fontSize: '11px', color: '#fff' }}>
-												Join
-											</Typography>
-										</Box>
-									)}
-
-									{appointment.actions.canReschedule && (
-										<Box
-											component="button"
-											onClick={() => handleReschedule(appointment)}
-											sx={{
-												flex: 1,
-												bgcolor: '#fff',
-												border: '1px solid #e2e8f0',
-												borderRadius: '10px',
-												py: 0.75,
-												display: 'flex',
-												alignItems: 'center',
-												justifyContent: 'center',
-												gap: 0.5,
-												cursor: 'pointer',
-												transition: 'all 0.2s ease',
-												'&:hover': {
-													bgcolor: '#f8fafc',
-													borderColor: '#0c7c7c',
-												},
-											}}
-										>
-											<Typography
-												sx={{ fontWeight: 500, fontSize: '11px', color: 'text.primary' }}
-											>
-												Reschedule
-											</Typography>
-										</Box>
-									)}
-
-									{appointment.actions.canCancel && (
-										<Box
-											component="button"
-											onClick={() => handleCancel(appointment)}
-											sx={{
-												flex: 1,
-												bgcolor: '#fff',
-												border: '1px solid #fee2e2',
-												borderRadius: '10px',
-												py: 0.75,
-												display: 'flex',
-												alignItems: 'center',
-												justifyContent: 'center',
-												cursor: 'pointer',
-												transition: 'all 0.2s ease',
-												'&:hover': {
-													bgcolor: '#fef2f2',
-													borderColor: '#ef4444',
-												},
-											}}
-										>
-											<Typography sx={{ fontWeight: 500, fontSize: '11px', color: '#ef4444' }}>
-												Cancel
-											</Typography>
-										</Box>
-									)}
-								</Box>
-							</Box>
-						</Paper>
-					))}
-				</Stack>
+								</Paper>
+							)
+						})}
+					</Stack>
+				)}
 			</Box>
+
+			<RescheduleDrawer
+				rescheduleOpen={rescheduleOpen}
+				setRescheduleOpen={setRescheduleOpen}
+				rescheduleAppt={rescheduleAppt}
+				rescheduleDate={rescheduleDate}
+				setRescheduleDate={setRescheduleDate}
+				rescheduleTime={rescheduleTime}
+				setRescheduleTime={setRescheduleTime}
+				rescheduleSlots={rescheduleSlots}
+				rescheduleSlotsLoading={rescheduleSlotsLoading}
+				rescheduleSubmitting={rescheduleSubmitting}
+				handleRescheduleConfirm={handleRescheduleConfirm}
+				rescheduleHospitals={rescheduleHospitals}
+				rescheduleHospitalId={rescheduleHospitalId}
+				setRescheduleHospitalId={setRescheduleHospitalId}
+			/>
+			<AppModal open={cancelOpen} onClose={() => setCancelOpen(false)} title="Reason for Cancelling the Appointment">
+				<AppInput
+					label="Reason"
+					value={cancelReason}
+					onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+						setCancelReason(e.target.value)
+						}
+					multiline
+					rows={3}
+					fullWidth
+				/>
+
+				{/* Buttons */}
+				<Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
+					<AppButton label="Skip for Now" variant="outlined" onClick={() => setCancelOpen(false)} />
+
+					<AppButton
+						label="Submit"
+						onClick={() => {
+							console.log('Cancel reason:', cancelReason, cancelAppt)
+
+							// 👉 later API call here
+
+							setCancelOpen(false)
+							setCancelReason('')
+						}}
+						disabled={!cancelReason.trim()}
+					/>
+				</Box>
+			</AppModal>
 		</Box>
 	)
 }
