@@ -19,7 +19,10 @@ export const ROUTES = {
 	TEST: '/test',
 	TEST_REGISTER: '/test-register',
 
+	ROLE_SELECT: '/role-select',
 	ONBOARDING: '/onboarding',
+
+	PAYMENT: '/payment',
 
 	PORTAL: {
 		HOME: '/portal',

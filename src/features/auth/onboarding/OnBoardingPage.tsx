@@ -1,6 +1,6 @@
 // features/auth/onboarding/OnBoardingPage.tsx
 import { useState } from 'react'
-import { Box, Typography} from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight'
 import { onboardingData, UserRole } from '../../../data/onboardingData'
@@ -8,10 +8,11 @@ import AppButton from '../../../components/common/Button/AppButton'
 
 interface Props {
 	role: UserRole
-	onFinish: () => void
+	roleId: number          // DB id from user_role table
+	onFinish: (roleId: number) => void
 }
 
-export default function OnBoardingScreens({ role, onFinish }: Props) {
+export default function OnBoardingScreens({ role, roleId, onFinish }: Props) {
 	const slides = onboardingData[role].screens
 	const [currentIndex, setCurrentIndex] = useState(0)
 
@@ -20,11 +21,8 @@ export default function OnBoardingScreens({ role, onFinish }: Props) {
 	const isFirst = currentIndex === 0
 
 	const handleNext = () => {
-		if (isLast) {
-			onFinish()
-		} else {
-			setCurrentIndex((prev) => prev + 1)
-		}
+		if (isLast) onFinish(roleId)
+		else setCurrentIndex((prev) => prev + 1)
 	}
 
 	const handleBack = () => {
@@ -44,16 +42,12 @@ export default function OnBoardingScreens({ role, onFinish }: Props) {
 				py: 4,
 			}}
 		>
-			{/* Invisible card container */}
 			<Box
 				sx={{
 					width: '100%',
 					maxWidth: 600,
 					minHeight: 580,
 					bgcolor: 'transparent',
-					borderRadius: 0,
-					backdropFilter: 'none',
-					border: 'none',
 					display: 'flex',
 					flexDirection: 'column',
 					alignItems: 'center',
@@ -63,7 +57,7 @@ export default function OnBoardingScreens({ role, onFinish }: Props) {
 					gap: 4,
 				}}
 			>
-				{/* Top bar — Back left, Skip >> right */}
+				{/* Top bar */}
 				<Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 					<ArrowBackIcon
 						onClick={!isFirst ? handleBack : undefined}
@@ -73,35 +67,27 @@ export default function OnBoardingScreens({ role, onFinish }: Props) {
 							opacity: isFirst ? 0.3 : 1,
 							fontSize: 28,
 							transition: 'transform 0.2s ease',
-							'&:hover': {
-								transform: isFirst ? 'none' : 'scale(1.1)',
-							},
+							'&:hover': { transform: isFirst ? 'none' : 'scale(1.1)' },
 						}}
 					/>
-
-					{/* Skip with double-chevron — plain text, no background */}
 					<AppButton
-						onClick={onFinish}
+						onClick={() => onFinish(roleId)}
+						label="Skip"
 						endIcon={<KeyboardDoubleArrowRightIcon sx={{ fontSize: '1.2rem !important' }} />}
 						disableRipple
 						sx={{
 							color: '#fff',
 							fontWeight: 500,
 							textTransform: 'none',
-							fontSize: '1.5rem',
+							fontSize: '1rem',
 							bgcolor: 'transparent',
 							border: 'none',
 							p: 0,
 							minWidth: 0,
-							letterSpacing: 0.3,
-							'&:hover': {
-								bgcolor: 'transparent',
-								opacity: 0.8,
-							},
+							boxShadow: 'none',
+							'&:hover': { bgcolor: 'transparent', opacity: 0.8 },
 						}}
-					>
-						Skip
-					</AppButton>
+					/>
 				</Box>
 
 				{/* Image */}
@@ -150,6 +136,7 @@ export default function OnBoardingScreens({ role, onFinish }: Props) {
 				<AppButton
 					fullWidth
 					onClick={handleNext}
+					label={isLast ? 'Get Started' : 'Next'}
 					sx={{
 						bgcolor: '#fff',
 						color: '#1a4f4f',
@@ -158,13 +145,9 @@ export default function OnBoardingScreens({ role, onFinish }: Props) {
 						py: 1.5,
 						borderRadius: 2,
 						textTransform: 'none',
-						'&:hover': {
-							bgcolor: '#f0fafa',
-						},
+						'&:hover': { bgcolor: '#f0fafa' },
 					}}
-				>
-					{isLast ? 'Get Started' : 'Next'}
-				</AppButton>
+				/>
 			</Box>
 		</Box>
 	)

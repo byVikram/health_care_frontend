@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { SpecialitiesResponse } from '../types/speciality'
 import { AppointmentStatus } from '../types/appointment'
+import { UserRole as OnboardingUserRole } from '../data/onboardingData'
 
 export type UserRole = 'doctor' | 'patient'
 
@@ -15,7 +16,6 @@ export interface AuthUser {
 	showQr?: boolean
 }
 
-// Matches backend GET /api/lookup -> data.hospitals[]
 export interface LookupHospital {
 	id: string
 	label: string
@@ -36,9 +36,6 @@ export interface AuthState {
 	lookupData: LookupData | null
 }
 
-// ---------------------------------------------------------------------------
-// Read snapshot from localStorage (pure, no React)
-// ---------------------------------------------------------------------------
 function readAuthSnapshot(): AuthState {
 	try {
 		const role = localStorage.getItem('role') as UserRole | null
@@ -54,20 +51,15 @@ function readAuthSnapshot(): AuthState {
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Reactive hook - re-renders when auth changes
-// ---------------------------------------------------------------------------
 export function useAuth(): AuthState {
 	const [auth, setAuth_] = useState<AuthState>(readAuthSnapshot)
 
 	useEffect(() => {
-		// Listen for storage events from OTHER tabs
 		const onStorage = (e: StorageEvent) => {
 			if (['role', 'user', 'access_token', 'refresh_token', 'lookup'].includes(e.key ?? '')) {
 				setAuth_(readAuthSnapshot())
 			}
 		}
-		// Listen for our own custom event (same tab)
 		const onAuthChange = () => setAuth_(readAuthSnapshot())
 
 		window.addEventListener('storage', onStorage)
@@ -81,9 +73,6 @@ export function useAuth(): AuthState {
 	return auth
 }
 
-// ---------------------------------------------------------------------------
-// setAuth - stores to localStorage then fires event so useAuth hooks update
-// ---------------------------------------------------------------------------
 export function setAuth(
 	role: UserRole,
 	user: AuthUser,
@@ -98,7 +87,6 @@ export function setAuth(
 	if (lookupData != null) {
 		localStorage.setItem('lookup', JSON.stringify(lookupData))
 	}
-	// Notify all useAuth() hooks in this tab to re-read
 	window.dispatchEvent(new Event('auth-changed'))
 }
 
@@ -113,4 +101,74 @@ export function clearAuth(): void {
 
 export function getAccessToken(): string | null {
 	return localStorage.getItem('access_token')
+}
+
+// ---------------------------------------------------------------------------
+// DB ids from the user_role table
+//   1 = patient | 2 = doctor | 3 = laboratory | 4 = pharmacy | 5 = radiology
+// ---------------------------------------------------------------------------
+const ROLE_ID_MAP: Record<OnboardingUserRole, number> = {
+	PATIENT:    1,
+	LABORATORY: 3,
+	PHARMACIST: 4,
+	RADIOLOGY:  5,
+}
+
+export interface OnboardingFlow {
+	selectedRole:           OnboardingUserRole | null
+	selectedRoleId:         number | null
+	onboardingStep:         'roleSelect' | 'onboarding' | 'register'
+	handleRoleSelect:       (role: OnboardingUserRole) => void
+	handleOnboardingFinish: (roleId: number) => void
+	goToRegister:           () => void
+}
+
+// ---------------------------------------------------------------------------
+// useOnboardingFlow
+//
+// Holds all state and logic for the signup journey:
+//   RoleSelectorPage -> OnBoardingPage -> RegisterPage
+//
+// Moved here from AppRoutes so AppRoutes only defines URL routes.
+// AppRoutes imports this hook and uses what it returns.
+// ---------------------------------------------------------------------------
+export function useOnboardingFlow(): OnboardingFlow {
+	// Which role the user picked from RoleSelectorPage (e.g. 'PATIENT')
+	const [selectedRole, setSelectedRole] = useState<OnboardingUserRole | null>(null)
+
+	// The matching DB id for that role (e.g. 1 for PATIENT)
+	const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)
+
+	// Which screen to show right now:
+	//   'roleSelect' -> RoleSelectorPage  (default starting point)
+	//   'onboarding' -> OnBoardingPage slides
+	//   'register'   -> RegisterPage
+	const [onboardingStep, setOnboardingStep] = useState<'roleSelect' | 'onboarding' | 'register'>('roleSelect')
+
+	// Called when user taps a role card in RoleSelectorPage
+	const handleRoleSelect = (role: OnboardingUserRole) => {
+		if (role === 'RADIOLOGY') return
+		const roleId = ROLE_ID_MAP[role]
+		setSelectedRole(role)
+		setSelectedRoleId(roleId)
+		setOnboardingStep('onboarding')
+	}
+
+	// Called when user clicks "Get Started" or "Skip" in OnBoardingPage
+	const handleOnboardingFinish = (roleId: number) => {
+		setSelectedRoleId(roleId)
+		setOnboardingStep('register')
+	}
+
+	// Called from WelcomePage onContinue - jumps straight to register
+	const goToRegister = () => setOnboardingStep('register')
+
+	return {
+		selectedRole,
+		selectedRoleId,
+		onboardingStep,
+		handleRoleSelect,
+		handleOnboardingFinish,
+		goToRegister,
+	}
 }

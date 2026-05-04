@@ -1,33 +1,23 @@
 // features/auth/components/RegisterForm.tsx
 import AppInput from '../../../components/common/Input/AppInput'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Box, Button, Typography } from '@mui/material'
 import Grid from '@mui/material/Grid'
-import AppSelect from '../../../components/common/Select/AppSelect'
-import { createUser, getRoles } from '../authService'
+import { createUser } from '../authService'
 import axios from 'axios'
-
-type Role = {
-	value: string
-	label: string
-}
-
-type RoleId = {
-	id: string
-	label: string
-}
 
 interface RegisterFormProps {
 	onSubmit: (mobile: string) => void
 	mode?: 'page' | 'modal'
 	onSwitchToLogin?: () => void
+	roleId?: number | null   // Pre-selected DB role id from user_role table
 }
 
-export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin }: RegisterFormProps) {
-	const [registerAs, setRegisterAs] = useState('')
+export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin, roleId }: RegisterFormProps) {
+	// Pre-select the role if roleId was passed in from the onboarding flow
+	const [registerAs, setRegisterAs] = useState(roleId != null ? String(roleId) : '')
 	const navigate = useNavigate()
-	// const isMobile = useMediaQuery('(max-width: 600px)') // ← true on phone, false on desktop
 
 	const handleSwitchToLogin = () => {
 		if (onSwitchToLogin) {
@@ -37,47 +27,21 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin 
 		navigate('/login')
 	}
 	const [loading, setLoading] = useState(false)
-	const [roles, setRoles] = useState<Role[]>([])
 	const [formError, setFormError] = useState('')
 	const [mobileError, setMobileError] = useState('')
-	const [roleError, setRoleError] = useState('')
 	const [nameError, setNameError] = useState('')
 	const [emailError, setEmailError] = useState('')
 	const [name, setName] = useState('')
 	const [email, setEmail] = useState('')
 	const [mobile, setMobile] = useState('')
 
-	useEffect(() => {
-		setLoading(true)
-		const fetchSpecialities = async () => {
-			try {
-				const res = await getRoles()
-				const rawData = Array.isArray(res.data) ? res.data : [res.data]
-				const formattedRoles = rawData.map((role: RoleId) => ({
-					value: role.id,
-					label: role.label,
-				}))
-				setRoles(formattedRoles)
-			} catch (err) {
-				console.log(err)
-			} finally {
-				setLoading(false)
-			}
-		}
-		fetchSpecialities()
-	}, [])
 
 	const handleRegister = async () => {
 		setFormError('')
 		setMobileError('')
-		setRoleError('')
 		setNameError('')
 		setEmailError('')
 
-		if (!registerAs) {
-			setRoleError('Role is required')
-			return
-		}
 		if (!name.trim()) {
 			setNameError('Name is required')
 			return
@@ -127,6 +91,7 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin 
 		}
 	}
 
+
 	const formFields = (
 		<>
 			{mode === 'page' && (
@@ -135,21 +100,6 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin 
 				</Typography>
 			)}
 
-			<AppSelect
-				label="Role"
-				value={registerAs}
-				options={roles}
-				disabled={loading}
-				placeholder="Select a role"
-				onChange={(e) => {
-					setRegisterAs(e.target.value)
-					if (roleError) setRoleError('')
-					if (formError) setFormError('')
-				}}
-				error={!!roleError}
-				helperText={roleError}
-				sx={{ mt: 1 }}
-			/>
 
 			<AppInput
 				sx={{ mt: 2 }}
@@ -235,13 +185,13 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin 
 	}
 
 
-	// ════════════════════════════════════════════════════════════════════════════
-	// DESKTOP layout — original Box version, 50/50 side-by-side
+	// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+	// DESKTOP layout â€” original Box version, 50/50 side-by-side
 	// Shown when screen width > 600px  (unchanged from original)
-	// ════════════════════════════════════════════════════════════════════════════
+	// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 	return (
 		<Grid container sx={{ height: { xs: '50vh', md: '100vh' } }} size={{ xs: 12, md: 6 }}>
-			{/* Left Side — teal */}
+			{/* Left Side â€” teal */}
 			<Box
 				sx={{
 					width: '50%',
@@ -270,11 +220,11 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin 
 				/>
 
 				<Typography sx={{ color: 'white', fontSize: '12px' }}>
-					© 2025 Whisper ai. All rights reserved.
+					Â© 2025 Whisper ai. All rights reserved.
 				</Typography>
 			</Box>
 
-			{/* Right Side — white form */}
+			{/* Right Side â€” white form */}
 			<Box
 				sx={{
 					width: '50%',
@@ -291,4 +241,3 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin 
 		</Grid>
 	)
 }
-

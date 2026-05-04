@@ -5,7 +5,6 @@ import { Appointment } from '../../types/appointment'
 
 
 import { DoctorAppointments } from '../doctor/DoctorAppointments'
-// import { PatientAppointments } from '../patient/patient/PatientAppointments'
 import { useAuth } from '../../hooks/useAuth'
 
 import drImage from '../../assets/Banner/banner.png'
@@ -13,7 +12,6 @@ import adImage from '../../assets/blog-and-community/ad-image.png'
 import AnswerQuestionsSection from '../dashboard/AnswerQuestionsSection'
 import videoImage from '../../assets/blog-and-community/video-image.png';
 import DashboardCarousel from '../../components/common/Carousel/DashboardCarousel'
-// import DoctorNavBar from '../../components/common/Navbar/DoctorNavBar'
 import { LookupHospital } from '../../hooks/useAuth'
 
 
@@ -22,10 +20,6 @@ import PharmacyIcon from '../../assets/quick-services/pharmacy.svg'
 import RadiologyIcon from '../../assets/quick-services/radiology.svg'
 import AncilaryIcon from '../../assets/quick-services/ancilary.svg'
 import LabIcon from '../../assets/quick-services/lab.svg'
-import AmbulanceIcon from '../../assets/quick-services/ambulance.svg'
-import BloodBankIcon from '../../assets/quick-services/blood-bank.svg'
-import IcuIcon from '../../assets/quick-services/icu.svg'
-import EmergencyIcon from '../../assets/quick-services/emergency.svg'
 
 import { PatientAppointments } from '../patient/PatientAppointments'
 import { USER_ROLES } from '../../constants/constants'
@@ -55,6 +49,14 @@ const stats = [
 	{ label: 'New Patients', value: '06', color: '#2B982B' },
 	{ label: 'Follow up Patients', value: '03', color: '#EA7F06' },
 	{ label: 'Emergency Patients', value: '01', color: '#DE3B40' },
+]
+
+const quickServices = [
+	{ title: 'Appointment', image: AppointmentsIcon },
+	{ title: 'Pharmacy', image: PharmacyIcon },
+	{ title: 'Laboratory', image: LabIcon },
+	{ title: 'Radiology', image: RadiologyIcon },
+	{ title: 'Ancillary', image: AncilaryIcon },
 ]
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -132,185 +134,78 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 				<Grid container spacing={3} alignItems="stretch">
 					{/* LEFT */}
 					<Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+						{/* Doctor welcome banner */}
 						{role === USER_ROLES.DOCTOR && (
-							<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
+							<Box
+								sx={{
+									background: 'linear-gradient(135deg, #0f4c4c, #0c7c7c)',
+									borderRadius: '8px',
+									px: 2.5,
+									py: 2,
+									display: 'flex',
+									alignItems: 'center',
+									gap: 2,
+								}}
+							>
 								<Box
+									component="img"
+									src={user?.avatar || drImage}
+									alt="Doctor"
 									sx={{
-										background: 'linear-gradient(135deg, #0f4c4c, #0c7c7c)',
+										width: 85,
+										height: 85,
 										borderRadius: '8px',
-										px: 2.5,
-										py: 2,
-										display: 'flex',
-										alignItems: 'center',
-										gap: 2,
+										objectFit: 'cover',
+										flexShrink: 0,
 									}}
-								>
-									<Box
-										component="img"
-										src={user?.avatar || drImage}
-										alt="Dr. Ashika Rao"
-										sx={{
-											width: 85,
-											height: 85,
-											borderRadius: '8px',
-											objectFit: 'cover',
-											flexShrink: 0,
-										}}
-									/>
-									<Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
-										<Box
-											sx={{
-												display: 'flex',
-												alignItems: 'center',
-												justifyContent: 'space-between',
-											}}
-										>
-											<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-												<Typography
-													sx={{ color: '#4fd1c5', fontSize: '16px', fontWeight: 500 }}
-												>
-													Welcome
-												</Typography>
-
-												<Typography
-													sx={{ color: '#fff', fontWeight: 600, fontSize: '16px' }}
-												>
-													{user?.name}
-												</Typography>
-											</Box>
-											{/* <Box
-												sx={{?
-													bgcolor: 'rgba(255,255,255,0.15)',
-													borderRadius: '8px',
-													px: 1.5,
-													py: 0.4,
+								/>
+								<Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+									<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+										<Typography sx={{ color: '#4fd1c5', fontSize: '16px', fontWeight: 500 }}>
+											Welcome
+										</Typography>
+										<Typography sx={{ color: '#fff', fontWeight: 600, fontSize: '16px' }}>
+											{user?.name}
+										</Typography>
+									</Box>
+									<Box sx={{ display: 'flex', gap: 1 }}>
+										{stats.map((stat, i) => (
+											<Box
+												key={i}
+												sx={{
+													flex: 1,
+													bgcolor: '#fff',
+													borderRadius: '4px',
+													px: 1,
+													py: 0.6,
+													display: 'flex',
+													alignItems: 'center',
+													justifyContent: 'space-between',
+													gap: 0.5,
 												}}
 											>
-												<Typography sx={{ color: '#fff', fontSize: '11px', fontWeight: 600 }}>
-													ID: 143265
-												</Typography>
-											</Box> */}
-										</Box>
-										<Box sx={{ display: 'flex', gap: 1 }}>
-											{stats.map((stat, i) => (
-												<Box
-													key={i}
-													sx={{
-														flex: 1,
-														bgcolor: '#fff',
-														borderRadius: '4px',
-														px: 1,
-														py: 0.6,
-														display: 'flex',
-														alignItems: 'center',
-														justifyContent: 'space-between',
-														gap: 0.5,
-													}}
+												<Typography
+													sx={{ color: 'text.secondary', fontSize: '9px', lineHeight: 1.3 }}
 												>
-													<Typography
-														sx={{
-															color: 'text.secondary',
-															fontSize: '9px',
-															lineHeight: 1.3,
-														}}
-													>
-														{stat.label}
-													</Typography>
-													<Typography
-														sx={{
-															color: stat.color,
-															fontWeight: 700,
-															fontSize: '20px',
-															lineHeight: 1,
-														}}
-													>
-														{stat.value}
-													</Typography>
-												</Box>
-											))}
-										</Box>
+													{stat.label}
+												</Typography>
+												<Typography
+													sx={{ color: stat.color, fontWeight: 700, fontSize: '20px', lineHeight: 1 }}
+												>
+													{stat.value}
+												</Typography>
+											</Box>
+										))}
 									</Box>
 								</Box>
 							</Box>
 						)}
 
-						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%', flex: 1 }}>
-							{/* Video + Right Services row */}
-							<Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-								{/* Video Image Carousel */}
-								<Box sx={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
-									<DashboardCarousel images={[videoImage, videoImage, videoImage, videoImage]} />
-								</Box>
-								{/* TODO:  */}
+						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
 
-								{/* Right vertical services: Emergency, Ambulance, Blood Bank, ICU */}
-								<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 1 }}>
-									{[
-										{ title: 'Emergency', image: EmergencyIcon },
-										{ title: 'Ambulance', image: AmbulanceIcon },
-										{ title: 'Blood Bank', image: BloodBankIcon },
-										{ title: 'ICU', image: IcuIcon },
-									].map((s) => (
-										<Box
-											key={s.title}
-											sx={{
-												display: 'flex',
-												flexDirection: 'column',
-												alignItems: 'center',
-												gap: 0.5,
-												cursor: 'pointer',
-												minWidth: 80,
-												pb: 1,
-												borderBottom: '1px solid #e0e0e0',
-												'&:last-child': { borderBottom: 'none' },
-												'&:hover img': { transform: 'translateY(-2px)' },
-											}}
-										>
-											<Box
-												component="img"
-												src={s.image}
-												alt={s.title}
-												sx={{
-													width: 32,
-													height: 32,
-													objectFit: 'contain',
-													transition: 'transform 0.2s ease',
-												}}
-											/>
-											<Typography
-												sx={{
-													fontSize: '12px',
-													fontWeight: 600,
-													color: 'text.primary',
-													textAlign: 'center',
-												}}
-											>
-												{s.title}
-											</Typography>
-										</Box>
-									))}
-								</Box>
-							</Box>
-
-							{/* Bottom 5 horizontal service icons */}
-							<Box
-								sx={{
-									display: 'flex',
-									justifyContent: 'space-between',
-									alignItems: 'center',
-									pt: 1,
-									'& > :last-child': {
-										mr: 1.8,
-									},
-								}}
-							>
-								{[
-									{ title: 'Appointment', image: AppointmentsIcon },
-									{ title: 'Pharmacy', image: PharmacyIcon },
-									{ title: 'Laboratory', image: LabIcon },
-									{ title: 'Radiology', image: RadiologyIcon },
-									{ title: 'Ancillary', image: AncilaryIcon },
-								].map((s) => (
+							{/* 1. Quick service icons — ABOVE the carousel */}
+							<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+								{quickServices.map((s) => (
 									<Box
 										key={s.title}
 										sx={{
@@ -319,6 +214,7 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 											alignItems: 'center',
 											gap: 0.8,
 											cursor: 'pointer',
+											flex: 1,
 											'&:hover img': { transform: 'translateY(-3px)' },
 										}}
 									>
@@ -327,19 +223,14 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 											src={s.image}
 											alt={s.title}
 											sx={{
-												width: 32,
-												height: 32,
+												width: 40,
+												height: 40,
 												objectFit: 'contain',
 												transition: 'transform 0.2s ease',
 											}}
 										/>
 										<Typography
-											sx={{
-												fontSize: '12px',
-												fontWeight: 600,
-												color: 'text.primary',
-												textAlign: 'center',
-											}}
+											sx={{ fontSize: '11px', fontWeight: 600, color: 'text.primary', textAlign: 'center' }}
 										>
 											{s.title}
 										</Typography>
@@ -347,7 +238,12 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 								))}
 							</Box>
 
-							{/* Ad Slider */}
+							{/* 2. Video carousel — BELOW the service icons */}
+							<Box sx={{ borderRadius: '16px', overflow: 'hidden', minWidth: 0 }}>
+								<DashboardCarousel images={[videoImage, videoImage, videoImage, videoImage]} />
+							</Box>
+
+							{/* 3. Ad slider at the bottom */}
 							<Box
 								sx={{
 									bgcolor: '#fff',
@@ -355,7 +251,6 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 									overflow: 'hidden',
 									flex: 1,
 									maxHeight: '400px',
-									mt: 2,
 								}}
 							>
 								<Box
@@ -419,10 +314,3 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 		</Box>
 	)
 }
-
-
-
-
-
-
-

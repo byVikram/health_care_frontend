@@ -1,9 +1,9 @@
 // src/features/doctor/components/DoctorProfileCard.tsx
 import { useState } from 'react'
 import { customCardStyle } from '../../../../styles/commonStyles'
-import { Box, Typography, Avatar, Chip, Divider, IconButton, Snackbar, Tooltip } from '@mui/material'
+import { Box, Typography, Avatar, Divider, IconButton, Snackbar, Tooltip } from '@mui/material'
 import { LuMapPin } from 'react-icons/lu'
-import { BsBriefcase, BsPatchCheckFill, BsCalendarCheck } from 'react-icons/bs'
+import { BsBriefcase, BsCalendarCheck } from 'react-icons/bs'
 
 
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'

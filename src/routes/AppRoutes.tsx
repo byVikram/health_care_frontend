@@ -1,13 +1,13 @@
 // src/routes/AppRoutes.tsx
-import {Routes, Route, Outlet, useNavigate } from 'react-router-dom'
+import { Routes, Route, Outlet } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
 import LoginPage from '../features/auth/LoginPage'
 import RegisterPage from '../features/auth/RegisterPage'
 import DashboardPage from '../features/dashboard/DashboardPage'
 import DoctorDetailPage from '../features/doctor/detail/DoctorDetailPage'
 import DoctorSearchPage from '../features/doctor/search/DoctorSearchPage'
+import PaymentPage from '../features/appointments/PaymentPage'
 import ProfilePage from '../features/profile/ProfilePage'
-
 import NotFoundPage from '../components/common/NotFoundPage'
 import MainLayout from '../components/layout/MainLayout'
 import SidebarLayout from '../components/layout/SidebarLayout'
@@ -20,6 +20,8 @@ import TestPage from '../features/auth/test/TestPage'
 import { ROUTES } from '../constants/routes'
 import TestRegister from '../features/auth/test/TestRegister'
 import OnBoardingPage from '../features/auth/onboarding/OnBoardingPage'
+import RoleSelectorPage from '../features/auth/onboarding/RoleSelectorPage'
+import { useOnboardingFlow } from '../hooks/useAuth'
 
 function ProtectedLayout() {
 	return (
@@ -47,7 +49,15 @@ function LoogedInNavbarLayout() {
 
 export default function AppRoutes() {
 	const isAuthenticated = true
-	const navigate = useNavigate()
+
+	const {
+		selectedRole,
+		selectedRoleId,
+		onboardingStep,
+		handleRoleSelect,
+		handleOnboardingFinish,
+		goToRegister,
+	} = useOnboardingFlow()
 
 	return (
 		<Routes>
@@ -58,17 +68,42 @@ export default function AppRoutes() {
 			<Route path={ROUTES.PUBLIC.ACCOUNT} element={<AccountPage />} />
 			<Route
 				path={ROUTES.PUBLIC.WELCOME_DOCTOR}
-				element={<WelcomePage onContinue={() => navigate(ROUTES.PORTAL.PROFILE)} />}
+				element={<WelcomePage onContinue={goToRegister} />}
 			/>
 
-			{/* Onboarding */}
+			{/* Role selector entry point */}
+			<Route
+				path={ROUTES.ROLE_SELECT}
+				element={
+					onboardingStep === 'onboarding' && selectedRole ? (
+						<OnBoardingPage
+							role={selectedRole}
+							roleId={selectedRoleId!}
+							onFinish={handleOnboardingFinish}
+						/>
+					) : onboardingStep === 'register' ? (
+						<RegisterPage roleId={selectedRoleId} />
+					) : (
+						<RoleSelectorPage onSelectRole={handleRoleSelect} />
+					)
+				}
+			/>
+
+			{/* Onboarding route */}
 			<Route
 				path={ROUTES.ONBOARDING}
 				element={
-					<OnBoardingPage
-						role="PATIENT"
-						onFinish={() => navigate(ROUTES.AUTH.REGISTER)}
-					/>
+					onboardingStep === 'register' ? (
+						<RegisterPage roleId={selectedRoleId} />
+					) : selectedRole ? (
+						<OnBoardingPage
+							role={selectedRole}
+							roleId={selectedRoleId!}
+							onFinish={handleOnboardingFinish}
+						/>
+					) : (
+						<RoleSelectorPage onSelectRole={handleRoleSelect} />
+					)
 				}
 			/>
 
@@ -78,6 +113,7 @@ export default function AppRoutes() {
 					<Route path={ROUTES.ROOT} element={<DashboardPage />} />
 					<Route path={ROUTES.DOCTORS.DETAIL} element={<DoctorDetailPage />} />
 					<Route path={ROUTES.DOCTORS.SEARCH} element={<DoctorSearchPage />} />
+				<Route path={ROUTES.PAYMENT} element={<PaymentPage />} />
 					<Route path={ROUTES.TEST} element={<TestPage />} />
 				</Route>
 			</Route>

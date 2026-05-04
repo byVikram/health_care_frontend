@@ -39,6 +39,9 @@ export interface Appointment {
 	doctor: AppointmentDoctor
 	patient: AppointmentPatient | null
 	hospital: AppointmentHospital | null
+	symptoms?: string | null
+	duration?: string | null
+	severity?: 'mild' | 'moderate' | 'severe' | null
 }
 
 export interface AppointmentsResponse {

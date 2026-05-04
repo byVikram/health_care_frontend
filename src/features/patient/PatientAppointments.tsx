@@ -1,12 +1,12 @@
-﻿import { Box, Typography, Chip, Stack, IconButton, Paper } from '@mui/material'
+﻿import { Box, Typography, Chip, Stack, Paper } from '@mui/material'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
-import PersonIcon from '@mui/icons-material/Person'
+// import PersonIcon from '@mui/icons-material/Person'
 import StarIcon from '@mui/icons-material/Star'
 import VideocamIcon from '@mui/icons-material/Videocam'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import MoreVertIcon from '@mui/icons-material/MoreVert'
+// import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+// import MoreVertIcon from '@mui/icons-material/MoreVert'
 import drImage from '../../assets/Services/doctors-service.png'
 
 interface Appointment {

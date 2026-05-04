@@ -34,6 +34,7 @@ const PATIENT_PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
 	{ divider: true },
 	{ label: 'Profile', path: '/profile' },
 	{ label: 'Settings', path: '#' },
+	{ label: 'Help Line', path: '#help-line' },
 	{ divider: true },
 	{ label: 'Logout', path: '/logout', danger: true },
 ]
@@ -45,6 +46,7 @@ const DOCTOR_PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
 	{ divider: true },
 	{ label: 'Profile', path: '/profile' },
 	{ label: 'Settings', path: '#' },
+	{ label: 'Help Line', path: '#help-line' },
 	{ divider: true },
 	{ label: 'Logout', path: '/logout', danger: true },
 ]
