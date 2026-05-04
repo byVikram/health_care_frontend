@@ -1,4 +1,4 @@
-﻿import { Box, Typography, Container, Grid } from '@mui/material'
+import { Box, Typography, Container, Grid } from '@mui/material'
 import { useState, useEffect } from 'react'
 import { getAppointments } from '../doctor/doctorService'
 import { Appointment } from '../../types/appointment'
@@ -131,7 +131,7 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 		<Box sx={{ bgcolor: '#f5f7fa' }}>
 			<Container maxWidth="lg" sx={{ py: 3 }}>
 				{/* TOP 50/50: Welcome+Services | Search+Appointments */}
-				<Grid container spacing={3} alignItems="stretch">
+				<Grid container spacing={3} alignItems="flex-start">
 					{/* LEFT */}
 					<Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
 						{/* Doctor welcome banner */}
@@ -279,7 +279,7 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 						</Box>
 					</Grid>
 
-					{/* RIGHT */}
+					{/* RIGHT — fixed-height scrollable card, same bottom as left column */}
 					<Grid size={{ xs: 12, md: 6 }}>
 						{role === USER_ROLES.DOCTOR && (
 							<DoctorAppointments
@@ -294,7 +294,23 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 								setSearchQuery={setSearchQuery}
 							/>
 						)}
-						{role === USER_ROLES.PATIENT && <PatientAppointments />}
+						{role === USER_ROLES.PATIENT && (
+							<Box
+								sx={{
+									bgcolor: '#fff',
+									borderRadius: '16px',
+									border: '1px solid #f0f2f5',
+									p: 2,
+									height: '112vh',
+									display: 'flex',
+									flexDirection: 'column',
+									overflow: 'hidden',
+									boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+								}}
+							>
+								<PatientAppointments />
+							</Box>
+						)}
 					</Grid>
 				</Grid>
 

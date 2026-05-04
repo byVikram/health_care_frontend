@@ -9,7 +9,6 @@ interface AppModalProps {
 	title?: string
 	children?: ReactNode
 	actions?: ReactNode
-	// maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 	maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 	fullWidth?: boolean
 }
@@ -20,7 +19,7 @@ export default function AppModal({
 	title,
 	children,
 	actions,
-	maxWidth = 'sm',
+	maxWidth = 'xs',
 	fullWidth = true,
 }: AppModalProps) {
 	return (
@@ -29,19 +28,20 @@ export default function AppModal({
 			onClose={onClose}
 			maxWidth={maxWidth}
 			fullWidth={fullWidth}
-			PaperProps={{ sx: { borderRadius: '16px' } }}
+			PaperProps={{ sx: { borderRadius: '12px' } }}
 		>
 			<DialogTitle
 				sx={{
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'space-between',
-					pb: 1,
+					py: 1.25,
+					px: 2,
 					borderBottom: '1px solid',
 					borderColor: 'divider',
 				}}
 			>
-				<Typography variant="h5" sx={{ fontWeight: 600 }}>
+				<Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '15px' }}>
 					{title}
 				</Typography>
 				<IconButton
@@ -53,10 +53,10 @@ export default function AppModal({
 				</IconButton>
 			</DialogTitle>
 
-			<DialogContent sx={{ pt: '20px !important' }}>{children}</DialogContent>
+			<DialogContent sx={{ pt: '14px !important', px: 2, pb: 1 }}>{children}</DialogContent>
 
 			{actions && (
-				<DialogActions sx={{ px: 3, pb: 2.5, borderTop: '1px solid', borderColor: 'divider', gap: 1 }}>
+				<DialogActions sx={{ px: 2, pb: 2, borderTop: '1px solid', borderColor: 'divider', gap: 1 }}>
 					{actions}
 				</DialogActions>
 			)}

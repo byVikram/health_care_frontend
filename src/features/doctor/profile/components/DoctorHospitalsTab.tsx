@@ -670,13 +670,13 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 							size="small"
 							sx={{ width: 180 }}
 						>
-							<MenuItem value={1}>1 Hour Before</MenuItem>
-							<MenuItem value={2}>2 Hours Before</MenuItem>
-							<MenuItem value={3}>3 Hours Before</MenuItem>
-							<MenuItem value={4}>4 Hours Before</MenuItem>
-							<MenuItem value={6}>6 Hours Before</MenuItem>
-							<MenuItem value={12}>12 Hours Before</MenuItem>
-							<MenuItem value={24}>1 Day Before</MenuItem>
+							<MenuItem value={1}>1 Hour </MenuItem>
+							<MenuItem value={2}>2 Hours </MenuItem>
+							<MenuItem value={3}>3 Hours </MenuItem>
+							<MenuItem value={4}>4 Hours </MenuItem>
+							<MenuItem value={6}>6 Hours </MenuItem>
+							<MenuItem value={12}>12 Hours </MenuItem>
+							<MenuItem value={24}>1 Day </MenuItem>
 						</TextField>
 					</Box>
 				</Box>
