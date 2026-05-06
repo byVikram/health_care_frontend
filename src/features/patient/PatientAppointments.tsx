@@ -1,4 +1,4 @@
-import { Box, Typography, Chip, Stack, Paper, CircularProgress } from '@mui/material'
+﻿import { Box, Typography, Chip, Stack, Paper, CircularProgress } from '@mui/material'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import VideocamIcon from '@mui/icons-material/Videocam'
@@ -51,6 +51,8 @@ export function PatientAppointments() {
 	const [cancelOpen, setCancelOpen] = useState(false)
 	const [cancelAppt, setCancelAppt] = useState<Appointment | null>(null)
 	const [cancelReason, setCancelReason] = useState('')
+	const [cancelSubmitting, setCancelSubmitting] = useState(false)
+	const [cancelledStatusId, setCancelledStatusId] = useState('')
 
 	const [rescheduleOpen, setRescheduleOpen] = useState(false)
 	const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null)
@@ -67,12 +69,17 @@ export function PatientAppointments() {
 			try {
 				setLoading(true)
 				setError('')
-				const res = await getAppointments({ limit: 10 })
-				if (res.success) {
-					setAppointments(Array.isArray(res.data) ? res.data : [])
+				const [apptRes, statusRes] = await Promise.all([
+					getAppointments({ limit: 10 }),
+					ApiService.get<{ success: boolean; data: { id: string; label: string }[] }>(API_ENDPOINTS.APPOINTMENTS.STATUSES),
+				])
+				if (apptRes.success) {
+					setAppointments(Array.isArray(apptRes.data) ? apptRes.data : [])
 				} else {
-					setError(res.message ?? 'Failed to load appointments')
+					setError(apptRes.message ?? 'Failed to load appointments')
 				}
+				const cancelledStatus = statusRes.data?.data?.find((s) => s.label === 'cancelled')
+				if (cancelledStatus) setCancelledStatusId(cancelledStatus.id)
 			} catch {
 				setError('Failed to load appointments')
 			} finally {
@@ -507,13 +514,29 @@ export function PatientAppointments() {
 
 					<AppButton
 						label="Submit"
-						onClick={() => {
-							console.log('Cancel reason:', cancelReason, cancelAppt)
-
-							// 👉 later API call here
-
-							setCancelOpen(false)
-							setCancelReason('')
+						loading={cancelSubmitting}
+						onClick={async () => {
+							if (!cancelAppt || !cancelledStatusId) return
+							setCancelSubmitting(true)
+							try {
+								const res = await ApiService.patch<{ success: boolean; message: string }>(API_ENDPOINTS.APPOINTMENTS.UPDATE, {
+									appointment_id: cancelAppt.id,
+									status_id: cancelledStatusId,
+									reason: cancelReason,
+								})
+								if (res.data?.success) {
+									toast.success('Appointment cancelled successfully')
+									setAppointments((prev) => prev.filter((a) => a.id !== cancelAppt.id))
+									setCancelOpen(false)
+									setCancelReason('')
+								} else {
+									toast.error(res.data?.message || 'Failed to cancel appointment')
+								}
+							} catch {
+								toast.error('Something went wrong. Please try again.')
+							} finally {
+								setCancelSubmitting(false)
+							}
 						}}
 						disabled={!cancelReason.trim()}
 					/>
