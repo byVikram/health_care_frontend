@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Box, Container, Typography, Divider, Grid, Card } from '@mui/material'
 import DoctorProfileCard from './components/DoctorProfileCard'
-import HospitalSelector from './components/HospitalSelector'
+import AppSelect from '../../../components/common/Select/AppSelect'
 // import AppointmentTypeSelector from './components/AppointmentTypeSelector'
 import AppButton from '../../../components/common/Button/AppButton'
 import DateSlotPicker, { SlotGroup, TimeSlot } from '../../../components/common/DateSlotPicker/DateSlotPicker'
@@ -298,12 +298,12 @@ export default function DoctorDetailPage() {
 												{primaryHospital?.working_hours || 'Not available'}
 											</Typography>
 										</Box>
-										<Box sx={{ ...customCardStyle, p: 3 }}>
-											<HospitalSelector
-												hospitals={doctorDetail.hospitals}
-												selected={selectedHospital}
-												onChange={setSelectedHospital}
-											/>
+							<Box sx={{ ...customCardStyle, p: 3, minHeight: '280px' }}>
+
+
+
+
+
 										</Box>
 										{/* <Box sx={{ ...customCardStyle, p: 3 }}>
 											<AppointmentTypeSelector
@@ -331,6 +331,19 @@ export default function DoctorDetailPage() {
 								gap: 3,
 							}}
 						>
+
+							<Box>
+								<Typography variant="h6" sx={{ mb: 1, fontWeight: 600, fontSize: '16px', color: 'text.primary' }}>
+									Choose Hospital
+								</Typography>
+								<AppSelect
+									value={selectedHospital}
+									onChange={(e) => setSelectedHospital(e.target.value as string)}
+									options={(doctorDetail?.hospitals ?? []).map((h) => ({ value: h.hospital.id, label: h.hospital.name }))}
+									size="small"
+									sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+								/>
+							</Box>
 							<DateSlotPicker
 								selectedDate={selectedDate}
 								onDateChange={setSelectedDate}

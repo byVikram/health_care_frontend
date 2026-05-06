@@ -9,7 +9,7 @@ import { Appointment } from '../../types/appointment'
 import drImage from '../../assets/Services/doctors-service.png'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
-import { DoctorDetailHospital } from '../../types/doctor-detail'
+import { LookupHospital } from '../../hooks/useAuth'
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { toast } from 'react-toastify'
@@ -61,8 +61,11 @@ export function PatientAppointments() {
 	const [rescheduleSlots, setRescheduleSlots] = useState<SlotGroup[]>([])
 	const [rescheduleSlotsLoading, setRescheduleSlotsLoading] = useState(false)
 	const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false)
-	const [rescheduleHospitals, setRescheduleHospitals] = useState<DoctorDetailHospital[]>([])
+	const [rescheduleHospitals, setRescheduleHospitals] = useState<LookupHospital[]>([])
 	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
+
+	const [appointmentType, setAppointmentType] =
+	useState<'clinic' | 'video'>('clinic')
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -98,7 +101,7 @@ export function PatientAppointments() {
 				try {
 					const res = await getDoctorById(rescheduleAppt.doctor.id)
 					if (res.success && res.data) {
-						setRescheduleHospitals(res.data.hospitals)
+						setRescheduleHospitals(res.data.hospitals.map((h) => ({ id: h.hospital.id, label: h.hospital.name })))
 					}
 				} catch {
 					console.log('Failed to fetch doctor hospitals')
@@ -495,6 +498,8 @@ export function PatientAppointments() {
 				rescheduleHospitals={rescheduleHospitals}
 				rescheduleHospitalId={rescheduleHospitalId}
 				setRescheduleHospitalId={setRescheduleHospitalId}
+				appointmentType={appointmentType}
+				setAppointmentType={setAppointmentType}
 			/>
 			<AppModal open={cancelOpen} onClose={() => setCancelOpen(false)} title="Reason for Cancelling the Appointment">
 				<AppInput

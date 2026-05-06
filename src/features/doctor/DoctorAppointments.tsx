@@ -1,18 +1,7 @@
-﻿import { useState, useEffect } from 'react'
-import {
-	Box,
-	Typography,
-	InputAdornment,
-	Divider,
-	Chip,
-	Popover,
-	Dialog,
-	DialogContent,
-	TextField,
-	Tooltip,
-} from '@mui/material'
-import SearchIcon from '@mui/icons-material/Search'
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
+import { useState, useEffect } from 'react'
+import {Box,Typography,InputAdornment,Divider,Chip,Popover,Dialog,DialogContent,TextField,Tooltip} from '@mui/material'
+import SearchIcon from '@mui/icons-material/Search'
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
@@ -30,12 +19,13 @@ import ReferIcon from '../../assets/icons/refer.svg'
 import { updateAppointmentsStatus } from '../../features/dashboard/dashboardService'
 import { toast } from 'react-toastify'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
+import ReferModal from './search/components/ReferModal'
 import { getDoctorAvailability } from './doctorService'
-import { DoctorDetailHospital } from '../../types/doctor-detail'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { useNavigate } from 'react-router-dom'
+import { LookupHospital, useAuth } from '../../hooks/useAuth'
 import AppButton from '../../components/common/Button/AppButton'
 import OtpForm from '../auth/components/OtpForm'
 
@@ -76,8 +66,11 @@ export function DoctorAppointments({
 	setSearchQuery: (value: string) => void
 }) {
 	const navigate = useNavigate()
+	const { lookupData } = useAuth()
 
 	const [otpModalOpen, setOtpModalOpen] = useState(false)
+	const [referModalOpen, setReferModalOpen] = useState(false)
+	const [referAnchorEl, setReferAnchorEl] = useState<HTMLElement | null>(null)
 	const [selectedAppointmentId, setSelectedAppointmentId] = useState('')
 	const [selectedPatientId, setSelectedPatientId] = useState('')
 	// Appointment action state
@@ -104,8 +97,9 @@ export function DoctorAppointments({
 	const [rescheduleSlots, setRescheduleSlots] = useState<SlotGroup[]>([])
 	const [rescheduleSlotsLoading, setRescheduleSlotsLoading] = useState(false)
 	const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false)
-	const [rescheduleHospitals, setRescheduleHospitals] = useState<DoctorDetailHospital[]>([])
+	const [rescheduleHospitals, setRescheduleHospitals] = useState<LookupHospital[]>([])
 	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
+	const [appointmentType, setAppointmentType] = useState<'clinic' | 'video'>('clinic')
 
 	// Helpers
 	const getStatusLabel = (apt: Appointment): string => {
@@ -206,11 +200,12 @@ export function DoctorAppointments({
 				setRescheduleDate(new Date())
 				setRescheduleTime('')
 				setRescheduleSlots([])
-				setRescheduleHospitals([])
+				setRescheduleHospitals(lookupData?.hospitals ?? [])
 				setRescheduleOpen(true)
 			}
 			if (action === 'refer') {
-				alert('Refer coming soon!')
+				setReferAnchorEl(anchorEl ?? null)
+				setReferModalOpen(true)
 			}
 		} catch {
 			toast.error('Something went wrong. Please try again.')
@@ -854,6 +849,18 @@ export function DoctorAppointments({
 				rescheduleHospitals={rescheduleHospitals}
 				rescheduleHospitalId={rescheduleHospitalId}
 				setRescheduleHospitalId={setRescheduleHospitalId}
+				appointmentType={appointmentType}
+				setAppointmentType={setAppointmentType}
+			/>
+
+			{/* Refer Modal */}
+			<ReferModal
+				open={referModalOpen}
+				anchorEl={referAnchorEl}
+				onClose={() => {
+					setReferModalOpen(false)
+					setReferAnchorEl(null)
+				}}
 			/>
 
 			<Dialog open={otpModalOpen} onClose={() => setOtpModalOpen(false)} maxWidth="xs" fullWidth>
@@ -875,6 +882,7 @@ export function DoctorAppointments({
 					/>
 				</DialogContent>
 			</Dialog>
+
 		</Box>
 	)
 }
