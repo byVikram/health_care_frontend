@@ -1,4 +1,4 @@
-﻿import { Box, Typography, Chip, Stack, Paper, CircularProgress } from '@mui/material'
+﻿import { Box, Typography, Chip, Stack, Paper } from '@mui/material'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import VideocamIcon from '@mui/icons-material/Videocam'
@@ -17,7 +17,7 @@ import AppModal from '../../components/common/Modal/AppModal'
 import AppButton from '../../components/common/Button/AppButton'
 import AppInput from '../../components/common/Input/AppInput'
 import { customScrollbar } from '../../styles/commonStyles'
-
+import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 
 const STATUS_STYLES: Record<string, { color: string; bgColor: string; text: string }> = {
 	confirmed: { color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)', text: 'Confirmed' },
@@ -64,8 +64,7 @@ export function PatientAppointments() {
 	const [rescheduleHospitals, setRescheduleHospitals] = useState<LookupHospital[]>([])
 	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
 
-	const [appointmentType, setAppointmentType] =
-	useState<'clinic' | 'video'>('clinic')
+	const [appointmentType, setAppointmentType] = useState<'clinic' | 'video'>('clinic')
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -74,7 +73,9 @@ export function PatientAppointments() {
 				setError('')
 				const [apptRes, statusRes] = await Promise.all([
 					getAppointments({ limit: 10 }),
-					ApiService.get<{ success: boolean; data: { id: string; label: string }[] }>(API_ENDPOINTS.APPOINTMENTS.STATUSES),
+					ApiService.get<{ success: boolean; data: { id: string; label: string }[] }>(
+						API_ENDPOINTS.APPOINTMENTS.STATUSES
+					),
 				])
 				if (apptRes.success) {
 					setAppointments(Array.isArray(apptRes.data) ? apptRes.data : [])
@@ -101,7 +102,9 @@ export function PatientAppointments() {
 				try {
 					const res = await getDoctorById(rescheduleAppt.doctor.id)
 					if (res.success && res.data) {
-						setRescheduleHospitals(res.data.hospitals.map((h) => ({ id: h.hospital.id, label: h.hospital.name })))
+						setRescheduleHospitals(
+							res.data.hospitals.map((h) => ({ id: h.hospital.id, label: h.hospital.name }))
+						)
 					}
 				} catch {
 					console.log('Failed to fetch doctor hospitals')
@@ -198,6 +201,38 @@ export function PatientAppointments() {
 		}
 	}
 
+	const handleCancelAppointment = async () => {
+		if (!cancelAppt || !cancelledStatusId) return
+
+		setCancelSubmitting(true)
+
+		try {
+			const res = await ApiService.patch<{
+				success: boolean
+				message: string
+			}>(API_ENDPOINTS.APPOINTMENTS.UPDATE, {
+				appointment_id: cancelAppt.id,
+				status_id: cancelledStatusId,
+				reason: cancelReason,
+			})
+
+			if (res.data?.success) {
+				toast.success('Appointment cancelled successfully')
+
+				setAppointments((prev) => prev.filter((a) => a.id !== cancelAppt.id))
+
+				setCancelOpen(false)
+				setCancelReason('')
+			} else {
+				toast.error(res.data?.message || 'Failed to cancel appointment')
+			}
+		} catch {
+			toast.error('Something went wrong. Please try again.')
+		} finally {
+			setCancelSubmitting(false)
+		}
+	}
+
 	return (
 		<Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 			<Box sx={{ mb: 2, flexShrink: 0 }}>
@@ -227,10 +262,12 @@ export function PatientAppointments() {
 				</Typography>
 			</Box>
 
-			<Box sx={{ flex: 1, overflowY: 'auto', pr: 0.5 , ...customScrollbar}}>
+			<Box sx={{ flex: 1, overflowY: 'auto', pr: 0.5, ...customScrollbar }}>
 				{loading && (
-					<Box sx={{ display: 'flex', justifyContent: 'center', pt: 4 }}>
-						<CircularProgress size={28} sx={{ color: '#0c7c7c' }} />
+					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+						{[1, 2, 3].map((i) => (
+							<AppSkeleton key={i} variant="rectangular" height={120} sx={{ borderRadius: '16px' }} />
+						))}
 					</Box>
 				)}
 				{!loading && error && (
@@ -501,13 +538,15 @@ export function PatientAppointments() {
 				appointmentType={appointmentType}
 				setAppointmentType={setAppointmentType}
 			/>
-			<AppModal open={cancelOpen} onClose={() => setCancelOpen(false)} title="Reason for Cancelling the Appointment">
+			<AppModal
+				open={cancelOpen}
+				onClose={() => setCancelOpen(false)}
+				title="Reason for Cancelling the Appointment"
+			>
 				<AppInput
 					label="Reason"
 					value={cancelReason}
-					onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-						setCancelReason(e.target.value)
-						}
+					onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCancelReason(e.target.value)}
 					multiline
 					rows={3}
 					fullWidth
@@ -520,29 +559,33 @@ export function PatientAppointments() {
 					<AppButton
 						label="Submit"
 						loading={cancelSubmitting}
-						onClick={async () => {
-							if (!cancelAppt || !cancelledStatusId) return
-							setCancelSubmitting(true)
-							try {
-								const res = await ApiService.patch<{ success: boolean; message: string }>(API_ENDPOINTS.APPOINTMENTS.UPDATE, {
-									appointment_id: cancelAppt.id,
-									status_id: cancelledStatusId,
-									reason: cancelReason,
-								})
-								if (res.data?.success) {
-									toast.success('Appointment cancelled successfully')
-									setAppointments((prev) => prev.filter((a) => a.id !== cancelAppt.id))
-									setCancelOpen(false)
-									setCancelReason('')
-								} else {
-									toast.error(res.data?.message || 'Failed to cancel appointment')
-								}
-							} catch {
-								toast.error('Something went wrong. Please try again.')
-							} finally {
-								setCancelSubmitting(false)
-							}
-						}}
+						onClick={handleCancelAppointment}
+						//  {
+						// 	if (!cancelAppt || !cancelledStatusId) return
+						// 	setCancelSubmitting(true)
+						// 	try {
+						// 		const res = await ApiService.patch<{ success: boolean; message: string }>(
+						// 			API_ENDPOINTS.APPOINTMENTS.UPDATE,
+						// 			{
+						// 				appointment_id: cancelAppt.id,
+						// 				status_id: cancelledStatusId,
+						// 				reason: cancelReason,
+						// 			}
+						// 		)
+						// 		if (res.data?.success) {
+						// 			toast.success('Appointment cancelled successfully')
+						// 			setAppointments((prev) => prev.filter((a) => a.id !== cancelAppt.id))
+						// 			setCancelOpen(false)
+						// 			setCancelReason('')
+						// 		} else {
+						// 			toast.error(res.data?.message || 'Failed to cancel appointment')
+						// 		}
+						// 	} catch {
+						// 		toast.error('Something went wrong. Please try again.')
+						// 	} finally {
+						// 		setCancelSubmitting(false)
+						// 	}
+						// }}
 						disabled={!cancelReason.trim()}
 					/>
 				</Box>

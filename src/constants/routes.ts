@@ -20,7 +20,7 @@ export const ROUTES = {
 	TEST_REGISTER: '/test-register',
 
 	ROLE_SELECT: '/role-select',
-	ONBOARDING: '/onboarding',
+	ONBOARDING_ROLE: '/onboarding/:roleId',
 
 	PAYMENT: '/payment',
 

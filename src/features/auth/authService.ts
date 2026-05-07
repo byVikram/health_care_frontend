@@ -38,10 +38,7 @@ export interface VerifyLookupResponse {
 export interface VerifyRolesResponse {
 	success: boolean
 	message: string
-	data: {
-		id: string
-		label: string
-	}
+	data: { id: string; label: string }[]
 }
 
 export interface CreateUserRequest {

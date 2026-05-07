@@ -1,18 +1,29 @@
 // features/auth/RegisterPage.tsx
 import { Box } from '@mui/material'
 import { useState } from 'react'
+import { useSearchParams, Navigate } from 'react-router-dom'
 import RegisterForm from './components/RegisterForm'
 import OtpForm from './components/OtpForm'
 import AccountSuccess from './components/AccountSuccess'
 import WelcomePage from './WelcomePage'
+import { ROUTES } from '../../constants/routes'
 
-interface Props {
-	roleId?: number | null   // DB id from user_role table (e.g. 1=patient, 3=laboratory, 4=pharmacy, 5=radiology)
-}
+export default function RegisterPage() {
+	const [searchParams] = useSearchParams()
 
-export default function RegisterPage({ roleId }: Props = {}) {
+	// Primary source: URL param. Fallback: localStorage saved on role select
+	const urlRoleId = searchParams.get('roleId')
+	const stored = localStorage.getItem('selected_role')
+	const storedRoleId = stored ? JSON.parse(stored).id : null
+	const roleId: string | null = urlRoleId ?? storedRoleId
+
 	const [step, setStep] = useState<'register' | 'otp' | 'verified' | 'success' | 'welcome'>('register')
 	const [contactNumber, setContactNumber] = useState('')
+
+	// Guard: must come through onboarding to reach register
+	if (!roleId) {
+		return <Navigate to={ROUTES.ROLE_SELECT} replace />
+	}
 
 	return (
 		<Box>
