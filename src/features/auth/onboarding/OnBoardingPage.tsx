@@ -24,7 +24,7 @@ export default function OnBoardingPage() {
 
 	// Navigate to register carrying the UUID roleId and onboarding key
 	const goToRegister = () => {
-		navigate(`${ROUTES.AUTH.REGISTER}?roleId=${roleId}&key=${key}`)
+		navigate(`${ROUTES.ONBOARDING_REGISTER}?roleId=${roleId}&key=${key}`)
 	}
 
 	const handleNext = () => {

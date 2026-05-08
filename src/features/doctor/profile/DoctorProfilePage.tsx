@@ -31,7 +31,7 @@ const DOCTOR_NAV_ITEMS = [
 
 function calcCompletion(doctor: DoctorProfile): number {
 	const personalFields = Object.entries(doctor.personal)
-		.filter(([key]) => !['contactVerified', 'emailVerified', 'avatar', 'languages'].includes(key))
+		.filter(([key]) => !['contactVerified', 'emailVerified', 'avatar', 'languages', 'instagram', 'facebook'].includes(key))
 		.map(([, val]) => val as string)
 	const langFilled = doctor.personal.languages?.length > 0 ? 1 : 0
 	const professionalFields = Object.values(doctor.professional) as string[]

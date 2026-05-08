@@ -1,4 +1,4 @@
-﻿import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
+import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 import { useState, useEffect } from 'react'
 import { Box, Typography, InputAdornment, Divider, Chip, Popover, Dialog, DialogContent, Tooltip } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
@@ -30,6 +30,8 @@ import AppButton from '../../components/common/Button/AppButton'
 import AppInput from '../../components/common/Input/AppInput'
 import OtpForm from '../auth/components/OtpForm'
 import { customScrollbar } from '../../styles/commonStyles'
+import completeProfileImg from '../../assets/Banner/complete-profile.png'
+import { ROUTES } from '../../constants/routes'
 
 const formatTime12h = (t?: string | null) => {
 	if (!t) return '--'
@@ -69,6 +71,18 @@ export function DoctorAppointments({
 }) {
 	const navigate = useNavigate()
 	const { lookupData } = useAuth()
+
+	// ── New-registration profile-prompt overlay ──────────────────────────────
+	const [showProfilePrompt, setShowProfilePrompt] = useState(
+		() => localStorage.getItem('show_profile_prompt') === 'true'
+	)
+
+	const handleProfilePromptContinue = () => {
+		localStorage.removeItem('show_profile_prompt')
+		setShowProfilePrompt(false)
+		navigate(ROUTES.PORTAL.PROFILE)
+	}
+	// ────────────────────────────────────────────────────────────────────────
 
 	const [otpModalOpen, setOtpModalOpen] = useState(false)
 	const [referModalOpen, setReferModalOpen] = useState(false)
@@ -254,6 +268,57 @@ export function DoctorAppointments({
 	// Render
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
+
+			{/* ── Complete-profile overlay (new registration only) ─────────────── */}
+			{showProfilePrompt && (
+				<Box
+					sx={{
+						position: 'fixed',
+						inset: 0,
+						zIndex: 1300,
+						bgcolor: 'rgba(0,0,0,0.55)',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+					}}
+				>
+					{/* No card — content floats directly over the dim overlay */}
+					<Box
+						sx={{
+							display: 'flex',
+							flexDirection: 'column',
+							alignItems: 'center',
+							textAlign: 'center',
+							maxWidth: 420,
+							width: '90%',
+						}}
+					>
+						<Box
+							component="img"
+							src={completeProfileImg}
+							alt="Complete your profile"
+							sx={{ width: 220, mb: 3, objectFit: 'contain' }}
+						/>
+						<Typography sx={{ fontWeight: 700, fontSize: '22px', color: '#fff', mb: 1 }}>
+							Please complete your profile and proceed
+						</Typography>
+						<AppButton
+							label="Continue"
+							onClick={handleProfilePromptContinue}
+							sx={{
+								mt: 3,
+								width: '100%',
+								py: 1.6,
+								fontSize: '16px',
+								fontWeight: 600,
+								borderRadius: '12px',
+							}}
+						/>
+					</Box>
+				</Box>
+			)}
+			{/* ────────────────────────────────────────────────────────────────── */}
+
 			<Box>
 				<Typography sx={{ fontWeight: 700, fontSize: '16px', color: 'text.primary', mb: 1.5 }}>
 					Search Patient

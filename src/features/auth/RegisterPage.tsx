@@ -1,15 +1,14 @@
 // features/auth/RegisterPage.tsx
 import { Box } from '@mui/material'
 import { useState } from 'react'
-import { useSearchParams, Navigate } from 'react-router-dom'
+import { useSearchParams, Navigate, useNavigate } from 'react-router-dom'
 import RegisterForm from './components/RegisterForm'
 import OtpForm from './components/OtpForm'
-import AccountSuccess from './components/AccountSuccess'
-import WelcomePage from './WelcomePage'
 import { ROUTES } from '../../constants/routes'
 
 export default function RegisterPage() {
 	const [searchParams] = useSearchParams()
+	const navigate = useNavigate()
 
 	// Primary source: URL param. Fallback: localStorage saved on role select
 	const urlRoleId = searchParams.get('roleId')
@@ -17,7 +16,7 @@ export default function RegisterPage() {
 	const storedRoleId = stored ? JSON.parse(stored).id : null
 	const roleId: string | null = urlRoleId ?? storedRoleId
 
-	const [step, setStep] = useState<'register' | 'otp' | 'verified' | 'success' | 'welcome'>('register')
+	const [step, setStep] = useState<'register' | 'otp'>('register')
 	const [contactNumber, setContactNumber] = useState('')
 
 	// Guard: must come through onboarding to reach register
@@ -36,9 +35,9 @@ export default function RegisterPage() {
 					roleId={roleId}
 				/>
 			)}
-			{step === 'otp' && <OtpForm onVerify={() => setStep('success')} contactNumber={contactNumber} />}
-			{step === 'success' && <AccountSuccess onContinue={() => setStep('welcome')} />}
-			{step === 'welcome' && <WelcomePage onContinue={() => {}} />}
+			{step === 'otp' && (
+				<OtpForm onVerify={() => navigate(ROUTES.PUBLIC.WELCOME_DOCTOR)} contactNumber={contactNumber} />
+			)}
 		</Box>
 	)
 }

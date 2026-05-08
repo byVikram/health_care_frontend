@@ -9,6 +9,8 @@ export interface DoctorProfilePersonal {
 	gender: string
 	dateOfBirth: string
 	location: string
+	instagram: string
+	facebook: string
 	avatar: string
 	experience: string
 	languages: string[]
