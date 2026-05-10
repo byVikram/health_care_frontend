@@ -8,8 +8,8 @@ import AppButton from '../../../components/common/Button/AppButton'
 
 interface Props {
 	role: UserRole
-	roleId: number          // DB id from user_role table
-	onFinish: (roleId: number) => void
+	roleId: string          // UUID from api/auth/get-roles
+	onFinish: (roleId: string) => void
 }
 
 export default function OnBoardingScreens({ role, roleId, onFinish }: Props) {
