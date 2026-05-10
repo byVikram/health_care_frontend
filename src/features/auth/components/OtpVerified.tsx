@@ -13,7 +13,7 @@ export default function OtpVerified({ isDoctor }: Props) {
 
 	const handleContinue = () => {
 		if (isDoctor) {
-			navigate(ROUTES.DOCTOR_ACCOUNT_DETAILS)
+			navigate(ROUTES.PUBLIC.WELCOME_DOCTOR)
 		} else {
 			navigate(ROUTES.PORTAL.PROFILE)
 		}

@@ -18,6 +18,7 @@ import TestPage from '../features/auth/test/TestPage'
 import { ROUTES } from '../constants/routes'
 import TestRegister from '../features/auth/test/TestRegister'
 import PortalPage from '../features/portal/PortalPage'
+import WelcomePage from '../features/auth/WelcomePage'
 
 function ProtectedLayout() {
 	return (
@@ -77,6 +78,7 @@ export default function AppRoutes() {
 
 			<Route element={<LoggedInNavbarLayout />}>
 				<Route path={ROUTES.PORTAL.HOME} element={<PortalPage />} />
+				<Route path={ROUTES.PUBLIC.WELCOME_DOCTOR} element={<WelcomePage />} />
 				<Route path={ROUTES.PORTAL.PROFILE} element={<ProfilePage />} />
 				<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
 			</Route>
