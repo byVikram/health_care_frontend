@@ -7,7 +7,6 @@ export const ROUTES = {
 	},
 
 	PUBLIC: {
-		ACCOUNT: '/account',
 		WELCOME_DOCTOR: '/welcome-doctor',
 	},
 
@@ -20,7 +19,10 @@ export const ROUTES = {
 	TEST_REGISTER: '/test-register',
 
 	ROLE_SELECT: '/role-select',
-	ONBOARDING: '/onboarding',
+	ONBOARDING_ROLE: '/onboarding/:roleId',
+	ONBOARDING_REGISTER: '/onboarding/register',
+
+	DOCTOR_ACCOUNT_DETAILS: '/doctor/account-details',
 
 	PAYMENT: '/payment',
 

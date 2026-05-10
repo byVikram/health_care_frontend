@@ -26,6 +26,7 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin,
 		}
 		navigate('/login')
 	}
+
 	const [loading, setLoading] = useState(false)
 	const [formError, setFormError] = useState('')
 	const [mobileError, setMobileError] = useState('')
@@ -34,7 +35,6 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin,
 	const [name, setName] = useState('')
 	const [email, setEmail] = useState('')
 	const [mobile, setMobile] = useState('')
-
 
 	const handleRegister = async () => {
 		setFormError('')
@@ -63,7 +63,8 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin,
 			return
 		}
 
-		const payload = { role_id: registerAs, name, email, contact_number: mobile }
+		// roleId comes from the onboarding flow (passed as prop, never changes)
+		const payload = { role_id: roleId ?? '', name, email, contact_number: mobile }
 		console.log('API Payload:', payload)
 
 		try {
@@ -91,7 +92,6 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin,
 		}
 	}
 
-
 	const formFields = (
 		<>
 			{mode === 'page' && (
@@ -99,7 +99,6 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin,
 					Register
 				</Typography>
 			)}
-
 
 			<AppInput
 				sx={{ mt: 2 }}
@@ -163,14 +162,16 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin,
 					Login
 				</span>
 			</Typography>
+
 			<Box sx={{ display: 'flex', gap: '12px' }}>
 				<Button
 					onClick={handleRegister}
 					variant="contained"
 					fullWidth
+					disabled={loading}
 					sx={{ backgroundColor: '#0d9488', '&:hover': { backgroundColor: '#0f766e' }, padding: '12px' }}
 				>
-					Register
+					{loading ? 'Registering...' : 'Register'}
 				</Button>
 			</Box>
 
@@ -184,60 +185,62 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin,
 		return <Box sx={{ width: '100%' }}>{formFields}</Box>
 	}
 
-
-	// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-	// DESKTOP layout â€” original Box version, 50/50 side-by-side
-	// Shown when screen width > 600px  (unchanged from original)
-	// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+	// DESKTOP layout — 50/50 side-by-side
 	return (
-		<Grid container sx={{ height: { xs: '50vh', md: '100vh' } }} size={{ xs: 12, md: 6 }}>
-			{/* Left Side â€” teal */}
-			<Box
-				sx={{
-					width: '50%',
-					background: '#528C91',
-					display: 'flex',
-					flexDirection: 'column',
-					alignItems: 'center',
-					justifyContent: 'space-between',
-					padding: '40px',
-				}}
-			>
-				<Box sx={{ display: 'flex', alignItems: 'center', gap: '16px', alignSelf: 'center', marginLeft: '30px' }}>
-					<img src="/src/assets/Banner/logo.png" alt="Whisper AI" style={{ width: '80px' }} />
-					<Box>
-						<Typography sx={{ color: 'white', fontWeight: 'bold', fontSize: '30px' }}>
-							Whisper ai.
-						</Typography>
-						<Typography sx={{ color: 'white', fontSize: '12px' }}>Smart Care. Simple Access</Typography>
+		<Grid container sx={{ height: { xs: '50vh', md: '100vh' } }}>
+			{/* Left Side — teal */}
+			<Grid size={{ xs: 12, md: 6 }}>
+				<Box
+					sx={{
+						width: '100%',
+						height: '100%',
+						background: '#528C91',
+						display: 'flex',
+						flexDirection: 'column',
+						alignItems: 'center',
+						justifyContent: 'space-between',
+						padding: '40px',
+					}}
+				>
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: '16px', alignSelf: 'center', marginLeft: '30px' }}>
+						<img src="/src/assets/Banner/logo.png" alt="Whisper AI" style={{ width: '80px' }} />
+						<Box>
+							<Typography sx={{ color: 'white', fontWeight: 'bold', fontSize: '30px' }}>
+								Whisper ai.
+							</Typography>
+							<Typography sx={{ color: 'white', fontSize: '12px' }}>Smart Care. Simple Access</Typography>
+						</Box>
+					</Box>
+
+					<img
+						src="/src/assets/Banner/banner.png"
+						alt="Doctor"
+						style={{ width: '70%', height: '60%', objectFit: 'contain', marginLeft: '40px', marginBottom: '30px' }}
+					/>
+
+					<Typography sx={{ color: 'white', fontSize: '12px' }}>
+						&copy; 2025 Whisper ai. All rights reserved.
+					</Typography>
+				</Box>
+			</Grid>
+
+			{/* Right Side — white form */}
+			<Grid size={{ xs: 12, md: 6 }}>
+				<Box
+					sx={{
+						width: '100%',
+						height: '100%',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						backgroundColor: '#fff',
+					}}
+				>
+					<Box sx={{ width: '380px' }}>
+						{formFields}
 					</Box>
 				</Box>
-
-				<img
-					src="/src/assets/Banner/banner.png"
-					alt="Doctor"
-					style={{ width: '70%', height: '60%', objectFit: 'contain', marginLeft: '40px', marginBottom: '30px' }}
-				/>
-
-				<Typography sx={{ color: 'white', fontSize: '12px' }}>
-					Â© 2025 Whisper ai. All rights reserved.
-				</Typography>
-			</Box>
-
-			{/* Right Side â€” white form */}
-			<Box
-				sx={{
-					width: '50%',
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					backgroundColor: '#fff',
-				}}
-			>
-				<Box sx={{ width: '380px' }}>
-					{formFields}
-				</Box>
-			</Box>
+			</Grid>
 		</Grid>
 	)
 }

@@ -47,8 +47,8 @@ const VARIANT_CONFIG: Record<
 	},
 	success: {
 		icon: <CheckCircleOutline fontSize="inherit" />,
-		iconBg: '#2e7d32',
-		confirmColor: 'success',
+		iconBg: '#2B6F71',
+		confirmColor: 'primary',
 	},
 	info: {
 		icon: <InfoOutlined fontSize="inherit" />,

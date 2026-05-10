@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Box, Typography, CircularProgress } from '@mui/material'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import { useNavigate } from 'react-router-dom'
 import pharmacyImg from '../../../assets/onboarding/pharmacy.png'
 import laboratoryImg from '../../../assets/onboarding/laboartory.png'
 import radiologyImg from '../../../assets/onboarding/radiology.png'

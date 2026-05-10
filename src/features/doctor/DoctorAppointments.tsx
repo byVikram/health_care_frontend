@@ -1,6 +1,6 @@
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 import { useState, useEffect } from 'react'
-import {Box,Typography,InputAdornment,Divider,Chip,Popover,Dialog,DialogContent,TextField,Tooltip} from '@mui/material'
+import { Box, Typography, InputAdornment, Divider, Chip, Popover, Dialog, DialogContent, Tooltip } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
@@ -19,7 +19,7 @@ import ReferIcon from '../../assets/icons/refer.svg'
 import { updateAppointmentsStatus } from '../../features/dashboard/dashboardService'
 import { toast } from 'react-toastify'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
-import ReferModal from './search/components/ReferModal'
+import DoctorFavouritesTab from './profile/components/DoctorFavouritesTab'
 import { getDoctorAvailability } from './doctorService'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 import ApiService from '../../services/apiService'
@@ -27,7 +27,11 @@ import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { useNavigate } from 'react-router-dom'
 import { LookupHospital, useAuth } from '../../hooks/useAuth'
 import AppButton from '../../components/common/Button/AppButton'
+import AppInput from '../../components/common/Input/AppInput'
 import OtpForm from '../auth/components/OtpForm'
+import { customScrollbar } from '../../styles/commonStyles'
+import completeProfileImg from '../../assets/Banner/complete-profile.png'
+import { ROUTES } from '../../constants/routes'
 
 const formatTime12h = (t?: string | null) => {
 	if (!t) return '--'
@@ -68,9 +72,20 @@ export function DoctorAppointments({
 	const navigate = useNavigate()
 	const { lookupData } = useAuth()
 
+	// ── New-registration profile-prompt overlay ──────────────────────────────
+	const [showProfilePrompt, setShowProfilePrompt] = useState(
+		() => localStorage.getItem('show_profile_prompt') === 'true'
+	)
+
+	const handleProfilePromptContinue = () => {
+		localStorage.removeItem('show_profile_prompt')
+		setShowProfilePrompt(false)
+		navigate(ROUTES.PORTAL.PROFILE)
+	}
+	// ────────────────────────────────────────────────────────────────────────
+
 	const [otpModalOpen, setOtpModalOpen] = useState(false)
 	const [referModalOpen, setReferModalOpen] = useState(false)
-	const [referAnchorEl, setReferAnchorEl] = useState<HTMLElement | null>(null)
 	const [selectedAppointmentId, setSelectedAppointmentId] = useState('')
 	const [selectedPatientId, setSelectedPatientId] = useState('')
 	// Appointment action state
@@ -204,7 +219,6 @@ export function DoctorAppointments({
 				setRescheduleOpen(true)
 			}
 			if (action === 'refer') {
-				setReferAnchorEl(anchorEl ?? null)
 				setReferModalOpen(true)
 			}
 		} catch {
@@ -254,11 +268,62 @@ export function DoctorAppointments({
 	// Render
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
+
+			{/* ── Complete-profile overlay (new registration only) ─────────────── */}
+			{showProfilePrompt && (
+				<Box
+					sx={{
+						position: 'fixed',
+						inset: 0,
+						zIndex: 1300,
+						bgcolor: 'rgba(0,0,0,0.55)',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+					}}
+				>
+					{/* No card — content floats directly over the dim overlay */}
+					<Box
+						sx={{
+							display: 'flex',
+							flexDirection: 'column',
+							alignItems: 'center',
+							textAlign: 'center',
+							maxWidth: 420,
+							width: '90%',
+						}}
+					>
+						<Box
+							component="img"
+							src={completeProfileImg}
+							alt="Complete your profile"
+							sx={{ width: 220, mb: 3, objectFit: 'contain' }}
+						/>
+						<Typography sx={{ fontWeight: 700, fontSize: '22px', color: '#fff', mb: 1 }}>
+							Please complete your profile and proceed
+						</Typography>
+						<AppButton
+							label="Continue"
+							onClick={handleProfilePromptContinue}
+							sx={{
+								mt: 3,
+								width: '100%',
+								py: 1.6,
+								fontSize: '16px',
+								fontWeight: 600,
+								borderRadius: '12px',
+							}}
+						/>
+					</Box>
+				</Box>
+			)}
+			{/* ────────────────────────────────────────────────────────────────── */}
+
 			<Box>
 				<Typography sx={{ fontWeight: 700, fontSize: '16px', color: 'text.primary', mb: 1.5 }}>
 					Search Patient
 				</Typography>
-				<TextField
+				<AppInput
 					fullWidth
 					placeholder="Search Patient ID, Name..."
 					value={searchQuery}
@@ -268,23 +333,33 @@ export function DoctorAppointments({
 						input: {
 							startAdornment: (
 								<InputAdornment position="start">
-									<SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+									<SearchIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
 								</InputAdornment>
 							),
 							endAdornment: (
 								<InputAdornment position="end">
 									<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
 										<MicNoneOutlinedIcon
-											sx={{ fontSize: 20, color: '#0c7c7c', cursor: 'pointer' }}
+											sx={{ fontSize: 20, color: 'text.disabled', cursor: 'pointer' }}
 										/>
-										<Box sx={{ width: '1px', height: '18px', bgcolor: '#e0e0e0' }} />
-										<QrCodeScannerIcon sx={{ fontSize: 20, color: '#0c7c7c', cursor: 'pointer' }} />
+										<Box sx={{ width: '1px', height: '18px', bgcolor: 'divider' }} />
+										<QrCodeScannerIcon
+											sx={{ fontSize: 20, color: 'text.disabled', cursor: 'pointer' }}
+										/>
 									</Box>
 								</InputAdornment>
 							),
 						},
 					}}
-					sx={{ '& fieldset': { borderRadius: '10px' } }}
+					sx={{
+						'& .MuiOutlinedInput-root': {
+							borderRadius: '12px',
+							bgcolor: 'background.default',
+							'& fieldset': { borderColor: 'divider' },
+							'&:hover fieldset': { borderColor: 'primary.main' },
+							'&.Mui-focused fieldset': { borderColor: 'primary.main' },
+						},
+					}}
 				/>
 			</Box>
 
@@ -475,7 +550,7 @@ export function DoctorAppointments({
 												}}
 											/>
 
-											{/* Symptoms info tooltip — always shown on every card */}
+											{/* Symptoms info tooltip */}
 											{(() => {
 												const key =
 													'symptoms_' +
@@ -853,15 +928,41 @@ export function DoctorAppointments({
 				setAppointmentType={setAppointmentType}
 			/>
 
-			{/* Refer Modal */}
-			<ReferModal
+			{/* Refer Modal – renders DoctorFavouritesTab inside a centered Dialog */}
+			<Dialog
 				open={referModalOpen}
-				anchorEl={referAnchorEl}
-				onClose={() => {
-					setReferModalOpen(false)
-					setReferAnchorEl(null)
+				onClose={() => setReferModalOpen(false)}
+				maxWidth="sm"
+				fullWidth
+				slotProps={{
+					paper: {
+						sx: {
+							borderRadius: '20px',
+							boxShadow: '0px 16px 56px rgba(0,0,0,0.18)',
+							overflow: 'hidden',
+							maxHeight: '80vh',
+						},
+					},
 				}}
-			/>
+			>
+				<DialogContent
+					sx={{
+						p: 0,
+						maxHeight: '70vh',
+						overflowY: 'auto',
+						...customScrollbar,
+					}}
+				>
+					<DoctorFavouritesTab
+						mode="refer"
+						title="Refer a doctor"
+						onShare={(doctor) => {
+							toast.success(`Referred to ${doctor.name}`)
+							setReferModalOpen(false)
+						}}
+					/>
+				</DialogContent>
+			</Dialog>
 
 			<Dialog open={otpModalOpen} onClose={() => setOtpModalOpen(false)} maxWidth="xs" fullWidth>
 				<DialogContent sx={{ pt: 3 }}>
@@ -882,7 +983,6 @@ export function DoctorAppointments({
 					/>
 				</DialogContent>
 			</Dialog>
-
 		</Box>
 	)
 }

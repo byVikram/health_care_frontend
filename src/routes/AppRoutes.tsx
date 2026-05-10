@@ -12,7 +12,7 @@ import NotFoundPage from '../components/common/NotFoundPage'
 import MainLayout from '../components/layout/MainLayout'
 import SidebarLayout from '../components/layout/SidebarLayout'
 import ConsultationPage from '../features/consultation/ConsultationPage'
-import AccountPage from '../features/auth/AccountPage'
+import DoctorAccountDetailsPage from '../features/auth/DoctorAccountDetailsPage'
 import NavbarLayout from '../components/layout/NavbarLayout'
 import TestPage from '../features/auth/test/TestPage'
 import { ROUTES } from '../constants/routes'
@@ -60,7 +60,7 @@ export default function AppRoutes() {
 			<Route path={ROUTES.AUTH.REGISTER} element={<RegisterPage />} />
 
 			<Route path={ROUTES.TEST_REGISTER} element={<TestRegister onSubmit={(email) => console.log('Registered:', email)} />} />
-			<Route path={ROUTES.PUBLIC.ACCOUNT} element={<AccountPage />} />
+			<Route path={ROUTES.DOCTOR_ACCOUNT_DETAILS} element={<DoctorAccountDetailsPage />} />
 
 			{/* Protected routes */}
 			<Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>

@@ -1,6 +1,18 @@
-﻿// src/features/consultation/components/VitalsTab.tsx
+// src/features/consultation/components/VitalsTab.tsx
 import { useState } from 'react'
-import { Box, Typography, Grid, Table, TableBody, TableCell, TableHead, TableRow, IconButton, Fab, Divider } from '@mui/material'
+import {
+	Box,
+	Typography,
+	Grid,
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableRow,
+	IconButton,
+	Fab,
+	Divider,
+} from '@mui/material'
 import ThermostatIcon from '@mui/icons-material/Thermostat'
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined'
 import WaterDropOutlinedIcon from '@mui/icons-material/WaterDropOutlined'
@@ -13,6 +25,8 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import AppSelect from '../../../components/common/Select/AppSelect'
 import { customCardStyle } from '../../../styles/commonStyles'
 import { VitalStat, VitalHistoryRow } from '../../../types/consultation'
+import AppModal from '../../../components/common/Modal/AppModal'
+import AddVitals from './AddVitals'
 
 interface TabColumn {
 	key: string
@@ -340,7 +354,17 @@ const TAB_CONFIGS: TabConfig[] = [
 
 function VitalStatCard({ stat }: { stat: VitalStat }) {
 	return (
-		<Box sx={{ ...customCardStyle, p: 1.5, display: 'flex', alignItems: 'center', gap: 1.5, height: '100%', boxSizing: 'border-box' }}>
+		<Box
+			sx={{
+				...customCardStyle,
+				p: 1.5,
+				display: 'flex',
+				alignItems: 'center',
+				gap: 1.5,
+				height: '100%',
+				boxSizing: 'border-box',
+			}}
+		>
 			<Box sx={{ flexShrink: 0 }}>{VITAL_ICONS[stat.id]}</Box>
 			<Box sx={{ flex: 1 }}>
 				<Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
@@ -392,7 +416,9 @@ function WeightBmiCard() {
 						<Typography sx={{ fontWeight: 700, fontSize: '15px', color: 'text.primary' }}>
 							{WEIGHT_KG}
 						</Typography>
-						<Typography variant="caption" sx={{ fontSize: '10px', color: 'text.secondary' }}>Kg</Typography>
+						<Typography variant="caption" sx={{ fontSize: '10px', color: 'text.secondary' }}>
+							Kg
+						</Typography>
 					</Box>
 					<Typography variant="caption" sx={{ fontSize: '10px', color: 'text.secondary', display: 'block' }}>
 						Weight
@@ -407,7 +433,9 @@ function WeightBmiCard() {
 						<Typography sx={{ fontWeight: 700, fontSize: '15px', color: 'text.primary' }}>
 							{HEIGHT_CM}
 						</Typography>
-						<Typography variant="caption" sx={{ fontSize: '10px', color: 'text.secondary' }}>cm</Typography>
+						<Typography variant="caption" sx={{ fontSize: '10px', color: 'text.secondary' }}>
+							cm
+						</Typography>
 					</Box>
 					<Typography variant="caption" sx={{ fontSize: '10px', color: 'text.secondary', display: 'block' }}>
 						Height
@@ -419,14 +447,15 @@ function WeightBmiCard() {
 				{/* BMI */}
 				<Box sx={{ flex: 1, textAlign: 'center' }}>
 					<Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 0.3 }}>
-						<Typography sx={{ fontWeight: 700, fontSize: '15px', color: bmiColor }}>
-							{BMI}
-						</Typography>
+						<Typography sx={{ fontWeight: 700, fontSize: '15px', color: bmiColor }}>{BMI}</Typography>
 					</Box>
 					<Typography variant="caption" sx={{ fontSize: '10px', color: 'text.secondary', display: 'block' }}>
 						BMI
 					</Typography>
-					<Typography variant="caption" sx={{ fontSize: '9px', color: bmiColor, fontWeight: 600, display: 'block' }}>
+					<Typography
+						variant="caption"
+						sx={{ fontSize: '9px', color: bmiColor, fontWeight: 600, display: 'block' }}
+					>
 						{bmiLabel}
 					</Typography>
 				</Box>
@@ -459,6 +488,7 @@ function DataCell({ value, status, showDot }: { value: string; status?: 'normal'
 export default function VitalsTab() {
 	const [activeTabId, setActiveTabId] = useState('bp')
 	const [period, setPeriod] = useState('30days')
+	const [openVitalsModal, setOpenVitalsModal] = useState(false)
 	const activeTab = TAB_CONFIGS.find((t) => t.id === activeTabId)!
 
 	return (
@@ -671,6 +701,7 @@ export default function VitalsTab() {
 			<Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
 				<Fab
 					size="medium"
+					onClick={() => setOpenVitalsModal(true)}
 					sx={{
 						bgcolor: 'primary.main',
 						color: '#fff',
@@ -682,6 +713,9 @@ export default function VitalsTab() {
 					<AddIcon />
 				</Fab>
 			</Box>
+			<AppModal open={openVitalsModal} onClose={() => setOpenVitalsModal(false)} maxWidth="sm" fullWidth showCloseButton={false} disableScroll>
+				<AddVitals />
+			</AppModal>
 		</Box>
 	)
 }
