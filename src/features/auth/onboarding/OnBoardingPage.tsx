@@ -1,45 +1,32 @@
 // features/auth/onboarding/OnBoardingPage.tsx
 import { useState } from 'react'
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { Box, Typography } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight'
 import { onboardingData, UserRole } from '../../../data/onboardingData'
 import AppButton from '../../../components/common/Button/AppButton'
-import { ROUTES } from '../../../constants/routes'
 
-export default function OnBoardingPage() {
-	const { roleId } = useParams<{ roleId: string }>()   // UUID from API
-	const [searchParams] = useSearchParams()
-	const navigate = useNavigate()
+interface Props {
+	role: UserRole
+	roleId: string
+	onFinish: (roleId: string) => void
+}
 
-	const key = (searchParams.get('key') ?? '') as UserRole
-	const slides = onboardingData[key]?.screens ?? []
-
+export default function OnBoardingPage({ role, roleId, onFinish }: Props) {
+	const slides = onboardingData[role].screens
 	const [currentIndex, setCurrentIndex] = useState(0)
 
 	const currentSlide = slides[currentIndex]
 	const isLast = currentIndex === slides.length - 1
 	const isFirst = currentIndex === 0
 
-	// Navigate to register carrying the UUID roleId and onboarding key
-	const goToRegister = () => {
-		navigate(`${ROUTES.ONBOARDING_REGISTER}?roleId=${roleId}&key=${key}`)
-	}
-
 	const handleNext = () => {
-		if (isLast) goToRegister()
+		if (isLast) onFinish(roleId)
 		else setCurrentIndex((prev) => prev + 1)
 	}
 
 	const handleBack = () => {
 		if (!isFirst) setCurrentIndex((prev) => prev - 1)
-	}
-
-	// Invalid key or missing slides → redirect back to role select
-	if (!slides.length) {
-		navigate(ROUTES.ROLE_SELECT)
-		return null
 	}
 
 	return (
@@ -84,7 +71,7 @@ export default function OnBoardingPage() {
 						}}
 					/>
 					<AppButton
-						onClick={goToRegister}
+						onClick={() => onFinish(roleId)}
 						label="Skip"
 						endIcon={<KeyboardDoubleArrowRightIcon sx={{ fontSize: '1.2rem !important' }} />}
 						disableRipple

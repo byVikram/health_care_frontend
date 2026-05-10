@@ -1,5 +1,6 @@
+// features/auth/onboarding/RoleSelectorPage.tsx
 import { useEffect, useState } from 'react'
-import { Box, CircularProgress, Typography } from '@mui/material'
+import { Box, Typography, CircularProgress } from '@mui/material'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { useNavigate } from 'react-router-dom'
 import pharmacyImg from '../../../assets/onboarding/pharmacy.png'
@@ -7,116 +8,46 @@ import laboratoryImg from '../../../assets/onboarding/laboartory.png'
 import radiologyImg from '../../../assets/onboarding/radiology.png'
 import patientImg from '../../../assets/onboarding/patient.png'
 import doctorImg from '../../../assets/onboarding/doctor-team.png'
-import { UserRole } from '../../../data/onboardingData'
 import { getRoles } from '../authService'
 
-interface ApiRole {
-	id: string      // UUID public_id from the backend
-	label: string   // e.g. "Pharmacy", "Laboratory", "Patient", "Radiology"
+// ── Local image / bg mapping (keyed on lowercase label) ───────────────────────
+const ROLE_VISUALS: Record<string, { image: string; bg: string }> = {
+	patient: { image: patientImg, bg: '#f0fdf6' },
+	doctor: { image: doctorImg, bg: '#f0f8ff' },
+	pharmacist: { image: pharmacyImg, bg: '#fff8f0' },
+	pharmacy: { image: pharmacyImg, bg: '#fff8f0' },
+	laboratory: { image: laboratoryImg, bg: '#fdf0f8' },
+	radiology: { image: radiologyImg, bg: '#f0f4ff' },
 }
 
-// Maps whatever label the API returns (lowercase) → onboarding key + UI config
-const LABEL_MAP: Record<string, { key: UserRole; label: string; image: string; bg: string; disabled?: boolean }> = {
-	patient:    { key: 'PATIENT',    label: 'Patient',    image: patientImg,    bg: '#f0fdf6' },
-	pharmacy:   { key: 'PHARMACIST', label: 'Pharmacy',   image: pharmacyImg,   bg: '#fff8f0' },
-	pharmacist: { key: 'PHARMACIST', label: 'Pharmacy',   image: pharmacyImg,   bg: '#fff8f0' },
-	laboratory: { key: 'LABORATORY', label: 'Laboratory', image: laboratoryImg, bg: '#fdf0f8' },
-	radiology:  { key: 'RADIOLOGY',  label: 'Radiology',  image: radiologyImg,  bg: '#f0f4ff' },
-	doctor:     { key: 'DOCTOR',     label: 'Doctor',     image: doctorImg,     bg: '#f0f6ff' },
+const fallbackVisual = { image: patientImg, bg: '#f5f5f5' }
+
+interface Role {
+	id: string
+	label: string
 }
 
-// Hardcoded Doctor card — always shown regardless of API response
-const DOCTOR_STATIC = {
-	id: 'doctor',
-	key: 'DOCTOR' as UserRole,
-	label: 'Doctor',
-	image: doctorImg,
-	bg: '#f0f6ff',
+interface Props {
+	onSelectRole: (roleId: string, label: string) => void
 }
 
-export default function RoleSelectorPage() {
-	const navigate = useNavigate()
-	const [roles, setRoles] = useState<ApiRole[]>([])
+export default function RoleSelectorPage({ onSelectRole }: Props) {
+	const [roles, setRoles] = useState<Role[]>([])
 	const [loading, setLoading] = useState(true)
+	const [error, setError] = useState('')
 
 	useEffect(() => {
 		getRoles()
-			.then((res) => setRoles(Array.isArray(res.data) ? res.data : []))
-			.catch(() => setRoles([]))
+			.then((res) => {
+				if (res.success) {
+					setRoles(Array.isArray(res.data) ? res.data : [res.data])
+				} else {
+					setError(res.message || 'Failed to load roles')
+				}
+			})
+			.catch(() => setError('Failed to load roles. Please try again.'))
 			.finally(() => setLoading(false))
 	}, [])
-
-	const handleSelect = (role: ApiRole) => {
-		const config = LABEL_MAP[role.label.toLowerCase()]
-		if (!config || config.disabled) return
-
-		localStorage.setItem('selected_role', JSON.stringify({
-			id: role.id,
-			key: config.key,
-			label: config.label,
-		}))
-
-		navigate(`/onboarding/${role.id}?key=${config.key}`)
-	}
-
-	const handleDoctorSelect = () => {
-		localStorage.setItem('selected_role', JSON.stringify({
-			id: DOCTOR_STATIC.id,
-			key: DOCTOR_STATIC.key,
-			label: DOCTOR_STATIC.label,
-		}))
-		navigate(`/onboarding/${DOCTOR_STATIC.id}?key=${DOCTOR_STATIC.key}`)
-	}
-
-	// Check if doctor role already comes from the API so we don't duplicate it
-	const apiHasDoctor = roles.some((r) => r.label.toLowerCase() === 'doctor')
-
-	const RoleCard = ({
-		image, label, bg, disabled, onClick,
-	}: { image: string; label: string; bg: string; disabled?: boolean; onClick: () => void }) => (
-		<Box
-			onClick={disabled ? undefined : onClick}
-			sx={{
-				width: '100%',
-				display: 'flex',
-				alignItems: 'center',
-				gap: 2,
-				bgcolor: bg,
-				borderRadius: '16px',
-				px: 2,
-				py: 1.5,
-				cursor: disabled ? 'not-allowed' : 'pointer',
-				opacity: disabled ? 0.5 : 1,
-				boxShadow: '0 2px 12px rgba(0,0,0,0.10)',
-				transition: 'transform 0.15s, box-shadow 0.15s',
-				'&:hover': {
-					transform: disabled ? 'none' : 'translateY(-2px)',
-					boxShadow: disabled ? '0 2px 12px rgba(0,0,0,0.10)' : '0 6px 20px rgba(0,0,0,0.15)',
-				},
-				'&:active': { transform: disabled ? 'none' : 'scale(0.98)' },
-			}}
-		>
-			<Box
-				sx={{
-					width: 56, height: 56, borderRadius: '12px',
-					bgcolor: 'rgba(0,0,0,0.05)',
-					display: 'flex', alignItems: 'center', justifyContent: 'center',
-					flexShrink: 0, overflow: 'hidden',
-				}}
-			>
-				<Box component="img" src={image} alt={label}
-					sx={{ width: 44, height: 44, objectFit: 'contain' }} />
-			</Box>
-
-			<Box sx={{ flex: 1 }}>
-				<Typography sx={{ fontWeight: 700, fontSize: '16px', color: '#1a1a1a', lineHeight: 1.3 }}>
-					{label}
-				</Typography>
-			</Box>
-
-			<ChevronRightIcon sx={{ color: '#aaa', fontSize: 22 }} />
-		</Box>
-	)
 
 	return (
 		<Box
@@ -133,11 +64,26 @@ export default function RoleSelectorPage() {
 				overflow: 'hidden',
 			}}
 		>
-			{/* Wave blobs */}
-			<Box sx={{ position: 'absolute', top: -100, right: -100, width: 340, height: 340, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.05)', pointerEvents: 'none' }} />
-			<Box sx={{ position: 'absolute', top: 60, right: -60, width: 200, height: 200, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
-			<Box sx={{ position: 'absolute', bottom: -80, left: -80, width: 260, height: 260, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.05)', pointerEvents: 'none' }} />
-			<Box sx={{ position: 'absolute', bottom: 60, left: -40, width: 150, height: 150, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.03)', pointerEvents: 'none' }} />
+			{/* Decorative blobs */}
+			{[
+				{ top: -100, right: -100, size: 340, opacity: 0.05 },
+				{ top: 60, right: -60, size: 200, opacity: 0.04 },
+				{ bottom: -80, left: -80, size: 260, opacity: 0.05 },
+				{ bottom: 60, left: -40, size: 150, opacity: 0.03 },
+			].map((b, i) => (
+				<Box
+					key={i}
+					sx={{
+						position: 'absolute',
+						...b,
+						width: b.size,
+						height: b.size,
+						borderRadius: '50%',
+						bgcolor: `rgba(255,255,255,${b.opacity})`,
+						pointerEvents: 'none',
+					}}
+				/>
+			))}
 
 			<Box
 				sx={{
@@ -155,42 +101,89 @@ export default function RoleSelectorPage() {
 					gap: 2,
 				}}
 			>
-				{loading ? (
-					<CircularProgress sx={{ color: '#fff' }} />
-				) : (
-					<>
-						{/* Doctor card — always shown unless API already returned it */}
-						{!apiHasDoctor && (
-							<RoleCard
-								image={DOCTOR_STATIC.image}
-								label={DOCTOR_STATIC.label}
-								bg={DOCTOR_STATIC.bg}
-								onClick={handleDoctorSelect}
-							/>
-						)}
+				{/* Heading */}
+				<Typography
+					sx={{ color: '#fff', fontWeight: 700, fontSize: '1.4rem', mb: 1, alignSelf: 'flex-start' }}
+				>
+					Who are you?
+				</Typography>
 
-						{/* Dynamic roles from API */}
-						{roles.map((role) => {
-							const config = LABEL_MAP[role.label.toLowerCase()]
-							if (!config) return null
+				{/* Loading */}
+				{loading && <CircularProgress sx={{ color: '#fff', mt: 4 }} />}
 
-							return (
-								<RoleCard
-									key={role.id}
-									image={config.image}
-									label={config.label}
-									bg={config.bg}
-									disabled={config.disabled}
-									onClick={() => handleSelect(role)}
-								/>
-							)
-						})}
-
-						<Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: '15px', mt: 5 }}>
-							© 2025 Whisper ai. All rights reserved.
-						</Typography>
-					</>
+				{/* Error */}
+				{!loading && error && (
+					<Typography sx={{ color: '#ffcccc', fontSize: '0.95rem', textAlign: 'center' }}>
+						{error}
+					</Typography>
 				)}
+
+				{/* Role cards */}
+				{!loading && !error && roles.map(({ id, label }) => {
+					const { image, bg } = ROLE_VISUALS[label.toLowerCase()] ?? fallbackVisual
+
+					return (
+						<Box
+							key={id}
+							onClick={() => onSelectRole(id, label)}
+							sx={{
+								width: '100%',
+								display: 'flex',
+								alignItems: 'center',
+								gap: 2,
+								bgcolor: bg,
+								borderRadius: '16px',
+								px: 2,
+								py: 1.5,
+								cursor: 'pointer',
+								boxShadow: '0 2px 12px rgba(0,0,0,0.10)',
+								transition: 'transform 0.15s, box-shadow 0.15s',
+								'&:hover': {
+									transform: 'translateY(-2px)',
+									boxShadow: '0 6px 20px rgba(0,0,0,0.15)',
+								},
+								'&:active': { transform: 'scale(0.98)' },
+							}}
+						>
+							<Box
+								sx={{
+									width: 56,
+									height: 56,
+									borderRadius: '12px',
+									bgcolor: 'rgba(0,0,0,0.05)',
+									display: 'flex',
+									alignItems: 'center',
+									justifyContent: 'center',
+									flexShrink: 0,
+									overflow: 'hidden',
+								}}
+							>
+								<Box
+									component="img"
+									src={image}
+									alt={label}
+									sx={{ width: 44, height: 44, objectFit: 'contain' }}
+								/>
+							</Box>
+
+							<Box sx={{ flex: 1 }}>
+								<Typography sx={{ fontWeight: 700, fontSize: '16px', color: '#1a1a1a', lineHeight: 1.3 }}>
+									{label}
+								</Typography>
+								<Typography sx={{ fontSize: '12px', color: '#888', mt: 0.2 }}>
+									Register as {label}
+								</Typography>
+							</Box>
+
+							<ChevronRightIcon sx={{ color: '#aaa', fontSize: 22 }} />
+						</Box>
+					)
+				})}
+
+				{/* Footer */}
+				<Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: '15px', mt: 5 }}>
+					© 2025 Whisper ai. All rights reserved.
+				</Typography>
 			</Box>
 		</Box>
 	)

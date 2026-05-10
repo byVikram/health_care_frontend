@@ -1,4 +1,4 @@
-// features/auth/components/RegisterForm.tsx
+﻿// features/auth/components/RegisterForm.tsx
 import AppInput from '../../../components/common/Input/AppInput'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -11,10 +11,12 @@ interface RegisterFormProps {
 	onSubmit: (mobile: string) => void
 	mode?: 'page' | 'modal'
 	onSwitchToLogin?: () => void
-	roleId?: string | null
+	roleId?: string   // UUID from api/auth/get-roles
 }
 
 export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin, roleId }: RegisterFormProps) {
+	// Pre-select the role if roleId was passed in from the onboarding flow
+	const registerAs = useState(roleId ?? '')
 	const navigate = useNavigate()
 
 	const handleSwitchToLogin = () => {
@@ -242,3 +244,4 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin,
 		</Grid>
 	)
 }
+

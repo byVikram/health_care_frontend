@@ -1,4 +1,4 @@
-﻿// src/features/auth/authService.ts
+// src/features/auth/authService.ts
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { LookupData } from '../../hooks/useAuth'
@@ -35,10 +35,15 @@ export interface VerifyLookupResponse {
 	data: LookupData
 }
 
+export interface Role {
+	id: string
+	label: string
+}
+
 export interface VerifyRolesResponse {
 	success: boolean
 	message: string
-	data: { id: string; label: string }[]
+	data: Role[]
 }
 
 export interface CreateUserRequest {
@@ -46,7 +51,6 @@ export interface CreateUserRequest {
 	email: string
 	name: string
 	role_id?: string
-	// password : string
 }
 
 export interface VerifyUserCreationResponse {
@@ -68,8 +72,8 @@ export const verifyOtp = async (contactNumber: string, otp: string): Promise<Ver
 }
 
 export const getLookupData = async (): Promise<VerifyLookupResponse> => {
-  const res = await ApiService.get<VerifyLookupResponse>(API_ENDPOINTS.LOOKUP.GET)
-  return res.data
+	const res = await ApiService.get<VerifyLookupResponse>(API_ENDPOINTS.LOOKUP.GET)
+	return res.data
 }
 
 export const getRoles = async (): Promise<VerifyRolesResponse> => {
