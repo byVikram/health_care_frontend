@@ -17,7 +17,7 @@ import DoctorFavouritesTab from './components/DoctorFavouritesTab'
 import { DoctorProfile, DoctorProfilePersonal, DoctorProfileProfessional } from '../../../types/doctor-profile'
 import { customCardStyle } from '../../../styles/commonStyles'
 import { getDoctorProfile, mapDoctorProfileApi } from '../doctorService'
-import { useAuth, setAuth, LookupData } from '../../../hooks/useAuth'
+import { useAuth, setAuth } from '../../../hooks/useAuth'
 import ApiService from '../../../services/apiService'
 
 const DOCTOR_NAV_ITEMS = [

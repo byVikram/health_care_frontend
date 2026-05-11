@@ -5,17 +5,20 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { ROUTES } from "../../../constants/routes";
 
 interface Props {
-	isDoctor: boolean
+	role: string   // e.g. 'doctor' | 'patient' | 'laboratory' | 'pharmacy' | 'radiology'
 }
 
-export default function OtpVerified({ isDoctor }: Props) {
+export default function OtpVerified({ role }: Props) {
 	const navigate = useNavigate();
 
 	const handleContinue = () => {
-		if (isDoctor) {
-			navigate(ROUTES.PUBLIC.WELCOME_DOCTOR)
+		const normalised = role.toLowerCase()
+		if (normalised === 'doctor') {
+			// Doctor goes to account details first, then welcome
+			navigate(ROUTES.DOCTOR_ACCOUNT_DETAILS)
 		} else {
-			navigate(ROUTES.PORTAL.PROFILE)
+			// All other roles go to the welcome page with their role as a query param
+			navigate(`${ROUTES.PUBLIC.WELCOME}?role=${normalised}`)
 		}
 	}
 

@@ -12,13 +12,15 @@ import {
 	IconButton,
 	Fab,
 	Divider,
+	Tooltip,
 } from '@mui/material'
 import ThermostatIcon from '@mui/icons-material/Thermostat'
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined'
 import WaterDropOutlinedIcon from '@mui/icons-material/WaterDropOutlined'
 import FitnessCenterOutlinedIcon from '@mui/icons-material/FitnessCenterOutlined'
 import AirOutlinedIcon from '@mui/icons-material/AirOutlined'
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import AddIcon from '@mui/icons-material/Add'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
@@ -665,30 +667,19 @@ export default function VitalsTab() {
 											</TableCell>
 										))}
 										<TableCell sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
+										{activeTab.showDownload && (
 											<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-												<IconButton
-													size="small"
-													sx={{
-														color: 'text.disabled',
-														'&:hover': { color: 'primary.main' },
-														'&:focus': { outline: 'none' },
-													}}
-												>
-													<EditOutlinedIcon sx={{ fontSize: 16 }} />
-												</IconButton>
-												{activeTab.showDownload && (
-													<IconButton
-														size="small"
-														sx={{
-															color: 'text.disabled',
-															'&:hover': { color: 'primary.main' },
-															'&:focus': { outline: 'none' },
-														}}
-													>
-														<FileDownloadOutlinedIcon sx={{ fontSize: 16 }} />
-													</IconButton>
-												)}
+											<Tooltip title="View" arrow><IconButton size="small" sx={{ color: 'text.disabled', '&:hover': { color: 'primary.main' }, '&:focus': { outline: 'none' } }}><VisibilityOutlinedIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
+
+
+
+											<Tooltip title="Download" arrow><IconButton size="small" sx={{ color: 'text.disabled', '&:hover': { color: 'primary.main' }, '&:focus': { outline: 'none' } }}><FileDownloadOutlinedIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
+
+
+											<Tooltip title="AI Assistance" arrow><IconButton size="small" sx={{ color: 'text.disabled', '&:hover': { color: 'primary.main' }, '&:focus': { outline: 'none' } }}><AutoAwesomeOutlinedIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
+
 											</Box>
+										)}
 										</TableCell>
 									</TableRow>
 								))

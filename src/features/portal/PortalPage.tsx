@@ -1,8 +1,7 @@
-import { Box, Typography, Container, Grid } from '@mui/material'
-import { useState, useEffect } from 'react'
+import { Box, Typography, Container, Grid, Popper, Paper, Fade } from '@mui/material'
+import { useState, useEffect, useRef } from 'react'
 import { getAppointments } from '../doctor/doctorService'
 import { Appointment } from '../../types/appointment'
-
 
 import { DoctorAppointments } from '../doctor/DoctorAppointments'
 import { useAuth } from '../../hooks/useAuth'
@@ -10,16 +9,19 @@ import { useAuth } from '../../hooks/useAuth'
 import drImage from '../../assets/Banner/banner.png'
 import adImage from '../../assets/blog-and-community/ad-image.png'
 import AnswerQuestionsSection from '../dashboard/AnswerQuestionsSection'
-import videoImage from '../../assets/blog-and-community/video-image.png';
+import videoImage from '../../assets/blog-and-community/video-image.png'
 import DashboardCarousel from '../../components/common/Carousel/DashboardCarousel'
 import { LookupHospital } from '../../hooks/useAuth'
-
 
 import AppointmentsIcon from '../../assets/quick-services/appointments.svg'
 import PharmacyIcon from '../../assets/quick-services/pharmacy.svg'
 import RadiologyIcon from '../../assets/quick-services/radiology.svg'
 import AncilaryIcon from '../../assets/quick-services/ancilary.svg'
 import LabIcon from '../../assets/quick-services/lab.svg'
+import AmbulanceIcon from '../../assets/quick-services/ambulance.svg'
+import BloodBankIcon from '../../assets/quick-services/blood-bank.svg'
+import IcuIcon from '../../assets/quick-services/icu.svg'
+import EmergencyIcon from '../../assets/quick-services/emergency.svg'
 
 import { PatientAppointments } from '../patient/PatientAppointments'
 import { USER_ROLES } from '../../constants/constants'
@@ -56,7 +58,15 @@ const quickServices = [
 	{ title: 'Pharmacy', image: PharmacyIcon },
 	{ title: 'Laboratory', image: LabIcon },
 	{ title: 'Radiology', image: RadiologyIcon },
+	{ title: 'Others', image: null },
+]
+
+const othersPopupItems = [
 	{ title: 'Ancillary', image: AncilaryIcon },
+	{ title: 'Ambulance', image: AmbulanceIcon },
+	{ title: 'Blood Bank', image: BloodBankIcon },
+	{ title: 'ICU', image: IcuIcon },
+	{ title: 'Emergency', image: EmergencyIcon },
 ]
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -71,6 +81,8 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 	const [appointments, setAppointments] = useState<Appointment[]>([])
 	const [apptLoading, setApptLoading] = useState(true)
 	const [apptError, setApptError] = useState('')
+	const [othersAnchorEl, setOthersAnchorEl] = useState<HTMLElement | null>(null)
+	const othersRef = useRef<HTMLDivElement | null>(null)
 	const [weekDays] = useState(() => buildWeekDays())
 	const selectedDateObj = weekDays[selectedDate]?.dateObj ?? new Date()
 	const [searchQuery, setSearchQuery] = useState('')
@@ -203,47 +215,159 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 
 						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
 
-							{/* 1. Quick service icons — ABOVE the carousel */}
+							{/* Quick service icons */}
 							<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-								{quickServices.map((s) => (
-									<Box
-										key={s.title}
-										sx={{
-											display: 'flex',
-											flexDirection: 'column',
-											alignItems: 'center',
-											gap: 0.8,
-											cursor: 'pointer',
-											flex: 1,
-											'&:hover img': { transform: 'translateY(-3px)' },
-										}}
-									>
+								{quickServices.map((s) =>
+									s.title === 'Others' ? (
 										<Box
-											component="img"
-											src={s.image}
-											alt={s.title}
+											key={s.title}
+											ref={othersRef}
+											onMouseEnter={(e) => setOthersAnchorEl(e.currentTarget)}
+											onMouseLeave={() => setOthersAnchorEl(null)}
 											sx={{
-												width: 40,
-												height: 40,
-												objectFit: 'contain',
-												transition: 'transform 0.2s ease',
+												display: 'flex',
+												flexDirection: 'column',
+												alignItems: 'center',
+												gap: 0.8,
+												cursor: 'pointer',
+												flex: 1,
+												position: 'relative',
 											}}
-										/>
-										<Typography
-											sx={{ fontSize: '11px', fontWeight: 600, color: 'text.primary', textAlign: 'center' }}
 										>
-											{s.title}
-										</Typography>
-									</Box>
-								))}
+											{/* Others icon: 2x2 colored squares referencing the noun project style */}
+											<Box
+												sx={{
+													width: 44,
+													height: 44,
+													display: 'grid',
+													gridTemplateColumns: '1fr 1fr',
+													gap: '4px',
+													p: '5px',
+													bgcolor: '#e8f5f5',
+													borderRadius: '10px',
+													transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+													'&:hover': {
+														transform: 'translateY(-3px)',
+														boxShadow: '0 4px 12px rgba(12,124,124,0.2)',
+													},
+												}}
+											>
+												<Box sx={{ bgcolor: '#0c7c7c', borderRadius: '3px' }} />
+												<Box sx={{ bgcolor: '#4264D0', borderRadius: '3px' }} />
+												<Box sx={{ bgcolor: '#EA7F06', borderRadius: '3px' }} />
+												<Box sx={{ bgcolor: '#DE3B40', borderRadius: '3px' }} />
+											</Box>
+											<Typography
+												sx={{ fontSize: '11px', fontWeight: 600, color: 'text.primary', textAlign: 'center' }}
+											>
+												Others
+											</Typography>
+
+											{/* Hover popup with ancillary, ambulance, blood bank, ICU, emergency */}
+											<Popper
+												open={Boolean(othersAnchorEl)}
+												anchorEl={othersAnchorEl}
+												placement="top"
+												transition
+												disablePortal
+												sx={{ zIndex: 1300 }}
+											>
+												{({ TransitionProps }) => (
+													<Fade {...TransitionProps} timeout={200}>
+														<Paper
+															elevation={6}
+															sx={{
+																p: 2,
+																borderRadius: '14px',
+																mb: 1,
+																display: 'flex',
+																gap: 2,
+																boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
+																border: '1px solid rgba(12,124,124,0.1)',
+															}}
+														>
+															{othersPopupItems.map((item) => (
+																<Box
+																	key={item.title}
+																	sx={{
+																		display: 'flex',
+																		flexDirection: 'column',
+																		alignItems: 'center',
+																		gap: 0.6,
+																		cursor: 'pointer',
+																		px: 0.5,
+																		'& img': {
+																			transition: 'transform 0.2s ease',
+																		},
+																		'&:hover img': {
+																			transform: 'translateY(-3px)',
+																		},
+																	}}
+																>
+																	<Box
+																		component="img"
+																		src={item.image}
+																		alt={item.title}
+																		sx={{ width: 34, height: 34, objectFit: 'contain' }}
+																	/>
+																	<Typography
+																		sx={{
+																			fontSize: '10px',
+																			fontWeight: 600,
+																			color: 'text.primary',
+																			textAlign: 'center',
+																			whiteSpace: 'nowrap',
+																		}}
+																	>
+																		{item.title}
+																	</Typography>
+																</Box>
+															))}
+														</Paper>
+													</Fade>
+												)}
+											</Popper>
+										</Box>
+									) : (
+										<Box
+											key={s.title}
+											sx={{
+												display: 'flex',
+												flexDirection: 'column',
+												alignItems: 'center',
+												gap: 0.8,
+												cursor: 'pointer',
+												flex: 1,
+												'&:hover img': { transform: 'translateY(-3px)' },
+											}}
+										>
+											<Box
+												component="img"
+												src={s.image!}
+												alt={s.title}
+												sx={{
+													width: 40,
+													height: 40,
+													objectFit: 'contain',
+													transition: 'transform 0.2s ease',
+												}}
+											/>
+											<Typography
+												sx={{ fontSize: '11px', fontWeight: 600, color: 'text.primary', textAlign: 'center' }}
+											>
+												{s.title}
+											</Typography>
+										</Box>
+									)
+								)}
 							</Box>
 
-							{/* 2. Video carousel — BELOW the service icons */}
+							{/* Video carousel */}
 							<Box sx={{ borderRadius: '16px', overflow: 'hidden', minWidth: 0 }}>
 								<DashboardCarousel images={[videoImage, videoImage, videoImage, videoImage]} />
 							</Box>
 
-							{/* 3. Ad slider at the bottom */}
+							{/* Ad slider */}
 							<Box
 								sx={{
 									bgcolor: '#fff',
@@ -279,7 +403,7 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 						</Box>
 					</Grid>
 
-					{/* RIGHT — fixed-height scrollable card, same bottom as left column */}
+					{/* RIGHT — appointments panel */}
 					<Grid size={{ xs: 12, md: 6 }}>
 						{role === USER_ROLES.DOCTOR && (
 							<DoctorAppointments
@@ -314,7 +438,7 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 					</Grid>
 				</Grid>
 
-				{/* BOTTOM 50/50: Community & Blogs | Upcoming Events */}
+				{/* BOTTOM: Community & Blogs | Upcoming Events */}
 				<Grid container spacing={3} alignItems="stretch" sx={{ mt: 3 }}>
 					<Grid size={{ xs: 12, md: 6 }}>
 						<CommunityBlogsSection variant={'column'} />

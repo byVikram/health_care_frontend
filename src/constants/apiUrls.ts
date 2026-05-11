@@ -1,4 +1,4 @@
-﻿// src/constants/apiUrls.ts
+// src/constants/apiUrls.ts
 export const BASE_URL = import.meta.env.VITE_API_ENDPOINT as string
 
 export const API_ENDPOINTS = {
@@ -20,6 +20,12 @@ export const API_ENDPOINTS = {
 		PROFESSIONAL_DETAILS: `${BASE_URL}/api/doctors/professional-details`,
 		HOSPITALS: `${BASE_URL}/api/doctors/hospitals`,
 		DELETE_ACCOUNT: `${BASE_URL}/api/doctors/profile`,
+	},
+	LABORATORY_PROFILE: {
+		DETAILS: `${BASE_URL}/api/laboratory/details`,
+		PROFESSIONAL_DETAILS: `${BASE_URL}/api/laboratory/professional-details`,
+		SERVICES: `${BASE_URL}/api/laboratory/services`,
+		DELETE_ACCOUNT: `${BASE_URL}/api/laboratory/profile`,
 	},
 	SPECIALITIES: {
 		LIST: `${BASE_URL}/api/specialities`,

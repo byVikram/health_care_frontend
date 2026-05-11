@@ -84,6 +84,7 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 				email: data.email,
 				instagram: data.instagram,
 				facebook: data.facebook,
+				twitter: data.twitter,
 			}
 
 			const res = await updateProfessionalDetails(payload)
@@ -139,6 +140,7 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 							placeholder="+91 XXXXXXXXXX"
 							type="tel"
 							disabled
+							slotProps={{ inputLabel: { shrink: true } }}
 							InputProps={{ endAdornment: data.contactVerified ? verifiedAdornment : undefined }}
 						/>
 					</Grid>
@@ -234,6 +236,23 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 					</Grid>
 				</Grid>
 
+
+			<Grid container spacing={2}>
+				<Grid size={{ xs: 12, sm: 6 }}>
+					<AppInput
+						label="Twitter"
+						value={data.twitter}
+						placeholder="https://twitter.com/your-handle"
+						type="url"
+						slotProps={{
+							inputLabel: {
+								shrink: true,
+							},
+						}}
+						onChange={(e) => onChange({ twitter: e.target.value })}
+					/>
+				</Grid>
+			</Grid>
 				<Grid size={{ xs: 12 }} mt={2} display={'flex'} justifyContent={'flex-end'}></Grid>
 			</Box>
 			<ProfileFormActions isDirty={isDirty} onSave={handleSave} showSuccess={false} onCloseSnackbar={() => {}} />

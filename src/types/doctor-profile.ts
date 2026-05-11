@@ -1,4 +1,4 @@
-﻿// src/types/doctor-profile.ts
+// src/types/doctor-profile.ts
 
 export interface DoctorProfilePersonal {
 	name: string
@@ -7,11 +7,12 @@ export interface DoctorProfilePersonal {
 	email: string
 	emailVerified: boolean
 	gender: string
+	avatar : string
 	dateOfBirth: string
 	location: string
 	instagram: string
 	facebook: string
-	avatar: string
+	twitter: string
 	experience: string
 	languages: string[]
 }

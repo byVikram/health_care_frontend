@@ -7,7 +7,8 @@ export const ROUTES = {
 	},
 
 	PUBLIC: {
-		WELCOME_DOCTOR: '/welcome-doctor',
+		WELCOME: '/welcome',
+		WELCOME_DOCTOR: '/welcome-doctor', // kept for backward compat
 	},
 
 	DOCTORS: {

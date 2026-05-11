@@ -28,8 +28,6 @@ export default function RegisterPage() {
 	const [selectedRoleLabel, setSelectedRoleLabel] = useState<string>('')
 	const [contactNumber, setContactNumber] = useState('')
 
-	const isDoctor = selectedRoleLabel.toLowerCase() === 'doctor'
-
 	const handleRoleSelect = (roleId: string, label: string) => {
 		setSelectedRoleId(roleId)
 		setSelectedRoleLabel(label)
@@ -68,7 +66,7 @@ export default function RegisterPage() {
 				<OtpForm onVerify={() => setStep('success')} contactNumber={contactNumber} />
 			)}
 			{step === 'success' && (
-				<OtpVerified isDoctor={isDoctor} />
+				<OtpVerified role={selectedRoleLabel} />
 			)}
 		</Box>
 	)

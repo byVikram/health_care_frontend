@@ -16,7 +16,7 @@ interface RegisterFormProps {
 
 export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin, roleId }: RegisterFormProps) {
 	// Pre-select the role if roleId was passed in from the onboarding flow
-	const registerAs = useState(roleId ?? '')
+	// const registerAs = useState(roleId ?? '')
 	const navigate = useNavigate()
 
 	const handleSwitchToLogin = () => {

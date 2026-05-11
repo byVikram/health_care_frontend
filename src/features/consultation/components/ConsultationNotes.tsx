@@ -7,6 +7,7 @@ import TextFieldsIcon from '@mui/icons-material/TextFields'
 import CameraAltOutlinedIcon from '@mui/icons-material/CameraAltOutlined'
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
+
 import { ConsultationDoctor } from '../../../types/consultation'
 
 // Minimal SpeechRecognition interface (not in all TS DOM libs)
@@ -32,6 +33,7 @@ const TOOLBAR_ACTIONS = [
 	{ icon: <CameraAltOutlinedIcon fontSize="small" />, label: 'Camera' },
 	{ icon: <ImageOutlinedIcon fontSize="small" />, label: 'Image' },
 	{ icon: <MicNoneOutlinedIcon fontSize="small" />, label: 'Voice' },
+
 ]
 
 export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
@@ -42,6 +44,7 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 	const undoStackRef = useRef<ImageData[]>([])
 	const pendingSnapshotRef = useRef<ImageData | null>(null)
 	const [isListening, setIsListening] = useState(false)
+
 	const [transcript, setTranscript] = useState('')
 	const recognitionRef = useRef<ISpeechRecognition | null>(null)
 	const manualStopRef = useRef(false)
@@ -336,8 +339,8 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 				<Box
 					component="canvas"
 					ref={canvasRef}
-					onPointerDown={handlePointerDown}
-					onPointerMove={handlePointerMove}
+				onPointerDown={handlePointerDown}
+				onPointerMove={handlePointerMove}
 					onPointerUp={stopDrawing}
 					onPointerLeave={stopDrawing}
 					sx={{
@@ -347,7 +350,7 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 						border: 'none',
 						outline: 'none',
 						bgcolor: 'transparent',
-						cursor: 'crosshair',
+					cursor: 'crosshair',
 					}}
 				/>
 			</Box>

@@ -63,6 +63,11 @@ export default function AppRoutes() {
 			<Route path={ROUTES.TEST_REGISTER} element={<TestRegister onSubmit={(email) => console.log('Registered:', email)} />} />
 			<Route path={ROUTES.DOCTOR_ACCOUNT_DETAILS} element={<DoctorAccountDetailsPage />} />
 
+			{/* Welcome page — single route, role passed via ?role=<roleKey> query param */}
+			<Route path={ROUTES.PUBLIC.WELCOME} element={<WelcomePage />} />
+			{/* Backward-compat alias for doctor welcome */}
+			<Route path={ROUTES.PUBLIC.WELCOME_DOCTOR} element={<WelcomePage role="doctor" />} />
+
 			{/* Protected routes */}
 			<Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
 				<Route element={<ProtectedLayout />}>
@@ -78,7 +83,6 @@ export default function AppRoutes() {
 
 			<Route element={<LoggedInNavbarLayout />}>
 				<Route path={ROUTES.PORTAL.HOME} element={<PortalPage />} />
-				<Route path={ROUTES.PUBLIC.WELCOME_DOCTOR} element={<WelcomePage />} />
 				<Route path={ROUTES.PORTAL.PROFILE} element={<ProfilePage />} />
 				<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
 			</Route>
