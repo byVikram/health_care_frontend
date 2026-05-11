@@ -1,9 +1,11 @@
 // src/components/common/Navbar/DoctorNavBar.tsx
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Box, Typography, IconButton, Avatar } from '@mui/material'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined'
+
 import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined'
 import drImage from '../../../assets/Services/doctors-service.png'
 import { useAuth, LookupHospital } from '../../../hooks/useAuth'
@@ -16,6 +18,7 @@ interface DoctorNavBarProps {
 
 export default function DoctorNavBar({ onProfileClick, onHospitalChange }: DoctorNavBarProps) {
 	const { role, user, lookupData } = useAuth()
+	const navigate = useNavigate()
 
 	const hospitals: LookupHospital[] = lookupData?.hospitals ?? []
 
@@ -48,7 +51,7 @@ export default function DoctorNavBar({ onProfileClick, onHospitalChange }: Docto
 		>
 			{/* Left: Logo only */}
 			<Box sx={{ display: 'flex', alignItems: 'center' }}>
-				<Typography sx={{ color: '#fff', fontWeight: 700, fontStyle: 'italic', fontSize: '18px' }}>
+			<Typography onClick={() => navigate('/portal')} sx={{ color: '#fff', fontWeight: 700, fontStyle: 'italic', fontSize: '18px', cursor: 'pointer', '&:hover': { opacity: 0.85 } }}>
 					Whisper ai
 				</Typography>
 			</Box>
@@ -183,6 +186,9 @@ export default function DoctorNavBar({ onProfileClick, onHospitalChange }: Docto
 						)}
 					</Box>
 				)}
+
+
+
 
 				<IconButton sx={{ color: '#fff', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
 					<CalendarTodayOutlinedIcon sx={{ fontSize: 22 }} />

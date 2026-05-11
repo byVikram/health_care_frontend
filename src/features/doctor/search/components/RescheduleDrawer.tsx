@@ -1,10 +1,10 @@
-import { Drawer, Box, Typography, IconButton } from '@mui/material'
+﻿import { Drawer, Box, Typography, IconButton } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import AppButton from '../../../../components/common/Button/AppButton'
 import AppSelect from '../../../../components/common/Select/AppSelect'
 import DateSlotPicker, { SlotGroup } from '../../../../components/common/DateSlotPicker/DateSlotPicker'
 import { Appointment } from '../../../../types/appointment'
-import { DoctorDetailHospital } from '../../../../types/doctor-detail'
+import { LookupHospital } from '../../../../hooks/useAuth'
 
 type Props = {
 	rescheduleOpen: boolean
@@ -23,9 +23,12 @@ type Props = {
 	rescheduleSubmitting: boolean
 	handleRescheduleConfirm: () => void
 
-	rescheduleHospitals: DoctorDetailHospital[]
+	rescheduleHospitals: LookupHospital[]
 	rescheduleHospitalId: string
 	setRescheduleHospitalId: (val: string) => void
+
+	appointmentType: 'clinic' | 'video'
+	setAppointmentType: (type: 'clinic' | 'video') => void
 }
 
 export default function RescheduleDrawer({
@@ -43,22 +46,26 @@ export default function RescheduleDrawer({
 	rescheduleHospitals,
 	rescheduleHospitalId,
 	setRescheduleHospitalId,
+	appointmentType,
+	setAppointmentType,
 }: Props) {
 	return (
 		<Drawer
 			anchor="right"
 			open={rescheduleOpen}
 			onClose={() => setRescheduleOpen(false)}
-			PaperProps={{
-				sx: {
-					width: { xs: '100%', sm: 400 },
-					borderRadius: '16px',
-					m: 2,
-					height: 'calc(100% - 32px)',
-					p: 0,
-					display: 'flex',
-					flexDirection: 'column',
-					boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+			slotProps={{
+				paper: {
+					sx: {
+						width: { xs: '100%', sm: 400 },
+						borderRadius: '16px',
+						m: 2,
+						height: 'calc(100% - 32px)',
+						p: 0,
+						display: 'flex',
+						flexDirection: 'column',
+						boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+					},
 				},
 			}}
 		>
@@ -96,10 +103,15 @@ export default function RescheduleDrawer({
 					<AppSelect
 						value={rescheduleHospitalId}
 						onChange={(e) => setRescheduleHospitalId(e.target.value as string)}
-						options={rescheduleHospitals.map((h) => ({ value: h.hospital.id, label: h.hospital.name }))}
+						options={rescheduleHospitals.map((h) => ({
+							value: h.id,
+							label: h.label,
+						}))}
 						size="small"
 						sx={{
-							'& .MuiOutlinedInput-root': { borderRadius: '10px' },
+							'& .MuiOutlinedInput-root': {
+								borderRadius: '10px',
+							},
 						}}
 					/>
 				</Box>
@@ -115,6 +127,8 @@ export default function RescheduleDrawer({
 					availableSlots={rescheduleSlots.length > 0 ? rescheduleSlots : undefined}
 					loading={rescheduleSlotsLoading}
 					disableBookedSlots={true}
+					selectedAppointmentType={appointmentType}
+					onAppointmentTypeChange={setAppointmentType}
 				/>
 			</Box>
 

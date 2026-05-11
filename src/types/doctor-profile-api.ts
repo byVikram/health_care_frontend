@@ -42,6 +42,8 @@ export interface DoctorProfileApiData {
 		date_of_birth: string
 		location: string
 		languages: string[]
+		instagram?: string | null
+		facebook?: string | null
 	}
 	professional_details: {
 		experience_years: number

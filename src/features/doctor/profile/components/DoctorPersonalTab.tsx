@@ -12,7 +12,6 @@ import { updateProfessionalDetails } from '../../doctorService'
 import 'react-toastify/dist/ReactToastify.css'
 import { toast } from 'react-toastify'
 
-
 interface DoctorPersonalTabProps {
 	data: DoctorProfilePersonal
 	onChange: (updated: Partial<DoctorProfilePersonal>) => void
@@ -75,29 +74,33 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 	// }
 
 	const handleSave = async () => {
-	try {
-		const payload = {
-			name: data.name,
-			location: data.location,
-			gender: data.gender,
-			date_of_birth: data.dateOfBirth,
-			languages: data.languages,
-			email: data.email,
+		try {
+			const payload = {
+				name: data.name,
+				location: data.location,
+				gender: data.gender,
+				date_of_birth: data.dateOfBirth,
+				languages: data.languages,
+				email: data.email,
+				instagram: data.instagram,
+				facebook: data.facebook,
+				twitter: data.twitter,
+			}
+
+			const res = await updateProfessionalDetails(payload)
+
+			if (res) {
+				toast.success('Changes saved successfully!')
+			}
+
+			setSaved(data)
+			setIsDirty(false)
+		} catch (error) {
+			toast.error('Something went wrong. Please try again.')
+			console.error(error)
 		}
-
-		const res = await updateProfessionalDetails(payload)
-
-		if (res) {
-			toast.success("Changes saved successfully!")
-		}
-
-		setSaved(data)
-		setIsDirty(false)
-	} catch (error) {
-		toast.error("Something went wrong. Please try again.")
-		console.error(error)
 	}
-	}
+
 	return (
 		<Box
 			sx={{
@@ -137,6 +140,7 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 							placeholder="+91 XXXXXXXXXX"
 							type="tel"
 							disabled
+							slotProps={{ inputLabel: { shrink: true } }}
 							InputProps={{ endAdornment: data.contactVerified ? verifiedAdornment : undefined }}
 						/>
 					</Grid>
@@ -200,14 +204,58 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 					</Grid>
 				</Grid>
 
+				<Grid container spacing={2}>
+					<Grid size={{ xs: 12, sm: 6 }}>
+						<AppInput
+							label="Instagram"
+							value={data.instagram}
+							placeholder="https://instagram.com/your-handle"
+							type="url"
+							slotProps={{
+								inputLabel: {
+									shrink: true,
+								},
+							}}
+							onChange={(e) => onChange({ instagram: e.target.value })}
+						/>
+					</Grid>
+
+					<Grid size={{ xs: 12, sm: 6 }}>
+						<AppInput
+							label="Facebook"
+							value={data.facebook}
+							placeholder="https://facebook.com/your-profile"
+							type="url"
+							slotProps={{
+								inputLabel: {
+									shrink: true,
+								},
+							}}
+							onChange={(e) => onChange({ facebook: e.target.value })}
+						/>
+					</Grid>
+				</Grid>
+
+
+			<Grid container spacing={2}>
+				<Grid size={{ xs: 12, sm: 6 }}>
+					<AppInput
+						label="Twitter"
+						value={data.twitter}
+						placeholder="https://twitter.com/your-handle"
+						type="url"
+						slotProps={{
+							inputLabel: {
+								shrink: true,
+							},
+						}}
+						onChange={(e) => onChange({ twitter: e.target.value })}
+					/>
+				</Grid>
+			</Grid>
 				<Grid size={{ xs: 12 }} mt={2} display={'flex'} justifyContent={'flex-end'}></Grid>
 			</Box>
-		    <ProfileFormActions
-			isDirty={isDirty}
-			onSave={handleSave}
-			showSuccess={false}
-			onCloseSnackbar={() => {}}
-			/>
+			<ProfileFormActions isDirty={isDirty} onSave={handleSave} showSuccess={false} onCloseSnackbar={() => {}} />
 		</Box>
 	)
 }

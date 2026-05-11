@@ -1,4 +1,4 @@
-// src/features/appointments/PaymentPage.tsx
+﻿// src/features/appointments/PaymentPage.tsx
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -136,7 +136,7 @@ export default function PaymentPage() {
 
 	const total = consultationFee + serviceFee
 
-	const [paymentChoice, setPaymentChoice] = useState<'now' | 'later'>('now')
+	const [paymentChoice, setPaymentChoice] = useState<'now' | 'later'>('later')
 	const [selectedPayment, setSelectedPayment] = useState('phonepe')
 	const [whatsapp, setWhatsapp] = useState(false)
 	const [booking, setBooking] = useState(false)
@@ -322,40 +322,7 @@ export default function PaymentPage() {
 							<RadioGroup
 								value={paymentChoice}
 								onChange={(e) => setPaymentChoice(e.target.value as 'now' | 'later')}
-								sx={{ gap: 0.5 }}
 							>
-								<FormControlLabel
-									value="now"
-									sx={{
-										mx: 0,
-										px: 1.5,
-										width: '100%',
-										display: 'flex',
-										justifyContent: 'space-between',
-									}}
-									control={
-										<Radio
-											size="small"
-											sx={{
-												order: 2,
-												ml: 'auto',
-												color: 'primary.main',
-												'&.Mui-checked': { color: 'primary.main' },
-												'&:focus': { outline: 'none' },
-											}}
-										/>
-									}
-									label={
-										<Typography
-											variant="body2"
-											fontWeight={500}
-											color="text.primary"
-											sx={{ order: 1, flex: 1 }}
-										>
-											Pay Now
-										</Typography>
-									}
-								/>
 								<FormControlLabel
 									value="later"
 									sx={{
@@ -385,6 +352,38 @@ export default function PaymentPage() {
 											sx={{ order: 1, flex: 1 }}
 										>
 											Pay Later
+										</Typography>
+									}
+								/>
+								<FormControlLabel
+									value="now"
+									sx={{
+										mx: 0,
+										px: 1.5,
+										width: '100%',
+										display: 'flex',
+										justifyContent: 'space-between',
+									}}
+									control={
+										<Radio
+											size="small"
+											sx={{
+												order: 2,
+												ml: 'auto',
+												color: 'primary.main',
+												'&.Mui-checked': { color: 'primary.main' },
+												'&:focus': { outline: 'none' },
+											}}
+										/>
+									}
+									label={
+										<Typography
+											variant="body2"
+											fontWeight={500}
+											color="text.primary"
+											sx={{ order: 1, flex: 1 }}
+										>
+											Pay Now
 										</Typography>
 									}
 								/>

@@ -107,7 +107,7 @@ export function getAccessToken(): string | null {
 // DB ids from the user_role table
 //   1 = patient | 2 = doctor | 3 = laboratory | 4 = pharmacy | 5 = radiology
 // ---------------------------------------------------------------------------
-const ROLE_ID_MAP: Record<OnboardingUserRole, number> = {
+export const ROLE_ID_MAP: Record<OnboardingUserRole, number> = {
 	PATIENT:    1,
 	LABORATORY: 3,
 	PHARMACIST: 4,
@@ -172,3 +172,4 @@ export function useOnboardingFlow(): OnboardingFlow {
 		goToRegister,
 	}
 }
+

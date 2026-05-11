@@ -134,7 +134,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 			props.onTimeChange(props.selectedTime === slot ? '' : slot)
 		}
 	}
-
+	
 	const slotsToRender = availableSlots ?? []
 	const isDoctorView = !!(onSelectAll && onUnselectAll)
 	const useCompactAppointmentToggle = compactAppointmentToggle || isDoctorView

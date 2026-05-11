@@ -8,11 +8,11 @@ import AppButton from '../../../components/common/Button/AppButton'
 
 interface Props {
 	role: UserRole
-	roleId: number          // DB id from user_role table
-	onFinish: (roleId: number) => void
+	roleId: string
+	onFinish: (roleId: string) => void
 }
 
-export default function OnBoardingScreens({ role, roleId, onFinish }: Props) {
+export default function OnBoardingPage({ role, roleId, onFinish }: Props) {
 	const slides = onboardingData[role].screens
 	const [currentIndex, setCurrentIndex] = useState(0)
 

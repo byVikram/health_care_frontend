@@ -3,31 +3,71 @@ import { Box } from '@mui/material'
 import { useState } from 'react'
 import RegisterForm from './components/RegisterForm'
 import OtpForm from './components/OtpForm'
-import AccountSuccess from './components/AccountSuccess'
-import WelcomePage from './WelcomePage'
+import OtpVerified from './components/OtpVerified'
+import RoleSelectorPage from './onboarding/RoleSelectorPage'
+import OnBoardingPage from './onboarding/OnBoardingPage'
+import { UserRole, onboardingData } from '../../data/onboardingData'
 
-interface Props {
-	roleId?: number | null   // DB id from user_role table (e.g. 1=patient, 3=laboratory, 4=pharmacy, 5=radiology)
+function labelToUserRole(label: string): UserRole {
+	const map: Record<string, UserRole> = {
+		patient:    'PATIENT',
+		doctor:     'PATIENT',
+		pharmacist: 'PHARMACIST',
+		pharmacy:   'PHARMACIST',
+		laboratory: 'LABORATORY',
+		radiology:  'RADIOLOGY',
+	}
+	return map[label.toLowerCase()] ?? 'PATIENT'
 }
 
-export default function RegisterPage({ roleId }: Props = {}) {
-	const [step, setStep] = useState<'register' | 'otp' | 'verified' | 'success' | 'welcome'>('register')
+type Step = 'roleSelect' | 'onboarding' | 'register' | 'otp' | 'success'
+
+export default function RegisterPage() {
+	const [step, setStep] = useState<Step>('roleSelect')
+	const [selectedRoleId, setSelectedRoleId] = useState<string>('')
+	const [selectedRoleLabel, setSelectedRoleLabel] = useState<string>('')
 	const [contactNumber, setContactNumber] = useState('')
+
+	const handleRoleSelect = (roleId: string, label: string) => {
+		setSelectedRoleId(roleId)
+		setSelectedRoleLabel(label)
+		const userRole = labelToUserRole(label)
+		const hasSlides = onboardingData[userRole]?.screens?.length > 0
+		setStep(hasSlides ? 'onboarding' : 'register')
+	}
+
+	const handleOnboardingFinish = () => setStep('register')
+
+	const handleRegisterSubmit = (mobile: string) => {
+		setContactNumber(mobile)
+		setStep('otp')
+	}
+
+	if (step === 'roleSelect') {
+		return <RoleSelectorPage onSelectRole={handleRoleSelect} />
+	}
+
+	if (step === 'onboarding') {
+		return (
+			<OnBoardingPage
+				role={labelToUserRole(selectedRoleLabel)}
+				roleId={selectedRoleId}
+				onFinish={handleOnboardingFinish}
+			/>
+		)
+	}
 
 	return (
 		<Box>
 			{step === 'register' && (
-				<RegisterForm
-					onSubmit={(mobile) => {
-						setContactNumber(mobile)
-						setStep('otp')
-					}}
-					roleId={roleId}
-				/>
+				<RegisterForm onSubmit={handleRegisterSubmit} roleId={selectedRoleId} />
 			)}
-			{step === 'otp' && <OtpForm onVerify={() => setStep('success')} contactNumber={contactNumber} />}
-			{step === 'success' && <AccountSuccess onContinue={() => setStep('welcome')} />}
-			{step === 'welcome' && <WelcomePage onContinue={() => {}} />}
+			{step === 'otp' && (
+				<OtpForm onVerify={() => setStep('success')} contactNumber={contactNumber} />
+			)}
+			{step === 'success' && (
+				<OtpVerified role={selectedRoleLabel} />
+			)}
 		</Box>
 	)
 }

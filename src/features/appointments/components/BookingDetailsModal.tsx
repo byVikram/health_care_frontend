@@ -1,4 +1,4 @@
-// src/features/appointments/components/BookingDetailsModal.tsx
+﻿// src/features/appointments/components/BookingDetailsModal.tsx
 import {
 	Dialog,
 	DialogTitle,
@@ -62,7 +62,7 @@ interface Props {
 }
 
 export default function BookingDetailsModal({ open, onClose, onConfirm, bookingInfo, loading }: Props) {
-	const [paymentChoice, setPaymentChoice] = useState<'now' | 'later'>('now')
+	const [paymentChoice, setPaymentChoice] = useState<'now' | 'later'>('later')
 	const [selectedPayment, setSelectedPayment] = useState('phonepe')
 
 	const serviceFee = bookingInfo.serviceFee ?? 0
@@ -213,23 +213,6 @@ export default function BookingDetailsModal({ open, onClose, onConfirm, bookingI
 							sx={{ gap: 0.5 }}
 						>
 							<FormControlLabel
-								value="now"
-								control={
-									<Radio
-										size="small"
-										sx={{
-											color: 'primary.main',
-											'&.Mui-checked': { color: 'primary.main' },
-										}}
-									/>
-								}
-								label={
-									<Typography variant="body2" fontWeight={paymentChoice === 'now' ? 600 : 400}>
-										Pay Now
-									</Typography>
-								}
-							/>
-							<FormControlLabel
 								value="later"
 								control={
 									<Radio
@@ -246,6 +229,23 @@ export default function BookingDetailsModal({ open, onClose, onConfirm, bookingI
 										<Typography component="span" variant="caption" color="text.secondary">
 											(Pay at the clinic)
 										</Typography>
+									</Typography>
+								}
+							/>
+							<FormControlLabel
+								value="now"
+								control={
+									<Radio
+										size="small"
+										sx={{
+											color: 'primary.main',
+											'&.Mui-checked': { color: 'primary.main' },
+										}}
+									/>
+								}
+								label={
+									<Typography variant="body2" fontWeight={paymentChoice === 'now' ? 600 : 400}>
+										Pay Now
 									</Typography>
 								}
 							/>

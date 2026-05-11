@@ -17,10 +17,9 @@ import { getPatientDetails } from '../../services/userService'
 import { Patient } from '../../types/patient'
 import { getAppointmentById } from '../../services/userService'
 import { Appointment } from '../../types/appointment'
-import { useAuth } from '../../hooks/useAuth'
+import { useAuth, LookupHospital } from '../../hooks/useAuth'
 import { getDoctorProfile, mapDoctorProfileApi } from '../doctor/doctorService'
 import { DoctorProfile } from '../../types/doctor-profile'
-import { DoctorDetailHospital } from '../../types/doctor-detail'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
 
 interface PatientDetailsResponse {
@@ -178,6 +177,7 @@ export default function ConsultationPage() {
 	const [rescheduleTime, setRescheduleTime] = useState('')
 	const [rescheduleSubmitting] = useState(false)
 	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
+	const [appointmentType, setAppointmentType] = useState<'clinic' | 'video'>('clinic')
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -230,22 +230,10 @@ export default function ConsultationPage() {
 			? mapDoctorProfileToConsultationDoctor(doctorProfile, activeHospital, appointment)
 			: mapAppointmentToConsultationDoctor(appointment)
 
-	const rescheduleHospitalsMapped: DoctorDetailHospital[] = (doctorProfile?.hospitals || []).map((h) => ({
+	const rescheduleHospitalsMapped: LookupHospital[] = (doctorProfile?.hospitals || []).map((h) => ({
 		id: h.id,
-		is_primary: h.isPrimary,
-		video_consultation_fee: h.video_consultation_fee || '',
-		offline_consultation_fee: h.offline_consultation_fee || '',
-		available_days: [],
-		working_hours: '',
-		hospital: {
-			id: h.id,
-			name: h.name,
-			address: h.fullAddress || h.location || '',
-			contact_number: h.phone_number || '',
-			distance: '',
-			latitude: 0,
-			longitude: 0,
-		},
+		label: h.name,
+		address: h.fullAddress || h.location || '',
 	}))
 
 	return (
@@ -359,6 +347,8 @@ export default function ConsultationPage() {
 				rescheduleHospitals={rescheduleHospitalsMapped}
 				rescheduleHospitalId={rescheduleHospitalId}
 				setRescheduleHospitalId={setRescheduleHospitalId}
+			appointmentType={appointmentType}
+			setAppointmentType={setAppointmentType}
 			/>
 		</Box>
 	)

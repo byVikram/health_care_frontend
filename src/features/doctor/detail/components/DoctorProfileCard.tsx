@@ -5,11 +5,11 @@ import { Box, Typography, Avatar, Divider, IconButton, Snackbar, Tooltip } from 
 import { LuMapPin } from 'react-icons/lu'
 import { BsBriefcase, BsCalendarCheck } from 'react-icons/bs'
 
-
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
 import FavoriteIcon from '@mui/icons-material/Favorite'
 import ShareIcon from '@mui/icons-material/Share'
 import { DoctorDetailData } from '../../../../types/doctor-detail'
+import { FaInstagram, FaFacebookF } from 'react-icons/fa'
 
 interface StatItemProps {
 	icon: React.ReactNode
@@ -94,7 +94,6 @@ export default function DoctorProfileCard({ doctor }: DoctorProfileCardProps) {
 							</Typography>
 
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-
 								{/* Heart Icon */}
 								<Tooltip title={isFavourited ? 'Remove from favourites' : 'Add to favourites'}>
 									<IconButton
@@ -174,7 +173,7 @@ export default function DoctorProfileCard({ doctor }: DoctorProfileCardProps) {
 				<Divider />
 
 				{/* Stats Row */}
-				<Box sx={{ display: 'flex', justifyContent: 'space-around', py: 2.5, px: 2 }}>
+				{/* <Box sx={{ display: 'flex', justifyContent: 'space-around', py: 2.5, px: 2 }}>
 					<StatItem
 						icon={<BsCalendarCheck style={{ width: 24, height: 24 }} />}
 						value="Today"
@@ -186,6 +185,46 @@ export default function DoctorProfileCard({ doctor }: DoctorProfileCardProps) {
 						value={`${doctor.details.experience_years || 0}+`}
 						label="Experience"
 					/>
+				</Box> */}
+
+				<Box sx={{ display: 'flex', py: 2.5 }}>
+					<Box sx={{ flex: 1 }}>
+						<StatItem
+							icon={<BsCalendarCheck style={{ width: 24, height: 24, color: '#0F7C7C' }} />}
+							value="Today"
+							label="Available"
+						/>
+					</Box>
+
+					<Divider orientation="vertical" flexItem />
+
+					<Box sx={{ flex: 1 }}>
+						<StatItem
+							icon={<BsBriefcase style={{ width: 24, height: 24, color: '#0F7C7C' }} />}
+							value={`${doctor.details.experience_years || 0}+`}
+							label="Experience"
+						/>
+					</Box>
+
+					<Divider orientation="vertical" flexItem />
+
+					<Box sx={{ flex: 1 }}>
+						<StatItem
+							icon={<FaInstagram style={{ width: 24, height: 24, color: '#0F7C7C' }} />}
+							value="Instagram"
+							label="@dr.anjali"
+						/>
+					</Box>
+
+					<Divider orientation="vertical" flexItem />
+
+					<Box sx={{ flex: 1 }}>
+						<StatItem
+							icon={<FaFacebookF style={{ width: 22, height: 22, color: '#0F7C7C' }} />}
+							value="Facebook"
+							label="/dr.anjali"
+						/>
+					</Box>
 				</Box>
 			</Box>
 

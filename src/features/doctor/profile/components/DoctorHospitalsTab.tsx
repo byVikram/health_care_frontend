@@ -1,4 +1,4 @@
-﻿// src/features/doctor/profile/components/DoctorHospitalsTab.tsx
+// src/features/doctor/profile/components/DoctorHospitalsTab.tsx
 import { useState } from 'react'
 import { Box, Typography, IconButton, Radio } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
@@ -158,23 +158,21 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 
 	const [selectedDate, setSelectedDate] = useState<Date>(new Date())
 	const [weekStart] = useState(() => {
-	const today = new Date()
-	const d = new Date(today)
-	d.setDate(today.getDate() - today.getDay())
-	return d
+		const today = new Date()
+		const d = new Date(today)
+		d.setDate(today.getDate() - today.getDay())
+		return d
 	})
 
 	const weekDates = getWeekDates(weekStart)
 
 	const isSameDay = (a: Date, b: Date) =>
-	a.getDate() === b.getDate() &&
-	a.getMonth() === b.getMonth() &&
-	a.getFullYear() === b.getFullYear()
-
+		a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()
 
 	const [selectedAppointmentType, setSelectedAppointmentType] = useState<AppointmentType>('clinic')
 	const [followUpDays, setFollowUpDays] = useState(7)
 	const [rescheduleCutoff, setRescheduleCutoff] = useState(2)
+	const [allowPayLater, setAllowPayLater] = useState('no')
 
 	const selectedWorkingHours = workingHoursByType[selectedAppointmentType]
 
@@ -677,6 +675,24 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 							<MenuItem value={6}>6 Hours </MenuItem>
 							<MenuItem value={12}>12 Hours </MenuItem>
 							<MenuItem value={24}>1 Day </MenuItem>
+						</TextField>
+					</Box>
+
+					{/* Pay Later */}
+					<Box>
+						<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>
+							Allow Pay Later
+						</Typography>
+
+						<TextField
+							select
+							value={allowPayLater}
+							onChange={(e) => setAllowPayLater(e.target.value)}
+							size="small"
+							sx={{ width: 180 }}
+						>
+							<MenuItem value="yes">Yes</MenuItem>
+							<MenuItem value="no">No</MenuItem>
 						</TextField>
 					</Box>
 				</Box>

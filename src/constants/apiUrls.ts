@@ -21,6 +21,12 @@ export const API_ENDPOINTS = {
 		HOSPITALS: `${BASE_URL}/api/doctors/hospitals`,
 		DELETE_ACCOUNT: `${BASE_URL}/api/doctors/profile`,
 	},
+	LABORATORY_PROFILE: {
+		DETAILS: `${BASE_URL}/api/laboratory/details`,
+		PROFESSIONAL_DETAILS: `${BASE_URL}/api/laboratory/professional-details`,
+		SERVICES: `${BASE_URL}/api/laboratory/services`,
+		DELETE_ACCOUNT: `${BASE_URL}/api/laboratory/profile`,
+	},
 	SPECIALITIES: {
 		LIST: `${BASE_URL}/api/specialities`,
 	},
@@ -48,5 +54,6 @@ export const API_ENDPOINTS = {
 		UPDATE: `${BASE_URL}/api/appointments/update-status`,
 		GET_BY_ID: (id: string | number) => `${BASE_URL}/api/appointments/${id}`,
 		RESCHEDULE: `${BASE_URL}/api/appointments/reschedule`,
+		STATUSES: `${BASE_URL}/api/appointments/statuses`,
 	},
 }
