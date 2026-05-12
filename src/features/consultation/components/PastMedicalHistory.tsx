@@ -1,6 +1,6 @@
 ﻿// src/features/consultation/components/PastMedicalHistory.tsx
 import { useState } from 'react'
-import { Box, Typography, Select, MenuItem, FormControl } from '@mui/material'
+import { Box, Typography, useTheme } from '@mui/material'
 import SentimentDissatisfiedOutlinedIcon from '@mui/icons-material/SentimentDissatisfiedOutlined'
 import { customCardStyle } from '../../../styles/commonStyles'
 
@@ -23,7 +23,6 @@ const EMPTY_MESSAGES: Record<string, string> = {
 	ancillary: 'No past ancillary history!',
 }
 
-// Illustrated icon placeholders — swap with actual images when available
 const TAB_ICONS: Record<string, string> = {
 	prescription: PrescriptionIcon,
 	laboratory: LabIcon,
@@ -34,15 +33,17 @@ const TAB_ICONS: Record<string, string> = {
 const DATE_OPTIONS = [
 	{ value: 'all', label: 'All' },
 	{ value: 'today', label: 'Today' },
-	{ value: 'week', label: 'This Week' },
-	{ value: 'month', label: 'This Month' },
-	{ value: '3months', label: 'Last 3 Months' },
-	{ value: 'year', label: 'This Year' },
+	{ value: 'yesterday', label: 'Yesterday' },
+	{ value: '7days', label: '7 Days' },
+	{ value: '30days', label: '30 Days' },
+	{ value: '90days', label: '90 Days' },
+	{ value: 'custom', label: 'Custom' },
 ]
 
 export default function PastMedicalHistory() {
 	const [activeTab, setActiveTab] = useState('laboratory')
-	const [selectedDate, setSelectedDate] = useState('all')
+	const [selectedDate, setSelectedDate] = useState('yesterday')
+	const theme = useTheme()
 
 	return (
 		<Box sx={{ ...customCardStyle, mt: 2, minHeight: '80vh', flexGrow: 1 }}>
@@ -79,12 +80,8 @@ export default function PastMedicalHistory() {
 								transition: 'all 0.15s',
 							}}
 						>
-							{/* TAB_ICONS[tab.id] */}
-							{/* <img /> */}
-
 							<img
 								src={TAB_ICONS[tab.id]}
-								// alt={title}
 								style={{ width: 42, height: 42, objectFit: 'cover' }}
 							/>
 							<Typography
@@ -103,27 +100,52 @@ export default function PastMedicalHistory() {
 				})}
 			</Box>
 
-			{/* Select date */}
-			<Typography
-				variant="caption"
-				sx={{ color: 'text.secondary', fontSize: '12px', fontWeight: 500, display: 'block', mb: 0.8 }}
+			{/* Date Filter Pills */}
+			<Box
+				sx={{
+					display: 'flex',
+					alignItems: 'center',
+					gap: 1,
+					flexWrap: 'wrap',
+					mb: 2,
+				}}
 			>
-				Select date
-			</Typography>
-			<FormControl fullWidth size="small" sx={{ mb: 3 }}>
-				<Select
-					value={selectedDate}
-					onChange={(e) => setSelectedDate(e.target.value)}
-					displayEmpty
-					sx={{ borderRadius: '8px', fontSize: '13px', color: 'primary.main', fontWeight: 500 }}
-				>
-					{DATE_OPTIONS.map((opt) => (
-						<MenuItem key={opt.value} value={opt.value} sx={{ fontSize: '13px' }}>
-							{opt.label}
-						</MenuItem>
-					))}
-				</Select>
-			</FormControl>
+				{DATE_OPTIONS.map((option) => {
+					const isSelected = selectedDate === option.value
+
+					return (
+						<Box
+							key={option.value}
+							onClick={() => setSelectedDate(option.value)}
+							sx={{
+								px: 1.5,
+								py: 0.7,
+								borderRadius: '999px',
+								cursor: 'pointer',
+								fontSize: '12px',
+								fontWeight: isSelected ? 600 : 400,
+								transition: 'all 0.2s ease',
+								backgroundColor: isSelected ? theme.palette.primary.main : '#F3F4F6',
+								color: isSelected ? '#FFFFFF' : theme.palette.text.secondary,
+								border: '1.5px solid',
+								borderColor: isSelected ? theme.palette.primary.main : '#EAECF0',
+								userSelect: 'none',
+								'&:hover': {
+									backgroundColor: isSelected
+										? theme.palette.primary.dark
+										: 'rgba(43,111,113,0.08)',
+									borderColor: isSelected
+										? theme.palette.primary.dark
+										: theme.palette.primary.light,
+									color: isSelected ? '#FFFFFF' : theme.palette.primary.main,
+								},
+							}}
+						>
+							{option.label}
+						</Box>
+					)
+				})}
+			</Box>
 
 			{/* Empty state */}
 			<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4, gap: 1.5 }}>
@@ -148,3 +170,7 @@ export default function PastMedicalHistory() {
 		</Box>
 	)
 }
+
+
+
+

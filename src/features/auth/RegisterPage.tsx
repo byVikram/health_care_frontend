@@ -1,4 +1,4 @@
-// features/auth/RegisterPage.tsx
+﻿// features/auth/RegisterPage.tsx
 import { Box } from '@mui/material'
 import { useState } from 'react'
 import RegisterForm from './components/RegisterForm'
@@ -28,6 +28,11 @@ export default function RegisterPage() {
 	const [selectedRoleLabel, setSelectedRoleLabel] = useState<string>('')
 	const [contactNumber, setContactNumber] = useState('')
 
+	// Lifted form state — persists when user clicks pencil icon to go back
+	const [savedName, setSavedName] = useState('')
+	const [savedEmail, setSavedEmail] = useState('')
+	const [savedMobile, setSavedMobile] = useState('')
+
 	const handleRoleSelect = (roleId: string, label: string) => {
 		setSelectedRoleId(roleId)
 		setSelectedRoleLabel(label)
@@ -37,9 +42,14 @@ export default function RegisterPage() {
 	}
 
 	const handleOnboardingFinish = () => setStep('register')
+	const handleOnboardingBack = () => setStep('roleSelect')
+	const handleOtpEdit = () => setStep('register')
 
-	const handleRegisterSubmit = (mobile: string) => {
+	const handleRegisterSubmit = (mobile: string, name: string, email: string) => {
 		setContactNumber(mobile)
+		setSavedName(name)
+		setSavedEmail(email)
+		setSavedMobile(mobile)
 		setStep('otp')
 	}
 
@@ -53,6 +63,7 @@ export default function RegisterPage() {
 				role={labelToUserRole(selectedRoleLabel)}
 				roleId={selectedRoleId}
 				onFinish={handleOnboardingFinish}
+				onBack={handleOnboardingBack}
 			/>
 		)
 	}
@@ -60,10 +71,16 @@ export default function RegisterPage() {
 	return (
 		<Box>
 			{step === 'register' && (
-				<RegisterForm onSubmit={handleRegisterSubmit} roleId={selectedRoleId} />
+				<RegisterForm
+					onSubmit={handleRegisterSubmit}
+					roleId={selectedRoleId}
+					initialName={savedName}
+					initialEmail={savedEmail}
+					initialMobile={savedMobile}
+				/>
 			)}
 			{step === 'otp' && (
-				<OtpForm onVerify={() => setStep('success')} contactNumber={contactNumber} />
+				<OtpForm onVerify={() => setStep('success')} contactNumber={contactNumber} onEdit={handleOtpEdit} />
 			)}
 			{step === 'success' && (
 				<OtpVerified role={selectedRoleLabel} />

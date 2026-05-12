@@ -1,5 +1,6 @@
 // src/features/doctor/profile/DoctorProfilePage.tsx
 import { useState, useMemo, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Box, Container, Grid, CircularProgress, Typography } from '@mui/material'
 import AppProfileSidebar from '../../../components/common/ProfileSidebar/AppProfileSidebar'
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline'
@@ -31,7 +32,10 @@ const DOCTOR_NAV_ITEMS = [
 
 function calcCompletion(doctor: DoctorProfile): number {
 	const personalFields = Object.entries(doctor.personal)
-		.filter(([key]) => !['contactVerified', 'emailVerified', 'avatar', 'languages', 'instagram', 'facebook'].includes(key))
+		.filter(
+			([key]) =>
+				!['contactVerified', 'emailVerified', 'avatar', 'languages', 'instagram', 'facebook'].includes(key)
+		)
 		.map(([, val]) => val as string)
 	const langFilled = doctor.personal.languages?.length > 0 ? 1 : 0
 	const professionalFields = Object.values(doctor.professional) as string[]
@@ -41,7 +45,10 @@ function calcCompletion(doctor: DoctorProfile): number {
 }
 
 export default function DoctorProfilePage() {
-	const [activeTab, setActiveTab] = useState<string>('personal')
+	const location = useLocation()
+	const queryParams = new URLSearchParams(location.search)
+	const tabFromUrl = queryParams.get('tab')
+	const [activeTab, setActiveTab] = useState<string>(tabFromUrl || 'personal')
 	const [doctor, setDoctor] = useState<DoctorProfile | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
@@ -82,13 +89,7 @@ export default function DoctorProfilePage() {
 
 			setDoctor((prev) => (prev ? { ...prev, personal: { ...prev.personal, avatar: newAvatarUrl } } : prev))
 
-			setAuth(
-				role!,
-				{ ...user!, avatar: newAvatarUrl },
-				accessToken!,
-				refreshToken!,
-				lookupData
-			)
+			setAuth(role!, { ...user!, avatar: newAvatarUrl }, accessToken!, refreshToken!, lookupData)
 		} catch (err) {
 			console.error('Avatar upload failed', err)
 		}

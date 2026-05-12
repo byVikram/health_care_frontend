@@ -1,6 +1,7 @@
 ﻿// features/auth/components/OtpForm.tsx
 import { Box, Button, Typography, CircularProgress } from '@mui/material'
 import { useState, useEffect, useRef } from 'react'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { verifyOtp, sendOtp } from '../authService'
 import { setAuth, } from '../../../hooks/useAuth'
 import { getLookupData } from '../authService'
@@ -12,9 +13,10 @@ interface OtpFormProps {
 	// Optional: if provided, this is called instead of the default auth verifyOtp.
 	// Receives the 6-digit OTP string. Return true = success, false = failure.
 	onCustomVerify?: (otp: string) => Promise<boolean>
+	onEdit?: () => void
 }
 
-export default function OtpForm({ contactNumber, onVerify, mode = 'page', onCustomVerify }: OtpFormProps) {
+export default function OtpForm({ contactNumber, onVerify, mode = 'page', onCustomVerify, onEdit }: OtpFormProps) {
 	const [otp, setOtp] = useState<string[]>(Array(6).fill(''))
 	const [error, setError] = useState('')
 	const [apiError, setApiError] = useState('')
@@ -261,10 +263,31 @@ export default function OtpForm({ contactNumber, onVerify, mode = 'page', onCust
 					<Typography variant="h4" sx={{ fontWeight: '600', marginBottom: '8px', fontSize: '32px' }}>
 						OTP Verification
 					</Typography>
-					<Typography sx={{ fontSize: '14px', color: '#666', marginBottom: '24px' }}>
-						Enter the OTP received on{' '}
-						<span style={{ fontWeight: 'bold', color: '#000' }}>+91 {contactNumber}</span>
-					</Typography>
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 3 }}>
+						<Typography sx={{ fontSize: '14px', color: '#666' }}>
+							Enter the OTP received on{' '}
+							<span style={{ fontWeight: 'bold', color: '#000' }}>+91 {contactNumber}</span>
+						</Typography>
+						{onEdit && (
+							<Box
+								component="span"
+								onClick={onEdit}
+								sx={{
+									cursor: 'pointer',
+									color: '#2B6F71',
+									display: 'inline-flex',
+									alignItems: 'center',
+									ml: 0.5,
+									borderRadius: '50%',
+									p: '2px',
+									transition: 'background 0.2s',
+									'&:hover': { backgroundColor: 'rgba(43,111,113,0.10)' },
+								}}
+							>
+								<EditOutlinedIcon sx={{ fontSize: 16 }} />
+							</Box>
+						)}
+					</Box>
 					{otpBoxes}
 					{error && <Typography sx={{ color: 'error.main', fontSize: '12px', mb: 1 }}>{error}</Typography>}
 					{apiError && <Typography sx={{ color: 'error.main', fontSize: '12px', mb: 1 }}>{apiError}</Typography>}
@@ -283,3 +306,4 @@ export default function OtpForm({ contactNumber, onVerify, mode = 'page', onCust
 		</Box>
 	)
 }
+

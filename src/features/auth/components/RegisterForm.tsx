@@ -8,13 +8,17 @@ import { createUser } from '../authService'
 import axios from 'axios'
 
 interface RegisterFormProps {
-	onSubmit: (mobile: string) => void
+	onSubmit: (mobile: string, name: string, email: string) => void
 	mode?: 'page' | 'modal'
 	onSwitchToLogin?: () => void
 	roleId?: string   // UUID from api/auth/get-roles
+
+	initialName?: string
+	initialEmail?: string
+	initialMobile?: string
 }
 
-export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin, roleId }: RegisterFormProps) {
+export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin, roleId, initialName = '', initialEmail = '', initialMobile = '' }: RegisterFormProps) {
 	// Pre-select the role if roleId was passed in from the onboarding flow
 	// const registerAs = useState(roleId ?? '')
 	const navigate = useNavigate()
@@ -32,9 +36,9 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin,
 	const [mobileError, setMobileError] = useState('')
 	const [nameError, setNameError] = useState('')
 	const [emailError, setEmailError] = useState('')
-	const [name, setName] = useState('')
-	const [email, setEmail] = useState('')
-	const [mobile, setMobile] = useState('')
+	const [name, setName] = useState(initialName)
+	const [email, setEmail] = useState(initialEmail)
+	const [mobile, setMobile] = useState(initialMobile)
 
 	const handleRegister = async () => {
 		setFormError('')
@@ -72,7 +76,7 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin,
 			const res = await createUser(payload)
 			console.log('API Response:', res)
 			if (res.success) {
-				onSubmit(mobile)
+				onSubmit(mobile, name, email)
 			} else {
 				setFormError(res.message || 'Failed to create user')
 			}
@@ -244,4 +248,5 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin,
 		</Grid>
 	)
 }
+
 

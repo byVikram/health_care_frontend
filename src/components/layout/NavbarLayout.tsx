@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import { USER_ROLES } from '../../constants/constants'
 import { LookupHospital } from '../../hooks/useAuth'
 
+
 const NAVBAR_HEIGHT = 64
 
 // Account type definition
@@ -45,7 +46,7 @@ const DOCTOR_PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
 	{ label: 'My Patients', path: '#' },
 	{ divider: true },
 	{ label: 'Profile', path: '/profile' },
-	{ label: 'Settings', path: '#' },
+	{ label: 'Settings', path: '/profile?tab=settings' },
 	{ label: 'Help Line', path: '#help-line' },
 	{ divider: true },
 	{ label: 'Logout', path: '/logout', danger: true },
