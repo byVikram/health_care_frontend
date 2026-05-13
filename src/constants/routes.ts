@@ -27,6 +27,8 @@ export const ROUTES = {
 
 	PAYMENT: '/payment',
 
+	APPOINTMENTS: '/portal/appointments',
+
 	PORTAL: {
 		HOME: '/portal',
 		PROFILE: '/profile',

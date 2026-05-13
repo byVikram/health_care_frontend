@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Box, Typography, CircularProgress } from '@mui/material'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-// import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import pharmacyImg from '../../../assets/onboarding/pharmacy.png'
 import laboratoryImg from '../../../assets/onboarding/laboartory.png'
 import radiologyImg from '../../../assets/onboarding/radiology.png'
@@ -34,6 +34,7 @@ interface Props {
 export default function RoleSelectorPage({ onSelectRole }: Props) {
 	const [roles, setRoles] = useState<Role[]>([])
 	const [loading, setLoading] = useState(true)
+	const navigate = useNavigate()
 	const [error, setError] = useState('')
 
 	useEffect(() => {
@@ -180,8 +181,26 @@ export default function RoleSelectorPage({ onSelectRole }: Props) {
 					)
 				})}
 
+
+			{/* Already have an account */}
+			<Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '16px', mt: 2}}>
+				Already have an account?{' '}
+				<Box
+					component="span"
+					onClick={() => navigate('/login')}
+					sx={{
+						cursor: 'pointer',
+						color: '#fff',
+						fontWeight: 600,
+						textDecoration: 'underline',
+						'&:hover': { opacity: 0.8 },
+					}}
+				>
+					Login
+				</Box>
+			</Typography>
 				{/* Footer */}
-				<Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: '15px', mt: 5 }}>
+				<Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: '15px', mt: 2 }}>
 					© 2025 Whisper ai. All rights reserved.
 				</Typography>
 			</Box>

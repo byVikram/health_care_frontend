@@ -1,4 +1,4 @@
-// src/features/consultation/components/VitalsTab.tsx
+﻿// src/features/consultation/components/VitalsTab.tsx
 import { useState } from 'react'
 import {
 	Box,
@@ -13,6 +13,7 @@ import {
 	Fab,
 	Divider,
 	Tooltip,
+	useTheme,
 } from '@mui/material'
 import ThermostatIcon from '@mui/icons-material/Thermostat'
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined'
@@ -24,10 +25,11 @@ import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import AddIcon from '@mui/icons-material/Add'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
-import AppSelect from '../../../components/common/Select/AppSelect'
+// import AppSelect from '../../../components/common/Select/AppSelect'
 import { customCardStyle } from '../../../styles/commonStyles'
 import { VitalStat, VitalHistoryRow } from '../../../types/consultation'
 import AppModal from '../../../components/common/Modal/AppModal'
+import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined'
 import AddVitals from './AddVitals'
 
 interface TabColumn {
@@ -75,10 +77,13 @@ const VITAL_ICONS: Record<string, React.ReactNode> = {
 }
 
 const PERIOD_OPTIONS = [
-	{ value: '7days', label: 'Last 7 Days' },
-	{ value: '30days', label: 'Last 30 Days' },
-	{ value: '3months', label: 'Last 3 Months' },
-	{ value: '1year', label: 'Last 1 Year' },
+	{ value: 'all', label: 'All' },
+	{ value: 'today', label: 'Today' },
+	{ value: 'yesterday', label: 'Yesterday' },
+	{ value: '7days', label: '7 Days' },
+	{ value: '30days', label: '30 Days' },
+	{ value: '90days', label: '90 Days' },
+	{ value: 'custom', label: 'Custom' },
 ]
 
 const TAB_CONFIGS: TabConfig[] = [
@@ -491,7 +496,18 @@ export default function VitalsTab() {
 	const [activeTabId, setActiveTabId] = useState('bp')
 	const [period, setPeriod] = useState('30days')
 	const [openVitalsModal, setOpenVitalsModal] = useState(false)
+	const theme = useTheme()
 	const activeTab = TAB_CONFIGS.find((t) => t.id === activeTabId)!
+
+	const handleEcgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0]
+
+		if (!file) return
+
+		console.log('Uploaded ECG file:', file)
+
+		// future API upload here
+	}
 
 	return (
 		<Box sx={{ position: 'relative' }}>
@@ -561,14 +577,100 @@ export default function VitalsTab() {
 							)
 						})}
 					</Box>
-					<AppSelect
-						label=""
-						value={period}
-						options={PERIOD_OPTIONS}
-						onChange={(e) => setPeriod(e.target.value as string)}
-						size="small"
-						sx={{ minWidth: 140, '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
-					/>
+					<Box
+						sx={{
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'space-between',
+							width: '100%',
+							mt: 2,
+						}}
+					>
+						{/* Left Side Pills */}
+						<Box
+							sx={{
+								display: 'flex',
+								alignItems: 'center',
+								gap: 1,
+								flexWrap: 'wrap',
+							}}
+						>
+							{PERIOD_OPTIONS.map((option) => {
+								const isSelected = period === option.value
+
+								return (
+									<Box
+										key={option.value}
+										onClick={() => setPeriod(option.value)}
+										sx={{
+											px: 2.5,
+											py: 0.7,
+											borderRadius: '999px',
+											cursor: 'pointer',
+											fontSize: '12px',
+											fontWeight: isSelected ? 600 : 400,
+											transition: 'all 0.2s ease',
+											backgroundColor: isSelected ? theme.palette.primary.main : '#F3F4F6',
+											color: isSelected ? '#FFFFFF' : theme.palette.text.secondary,
+											border: '1.5px solid',
+											borderColor: isSelected ? theme.palette.primary.main : '#EAECF0',
+											userSelect: 'none',
+
+											'&:hover': {
+												backgroundColor: isSelected
+													? theme.palette.primary.dark
+													: 'rgba(43,111,113,0.08)',
+
+												borderColor: isSelected
+													? theme.palette.primary.dark
+													: theme.palette.primary.light,
+
+												color: isSelected ? '#FFFFFF' : theme.palette.primary.main,
+											},
+										}}
+									>
+										{option.label}
+									</Box>
+								)
+							})}
+						</Box>
+
+						{/* Upload Icon Only For ECG */}
+						{activeTabId === 'ecg' && (
+							<Box
+								component="label"
+								sx={{
+									display: 'flex',
+									flexDirection: 'column',
+									alignItems: 'center',
+									justifyContent: 'center',
+									cursor: 'pointer',
+									color: 'primary.main',
+									minWidth: 80,
+								}}
+							>
+								<CloudUploadOutlinedIcon
+									sx={{
+										fontSize: 30,
+										color: 'primary.main',
+									}}
+								/>
+
+								<Typography
+									sx={{
+										fontSize: '12px',
+										fontWeight: 600,
+										color: 'primary.main',
+										mt: 0.1,
+									}}
+								>
+									Upload
+								</Typography>
+
+								<input type="file" hidden accept=".pdf,.png,.jpg,.jpeg" onChange={handleEcgUpload} />
+							</Box>
+						)}
+					</Box>
 				</Box>
 
 				<Box sx={{ overflowX: 'auto' }}>
@@ -667,19 +769,48 @@ export default function VitalsTab() {
 											</TableCell>
 										))}
 										<TableCell sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
-										{activeTab.showDownload && (
-											<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-											<Tooltip title="View" arrow><IconButton size="small" sx={{ color: 'text.disabled', '&:hover': { color: 'primary.main' }, '&:focus': { outline: 'none' } }}><VisibilityOutlinedIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
+											{activeTab.showDownload && (
+												<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+													<Tooltip title="View" arrow>
+														<IconButton
+															size="small"
+															sx={{
+																color: 'text.disabled',
+																'&:hover': { color: 'primary.main' },
+																'&:focus': { outline: 'none' },
+															}}
+														>
+															<VisibilityOutlinedIcon sx={{ fontSize: 16 }} />
+														</IconButton>
+													</Tooltip>
 
+													<Tooltip title="Download" arrow>
+														<IconButton
+															size="small"
+															sx={{
+																color: 'text.disabled',
+																'&:hover': { color: 'primary.main' },
+																'&:focus': { outline: 'none' },
+															}}
+														>
+															<FileDownloadOutlinedIcon sx={{ fontSize: 16 }} />
+														</IconButton>
+													</Tooltip>
 
-
-											<Tooltip title="Download" arrow><IconButton size="small" sx={{ color: 'text.disabled', '&:hover': { color: 'primary.main' }, '&:focus': { outline: 'none' } }}><FileDownloadOutlinedIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
-
-
-											<Tooltip title="AI Assistance" arrow><IconButton size="small" sx={{ color: 'text.disabled', '&:hover': { color: 'primary.main' }, '&:focus': { outline: 'none' } }}><AutoAwesomeOutlinedIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
-
-											</Box>
-										)}
+													<Tooltip title="AI Assistance" arrow>
+														<IconButton
+															size="small"
+															sx={{
+																color: 'text.disabled',
+																'&:hover': { color: 'primary.main' },
+																'&:focus': { outline: 'none' },
+															}}
+														>
+															<AutoAwesomeOutlinedIcon sx={{ fontSize: 16 }} />
+														</IconButton>
+													</Tooltip>
+												</Box>
+											)}
 										</TableCell>
 									</TableRow>
 								))
@@ -704,7 +835,14 @@ export default function VitalsTab() {
 					<AddIcon />
 				</Fab>
 			</Box>
-			<AppModal open={openVitalsModal} onClose={() => setOpenVitalsModal(false)} maxWidth="sm" fullWidth showCloseButton={false} disableScroll>
+			<AppModal
+				open={openVitalsModal}
+				onClose={() => setOpenVitalsModal(false)}
+				maxWidth="sm"
+				fullWidth
+				showCloseButton={false}
+				disableScroll
+			>
 				<AddVitals />
 			</AppModal>
 		</Box>

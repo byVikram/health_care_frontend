@@ -1,4 +1,5 @@
-﻿// src/components/common/DateSlotPicker/DateSlotPicker.tsx
+// src/components/common/DateSlotPicker/DateSlotPicker.tsx
+import { formatINR } from '../../../utils/Utils'
 import { useState } from 'react'
 import { Box, Typography, IconButton } from '@mui/material'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
@@ -411,7 +412,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 													lineHeight: 1.2,
 												}}
 											>
-												&#8377; {clinicPrice}
+												{formatINR(clinicPrice)}
 											</Typography>
 										)}
 									</Box>
@@ -454,7 +455,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 													lineHeight: 1.2,
 												}}
 											>
-												&#8377; {videoPrice}
+												{formatINR(videoPrice)}
 											</Typography>
 										)}
 									</Box>

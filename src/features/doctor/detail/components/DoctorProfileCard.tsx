@@ -9,7 +9,7 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
 import FavoriteIcon from '@mui/icons-material/Favorite'
 import ShareIcon from '@mui/icons-material/Share'
 import { DoctorDetailData } from '../../../../types/doctor-detail'
-import { FaInstagram, FaFacebookF } from 'react-icons/fa'
+import { FaInstagram, FaFacebookF, FaXTwitter } from 'react-icons/fa6'
 
 interface StatItemProps {
 	icon: React.ReactNode
@@ -216,16 +216,26 @@ export default function DoctorProfileCard({ doctor }: DoctorProfileCardProps) {
 						/>
 					</Box>
 
-					<Divider orientation="vertical" flexItem />
+				<Divider orientation="vertical" flexItem />
 
-					<Box sx={{ flex: 1 }}>
-						<StatItem
-							icon={<FaFacebookF style={{ width: 22, height: 22, color: '#0F7C7C' }} />}
-							value="Facebook"
-							label="/dr.anjali"
-						/>
-					</Box>
+				<Box sx={{ flex: 1 }}>
+					<StatItem
+						icon={<FaFacebookF style={{ width: 22, height: 22, color: '#0F7C7C' }} />}
+						value="Facebook"
+						label="/dr.anjali"
+					/>
 				</Box>
+
+				<Divider orientation="vertical" flexItem />
+
+				<Box sx={{ flex: 1 }}>
+					<StatItem
+						icon={<FaXTwitter style={{ width: 22, height: 22, color: '#0F7C7C' }} />}
+						value="Twitter"
+						label="@dr.anjali"
+					/>
+				</Box>
+			</Box>
 			</Box>
 
 			{/* Snackbar feedback */}

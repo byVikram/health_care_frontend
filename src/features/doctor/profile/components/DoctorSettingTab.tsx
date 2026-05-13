@@ -1,7 +1,11 @@
-// src/features/doctor/profile/components/DoctorSettingTab.tsx
+﻿// src/features/doctor/profile/components/DoctorSettingTab.tsx
 import { useState } from 'react'
-import {Box,Typography,Button,Dialog,DialogContent,DialogActions} from '@mui/material'
+import { Box, Typography, Button, Dialog, DialogContent, DialogActions, Switch, Divider } from '@mui/material'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import StarBorderIcon from '@mui/icons-material/StarBorder'
+import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { customCardStyle } from '../../../../styles/commonStyles'
 import { useNavigate } from 'react-router-dom'
 import ApiService from '../../../../services/apiService'
@@ -10,51 +14,160 @@ import { clearAuth } from '../../../../hooks/useAuth'
 import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
+const switchSx = {
+	width: 56,
+	height: 30,
+	padding: 0,
+	'& .MuiSwitch-switchBase': {
+		padding: 0,
+		margin: '3px',
+		transitionDuration: '300ms',
+		'&.Mui-checked': {
+			transform: 'translateX(26px)',
+			color: '#fff',
+			'& + .MuiSwitch-track': {
+				backgroundColor: '#2B6F71',
+				opacity: 1,
+				border: 0,
+			},
+		},
+	},
+	'& .MuiSwitch-thumb': {
+		boxSizing: 'border-box',
+		width: 24,
+		height: 24,
+		boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+	},
+	'& .MuiSwitch-track': {
+		borderRadius: 15,
+		backgroundColor: '#E2E8F0',
+		opacity: 1,
+		transition: 'background-color 300ms',
+	},
+}
+
 export default function DoctorSettingTab() {
 	const [openDialog, setOpenDialog] = useState(false)
 	const [isDeleting, setIsDeleting] = useState(false)
 	const navigate = useNavigate()
 
-	const handleDeleteClick = () => {
-		setOpenDialog(true)
-	}
+	// Notification toggles
+	const [notifyCancellation, setNotifyCancellation] = useState(true)
+	const [notifyReferral, setNotifyReferral] = useState(false)
+	const [notifyBooking, setNotifyBooking] = useState(true)
 
-	const handleCancel = () => {
-		setOpenDialog(false)
-	}
+	const handleDeleteClick = () => setOpenDialog(true)
+	const handleCancel = () => setOpenDialog(false)
 
 	const handleConfirmDelete = async () => {
-	setIsDeleting(true)
-	try {
-		await ApiService.delete(API_ENDPOINTS.DOCTOR_PROFILE.DELETE_ACCOUNT)
-
-		toast.success('Account deleted successfully')
-
-		setOpenDialog(false)
-
-		// 🔹 clear token/session
-		clearAuth()
-
-		// 🔹 redirect
-		setTimeout(() => {
-			navigate('/login', { replace: true })
-		}, 1000)
-
-	} catch (err) {
-		console.error('Failed to delete account:', err)
-		toast.error('Failed to delete account. Please try again.')
-	} finally {
-		setIsDeleting(false)
+		setIsDeleting(true)
+		try {
+			await ApiService.delete(API_ENDPOINTS.DOCTOR_PROFILE.DELETE_ACCOUNT)
+			toast.success('Account deleted successfully')
+			setOpenDialog(false)
+			clearAuth()
+			setTimeout(() => { navigate('/login', { replace: true }) }, 1000)
+		} catch (err) {
+			console.error('Failed to delete account:', err)
+			toast.error('Failed to delete account. Please try again.')
+		} finally {
+			setIsDeleting(false)
+		}
 	}
-}
+
+	const infoRows = [
+		{ icon: <InfoOutlinedIcon sx={{ fontSize: 20, color: '#2B6F71' }} />, label: 'About Whisper ai' },
+		{ icon: <StarBorderIcon sx={{ fontSize: 20, color: '#2B6F71' }} />, label: 'Rate us on app store' },
+		{ icon: <ShareOutlinedIcon sx={{ fontSize: 20, color: '#2B6F71' }} />, label: 'Share the app with family & friends' },
+	]
+
+	const notifRows = [
+		{ label: 'Get notifications when the patient cancels the appointment', value: notifyCancellation, setter: setNotifyCancellation },
+		{ label: 'Get notification when other doctors refer you', value: notifyReferral, setter: setNotifyReferral },
+		{ label: 'Get notification when patient books an appointment', value: notifyBooking, setter: setNotifyBooking },
+	]
 
 	return (
 		<Box sx={{ ...customCardStyle, p: 4 }}>
-			<Typography variant="h6" fontWeight={600} sx={{ mb: 4, color: 'text.primary' }}>
+			<Typography variant="h6" fontWeight={600} sx={{ mb: 3, color: 'text.primary' }}>
 				Account Settings
 			</Typography>
 
-			{/* Delete Account Button */}
+			{/* ── Info Rows (About, Rate, Share) ── */}
+			<Box
+				sx={{
+					border: '1px solid #EAECF0',
+					borderRadius: '12px',
+					overflow: 'hidden',
+					mb: 3,
+				}}
+			>
+				{infoRows.map((row, i) => (
+					<Box key={row.label}>
+						<Box
+							sx={{
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'space-between',
+								px: 2.5,
+								py: 1.8,
+								cursor: 'pointer',
+								transition: 'background 0.15s',
+								'&:hover': { backgroundColor: 'rgba(43,111,113,0.04)' },
+							}}
+						>
+							<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+								{row.icon}
+								<Typography sx={{ fontSize: '14px', color: 'text.primary', fontWeight: 450 }}>
+									{row.label}
+								</Typography>
+							</Box>
+							<ChevronRightIcon sx={{ fontSize: 18, color: '#9CA3AF' }} />
+						</Box>
+						{i < infoRows.length - 1 && <Divider />}
+					</Box>
+				))}
+			</Box>
+
+			{/* ── Notification Settings ── */}
+			<Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, color: 'text.primary', fontSize: '14px' }}>
+				Notification Settings
+			</Typography>
+			<Box
+				sx={{
+					border: '1px solid #EAECF0',
+					borderRadius: '12px',
+					overflow: 'hidden',
+					mb: 3,
+				}}
+			>
+				{notifRows.map((row, i) => (
+					<Box key={row.label}>
+						<Box
+							sx={{
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'space-between',
+								px: 2.5,
+								py: 1.8,
+								gap: 2,
+							}}
+						>
+							<Typography sx={{ fontSize: '14px', color: 'text.primary', fontWeight: 450, flex: 1 }}>
+								{row.label}
+							</Typography>
+							<Switch
+								checked={row.value}
+								onChange={(e) => row.setter(e.target.checked)}
+								sx={switchSx}
+							/>
+						</Box>
+						{i < notifRows.length - 1 && <Divider />}
+					</Box>
+				))}
+			</Box>
+
+			{/* ── Delete Account ── */}
 			<Button
 				variant="contained"
 				fullWidth
@@ -76,7 +189,7 @@ export default function DoctorSettingTab() {
 				Delete Account
 			</Button>
 
-			{/* Confirmation Dialog */}
+			{/* ── Confirmation Dialog ── */}
 			<Dialog
 				open={openDialog}
 				onClose={handleCancel}
@@ -99,9 +212,7 @@ export default function DoctorSettingTab() {
 						You want to delete your account
 					</Typography>
 				</DialogContent>
-
 				<DialogActions sx={{ justifyContent: 'space-between', px: 3, pb: 3, gap: 2 }}>
-					{/* Cancel Button */}
 					<Button
 						onClick={handleCancel}
 						disabled={isDeleting}
@@ -119,8 +230,6 @@ export default function DoctorSettingTab() {
 					>
 						Cancel
 					</Button>
-
-					{/* Yes, Delete Button */}
 					<Button
 						onClick={handleConfirmDelete}
 						disabled={isDeleting}

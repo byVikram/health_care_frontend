@@ -290,13 +290,13 @@ export default function DoctorDetailPage() {
 													{showFullAbout ? 'Show less' : 'Read more'}
 												</Typography>
 											</Typography>
-											<Divider sx={{ my: 2 }} />
+											{/* <Divider sx={{ my: 2 }} />
 											<Typography variant="h5" sx={{ mb: 0.5 }}>
 												Working Time
 											</Typography>
 											<Typography variant="body2">
 												{primaryHospital?.working_hours || 'Not available'}
-											</Typography>
+											</Typography> */}
 										</Box>
 							<Box sx={{ ...customCardStyle, p: 3, minHeight: '280px' }}>
 

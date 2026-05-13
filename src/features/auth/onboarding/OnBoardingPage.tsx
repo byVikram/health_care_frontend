@@ -10,9 +10,10 @@ interface Props {
 	role: UserRole
 	roleId: string
 	onFinish: (roleId: string) => void
+	onBack?: () => void
 }
 
-export default function OnBoardingPage({ role, roleId, onFinish }: Props) {
+export default function OnBoardingPage({ role, roleId, onFinish, onBack }: Props) {
 	const slides = onboardingData[role].screens
 	const [currentIndex, setCurrentIndex] = useState(0)
 
@@ -27,6 +28,7 @@ export default function OnBoardingPage({ role, roleId, onFinish }: Props) {
 
 	const handleBack = () => {
 		if (!isFirst) setCurrentIndex((prev) => prev - 1)
+		else if (onBack) onBack()
 	}
 
 	return (
@@ -60,14 +62,14 @@ export default function OnBoardingPage({ role, roleId, onFinish }: Props) {
 				{/* Top bar */}
 				<Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 					<ArrowBackIcon
-						onClick={!isFirst ? handleBack : undefined}
+						onClick={handleBack}
 						sx={{
 							color: '#fff',
-							cursor: isFirst ? 'default' : 'pointer',
-							opacity: isFirst ? 0.3 : 1,
+							cursor: (isFirst && !onBack) ? 'default' : 'pointer',
+							opacity: (isFirst && !onBack) ? 0.3 : 1,
 							fontSize: 28,
 							transition: 'transform 0.2s ease',
-							'&:hover': { transform: isFirst ? 'none' : 'scale(1.1)' },
+							'&:hover': { transform: (isFirst && !onBack) ? 'none' : 'scale(1.1)' },
 						}}
 					/>
 					<AppButton

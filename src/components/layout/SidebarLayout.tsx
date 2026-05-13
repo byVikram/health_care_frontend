@@ -6,6 +6,7 @@ import AppSidebar from '../common/Sidebar/AppSidebar'
 import DoctorNavBar from '../common/Navbar/DoctorNavBar'
 import { useAuth, clearAuth } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
+import { ROUTES } from '../../constants/routes'
 
 // MUI Icons - Doctor
 // import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined'
@@ -41,7 +42,12 @@ const NAVBAR_HEIGHT = 64
 
 // -- Doctor config -------------------------------------------------------------
 const DOCTOR_MENU_ITEMS = [
-	{ id: 'appointments', label: 'My Appointments', icon: AppointmentIcon, path: '/doctor' },
+	{
+		id: 'appointments',
+		label: 'My Appointments',
+		icon: AppointmentIcon,
+		path: `${ROUTES.APPOINTMENTS}?view=doctor`,
+	},
 	{ id: 'pharmacy', label: 'Pharmacy', icon: PharmacyIcon },
 	{ id: 'lab', label: 'Lab', icon: LabIcon },
 	{ id: 'radiology', label: 'Radiology', icon: RadiologyIcon },
@@ -60,7 +66,7 @@ const PATIENT_MENU_ITEMS = [
 		id: 'appointments',
 		label: 'My Appointments',
 		icon: AppointmentIcon,
-		path: '/patient/appointments',
+		path: `${ROUTES.APPOINTMENTS}?view=patient`,
 	},
 	{ id: 'pharmacy', label: 'Pharmacy', icon: PharmacyIcon },
 	{ id: 'lab', label: 'Lab', icon: LabIcon },

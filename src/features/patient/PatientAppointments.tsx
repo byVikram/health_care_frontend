@@ -1,9 +1,11 @@
-﻿import { Box, Typography, Chip, Stack, Paper } from '@mui/material'
+import { Box, Typography, Chip, Stack, Paper } from '@mui/material'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import VideocamIcon from '@mui/icons-material/Videocam'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ROUTES } from '../../constants/routes'
 import { getAppointments, getDoctorAvailability, getDoctorById } from '../doctor/doctorService'
 import { Appointment } from '../../types/appointment'
 import drImage from '../../assets/Services/doctors-service.png'
@@ -43,6 +45,7 @@ const formatTime = (timeStr: string) => {
 }
 
 export function PatientAppointments() {
+	const navigate = useNavigate()
 	const [appointments, setAppointments] = useState<Appointment[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState('')
@@ -252,9 +255,7 @@ export function PatientAppointments() {
 								height: '24px',
 							}}
 						/>
-						<Typography sx={{ fontSize: '12px', color: '#0c7c7c', fontWeight: 500, cursor: 'pointer' }}>
-							See All
-						</Typography>
+						<Typography sx={{ fontSize: '12px', color: '#0c7c7c', fontWeight: 500, cursor: 'pointer' }} onClick={() => navigate(ROUTES.APPOINTMENTS + '?view=patient')}>See All</Typography>
 					</Box>
 				</Box>
 				<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '11px' }}>

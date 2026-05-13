@@ -1,6 +1,6 @@
-// src/features/doctor/profile/components/DoctorHospitalsTab.tsx
+﻿// src/features/doctor/profile/components/DoctorHospitalsTab.tsx
 import { useState } from 'react'
-import { Box, Typography, IconButton, Radio } from '@mui/material'
+import { Box, Typography, IconButton, Radio, Switch } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
@@ -172,7 +172,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 	const [selectedAppointmentType, setSelectedAppointmentType] = useState<AppointmentType>('clinic')
 	const [followUpDays, setFollowUpDays] = useState(7)
 	const [rescheduleCutoff, setRescheduleCutoff] = useState(2)
-	const [allowPayLater, setAllowPayLater] = useState('no')
+	const [allowPayLater, setAllowPayLater] = useState(false)
 
 	const selectedWorkingHours = workingHoursByType[selectedAppointmentType]
 
@@ -499,78 +499,86 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 											{section.label}
 										</Typography>
 
-										{/* All slots in a single row */}
-										<Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.5 }}>
-											{slots.map((slot, slotIdx) => {
-												const stepMins = selectedWorkingHours.slotDuration
-												// Build options dynamically from slot duration
-												const allOptions = makeTimeOptions(
-													section.startHour,
-													section.endHour,
-													stepMins
-												)
-												// For slots after the first, only allow start >= previous slot's end
-												const startOptions =
-													slotIdx === 0
-														? allOptions
-														: allOptions.filter((o) => o.value >= slots[slotIdx - 1].end)
-												const endOptions = allOptions.filter((o) => o.value > slot.start)
-
-												return (
-													<Box
-														key={slotIdx}
-														sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-													>
-														<TextField
-															select
-															label="Start Time"
-															value={slot.start}
-															onChange={(e) =>
-																updateSlotTime(
-																	section.key,
-																	slotIdx,
-																	'start',
-																	e.target.value
+										{/* Slots grid + add button */}
+										<Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+											<Box
+												sx={{
+													display: 'grid',
+													gridTemplateColumns: 'repeat(2, max-content)',
+													columnGap: 2,
+													rowGap: 2,
+												}}
+											>
+												{slots.map((slot, slotIdx) => {
+													const stepMins = selectedWorkingHours.slotDuration
+													const allOptions = makeTimeOptions(
+														section.startHour,
+														section.endHour,
+														stepMins
+													)
+													const startOptions =
+														slotIdx === 0
+															? allOptions
+															: allOptions.filter(
+																	(o) => o.value >= slots[slotIdx - 1].end
 																)
-															}
-															size="small"
-															sx={{ width: 140 }}
-														>
-															{startOptions.map((o) => (
-																<MenuItem key={o.value} value={o.value}>
-																	{o.label}
-																</MenuItem>
-															))}
-														</TextField>
+													const endOptions = allOptions.filter((o) => o.value > slot.start)
 
-														<TextField
-															select
-															label="End Time"
-															value={slot.end}
-															onChange={(e) =>
-																updateSlotTime(
-																	section.key,
-																	slotIdx,
-																	'end',
-																	e.target.value
-																)
-															}
-															size="small"
-															sx={{ width: 140 }}
+													return (
+														<Box
+															key={slotIdx}
+															sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
 														>
-															{endOptions.map((o) => (
-																<MenuItem key={o.value} value={o.value}>
-																	{o.label}
-																</MenuItem>
-															))}
-														</TextField>
+															<TextField
+																select
+																label="Start Time"
+																value={slot.start}
+																onChange={(e) =>
+																	updateSlotTime(
+																		section.key,
+																		slotIdx,
+																		'start',
+																		e.target.value
+																	)
+																}
+																size="small"
+																sx={{ width: 150 }}
+															>
+																{startOptions.map((o) => (
+																	<MenuItem key={o.value} value={o.value}>
+																		{o.label}
+																	</MenuItem>
+																))}
+															</TextField>
 
-														{/* × button — only on slots 2 and 3 */}
-														{slotIdx > 0 && (
+															<TextField
+																select
+																label="End Time"
+																value={slot.end}
+																onChange={(e) =>
+																	updateSlotTime(
+																		section.key,
+																		slotIdx,
+																		'end',
+																		e.target.value
+																	)
+																}
+																size="small"
+																sx={{ width: 150 }}
+															>
+																{endOptions.map((o) => (
+																	<MenuItem key={o.value} value={o.value}>
+																		{o.label}
+																	</MenuItem>
+																))}
+															</TextField>
+
+															{/* × button — always rendered, hidden on slot 0 to keep widths consistent */}
 															<IconButton
 																size="small"
 																onClick={() => removeSlot(section.key, slotIdx)}
 																sx={{
+																	visibility: slotIdx > 0 ? 'visible' : 'hidden',
 																	color: 'text.secondary',
 																	'&:hover': { color: 'error.main' },
 																	'&:focus': { outline: 'none' },
@@ -578,29 +586,30 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 															>
 																<CloseIcon sx={{ fontSize: 16 }} />
 															</IconButton>
-														)}
+														</Box>
+													)
+												})}
+											</Box>
 
-														{/* + button — only on the last slot and if < 3 */}
-														{slotIdx === slots.length - 1 && canAdd && (
-															<IconButton
-																size="small"
-																onClick={() => addSlot(section.key)}
-																sx={{
-																	color: 'primary.main',
-																	border: '1px solid',
-																	borderColor: 'primary.main',
-																	borderRadius: '6px',
-																	p: 0.4,
-																	'&:hover': { bgcolor: 'rgba(43,111,113,0.08)' },
-																	'&:focus': { outline: 'none' },
-																}}
-															>
-																<AddIcon sx={{ fontSize: 18 }} />
-															</IconButton>
-														)}
-													</Box>
-												)
-											})}
+											{/* + button — outside the grid so it never shifts slot positions */}
+											{canAdd && (
+												<IconButton
+													size="small"
+													onClick={() => addSlot(section.key)}
+													sx={{
+														mt: 0.4,
+														color: 'primary.main',
+														border: '1px solid',
+														borderColor: 'primary.main',
+														borderRadius: '6px',
+														p: 0.4,
+														'&:hover': { bgcolor: 'rgba(43,111,113,0.08)' },
+														'&:focus': { outline: 'none' },
+													}}
+												>
+													<AddIcon sx={{ fontSize: 18 }} />
+												</IconButton>
+											)}
 										</Box>
 									</Box>
 								)
@@ -684,16 +693,52 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 							Allow Pay Later
 						</Typography>
 
-						<TextField
-							select
-							value={allowPayLater}
-							onChange={(e) => setAllowPayLater(e.target.value)}
-							size="small"
-							sx={{ width: 180 }}
-						>
-							<MenuItem value="yes">Yes</MenuItem>
-							<MenuItem value="no">No</MenuItem>
-						</TextField>
+						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+							<Switch
+								checked={allowPayLater}
+								onChange={(e) => setAllowPayLater(e.target.checked)}
+								sx={{
+									width: 56,
+									height: 30,
+									padding: 0,
+									'& .MuiSwitch-switchBase': {
+										padding: 0,
+										margin: '3px',
+										transitionDuration: '300ms',
+										'&.Mui-checked': {
+											transform: 'translateX(26px)',
+											color: '#fff',
+											'& + .MuiSwitch-track': {
+												backgroundColor: '#2B6F71',
+												opacity: 1,
+												border: 0,
+											},
+										},
+									},
+									'& .MuiSwitch-thumb': {
+										boxSizing: 'border-box',
+										width: 24,
+										height: 24,
+										boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+									},
+									'& .MuiSwitch-track': {
+										borderRadius: 15,
+										backgroundColor: '#E2E8F0',
+										opacity: 1,
+										transition: 'background-color 300ms',
+									},
+								}}
+							/>
+							<Typography
+								sx={{
+									fontSize: '14px',
+									fontWeight: 500,
+									color: allowPayLater ? '#2B6F71' : '#667085',
+								}}
+							>
+								{allowPayLater ? 'Enabled' : 'Disabled'}
+							</Typography>
+						</Box>
 					</Box>
 				</Box>
 
@@ -827,3 +872,4 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		</Box>
 	)
 }
+
