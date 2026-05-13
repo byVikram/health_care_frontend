@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
 	Box,
 	Typography,
@@ -85,13 +85,7 @@ export default function AllAppointmentList() {
 	const [meta, setMeta] = useState<AppointmentMeta>({ total: 0, page: 1, limit: 10, pages: 0 })
 	const [loading, setLoading] = useState(false)
 
-	useEffect(() => {
-		const controller = new AbortController()
-		const timer = setTimeout(() => fetchAppointments(), 300)
-		return () => { clearTimeout(timer); controller.abort() }
-	}, [search, page, size])
-
-	async function fetchAppointments() {
+	const fetchAppointments = useCallback(async () => {
 		setLoading(true)
 		try {
 			const params: Record<string, unknown> = {
@@ -130,7 +124,17 @@ export default function AllAppointmentList() {
 		} finally {
 			setLoading(false)
 		}
-	}
+	}, [page, search, size])
+
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			void fetchAppointments()
+		}, 300)
+
+		return () => {
+			clearTimeout(timer)
+		}
+	}, [fetchAppointments])
 
 	// ── Name column — shown once, based on viewAs ───────────────────────────
 	const patientNameColumn: {
