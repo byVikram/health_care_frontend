@@ -1,4 +1,5 @@
-﻿// src/features/appointments/components/BookingDetailsModal.tsx
+// src/features/appointments/components/BookingDetailsModal.tsx
+import { formatINR } from '../../../utils/Utils'
 import {
 	Dialog,
 	DialogTitle,
@@ -171,7 +172,7 @@ export default function BookingDetailsModal({ open, onClose, onConfirm, bookingI
 							Consultation fee:
 						</Typography>
 						<Typography variant="body2" fontWeight={500}>
-							₹ {bookingInfo.consultationFee}
+							{formatINR(bookingInfo.consultationFee)}
 						</Typography>
 					</Box>
 					<Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
@@ -184,7 +185,7 @@ export default function BookingDetailsModal({ open, onClose, onConfirm, bookingI
 							</Typography>
 						) : (
 							<Typography variant="body2" fontWeight={500}>
-								₹ {serviceFee}
+								{formatINR(serviceFee)}
 							</Typography>
 						)}
 					</Box>
@@ -194,7 +195,7 @@ export default function BookingDetailsModal({ open, onClose, onConfirm, bookingI
 							Total Payable
 						</Typography>
 						<Typography fontWeight={700} fontSize={14} color="primary.main">
-							₹ {total}
+							{formatINR(total)}
 						</Typography>
 					</Box>
 				</Box>
@@ -323,7 +324,7 @@ export default function BookingDetailsModal({ open, onClose, onConfirm, bookingI
 				>
 					<Box>
 						<Typography fontWeight={700} fontSize={18} color="primary.main">
-							₹ {total}
+							{formatINR(total)}
 						</Typography>
 						<Typography variant="caption" color="text.secondary">
 							{paymentChoice === 'now' ? 'Pay Now' : 'Pay at Clinic'}

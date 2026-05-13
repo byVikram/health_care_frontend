@@ -1,4 +1,5 @@
 // src/features/doctor/components/AppointmentTypeSelector.tsx
+import { formatINR } from '../../../../utils/Utils'
 import { Box, Typography } from '@mui/material'
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
 import VideocamIcon from '@mui/icons-material/Videocam'
@@ -80,7 +81,7 @@ export default function AppointmentTypeSelector({ types, selected, onChange }: A
 							{/* Price + Duration */}
 							<Box sx={{ textAlign: 'right', flexShrink: 0 }}>
 								<Typography variant="body1" sx={{ fontWeight: 700 }}>
-									₹ {type.price}
+					{formatINR(type.price)}
 								</Typography>
 								<Typography variant="body2" sx={{ fontSize: '11px' }}>
 									{type.duration} min

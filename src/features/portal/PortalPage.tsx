@@ -1,5 +1,6 @@
 import { Box, Typography, Container, Grid, Popper, Paper, Fade } from '@mui/material'
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getAppointments } from '../doctor/doctorService'
 import { Appointment } from '../../types/appointment'
 
@@ -28,6 +29,7 @@ import { USER_ROLES } from '../../constants/constants'
 import UpcomingEventsSection from '../dashboard/UpcomingEventsSection'
 import CommunityBlogsSection from '../dashboard/CommunityBlogsSection'
 import { useDebouncedValue } from '../../utils/debounce'
+import { ROUTES } from '../../constants/routes'
 
 const buildWeekDays = () => {
 	const today = new Date()
@@ -72,6 +74,13 @@ const othersPopupItems = [
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default function PortalPage({ activeHospital = null }: { activeHospital?: LookupHospital | null }) {
 	const { role, user } = useAuth()
+	const navigate = useNavigate()
+
+	const handleAppointmentIconClick = () => {
+		const view = role === USER_ROLES.DOCTOR ? USER_ROLES.DOCTOR : USER_ROLES.PATIENT
+		navigate(`${ROUTES.APPOINTMENTS}?view=${view}`)
+	}
+
 	const [activeSlide, setActiveSlide] = useState(0)
 	const totalSlides = 4
 	const [selectedDate, setSelectedDate] = useState(0)
@@ -331,6 +340,7 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 									) : (
 										<Box
 											key={s.title}
+											onClick={s.title === 'Appointment' ? handleAppointmentIconClick : undefined}
 											sx={{
 												display: 'flex',
 												flexDirection: 'column',

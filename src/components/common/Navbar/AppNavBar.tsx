@@ -19,6 +19,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
 import AppButton from '../Button/AppButton'
+import { useAuth } from '../../../hooks/useAuth'
 
 const navItems = [
 	{ label: 'Home', href: '/#home' },
@@ -53,6 +54,8 @@ const AppNavBar: React.FC = () => {
 	const locationRef = useRef<HTMLDivElement>(null)
 
 	const selectedLocation = LOCATIONS[selectedIdx]
+
+	const { accessToken } = useAuth()
 
 	//  Derive activeHref from location — no setState inside effect
 	const activeHref = useMemo(() => {
@@ -295,31 +298,35 @@ const AppNavBar: React.FC = () => {
 								)}
 							</Box>
 
-							<Box sx={{ width: '1px', height: '22px', bgcolor: 'rgba(255,255,255,0.3)' }} />
-
-							<Button
-								onClick={() => navigate('/login')}
-								variant="text"
-								sx={{
-									color: 'rgba(255,255,255,0.88)',
-									textTransform: 'none',
-									fontWeight: 400,
-									fontSize: '14.5px',
-									'&:hover': { color: '#fff', bgcolor: 'transparent' },
-									'&:focus': { outline: 'none' },
-								}}
-							>
-								Log In
-							</Button>
-
-							<Box sx={{ width: '1px', height: '22px', bgcolor: 'rgba(255,255,255,0.3)' }} />
-
-							<AppButton
-								variant="text"
-								label="Sign up"
-								onClick={() => navigate('/register')}
-								borderRadius="20px"
-							/>
+					{!accessToken && (
+						<>
+								<Box sx={{ width: '1px', height: '22px', bgcolor: 'rgba(255,255,255,0.3)' }} />
+	
+								<Button
+									onClick={() => navigate('/login')}
+									variant="text"
+									sx={{
+										color: 'rgba(255,255,255,0.88)',
+										textTransform: 'none',
+										fontWeight: 400,
+										fontSize: '14.5px',
+										'&:hover': { color: '#fff', bgcolor: 'transparent' },
+										'&:focus': { outline: 'none' },
+									}}
+								>
+									Log In
+								</Button>
+	
+								<Box sx={{ width: '1px', height: '22px', bgcolor: 'rgba(255,255,255,0.3)' }} />
+	
+								<AppButton
+									variant="text"
+									label="Sign up"
+									onClick={() => navigate('/register')}
+									borderRadius="20px"
+								/>
+						</>
+					)}
 						</Box>
 					) : (
 						<IconButton onClick={handleDrawerToggle} sx={{ color: '#fff' }} aria-label="Open menu">
@@ -363,27 +370,29 @@ const AppNavBar: React.FC = () => {
 						</ListItemButton>
 					))}
 				</List>
-				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, mb: 2 }}>
-					<Button
-						onClick={() => {
-							handleDrawerToggle()
-							navigate('/login')
-						}}
-						variant="text"
-						sx={{ color: 'rgba(255,255,255,0.9)', textTransform: 'none' }}
-					>
-						Log In
-					</Button>
-					<AppButton
-						variant="text"
-						label="Sign up"
-						onClick={() => {
-							handleDrawerToggle()
-							navigate('/register')
-						}}
-						borderRadius="20px"
-					/>
-				</Box>
+			{!accessToken && (
+					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, mb: 2 }}>
+						<Button
+							onClick={() => {
+								handleDrawerToggle()
+								navigate('/login')
+							}}
+							variant="text"
+							sx={{ color: 'rgba(255,255,255,0.9)', textTransform: 'none' }}
+						>
+							Log In
+						</Button>
+						<AppButton
+							variant="text"
+							label="Sign up"
+							onClick={() => {
+								handleDrawerToggle()
+								navigate('/register')
+							}}
+							borderRadius="20px"
+						/>
+					</Box>
+			)}
 			</Drawer>
 		</AppBar>
 	)

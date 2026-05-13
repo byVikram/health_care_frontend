@@ -1,4 +1,5 @@
-﻿// src/features/appointments/PaymentPage.tsx
+// src/features/appointments/PaymentPage.tsx
+import { formatINR } from '../../utils/Utils'
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -272,7 +273,7 @@ export default function PaymentPage() {
 								Consultation fee:
 							</Typography>
 							<Typography variant="body2" fontWeight={500} color="text.primary">
-								₹ {consultationFee}
+								{formatINR(consultationFee)}
 							</Typography>
 						</Box>
 
@@ -289,7 +290,7 @@ export default function PaymentPage() {
 										color="text.secondary"
 										sx={{ textDecoration: 'line-through' }}
 									>
-										₹ {serviceFee}
+										{formatINR(serviceFee)}
 									</Typography>
 								)}
 								<Typography variant="body2" fontWeight={700} color="success.main">
@@ -305,7 +306,7 @@ export default function PaymentPage() {
 								Total Payable
 							</Typography>
 							<Typography fontWeight={700} fontSize={14} color="text.primary">
-								₹ {total}
+								{formatINR(total)}
 							</Typography>
 						</Box>
 					</Box>
@@ -521,7 +522,7 @@ export default function PaymentPage() {
 					>
 						<Box>
 							<Typography fontWeight={700} fontSize={20} color="text.primary">
-								₹ {total}
+								{formatINR(total)}
 							</Typography>
 							<Typography variant="caption" color="text.secondary">
 								{paymentChoice === 'now' ? 'Pay Now' : 'Pay Now'}
