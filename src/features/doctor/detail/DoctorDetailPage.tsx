@@ -21,6 +21,39 @@ import AppSkeleton from '../../../components/common/Skeleton/AppSkeleton'
 import ConsentForm from '../../appointments/components/ConsentForm'
 import { useAuth } from '../../../hooks/useAuth'
 
+type AvailabilityMode = 'clinic' | 'video'
+type ApiAvailabilityMode = 'clinic_visit' | 'video_call'
+type ApiAvailabilityBlock = {
+	appointment_mode?: ApiAvailabilityMode
+	sessions?: SlotGroup[]
+}
+
+const EMPTY_MODE_SLOTS: Record<AvailabilityMode, SlotGroup[]> = { clinic: [], video: [] }
+
+const normalizeAvailabilityByMode = (payload: unknown): Record<AvailabilityMode, SlotGroup[]> => {
+	const data = Array.isArray(payload)
+		? payload
+		: payload && typeof payload === 'object' && Array.isArray((payload as { data?: unknown[] }).data)
+			? (payload as { data: unknown[] }).data
+			: []
+
+	if (data.length === 0) return EMPTY_MODE_SLOTS
+
+	// Backward compatibility: older API returned SlotGroup[] directly.
+	if (data[0] && typeof data[0] === 'object' && 'label' in (data[0] as object) && 'slots' in (data[0] as object)) {
+		return { clinic: data as SlotGroup[], video: [] }
+	}
+
+	const mapped: Record<AvailabilityMode, SlotGroup[]> = { clinic: [], video: [] }
+	for (const item of data as ApiAvailabilityBlock[]) {
+		const mode = item.appointment_mode
+		const sessions = Array.isArray(item.sessions) ? item.sessions : []
+		if (mode === 'clinic_visit') mapped.clinic = sessions
+		if (mode === 'video_call') mapped.video = sessions
+	}
+	return mapped
+}
+
 
 export default function DoctorDetailPage() {
 	const [selectedHospital, setSelectedHospital] = useState('')
@@ -33,7 +66,7 @@ export default function DoctorDetailPage() {
 	const [bookingSuccessModal, setBookingSuccessModal] = useState(false)
 	const [consentOpen, setConsentOpen] = useState(false)
 	const [pendingBooking, setPendingBooking] = useState(false)
-	
+
 
 
 	const [doctorDetail, setDoctorDetail] = useState<DoctorDetailData | null>(null)
@@ -70,9 +103,9 @@ export default function DoctorDetailPage() {
 		setAuthContactNumber('')
 		// After login, open consent form automatically
 		if (pendingBooking) {
-    		setConsentOpen(true)
-    		setPendingBooking(false)
-  		}
+			setConsentOpen(true)
+			setPendingBooking(false)
+		}
 	}
 
 	const primaryHospital =
@@ -160,13 +193,8 @@ export default function DoctorDetailPage() {
 					date: formatDateForApi(selectedDate),
 				})
 				if (!active) return
-				let processedData: SlotGroup[] = []
-				if (Array.isArray(res)) {
-					processedData = res
-				} else if (res && Array.isArray(res.data)) {
-					processedData = res.data
-				}
-				setAvailableSlotGroups(processedData)
+				const byMode = normalizeAvailabilityByMode(res)
+				setAvailableSlotGroups(byMode[selectedType] ?? [])
 			} catch (err) {
 				console.log(err)
 				if (!active) return
@@ -182,7 +210,7 @@ export default function DoctorDetailPage() {
 		return () => {
 			active = false
 		}
-	}, [id, selectedHospital, selectedDate])
+	}, [id, selectedHospital, selectedDate, selectedType])
 
 	const availableSlotStrings: string[] = []
 	if (Array.isArray(availableSlotGroups)) {
@@ -298,7 +326,7 @@ export default function DoctorDetailPage() {
 												{primaryHospital?.working_hours || 'Not available'}
 											</Typography> */}
 										</Box>
-							<Box sx={{ ...customCardStyle, p: 3, minHeight: '280px' }}>
+										<Box sx={{ ...customCardStyle, p: 3, minHeight: '280px' }}>
 
 
 
@@ -366,15 +394,15 @@ export default function DoctorDetailPage() {
 								<AppButton
 									label="Book Appointment"
 									fullWidth
-						loading={false}
-											onClick={() => {
-												if (!accessToken) {
-													setPendingBooking(true)
-													setAuthModalOpen(true)
-												} else {
-													setConsentOpen(true)
-												}
-											}}
+									loading={false}
+									onClick={() => {
+										if (!accessToken) {
+											setPendingBooking(true)
+											setAuthModalOpen(true)
+										} else {
+											setConsentOpen(true)
+										}
+									}}
 								/>
 							)}
 						</Box>
@@ -405,25 +433,27 @@ export default function DoctorDetailPage() {
 			<ConsentForm
 				open={consentOpen}
 				onClose={() => setConsentOpen(false)}
-			onAgree={() => {
-				setConsentOpen(false)
-				navigate('/payment', { state: {
-					doctorName: doctorDetail?.name ?? '',
-					avatarUrl: doctorDetail?.details?.avatar_s3_key ?? '',
-					specialty: doctorDetail?.specialities?.[0] ?? 'Doctor',
-					date: selectedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
-					time: resolvedSelectedTime,
-					appointmentType: selectedType === 'clinic' ? 'Clinic Visit' : 'Video Call',
-					location: (selectedHospitalEntry?.hospital?.name ?? '') + ', ' + (selectedHospitalEntry?.hospital?.address ?? ''),
-					consultationFee: selectedType === 'clinic' ? (appointmentTypes[0]?.price ?? 0) : (appointmentTypes[1]?.price ?? 0),
-					serviceFee: 0,
-					doctorId: doctorDetail?.id ?? '',
-					hospitalId: selectedHospital,
-					appointmentMode: selectedType === 'clinic' ? 'offline' : 'online',
-					appointmentDate: formatDateForApi(selectedDate),
-					startTime: formatTimeForApi(resolvedSelectedTime),
-				} })
-			}}
+				onAgree={() => {
+					setConsentOpen(false)
+					navigate('/payment', {
+						state: {
+							doctorName: doctorDetail?.name ?? '',
+							avatarUrl: doctorDetail?.details?.avatar_s3_key ?? '',
+							specialty: doctorDetail?.specialities?.[0] ?? 'Doctor',
+							date: selectedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+							time: resolvedSelectedTime,
+							appointmentType: selectedType === 'clinic' ? 'Clinic Visit' : 'Video Call',
+							location: (selectedHospitalEntry?.hospital?.name ?? '') + ', ' + (selectedHospitalEntry?.hospital?.address ?? ''),
+							consultationFee: selectedType === 'clinic' ? (appointmentTypes[0]?.price ?? 0) : (appointmentTypes[1]?.price ?? 0),
+							serviceFee: 0,
+							doctorId: doctorDetail?.id ?? '',
+							hospitalId: selectedHospital,
+							appointmentMode: selectedType === 'clinic' ? 'clinic_visit' : 'video_call',
+							appointmentDate: formatDateForApi(selectedDate),
+							startTime: formatTimeForApi(resolvedSelectedTime),
+						}
+					})
+				}}
 			/>
 
 			<ConfirmModal

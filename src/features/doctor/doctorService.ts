@@ -5,7 +5,12 @@ import { AppointmentsResponse } from '../../types/appointment'
 import { DoctorSearchResponse } from '../../types/doctor-search'
 import { DoctorDetailResponse } from '../../types/doctor-detail'
 import { SpecialitiesResponse } from '../../types/speciality'
-import { DoctorProfileApiResponse, DoctorProfileApiData, DoctorProfileApiHospital, DoctorProfileApiAvailability } from '../../types/doctor-profile-api'
+import {
+	DoctorProfileApiResponse,
+	DoctorProfileApiData,
+	DoctorProfileApiHospital,
+	DoctorProfileApiAvailability,
+} from '../../types/doctor-profile-api'
 import { DoctorProfile } from '../../types/doctor-profile'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 
@@ -33,7 +38,7 @@ export interface DoctorSearchParams {
 export interface CreateAppointmentPayload {
 	doctor_id: string
 	hospital_id?: string
-	appointment_mode: 'offline' | 'online'
+	appointment_mode: 'clinic_visit' | 'video_call'
 	appointment_date: string
 	start_time: string
 }
@@ -52,9 +57,7 @@ export const getAppointments = async (params?: AppointmentParams): Promise<Appoi
 	return res.data
 }
 
-export const createAppointment = async (
-	payload: CreateAppointmentPayload
-): Promise<CreateAppointmentResponse> => {
+export const createAppointment = async (payload: CreateAppointmentPayload): Promise<CreateAppointmentResponse> => {
 	const res = await ApiService.post<CreateAppointmentResponse>(API_ENDPOINTS.APPOINTMENTS.CREATE, payload)
 	return res.data
 }
@@ -94,17 +97,17 @@ export const getDoctorAvailability = async (params: {
 }
 
 export const createHospital = async (data: Record<string, unknown>) => {
-  const res = await ApiService.post(API_ENDPOINTS.DOCTOR_PROFILE.HOSPITALS, data)
-  return res.data
+	const res = await ApiService.post(API_ENDPOINTS.DOCTOR_PROFILE.HOSPITALS, data)
+	return res.data
 }
 
 // ── Slot overrides ────────────────────────────────────────────────────────────
 
 export interface SlotOverridePayload {
 	hospital_id?: string | null
-	date: string        // "YYYY-MM-DD"
-	start_time: string  // "HH:MM"
-	end_time: string    // "HH:MM"
+	date: string // "YYYY-MM-DD"
+	start_time: string // "HH:MM"
+	end_time: string // "HH:MM"
 	is_blocked: boolean
 	reason?: string
 }
@@ -125,23 +128,13 @@ export interface SlotOverrideResponse {
 	message: string
 }
 
-export const createSlotOverride = async (
-	payload: SlotOverridePayload
-): Promise<SlotOverrideResponse> => {
-	const res = await ApiService.post<SlotOverrideResponse>(
-		API_ENDPOINTS.DOCTORS.OVERRIDES,
-		payload
-	)
+export const createSlotOverride = async (payload: SlotOverridePayload): Promise<SlotOverrideResponse> => {
+	const res = await ApiService.post<SlotOverrideResponse>(API_ENDPOINTS.DOCTORS.OVERRIDES, payload)
 	return res.data
 }
 
-export const createSlotOverrideBatch = async (
-	payload: SlotOverrideBatchPayload
-): Promise<SlotOverrideResponse> => {
-	const res = await ApiService.post<SlotOverrideResponse>(
-		API_ENDPOINTS.DOCTORS.OVERRIDES,
-		payload
-	)
+export const createSlotOverrideBatch = async (payload: SlotOverrideBatchPayload): Promise<SlotOverrideResponse> => {
+	const res = await ApiService.post<SlotOverrideResponse>(API_ENDPOINTS.DOCTORS.OVERRIDES, payload)
 	return res.data
 }
 
@@ -152,10 +145,7 @@ export const getDoctorProfile = async (): Promise<DoctorProfileApiResponse> => {
 }
 
 export const updateProfessionalDetails = async (data: Record<string, unknown>) => {
-	const res = await ApiService.patch(
-		API_ENDPOINTS.DOCTOR_PROFILE.PROFESSIONAL_DETAILS,
-		data
-	)
+	const res = await ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.PROFESSIONAL_DETAILS, data)
 	return res.data
 }
 
@@ -198,12 +188,12 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 	// Build hospitals
 	const hospitals: DoctorProfile['hospitals'] = Array.isArray(data?.hospitals)
 		? data.hospitals.map((h: DoctorProfileApiHospital) => ({
-				id: h.id,
+				id: h.hospital.id,
 				name: h.hospital?.name ?? '',
 				location: h.hospital?.address ?? '',
 				fullAddress: h.hospital?.address ?? '',
 				isPrimary: h.is_primary ?? false,
-		  }))
+			}))
 		: []
 
 	const pd = data?.personal_details
@@ -243,7 +233,6 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 	}
 }
 
-
 // -- Favourite doctors ---------------------------------------------------------
 
 export interface FavouriteDoctor {
@@ -280,9 +269,6 @@ export const getFavouriteDoctors = async (): Promise<FavouritesResponse> => {
 }
 
 export const toggleFavouriteDoctor = async (publicId: string): Promise<ToggleFavouriteResponse> => {
-	const res = await ApiService.post<ToggleFavouriteResponse>(
-		API_ENDPOINTS.DOCTORS_FAVOURITES.TOGGLE(publicId),
-		{}
-	)
+	const res = await ApiService.post<ToggleFavouriteResponse>(API_ENDPOINTS.DOCTORS_FAVOURITES.TOGGLE(publicId), {})
 	return res.data
 }

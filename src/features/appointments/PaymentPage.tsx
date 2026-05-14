@@ -49,7 +49,7 @@ interface PaymentState {
 	serviceFee: number
 	doctorId: string
 	hospitalId: string
-	appointmentMode: 'offline' | 'online'
+	appointmentMode: 'clinic_visit' | 'video_call'
 	appointmentDate: string
 	startTime: string
 }
@@ -130,7 +130,7 @@ export default function PaymentPage() {
 		serviceFee = 0,
 		doctorId = '',
 		hospitalId = '',
-		appointmentMode = 'offline',
+		appointmentMode = 'clinic_visit',
 		appointmentDate = '',
 		startTime = '',
 	} = state

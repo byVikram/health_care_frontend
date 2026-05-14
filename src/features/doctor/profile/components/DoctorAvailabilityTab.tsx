@@ -20,6 +20,38 @@ interface DoctorAvailabilityTabProps {
 }
 
 type UnselectedSlotsByDate = Record<string, string[]>
+type AvailabilityMode = 'clinic' | 'video'
+type ApiAvailabilityMode = 'clinic_visit' | 'video_call'
+type ApiAvailabilityBlock = {
+	appointment_mode?: ApiAvailabilityMode
+	sessions?: SlotGroup[]
+}
+
+const EMPTY_MODE_SLOTS: Record<AvailabilityMode, SlotGroup[]> = { clinic: [], video: [] }
+
+const normalizeAvailabilityByMode = (payload: unknown): Record<AvailabilityMode, SlotGroup[]> => {
+	const data = Array.isArray(payload)
+		? payload
+		: payload && typeof payload === 'object' && Array.isArray((payload as { data?: unknown[] }).data)
+			? (payload as { data: unknown[] }).data
+			: []
+
+	if (data.length === 0) return EMPTY_MODE_SLOTS
+
+	// Backward compatibility: older API returned SlotGroup[] directly.
+	if (data[0] && typeof data[0] === 'object' && 'label' in (data[0] as object) && 'slots' in (data[0] as object)) {
+		return { clinic: data as SlotGroup[], video: [] }
+	}
+
+	const mapped: Record<AvailabilityMode, SlotGroup[]> = { clinic: [], video: [] }
+	for (const item of data as ApiAvailabilityBlock[]) {
+		const mode = item.appointment_mode
+		const sessions = Array.isArray(item.sessions) ? item.sessions : []
+		if (mode === 'clinic_visit') mapped.clinic = sessions
+		if (mode === 'video_call') mapped.video = sessions
+	}
+	return mapped
+}
 
 export default function DoctorAvailabilityTab({ hospitals, availability, onChange }: DoctorAvailabilityTabProps) {
 	const [selectedHospitalId, setSelectedHospitalId] = useState<string>(
@@ -70,13 +102,8 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 				hospital_id: selectedHospitalId,
 				date: formatDateForApi(selectedDate),
 			})
-			let processedData: SlotGroup[] = []
-			if (Array.isArray(res)) {
-				processedData = res as SlotGroup[]
-			} else if (res && Array.isArray(res.data)) {
-				processedData = res.data as SlotGroup[]
-			}
-			setAvailableSlotGroups(processedData)
+			const byMode = normalizeAvailabilityByMode(res)
+			setAvailableSlotGroups(byMode[selectedAppointmentType] ?? [])
 			setPendingOverrides([])
 		} catch (err) {
 			console.log(err)
@@ -84,7 +111,7 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 		} finally {
 			setSlotsLoading(false)
 		}
-	}, [selectedHospitalId, selectedDate])
+	}, [selectedHospitalId, selectedDate, selectedAppointmentType])
 
 	useEffect(() => {
 		fetchAvailability()
@@ -260,15 +287,15 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 					<Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary', mb: 1 }}>
 						Choose Hospital
 					</Typography>
-				<AppSelect
-					value={selectedHospitalId}
-					onChange={(e) => setSelectedHospitalId(e.target.value as string)}
-					options={hospitals.map((h) => ({ value: h.id, label: h.name }))}
-					size="small"
-					sx={{
-						'& .MuiOutlinedInput-root': { borderRadius: '10px' },
-					}}
-				/>
+					<AppSelect
+						value={selectedHospitalId}
+						onChange={(e) => setSelectedHospitalId(e.target.value as string)}
+						options={hospitals.map((h) => ({ value: h.id, label: h.name }))}
+						size="small"
+						sx={{
+							'& .MuiOutlinedInput-root': { borderRadius: '10px' },
+						}}
+					/>
 				</Box>
 			)}
 
@@ -287,7 +314,7 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 						px: 1.5,
 						py: 0.4,
 						minWidth: 'auto',
-						 mt: 0.5, 
+						mt: 0.5,
 						'&:hover': {
 							borderColor: '#0c7c7c',
 							backgroundColor: '#e0f2f1',
@@ -307,7 +334,7 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 				timeSlotColumns={5}
 				disableBookedSlots={false}
 				availableSlots={slotGroupsForPicker.length > 0 ? slotGroupsForPicker : undefined}
-			loading={slotsLoading || toggleRefreshing}
+				loading={slotsLoading || toggleRefreshing}
 				onSelectAll={() => {
 					stageSlotSelection(allSelectableSlots)
 					setPendingSaveToast('Selected All Successfully')
@@ -316,12 +343,12 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 					stageSlotSelection([])
 					setPendingSaveToast('Unselected All Successfully')
 				}}
-			selectedAppointmentType={selectedAppointmentType}
-			onAppointmentTypeChange={(type) => {
-				setToggleRefreshing(true)
-				setSelectedAppointmentType(type)
-				setTimeout(() => setToggleRefreshing(false), 300)
-			}}
+				selectedAppointmentType={selectedAppointmentType}
+				onAppointmentTypeChange={(type) => {
+					setToggleRefreshing(true)
+					setSelectedAppointmentType(type)
+					setTimeout(() => setToggleRefreshing(false), 300)
+				}}
 			/>
 			<Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
 				<AppButton
