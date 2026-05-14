@@ -20,6 +20,12 @@ import TestRegister from '../features/auth/test/TestRegister'
 import PortalPage from '../features/portal/PortalPage'
 import DoctorAppointmentList from '../features/appointments/AllAppointmentList'
 import WelcomePage from '../features/auth/WelcomePage'
+import OrderList from '../features/Pharmacy/OrderList'
+import OrderDetailPage from '../features/Pharmacy/OrderDetailPage'
+
+
+
+
 
 function ProtectedLayout() {
 	return (
@@ -88,7 +94,8 @@ export default function AppRoutes() {
 				<Route path={ROUTES.PORTAL.PROFILE} element={<ProfilePage />} />
 				<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
 			</Route>
-
+            <Route path={ROUTES.PHARMACY.ORDERS } element={<OrderList />} />
+			<Route path="/order-detail/:orderId" element={<OrderDetailPage />} />
 			<Route path="*" element={<NotFoundPage />} />
 		</Routes>
 	)

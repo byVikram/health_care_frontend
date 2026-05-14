@@ -34,4 +34,9 @@ export const ROUTES = {
 		PROFILE: '/profile',
 		CONSULTATION: '/consultation/:patientId/:appointmentId',
 	},
+
+	PHARMACY: {
+		ORDERS: 'Pharmacy/OrderList',
+		ORDER_DETAIL: '/pharmacy/orders/:orderId',
+	},
 }

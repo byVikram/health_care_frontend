@@ -4,7 +4,7 @@ import { SpecialitiesResponse } from '../types/speciality'
 import { AppointmentStatus } from '../types/appointment'
 import { UserRole as OnboardingUserRole } from '../data/onboardingData'
 
-export type UserRole = 'doctor' | 'patient'
+export type UserRole = 'doctor' | 'patient' | 'laboratory' | 'pharmacist' | 'radiology'
 
 export interface AuthUser {
 	id?: string
@@ -109,6 +109,7 @@ export function getAccessToken(): string | null {
 // ---------------------------------------------------------------------------
 export const ROLE_ID_MAP: Record<OnboardingUserRole, number> = {
 	PATIENT:    1,
+	DOCTOR:     2,
 	LABORATORY: 3,
 	PHARMACIST: 4,
 	RADIOLOGY:  5,
