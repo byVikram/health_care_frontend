@@ -64,9 +64,8 @@ export default function AnswerQuestionsSection() {
 			{/* 4 Question Cards */}
 			<Box sx={{ display: 'flex', gap: 2.5, justifyContent: 'center' }}>
 				{questions.map((q) => (
-					<Box display={'flex'} flexDirection={'column'}>
+					<Box key={q.id} display={'flex'} flexDirection={'column'}>
 						<Box
-							key={q.id}
 							sx={{
 								flex: '1 1 0',
 								bgcolor: '#fff',

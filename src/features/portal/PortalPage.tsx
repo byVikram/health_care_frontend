@@ -31,6 +31,7 @@ import CommunityBlogsSection from '../dashboard/CommunityBlogsSection'
 import { useDebouncedValue } from '../../utils/debounce'
 import { ROUTES } from '../../constants/routes'
 
+import OrderDetails from '../Pharmacy/components/OrderSection'
 const buildWeekDays = () => {
 	const today = new Date()
 	const days = []
@@ -125,6 +126,12 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 	}, [])
 
 	useEffect(() => {
+		// Only fetch appointments for doctor or patient roles
+		if (role !== USER_ROLES.DOCTOR && role !== USER_ROLES.PATIENT) {
+			setApptLoading(false) // stop loading state
+			return
+		}
+
 		const fetchAppointments = async () => {
 			try {
 				setApptLoading(true)
@@ -138,16 +145,19 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 				if (res.success) {
 					const items = Array.isArray(res.data) ? res.data : []
 					setAppointments(items)
-				} else setApptError(res.message ?? 'Failed to load appointments')
-			} catch {
+				} else {
+					setApptError(res.message ?? 'Failed to load appointments')
+				}
+			} catch (err) {
+				console.error('Appointments fetch error:', err)
 				setApptError('Failed to load appointments')
 			} finally {
 				setApptLoading(false)
 			}
 		}
-		fetchAppointments()
-	}, [selectedDate, weekDays, debouncedQuery, activeHospitalId])
 
+		fetchAppointments()
+	}, [selectedDate, weekDays, debouncedQuery, activeHospitalId, role])
 	return (
 		<Box sx={{ bgcolor: '#f5f7fa' }}>
 			<Container maxWidth="lg" sx={{ py: 3 }}>
@@ -211,7 +221,12 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 													{stat.label}
 												</Typography>
 												<Typography
-													sx={{ color: stat.color, fontWeight: 700, fontSize: '20px', lineHeight: 1 }}
+													sx={{
+														color: stat.color,
+														fontWeight: 700,
+														fontSize: '20px',
+														lineHeight: 1,
+													}}
 												>
 													{stat.value}
 												</Typography>
@@ -223,7 +238,6 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 						)}
 
 						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-
 							{/* Quick service icons */}
 							<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 								{quickServices.map((s) =>
@@ -267,7 +281,12 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 												<Box sx={{ bgcolor: '#DE3B40', borderRadius: '3px' }} />
 											</Box>
 											<Typography
-												sx={{ fontSize: '11px', fontWeight: 600, color: 'text.primary', textAlign: 'center' }}
+												sx={{
+													fontSize: '11px',
+													fontWeight: 600,
+													color: 'text.primary',
+													textAlign: 'center',
+												}}
 											>
 												Others
 											</Typography>
@@ -317,7 +336,11 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 																		component="img"
 																		src={item.image}
 																		alt={item.title}
-																		sx={{ width: 34, height: 34, objectFit: 'contain' }}
+																		sx={{
+																			width: 34,
+																			height: 34,
+																			objectFit: 'contain',
+																		}}
 																	/>
 																	<Typography
 																		sx={{
@@ -363,7 +386,12 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 												}}
 											/>
 											<Typography
-												sx={{ fontSize: '11px', fontWeight: 600, color: 'text.primary', textAlign: 'center' }}
+												sx={{
+													fontSize: '11px',
+													fontWeight: 600,
+													color: 'text.primary',
+													textAlign: 'center',
+												}}
 											>
 												{s.title}
 											</Typography>
@@ -443,6 +471,22 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 								}}
 							>
 								<PatientAppointments />
+							</Box>
+						)}
+						{role === USER_ROLES.PHARMACIST && (
+							<Box
+								sx={{
+									bgcolor: '#fff',
+									borderRadius: '16px',
+									border: '1px solid #f0f2f5',
+									height: 'auto',
+									maxHeight: '112vh',
+									overflow: 'auto',
+
+									boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+								}}
+							>
+								<OrderDetails />
 							</Box>
 						)}
 					</Grid>
