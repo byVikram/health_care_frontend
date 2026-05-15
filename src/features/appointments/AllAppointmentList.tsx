@@ -1,13 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react'
-import {
-	Box,
-	Typography,
-	Avatar,
-	InputAdornment,
-	OutlinedInput,
-	Card,
-	CircularProgress,
-} from '@mui/material'
+﻿import React, { useCallback, useEffect, useState } from 'react'
+import { Box, Typography, Avatar, InputAdornment, Card } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import AppTable from './components/AppTable'
@@ -17,9 +9,12 @@ import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
+import AppSelect from '../../components/common/Select/AppSelect'
+import Grid from '@mui/material/Grid'
+import AppInput from '../../components/common/Input/AppInput'
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
+// Types
 interface AppointmentRow extends Record<string, unknown> {
 	id: string
 	patientName: string
@@ -56,48 +51,41 @@ interface AppointmentsResponse {
 		patient: { id: string; name: string; avatar_s3_key: string | null; gender: string | null; age: number | null }
 		hospital: { id: string; name: string; address: string } | null
 	}[]
-	meta: {
-		total: number
-		page: number
-		limit: number
-		pages: number
-	}
+	meta: { total: number; page: number; limit: number; pages: number }
 }
 
+// Main export
 export default function AllAppointmentList() {
 	const [searchParams] = useSearchParams()
-	// 'doctor' view → show Patient Name column
-	// 'patient' view → show Doctor Name column
-	// default to 'doctor' if not specified
 	const { role } = useAuth()
 	const queryView = searchParams.get('view')
 	const viewAs: 'doctor' | 'patient' =
-		queryView === 'doctor' || queryView === 'patient'
-			? queryView
-			: role === 'patient'
-				? 'patient'
-				: 'doctor'
+		queryView === 'doctor' || queryView === 'patient' ? queryView : role === 'patient' ? 'patient' : 'doctor'
 
 	const [search, setSearch] = useState('')
 	const [page, setPage] = useState(1)
 	const [size, setSize] = useState(10)
 	const [rows, setRows] = useState<AppointmentRow[]>([])
 	const [meta, setMeta] = useState<AppointmentMeta>({ total: 0, page: 1, limit: 10, pages: 0 })
-	const [loading, setLoading] = useState(false)
+	const [loading, setLoading] = useState(true)
+
+	const [filterHospital, setFilterHospital] = useState('all')
+	const [filterMode, setFilterMode] = useState('all')
+	const [filterDate, setFilterDate] = useState('all')
+	const [filterStatus, setFilterStatus] = useState('all')
 
 	const fetchAppointments = useCallback(async () => {
+		if (search.length > 0 && search.length < 3) return
 		setLoading(true)
 		try {
-			const params: Record<string, unknown> = {
-				page,
-				limit: size,
-			}
+			const params: Record<string, unknown> = { page, limit: size }
 			if (search) params.search = search
+			if (filterHospital !== 'all') params.hospital = filterHospital
+			if (filterMode !== 'all') params.mode = filterMode
+			if (filterDate !== 'all') params.date = filterDate
+			if (filterStatus !== 'all') params.status = filterStatus
 
-			const res = await ApiService.getWithParams<AppointmentsResponse>(
-				API_ENDPOINTS.APPOINTMENTS.GET,
-				params,
-			)
+			const res = await ApiService.getWithParams<AppointmentsResponse>(API_ENDPOINTS.APPOINTMENTS.GET, params)
 
 			const mapped: AppointmentRow[] = res.data.data.map((appt) => ({
 				id: appt.id,
@@ -117,33 +105,30 @@ export default function AllAppointmentList() {
 			setRows(mapped)
 			setMeta({
 				total: res.data.meta.total,
-				page:  res.data.meta.page,
+				page: res.data.meta.page,
 				limit: res.data.meta.limit,
 				pages: res.data.meta.pages,
 			})
 		} finally {
 			setLoading(false)
 		}
-	}, [page, search, size])
+	}, [page, search, size, filterHospital, filterMode, filterDate, filterStatus])
 
 	useEffect(() => {
 		const timer = setTimeout(() => {
 			void fetchAppointments()
 		}, 300)
-
-		return () => {
-			clearTimeout(timer)
-		}
+		return () => clearTimeout(timer)
 	}, [fetchAppointments])
-
-	// ── Name column — shown once, based on viewAs ───────────────────────────
-	const patientNameColumn: {
+	type ColDef = {
 		id: keyof AppointmentRow
 		label: string
 		sortable?: boolean
 		width?: string
 		format?: (value: AppointmentRow[keyof AppointmentRow], row: AppointmentRow) => React.ReactNode
-	} = {
+	}
+
+	const patientNameColumn: ColDef = {
 		id: 'patientName',
 		label: 'Patient name',
 		width: '220px',
@@ -164,13 +149,7 @@ export default function AllAppointmentList() {
 		),
 	}
 
-	const doctorNameColumn: {
-		id: keyof AppointmentRow
-		label: string
-		sortable?: boolean
-		width?: string
-		format?: (value: AppointmentRow[keyof AppointmentRow], row: AppointmentRow) => React.ReactNode
-	} = {
+	const doctorNameColumn: ColDef = {
 		id: 'doctorName',
 		label: 'Doctor name',
 		width: '220px',
@@ -191,13 +170,7 @@ export default function AllAppointmentList() {
 		),
 	}
 
-	const baseColumns: {
-		id: keyof AppointmentRow
-		label: string
-		sortable?: boolean
-		width?: string
-		format?: (value: AppointmentRow[keyof AppointmentRow], row: AppointmentRow) => React.ReactNode
-	}[] = [
+	const baseColumns: ColDef[] = [
 		{
 			id: 'appointmentDate',
 			label: 'Date and time',
@@ -210,7 +183,8 @@ export default function AllAppointmentList() {
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mt: 0.3 }}>
 						<AccessTimeIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
 						<Typography fontSize={11} color="text.secondary">
-							{row.startTime}{row.endTime ? ` - ${row.endTime}` : ''}
+							{row.startTime}
+							{row.endTime ? ` - ${row.endTime}` : ''}
 						</Typography>
 					</Box>
 				</Box>
@@ -232,7 +206,7 @@ export default function AllAppointmentList() {
 			width: '180px',
 			format: (_value, row) => (
 				<Typography fontSize={13} color="text.primary" fontWeight={500}>
-					{row.hospitalName ?? '—'}
+					{row.hospitalName ?? '\u2014'}
 				</Typography>
 			),
 		},
@@ -248,70 +222,182 @@ export default function AllAppointmentList() {
 		},
 	]
 
-	const columns = viewAs === 'doctor'
-		? [patientNameColumn, ...baseColumns]
-		: [doctorNameColumn, ...baseColumns]
+	const hospitalOptions = [
+		{ value: 'all', label: 'All' },
+		{ value: 'manipal', label: 'Manipal Hospital' },
+		{ value: 'apollo', label: 'Apollo Hospital' },
+	]
 
-	const searchPlaceholder = viewAs === 'doctor'
-		? 'Search Patient ID, Name...'
-		: 'Search Doctor ID, Name...'
+	const modeOptions = [
+		{ value: 'all', label: 'All' },
+		{ value: 'offline', label: 'Offline' },
+		{ value: 'online', label: 'Online' },
+	]
 
+	const dateOptions = [
+		{ value: 'all', label: 'All' },
+		{ value: 'today', label: 'Today' },
+		{ value: 'yesterday', label: 'Yesterday' },
+		{ value: 'last7', label: 'Last 7 days' },
+		{ value: 'last30', label: 'Last 30 days' },
+	]
+
+	const statusOptions = [
+		{ value: 'all', label: 'All' },
+		{ value: 'pending', label: 'Pending' },
+		{ value: 'confirmed', label: 'Confirmed' },
+		{ value: 'reschedule', label: 'Reschedule' },
+		{ value: 'cancelled', label: 'Cancelled' },
+	]
+
+	const getFilterSelectProps = (options: { value: string; label: string }[]) => ({
+		displayEmpty: true,
+		renderValue: (selected: unknown) => {
+			const selectedOption = options.find((option) => option.value === selected)
+			return selectedOption && selectedOption.value !== 'all' ? selectedOption.label : ''
+		},
+		MenuProps: {
+			PaperProps: {
+				sx: { mt: 1, boxShadow: '0 6px 20px rgba(0,0,0,0.12)' },
+			},
+		},
+	})
+
+	const columns = viewAs === 'doctor' ? [patientNameColumn, ...baseColumns] : [doctorNameColumn, ...baseColumns]
 	return (
 		<Box sx={{ p: 3 }}>
-			{/* ── top bar ── */}
-			<Box
-				sx={{
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'space-between',
-					mb: 2,
-					flexWrap: 'wrap',
-					gap: 1.5,
-				}}
-			>
-				<Typography fontSize={13} fontWeight={400} color="text.secondary">
-					{viewAs === 'doctor' ? (
-						<>
-							Showing all patients listed under{' '}
-							<Typography component="span" fontSize={13} fontWeight={600} color="text.primary">
-								Manipal Hospital, Old Airport Road, Bangalore
-							</Typography>
-						</>
-					) : (
-						<>Showing all your upcoming appointments</>
-					)}
-				</Typography>
-
-				<OutlinedInput
-					size="small"
-					placeholder={searchPlaceholder}
-					value={search}
-					onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-					startAdornment={
-						<InputAdornment position="start">
-							<SearchIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-						</InputAdornment>
-					}
-					endAdornment={
-						<InputAdornment position="end">
-							<MicNoneOutlinedIcon sx={{ color: 'text.disabled', fontSize: 20, cursor: 'pointer' }} />
-						</InputAdornment>
-					}
-					sx={{
-						fontSize: 14,
-						width: 650,
-						height: 44,
-						borderRadius: '10px',
-						bgcolor: 'background.paper',
-						'& .MuiOutlinedInput-notchedOutline': { borderColor: 'divider' },
-					}}
-				/>
-			</Box>
-
-			{/* ── table ── */}
+			{/* Filter bar */}
 			{loading ? (
-				<Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-					<CircularProgress size={32} />
+				<Grid container spacing={2} sx={{ mb: 2.5, alignItems: 'center' }}>
+					<Grid size={{ xs: 12, lg: 8 }}>
+						<Grid container spacing={2}>
+							<Grid size={{ xs: 12, sm: 6, md: 3 }}>
+								<AppSkeleton variant="rounded" width="100%" height={44} />
+							</Grid>
+							<Grid size={{ xs: 12, sm: 6, md: 3 }}>
+								<AppSkeleton variant="rounded" width="100%" height={44} />
+							</Grid>
+							<Grid size={{ xs: 12, sm: 6, md: 3 }}>
+								<AppSkeleton variant="rounded" width="100%" height={44} />
+							</Grid>
+							<Grid size={{ xs: 12, sm: 6, md: 3 }}>
+								<AppSkeleton variant="rounded" width="100%" height={44} />
+							</Grid>
+						</Grid>
+					</Grid>
+					<Grid size={{ xs: 12, lg: 4 }}>
+						<AppSkeleton variant="rounded" width="100%" height={44} />
+					</Grid>
+				</Grid>
+			) : (
+				<Grid container spacing={2} sx={{ mb: 2.5, alignItems: 'center' }}>
+					<Grid size={{ xs: 12, lg: 8 }}>
+						<Grid container spacing={2}>
+							<Grid size={{ xs: 12, sm: 6, md: 3 }}>
+								<AppSelect
+									label="Hospital"
+									value={filterHospital}
+									onChange={(e) => {
+										setFilterHospital(e.target.value)
+										setPage(1)
+									}}
+									options={hospitalOptions}
+									slotProps={{
+										select: getFilterSelectProps(hospitalOptions),
+									}}
+								/>
+							</Grid>
+
+							<Grid size={{ xs: 12, sm: 6, md: 3 }}>
+								<AppSelect
+									label="Mode"
+									value={filterMode}
+									onChange={(e) => {
+										setFilterMode(e.target.value)
+										setPage(1)
+									}}
+									options={modeOptions}
+									slotProps={{
+										select: getFilterSelectProps(modeOptions),
+									}}
+								/>
+							</Grid>
+
+							<Grid size={{ xs: 12, sm: 6, md: 3 }}>
+								<AppSelect
+									label="Date"
+									value={filterDate}
+									onChange={(e) => {
+										setFilterDate(e.target.value)
+										setPage(1)
+									}}
+									options={dateOptions}
+									slotProps={{
+										select: getFilterSelectProps(dateOptions),
+									}}
+								/>
+							</Grid>
+
+							<Grid size={{ xs: 12, sm: 6, md: 3 }}>
+								<AppSelect
+									label="Status"
+									value={filterStatus}
+									onChange={(e) => {
+										setFilterStatus(e.target.value)
+										setPage(1)
+									}}
+									options={statusOptions}
+									slotProps={{
+										select: getFilterSelectProps(statusOptions),
+									}}
+								/>
+							</Grid>
+						</Grid>
+					</Grid>
+					<Grid size={{ xs: 12, lg: 4 }}>
+						<AppInput
+							fullWidth
+							size="small"
+							placeholder={
+								viewAs === 'doctor' ? 'Search Patient ID, Name...' : 'Search Doctor ID, Name...'
+							}
+							value={search}
+							onChange={(e) => {
+								setSearch(e.target.value)
+								setPage(1)
+							}}
+							InputProps={{
+								startAdornment: (
+									<InputAdornment position="start">
+										<SearchIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
+									</InputAdornment>
+								),
+								endAdornment: (
+									<InputAdornment position="end">
+										<MicNoneOutlinedIcon
+											sx={{ color: 'text.disabled', fontSize: 20, cursor: 'pointer' }}
+										/>
+									</InputAdornment>
+								),
+							}}
+							sx={{
+								fontSize: 14,
+								height: 44,
+								borderRadius: '10px',
+								bgcolor: 'background.paper',
+								'& .MuiOutlinedInput-notchedOutline': {
+									borderColor: 'divider',
+								},
+							}}
+						/>
+					</Grid>
+				</Grid>
+			)}
+			{loading ? (
+				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+					{Array.from({ length: 7 }).map((_, i) => (
+						<AppSkeleton key={i} variant="rounded" width="100%" height={70} />
+					))}
 				</Box>
 			) : (
 				<Card
@@ -336,7 +422,10 @@ export default function AllAppointmentList() {
 						showPagination={meta.total > meta.limit}
 						rowPadding="10px 14px"
 						emptyMessage="No appointments found"
-						onPageChange={(newPage, newSize) => { setPage(newPage); setSize(newSize) }}
+						onPageChange={(newPage, newSize) => {
+							setPage(newPage)
+							setSize(newSize)
+						}}
 					/>
 				</Card>
 			)}

@@ -644,7 +644,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 
 					{/* Free Follow-up Days */}
 					<Box>
-						<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>
+						<Typography sx={{ fontSize: '14px', color: 'text.secondary', mb: 1 }}>
 							Free Follow-up Validity
 						</Typography>
 
@@ -666,7 +666,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 
 					{/* Reschedule Cutoff */}
 					<Box>
-						<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>
+						<Typography sx={{ fontSize: '14px', color: 'text.secondary', mb: 1 }}>
 							Reschedule Allowed Until
 						</Typography>
 
@@ -689,7 +689,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 
 					{/* Pay Later */}
 					<Box>
-						<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>
+						<Typography sx={{ fontSize: '14px', color: 'text.secondary', mb: 1 }}>
 							Allow Pay Later
 						</Typography>
 

@@ -330,7 +330,7 @@ export default function ConsultationPage() {
 						</Grid>
 					</Grid>
 				)}
-				{activeTab === 1 && <VitalsTab />}
+				{activeTab === 1 && patientId && <VitalsTab patientPublicId={patientId}/>}
 			</Container>
 			<RescheduleDrawer
 				rescheduleOpen={rescheduleOpen}
