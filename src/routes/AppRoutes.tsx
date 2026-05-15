@@ -94,8 +94,8 @@ export default function AppRoutes() {
 				<Route path={ROUTES.PORTAL.PROFILE} element={<ProfilePage />} />
 				<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
 			</Route>
-            <Route path={ROUTES.PHARMACY.ORDERS } element={<OrderList />} />
-			<Route path="/order-detail/:orderId" element={<OrderDetailPage />} />
+            <Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
+<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
 			<Route path="*" element={<NotFoundPage />} />
 		</Routes>
 	)

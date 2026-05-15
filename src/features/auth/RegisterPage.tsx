@@ -12,8 +12,8 @@ function labelToUserRole(label: string): UserRole {
 	const map: Record<string, UserRole> = {
 		patient:    'PATIENT',
 		doctor:     'PATIENT',
-		pharmacist: 'PHARMACIST',
-		pharmacy:   'PHARMACIST',
+		
+		pharmacy:   'PHARMACY',
 		laboratory: 'LABORATORY',
 		radiology:  'RADIOLOGY',
 	}

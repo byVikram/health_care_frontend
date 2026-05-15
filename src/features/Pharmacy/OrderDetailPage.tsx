@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import {
   Box,
   Card,
@@ -20,7 +20,7 @@ import {
 } from "@mui/material";
 import {
   Phone,
-  CloudUpload,
+  // CloudUpload,
   LocationOn,
   AccessTime,
   CalendarToday,
@@ -265,27 +265,27 @@ function StatusDropdown({
 export default function PrescriptionLayout() {
   const [status, setStatus] = useState("order_pending");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [snackbarMessage] = useState("");
+  // const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Patient and clinic contact details
   const patientContact = "9876543210";
   const clinicContact = "080 4567 1234";
 
   // Handle file upload
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
+  // const handleUploadClick = () => {
+  //   fileInputRef.current?.click();
+  // };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      console.log("Selected file:", file.name, file.type, file.size);
-      setSnackbarMessage(`File "${file.name}" selected. Ready to upload.`);
-      setSnackbarOpen(true);
-      event.target.value = ""; // reset
-    }
-  };
+  // const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = event.target.files?.[0];
+  //   if (file) {
+  //     console.log("Selected file:", file.name, file.type, file.size);
+  //     setSnackbarMessage(`File "${file.name}" selected. Ready to upload.`);
+  //     setSnackbarOpen(true);
+  //     event.target.value = ""; // reset
+  //   }
+  // };
 
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
@@ -532,7 +532,7 @@ export default function PrescriptionLayout() {
             </Card>
 
             {/* Upload Report Card with functional file picker */}
-            <Card
+            {/* <Card
               elevation={0}
               sx={{
                 borderRadius: 2,
@@ -568,7 +568,7 @@ export default function PrescriptionLayout() {
                   Upload report
                 </Button>
               </CardContent>
-            </Card>
+            </Card> */}
           </Box>
         </Grid>
 

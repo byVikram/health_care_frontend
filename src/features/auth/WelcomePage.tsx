@@ -96,7 +96,7 @@ const WELCOME_CONFIG: Record<RoleKey, WelcomeConfig> = {
 	},
 
 	pharmacy: {
-		greeting: 'Welcome Pharmacist👋',
+		greeting: 'Welcome PHARMACY👋',
 		subtitle: "Let's get your pharmacy listed and ready to serve patients.",
 		buttonLabel: 'Set Up Pharmacy Profile',
 		image: welcomeDoctorImg,

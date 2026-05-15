@@ -32,6 +32,7 @@ import { useDebouncedValue } from '../../utils/debounce'
 import { ROUTES } from '../../constants/routes'
 
 import OrderDetails from '../Pharmacy/components/OrderSection'
+import { customCardStyle } from '../../styles/commonStyles'
 const buildWeekDays = () => {
 	const today = new Date()
 	const days = []
@@ -473,17 +474,17 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 								<PatientAppointments />
 							</Box>
 						)}
-						{role === USER_ROLES.PHARMACIST && (
+						{role === USER_ROLES.PHARMACY && (
 							<Box
 								sx={{
-									bgcolor: '#fff',
-									borderRadius: '16px',
-									border: '1px solid #f0f2f5',
-									height: 'auto',
-									maxHeight: '112vh',
-									overflow: 'auto',
-
-									boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+									// bgcolor: '#fff',
+									// borderRadius: '16px',
+									// border: '1px solid #f0f2f5',
+									// height: 'auto',
+									// maxHeight: '112vh',
+									// overflow: 'auto',
+									// boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+									...customCardStyle,
 								}}
 							>
 								<OrderDetails />

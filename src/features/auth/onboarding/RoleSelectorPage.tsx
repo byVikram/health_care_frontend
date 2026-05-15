@@ -14,7 +14,7 @@ import { getRoles } from '../authService'
 const ROLE_VISUALS: Record<string, { image: string; bg: string }> = {
 	patient: { image: patientImg, bg: '#f0fdf6' },
 	doctor: { image: doctorImg, bg: '#f0f8ff' },
-	pharmacist: { image: pharmacyImg, bg: '#fff8f0' },
+	
 	pharmacy: { image: pharmacyImg, bg: '#fff8f0' },
 	laboratory: { image: laboratoryImg, bg: '#fdf0f8' },
 	radiology: { image: radiologyImg, bg: '#f0f4ff' },

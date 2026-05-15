@@ -2,7 +2,7 @@
 import React from 'react';
 import { Box, Typography, Paper, Button, Grid, Stack } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import { CommonCard } from '../../../components/common/Card/OrderCard';
+import {  OrderCard } from '../../../components/common/Card/OrderCard';
 
 
 import PendingIcon from '../../../assets/Pharmacy/Pendingorders.svg';
@@ -10,6 +10,7 @@ import OnTheWayIcon from '../../../assets/Pharmacy/Ontheway.svg';
 import DeliveredIcon from '../../../assets/Pharmacy/Deliveredorders.svg';
 import CancelledIcon from '../../../assets/Pharmacy/Cancelledorders.svg';
 import DocIcon from '../../../assets/Pharmacy/docxs.svg';
+import { customCardStyle } from '../../../styles/commonStyles';
 
 interface StatItem {
   title: string;
@@ -47,7 +48,7 @@ const OrdersScreen: React.FC = () => {
   ];
 
   return (
-    <Box sx={{ bgcolor: '#f6fbfc', minHeight: 'auto', p: { xs: 2, md: 3 } }}>
+    <Box sx={{ minHeight: 'auto', p: { xs: 2, md: 3 } }}>
      
       <Typography variant="h4" sx={{ mb: 2, fontWeight: 600, color: '#1A2C33' }}>
         Orders
@@ -57,16 +58,17 @@ const OrdersScreen: React.FC = () => {
       <Paper
         elevation={0}
         sx={{
-          bgcolor: '#fff',
-          borderRadius: 3,
-          p: 2,
-          mb: 3,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 2,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          ...customCardStyle
+          // bgcolor: '#cacaca',
+          // borderRadius: 3,
+          // p: 2,
+          // mb: 3,
+          // display: 'flex',
+          // alignItems: 'center',
+          // justifyContent: 'space-between',
+          // flexWrap: 'wrap',
+          // gap: 2,
+          // boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
         }}
       >
         <Stack direction="row" spacing={2} alignItems="center">
@@ -104,7 +106,7 @@ const OrdersScreen: React.FC = () => {
       <Grid container spacing={2}>
         {statsData.map((item, idx) => (
           <Grid size={{ xs: 12, sm: 6 }} key={idx}>
-            <CommonCard
+            <OrderCard
               imageSrc={item.imageSrc}
               title={item.title}
               stats={item.stats}
