@@ -1,13 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react'
-import {
-	Box,
-	Typography,
-	Avatar,
-	InputAdornment,
-	OutlinedInput,
-	Card,
-	CircularProgress,
-} from '@mui/material'
+import React, {  useEffect, useState } from 'react'
+import { Box, Typography, Avatar, InputAdornment, OutlinedInput, Card, CircularProgress } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import AppTable from './components/AppTable'
@@ -64,7 +56,7 @@ interface AppointmentsResponse {
 	}
 }
 
-export default function AllAppointmentList() {
+export default function AppointmentList() {
 	const [searchParams] = useSearchParams()
 	// 'doctor' view → show Patient Name column
 	// 'patient' view → show Doctor Name column
@@ -72,11 +64,7 @@ export default function AllAppointmentList() {
 	const { role } = useAuth()
 	const queryView = searchParams.get('view')
 	const viewAs: 'doctor' | 'patient' =
-		queryView === 'doctor' || queryView === 'patient'
-			? queryView
-			: role === 'patient'
-				? 'patient'
-				: 'doctor'
+		queryView === 'doctor' || queryView === 'patient' ? queryView : role === 'patient' ? 'patient' : 'doctor'
 
 	const [search, setSearch] = useState('')
 	const [page, setPage] = useState(1)
@@ -85,56 +73,50 @@ export default function AllAppointmentList() {
 	const [meta, setMeta] = useState<AppointmentMeta>({ total: 0, page: 1, limit: 10, pages: 0 })
 	const [loading, setLoading] = useState(false)
 
-	const fetchAppointments = useCallback(async () => {
-		setLoading(true)
-		try {
-			const params: Record<string, unknown> = {
-				page,
-				limit: size,
-			}
-			if (search) params.search = search
-
-			const res = await ApiService.getWithParams<AppointmentsResponse>(
-				API_ENDPOINTS.APPOINTMENTS.GET,
-				params,
-			)
-
-			const mapped: AppointmentRow[] = res.data.data.map((appt) => ({
-				id: appt.id,
-				patientName: appt.patient.name,
-				patientAvatar: appt.patient.avatar_s3_key ?? '',
-				appointmentDate: appt.appointment_date,
-				startTime: appt.start_time,
-				endTime: appt.end_time,
-				appointmentMode: appt.appointment_mode,
-				status: appt.status,
-				doctorName: appt.doctor.name,
-				doctorAvatar: appt.doctor.avatar_s3_key ?? '',
-				hospitalName: appt.hospital?.name ?? null,
-				hospitalAddress: appt.hospital?.address ?? null,
-			}))
-
-			setRows(mapped)
-			setMeta({
-				total: res.data.meta.total,
-				page:  res.data.meta.page,
-				limit: res.data.meta.limit,
-				pages: res.data.meta.pages,
-			})
-		} finally {
-			setLoading(false)
-		}
-	}, [page, search, size])
-
 	useEffect(() => {
-		const timer = setTimeout(() => {
-			void fetchAppointments()
-		}, 300)
+		const fetchAppointments = async () => {
+			setLoading(true)
 
-		return () => {
-			clearTimeout(timer)
+			try {
+				const params: Record<string, unknown> = {
+					page,
+					limit: size,
+				}
+
+				if (search) params.search = search
+
+				const res = await ApiService.getWithParams<AppointmentsResponse>(API_ENDPOINTS.APPOINTMENTS.GET, params)
+
+				const mapped: AppointmentRow[] = res.data.data.map((appt) => ({
+					id: appt.id,
+					patientName: appt.patient.name,
+					patientAvatar: appt.patient.avatar_s3_key ?? '',
+					appointmentDate: appt.appointment_date,
+					startTime: appt.start_time,
+					endTime: appt.end_time,
+					appointmentMode: appt.appointment_mode,
+					status: appt.status,
+					doctorName: appt.doctor.name,
+					doctorAvatar: appt.doctor.avatar_s3_key ?? '',
+					hospitalName: appt.hospital?.name ?? null,
+					hospitalAddress: appt.hospital?.address ?? null,
+				}))
+
+				setRows(mapped)
+
+				setMeta({
+					total: res.data.meta.total,
+					page: res.data.meta.page,
+					limit: res.data.meta.limit,
+					pages: res.data.meta.pages,
+				})
+			} finally {
+				setLoading(false)
+			}
 		}
-	}, [fetchAppointments])
+
+		fetchAppointments()
+	}, [page, search, size])
 
 	// ── Name column — shown once, based on viewAs ───────────────────────────
 	const patientNameColumn: {
@@ -210,7 +192,8 @@ export default function AllAppointmentList() {
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mt: 0.3 }}>
 						<AccessTimeIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
 						<Typography fontSize={11} color="text.secondary">
-							{row.startTime}{row.endTime ? ` - ${row.endTime}` : ''}
+							{row.startTime}
+							{row.endTime ? ` - ${row.endTime}` : ''}
 						</Typography>
 					</Box>
 				</Box>
@@ -248,13 +231,9 @@ export default function AllAppointmentList() {
 		},
 	]
 
-	const columns = viewAs === 'doctor'
-		? [patientNameColumn, ...baseColumns]
-		: [doctorNameColumn, ...baseColumns]
+	const columns = viewAs === 'doctor' ? [patientNameColumn, ...baseColumns] : [doctorNameColumn, ...baseColumns]
 
-	const searchPlaceholder = viewAs === 'doctor'
-		? 'Search Patient ID, Name...'
-		: 'Search Doctor ID, Name...'
+	const searchPlaceholder = viewAs === 'doctor' ? 'Search Patient ID, Name...' : 'Search Doctor ID, Name...'
 
 	return (
 		<Box sx={{ p: 3 }}>
@@ -286,7 +265,10 @@ export default function AllAppointmentList() {
 					size="small"
 					placeholder={searchPlaceholder}
 					value={search}
-					onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+					onChange={(e) => {
+						setSearch(e.target.value)
+						setPage(1)
+					}}
 					startAdornment={
 						<InputAdornment position="start">
 							<SearchIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
@@ -336,7 +318,10 @@ export default function AllAppointmentList() {
 						showPagination={meta.total > meta.limit}
 						rowPadding="10px 14px"
 						emptyMessage="No appointments found"
-						onPageChange={(newPage, newSize) => { setPage(newPage); setSize(newSize) }}
+						onPageChange={(newPage, newSize) => {
+							setPage(newPage)
+							setSize(newSize)
+						}}
 					/>
 				</Card>
 			)}

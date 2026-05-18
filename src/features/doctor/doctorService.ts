@@ -121,6 +121,7 @@ export interface SlotOverrideBatchPayload {
 		is_blocked: boolean
 	}>
 	reason?: string
+	appointment_mode?:string
 }
 
 export interface SlotOverrideResponse {

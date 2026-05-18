@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Box, Typography } from '@mui/material'
 import { toast } from 'react-toastify'
 import AppButton from '../../../../components/common/Button/AppButton'
@@ -67,7 +67,6 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 	const [selectedAppointmentType, setSelectedAppointmentType] = useState<'clinic' | 'video'>('clinic')
 	const [toggleRefreshing, setToggleRefreshing] = useState(false)
 
-
 	const formatDateForApi = (date: Date) => {
 		const year = date.getFullYear()
 		const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -94,28 +93,33 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 		}
 	}
 
-	const fetchAvailability = useCallback(async () => {
+	const fetchAvailability = async () => {
 		if (!selectedHospitalId || !selectedDate) return
+
 		try {
 			setSlotsLoading(true)
+
 			const res = await getDoctorAvailability({
 				hospital_id: selectedHospitalId,
 				date: formatDateForApi(selectedDate),
 			})
+
 			const byMode = normalizeAvailabilityByMode(res)
+
 			setAvailableSlotGroups(byMode[selectedAppointmentType] ?? [])
 			setPendingOverrides([])
+			setUnselectedSlotsByDate({})
 		} catch (err) {
 			console.log(err)
 			setAvailableSlotGroups([])
 		} finally {
 			setSlotsLoading(false)
 		}
-	}, [selectedHospitalId, selectedDate, selectedAppointmentType])
+	}
 
 	useEffect(() => {
 		fetchAvailability()
-	}, [fetchAvailability])
+	}, [selectedHospitalId, selectedDate, selectedAppointmentType])
 
 	const dayKey = getDayKey(selectedDate)
 	const selectedDateKey = formatDateForApi(selectedDate)
@@ -237,6 +241,7 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 							hospital_id: override.hospital_id ?? null,
 							date: override.date,
 							slots: [],
+							appointment_mode: selectedAppointmentType === 'clinic' ? 'clinic_visit' : 'video_call',
 						}
 					}
 					acc[groupKey].slots.push({
@@ -269,8 +274,6 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 		}
 	}
 
-
-
 	return (
 		<Box sx={{ ...customCardStyle }}>
 			<Typography variant="h4" sx={{ fontWeight: 700, mb: 3, color: 'text.primary' }}>
@@ -279,7 +282,7 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 
 			{/* Hospital dropdown */}
 			{hospitals.length === 0 ? (
-				<Typography variant="caption" sx={{ color: "text.disabled" }}>
+				<Typography variant="caption" sx={{ color: 'text.disabled' }}>
 					No hospitals added. Please add a hospital first.
 				</Typography>
 			) : (
