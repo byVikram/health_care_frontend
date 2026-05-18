@@ -1,5 +1,5 @@
-﻿import React, { useCallback, useEffect, useState } from 'react'
-import { Box, Typography, Avatar, InputAdornment, Card } from '@mui/material'
+import React, {  useEffect, useState } from 'react'
+import { Box, Typography, Avatar, InputAdornment,  Card } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import AppTable from './components/AppTable'
@@ -54,13 +54,21 @@ interface AppointmentsResponse {
 	meta: { total: number; page: number; limit: number; pages: number }
 }
 
-// Main export
-export default function AllAppointmentList() {
+type ColDef = {
+	id: keyof AppointmentRow
+	label: string
+	sortable?: boolean
+	width?: string
+	format?: (value: AppointmentRow[keyof AppointmentRow], row: AppointmentRow) => React.ReactNode
+}
+
+export default function AppointmentList() {
 	const [searchParams] = useSearchParams()
 	const { role } = useAuth()
 	const queryView = searchParams.get('view')
 	const viewAs: 'doctor' | 'patient' =
-		queryView === 'doctor' || queryView === 'patient' ? queryView : role === 'patient' ? 'patient' : 'doctor'
+		queryView === 'doctor' || queryView === 'patient' ? 
+		queryView : role === 'patient' ? 'patient' : 'doctor'
 
 	const [search, setSearch] = useState('')
 	const [page, setPage] = useState(1)
@@ -74,60 +82,52 @@ export default function AllAppointmentList() {
 	const [filterDate, setFilterDate] = useState('all')
 	const [filterStatus, setFilterStatus] = useState('all')
 
-	const fetchAppointments = useCallback(async () => {
-		if (search.length > 0 && search.length < 3) return
-		setLoading(true)
-		try {
-			const params: Record<string, unknown> = { page, limit: size }
-			if (search) params.search = search
-			if (filterHospital !== 'all') params.hospital = filterHospital
-			if (filterMode !== 'all') params.mode = filterMode
-			if (filterDate !== 'all') params.date = filterDate
-			if (filterStatus !== 'all') params.status = filterStatus
+	useEffect(() => {
+		const fetchAppointments = async () => {
+			setLoading(true)
+
+			try {
+				const params: Record<string, unknown> = {
+					page,
+					limit: size,
+				}
+
+				if (search) params.search = search
 
 			const res = await ApiService.getWithParams<AppointmentsResponse>(API_ENDPOINTS.APPOINTMENTS.GET, params)
 
-			const mapped: AppointmentRow[] = res.data.data.map((appt) => ({
-				id: appt.id,
-				patientName: appt.patient.name,
-				patientAvatar: appt.patient.avatar_s3_key ?? '',
-				appointmentDate: appt.appointment_date,
-				startTime: appt.start_time,
-				endTime: appt.end_time,
-				appointmentMode: appt.appointment_mode,
-				status: appt.status,
-				doctorName: appt.doctor.name,
-				doctorAvatar: appt.doctor.avatar_s3_key ?? '',
-				hospitalName: appt.hospital?.name ?? null,
-				hospitalAddress: appt.hospital?.address ?? null,
-			}))
+				const mapped: AppointmentRow[] = res.data.data.map((appt) => ({
+					id: appt.id,
+					patientName: appt.patient.name,
+					patientAvatar: appt.patient.avatar_s3_key ?? '',
+					appointmentDate: appt.appointment_date,
+					startTime: appt.start_time,
+					endTime: appt.end_time,
+					appointmentMode: appt.appointment_mode,
+					status: appt.status,
+					doctorName: appt.doctor.name,
+					doctorAvatar: appt.doctor.avatar_s3_key ?? '',
+					hospitalName: appt.hospital?.name ?? null,
+					hospitalAddress: appt.hospital?.address ?? null,
+				}))
 
-			setRows(mapped)
-			setMeta({
-				total: res.data.meta.total,
-				page: res.data.meta.page,
-				limit: res.data.meta.limit,
-				pages: res.data.meta.pages,
-			})
-		} finally {
-			setLoading(false)
+				setRows(mapped)
+
+				setMeta({
+					total: res.data.meta.total,
+					page: res.data.meta.page,
+					limit: res.data.meta.limit,
+					pages: res.data.meta.pages,
+				})
+			} finally {
+				setLoading(false)
+			}
 		}
-	}, [page, search, size, filterHospital, filterMode, filterDate, filterStatus])
 
-	useEffect(() => {
-		const timer = setTimeout(() => {
-			void fetchAppointments()
-		}, 300)
-		return () => clearTimeout(timer)
-	}, [fetchAppointments])
-	type ColDef = {
-		id: keyof AppointmentRow
-		label: string
-		sortable?: boolean
-		width?: string
-		format?: (value: AppointmentRow[keyof AppointmentRow], row: AppointmentRow) => React.ReactNode
-	}
+		fetchAppointments()
+	}, [page, search, size])
 
+	// ── Name column — shown once, based on viewAs ───────────────────────────
 	const patientNameColumn: ColDef = {
 		id: 'patientName',
 		label: 'Patient name',

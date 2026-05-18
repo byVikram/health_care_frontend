@@ -1,4 +1,4 @@
-﻿// src/types/doctor-profile-api.ts
+// src/types/doctor-profile-api.ts
 // Matches the /api/doctors/details API response shape
 
 export interface DoctorProfileApiSpeciality {
@@ -44,6 +44,7 @@ export interface DoctorProfileApiData {
 		languages: string[]
 		instagram?: string | null
 		facebook?: string | null
+		twitter?: string | null
 	}
 	professional_details: {
 		experience_years: number

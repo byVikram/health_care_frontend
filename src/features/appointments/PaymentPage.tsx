@@ -1,5 +1,11 @@
 // src/features/appointments/PaymentPage.tsx
 import { formatINR } from '../../utils/Utils'
+import phonePeImg from '../../assets/payment/phone-pay.png'
+import googlePayImg from '../../assets/payment/google-pay.png'
+import amazonPayImg from '../../assets/payment/amazone-pay.png'
+import whatsappImg from '../../assets/payment/whatsapp.png'
+import paytmImg from '../../assets/payment/paytm.png'
+import creditCardImg from '../../assets/payment/credit-card.png'
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -26,9 +32,9 @@ import {
 	AccessTime,
 	MedicalServices,
 	LocationOn,
-	PhoneAndroid,
-	CreditCard,
-	LocalAtm,
+
+
+
 	// UploadFile,
 } from '@mui/icons-material'
 import AppButton from '../../components/common/Button/AppButton'
@@ -49,7 +55,7 @@ interface PaymentState {
 	serviceFee: number
 	doctorId: string
 	hospitalId: string
-	appointmentMode: 'offline' | 'online'
+	appointmentMode: 'clinic_visit' | 'video_call'
 	appointmentDate: string
 	startTime: string
 }
@@ -65,7 +71,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
 	{
 		id: 'phonepe',
 		label: 'Phone Pe',
-		icon: <PhoneAndroid sx={{ fontSize: 20, color: '#5f259f' }} />,
+		icon: <Box component="img" src={phonePeImg} sx={{ width: 28, height: 28, objectFit: 'contain' }} />,
 	},
 	{
 		id: 'googlepay',
@@ -73,8 +79,8 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
 		icon: (
 			<Box
 				component="img"
-				src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Google_Pay_Logo.svg/512px-Google_Pay_Logo.svg.png"
-				sx={{ width: 20, height: 20, objectFit: 'contain' }}
+				src={googlePayImg}
+				sx={{ width: 48, height: 28, objectFit: 'contain' }}
 			/>
 		),
 	},
@@ -84,8 +90,8 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
 		icon: (
 			<Box
 				component="img"
-				src="https://upload.wikimedia.org/wikipedia/commons/4/42/Paytm_logo.png"
-				sx={{ width: 20, height: 20, objectFit: 'contain' }}
+				src={paytmImg}
+				sx={{ width: 48, height: 28, objectFit: 'contain' }}
 			/>
 		),
 	},
@@ -95,21 +101,21 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
 		icon: (
 			<Box
 				component="img"
-				src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Amazon_Pay_logo.svg/512px-Amazon_Pay_logo.svg.png"
-				sx={{ width: 20, height: 20, objectFit: 'contain' }}
+				src={amazonPayImg}
+				sx={{ width: 48, height: 28, objectFit: 'contain' }}
 			/>
 		),
 	},
 	{
 		id: 'card',
 		label: 'Credit Card',
-		icon: <CreditCard sx={{ fontSize: 20, color: '#e53935' }} />,
+		icon: <Box component="img" src={creditCardImg} sx={{ width: 28, height: 28, objectFit: 'contain' }} />,
 	},
-	{
-		id: 'cash',
-		label: 'Cash On Visit',
-		icon: <LocalAtm sx={{ fontSize: 20, color: '#43a047' }} />,
-	},
+
+
+
+
+
 ]
 
 /* ─── component ──────────────────────────────────────────────── */
@@ -130,7 +136,7 @@ export default function PaymentPage() {
 		serviceFee = 0,
 		doctorId = '',
 		hospitalId = '',
-		appointmentMode = 'offline',
+		appointmentMode = 'clinic_visit',
 		appointmentDate = '',
 		startTime = '',
 	} = state
@@ -464,9 +470,7 @@ export default function PaymentPage() {
 					{/* WhatsApp notification */}
 					<Box sx={{ px: 2.5, py: 1.75, display: 'flex', alignItems: 'flex-start', gap: 1 }}>
 						<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1 }}>
-							<Box
-								sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#25D366', flexShrink: 0 }}
-							/>
+							<Box component="img" src={whatsappImg} sx={{ width: 22, height: 22, objectFit: 'contain', flexShrink: 0 }} />
 							<Box>
 								<Typography variant="body2" fontWeight={600} color="text.primary">
 									Get notifications on whatsapp

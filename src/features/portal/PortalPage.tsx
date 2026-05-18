@@ -1,4 +1,4 @@
-import { Box, Typography, Container, Grid, Popper, Paper, Fade } from '@mui/material'
+import { Box, Typography, Container, Grid, Popper, Paper, keyframes, Grow } from '@mui/material'
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAppointments } from '../doctor/doctorService'
@@ -49,6 +49,18 @@ const buildWeekDays = () => {
 	}
 	return days
 }
+
+// Staggered entrance animation for the items
+const fadeInUp = keyframes`
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+`;
 
 const stats = [
 	{ label: 'Total Patients', value: '20', color: '#4264D0' },
@@ -296,26 +308,34 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 											<Popper
 												open={Boolean(othersAnchorEl)}
 												anchorEl={othersAnchorEl}
-												placement="top"
 												transition
+												placement="bottom-end"
 												disablePortal
 												sx={{ zIndex: 1300 }}
 											>
 												{({ TransitionProps }) => (
-													<Fade {...TransitionProps} timeout={200}>
+													<Grow
+														{...TransitionProps}
+														timeout={200}
+														style={{
+															transformOrigin: 'top right',
+														}}
+													>
 														<Paper
-															elevation={6}
+															elevation={0}
 															sx={{
 																p: 2,
-																borderRadius: '14px',
+																borderRadius: '8px',
 																mb: 1,
 																display: 'flex',
 																gap: 2,
-																boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
-																border: '1px solid rgba(12,124,124,0.1)',
+																background: 'rgba(255, 255, 255, 0.8)',
+																backdropFilter: 'blur(200px)',
+																WebkitBackdropFilter: 'blur(20px)',
+																boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.2)',
 															}}
 														>
-															{othersPopupItems.map((item) => (
+															{othersPopupItems.map((item, index) => (
 																<Box
 																	key={item.title}
 																	sx={{
@@ -325,11 +345,18 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 																		gap: 0.6,
 																		cursor: 'pointer',
 																		px: 0.5,
+																		opacity: 0,
+																		animation: `${fadeInUp} 0.4s ease forwards`,
+																		animationDelay: `${index * 60}ms`,
+																		transition: 'transform 0.2s ease',
+																		'&:hover': {
+																			transform: 'scale(1.05)',
+																		},
 																		'& img': {
 																			transition: 'transform 0.2s ease',
 																		},
 																		'&:hover img': {
-																			transform: 'translateY(-3px)',
+																			transform: 'translateY(-4px)',
 																		},
 																	}}
 																>
@@ -357,7 +384,7 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 																</Box>
 															))}
 														</Paper>
-													</Fade>
+													</Grow>
 												)}
 											</Popper>
 										</Box>

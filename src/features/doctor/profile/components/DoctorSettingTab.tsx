@@ -66,10 +66,12 @@ export default function DoctorSettingTab() {
 			toast.success('Account deleted successfully')
 			setOpenDialog(false)
 			clearAuth()
-			setTimeout(() => { navigate('/login', { replace: true }) }, 1000)
+			setTimeout(() => {
+				navigate('/login', { replace: true })
+			}, 1000)
 		} catch (err) {
-			console.error('Failed to delete account:', err)
-			toast.error('Failed to delete account. Please try again.')
+			console.error('Failed to deactivate the account:', err)
+			toast.error('Failed to deactivate account. Please try again.')
 		} finally {
 			setIsDeleting(false)
 		}
@@ -78,11 +80,18 @@ export default function DoctorSettingTab() {
 	const infoRows = [
 		{ icon: <InfoOutlinedIcon sx={{ fontSize: 20, color: '#2B6F71' }} />, label: 'About Whisper ai' },
 		{ icon: <StarBorderIcon sx={{ fontSize: 20, color: '#2B6F71' }} />, label: 'Rate us on app store' },
-		{ icon: <ShareOutlinedIcon sx={{ fontSize: 20, color: '#2B6F71' }} />, label: 'Share the app with family & friends' },
+		{
+			icon: <ShareOutlinedIcon sx={{ fontSize: 20, color: '#2B6F71' }} />,
+			label: 'Share the app with family & friends',
+		},
 	]
 
 	const notifRows = [
-		{ label: 'Get notifications when the patient cancels the appointment', value: notifyCancellation, setter: setNotifyCancellation },
+		{
+			label: 'Get notifications when the patient cancels the appointment',
+			value: notifyCancellation,
+			setter: setNotifyCancellation,
+		},
 		{ label: 'Get notification when other doctors refer you', value: notifyReferral, setter: setNotifyReferral },
 		{ label: 'Get notification when patient books an appointment', value: notifyBooking, setter: setNotifyBooking },
 	]
@@ -156,18 +165,14 @@ export default function DoctorSettingTab() {
 							<Typography sx={{ fontSize: '14px', color: 'text.primary', fontWeight: 450, flex: 1 }}>
 								{row.label}
 							</Typography>
-							<Switch
-								checked={row.value}
-								onChange={(e) => row.setter(e.target.checked)}
-								sx={switchSx}
-							/>
+							<Switch checked={row.value} onChange={(e) => row.setter(e.target.checked)} sx={switchSx} />
 						</Box>
 						{i < notifRows.length - 1 && <Divider />}
 					</Box>
 				))}
 			</Box>
 
-			{/* ── Delete Account ── */}
+			{/* ── Deactivate Account ── */}
 			<Button
 				variant="contained"
 				fullWidth
@@ -186,21 +191,23 @@ export default function DoctorSettingTab() {
 					'&:hover': { backgroundColor: '#c62828' },
 				}}
 			>
-				Delete Account
+				Deactivate the Account
 			</Button>
 
 			{/* ── Confirmation Dialog ── */}
 			<Dialog
 				open={openDialog}
 				onClose={handleCancel}
-				PaperProps={{
-					sx: {
-						borderRadius: '20px',
-						px: 2,
-						py: 1,
-						maxWidth: 360,
-						width: '100%',
-						textAlign: 'center',
+				slotProps={{
+					paper: {
+						sx: {
+							borderRadius: '20px',
+							px: 2,
+							py: 1,
+							maxWidth: 360,
+							width: '100%',
+							textAlign: 'center',
+						},
 					},
 				}}
 			>

@@ -51,6 +51,7 @@ export interface CreateUserRequest {
 	email: string
 	name: string
 	role_id?: string
+	password?: string
 }
 
 export interface VerifyUserCreationResponse {

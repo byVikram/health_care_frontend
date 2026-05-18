@@ -295,6 +295,9 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 				is_primary: isPrimary,
 				video_consultation_fee: form.video_consultation_fee.trim(),
 				offline_consultation_fee: form.offline_consultation_fee.trim(),
+				free_followup_validity_days: followUpDays,
+				reschedule_allowed_until_hours: rescheduleCutoff,
+				allow_pay_later: allowPayLater,
 			})
 			toast.success(getSuccessMessage(response))
 			window.location.reload()
@@ -872,4 +875,5 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		</Box>
 	)
 }
+
 
