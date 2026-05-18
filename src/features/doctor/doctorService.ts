@@ -214,6 +214,7 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 			location: pd?.location ?? '',
 			instagram: pd?.instagram ?? '',
 			facebook: pd?.facebook ?? '',
+			twitter: pd?.twitter ??'',
 			avatar: pd?.avatar_s3_key ?? '',
 			experience: String(prof?.experience_years ?? 0),
 			languages: pd?.languages ?? [],

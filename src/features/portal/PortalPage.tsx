@@ -73,7 +73,7 @@ const quickServices = [
 	{ title: 'Pharmacy', image: PharmacyIcon },
 	{ title: 'Laboratory', image: LabIcon },
 	{ title: 'Radiology', image: RadiologyIcon },
-	{ title: 'Others', image: null },
+	{ title: 'Pharamedicals', image: null },
 ]
 
 const othersPopupItems = [
@@ -253,7 +253,7 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 							{/* Quick service icons */}
 							<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 								{quickServices.map((s) =>
-									s.title === 'Others' ? (
+									s.title === 'Pharamedicals' ? (
 										<Box
 											key={s.title}
 											ref={othersRef}
@@ -300,7 +300,7 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 													textAlign: 'center',
 												}}
 											>
-												Others
+												Pharamedicals
 											</Typography>
 
 											{/* Hover popup with ancillary, ambulance, blood bank, ICU, emergency */}
