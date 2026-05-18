@@ -1,5 +1,5 @@
 import React, {  useEffect, useState } from 'react'
-import { Box, Typography, Avatar, InputAdornment, OutlinedInput, Card, CircularProgress } from '@mui/material'
+import { Box, Typography, Avatar, InputAdornment,  Card } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import AppTable from './components/AppTable'
@@ -52,6 +52,14 @@ interface AppointmentsResponse {
 		hospital: { id: string; name: string; address: string } | null
 	}[]
 	meta: { total: number; page: number; limit: number; pages: number }
+}
+
+type ColDef = {
+	id: keyof AppointmentRow
+	label: string
+	sortable?: boolean
+	width?: string
+	format?: (value: AppointmentRow[keyof AppointmentRow], row: AppointmentRow) => React.ReactNode
 }
 
 export default function AppointmentList() {
@@ -120,14 +128,6 @@ export default function AppointmentList() {
 	}, [page, search, size])
 
 	// ── Name column — shown once, based on viewAs ───────────────────────────
-	const patientNameColumn: {
-		id: keyof AppointmentRow
-		label: string
-		sortable?: boolean
-		width?: string
-		format?: (value: AppointmentRow[keyof AppointmentRow], row: AppointmentRow) => React.ReactNode
-	}
-
 	const patientNameColumn: ColDef = {
 		id: 'patientName',
 		label: 'Patient name',

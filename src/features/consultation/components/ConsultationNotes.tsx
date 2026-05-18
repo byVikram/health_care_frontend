@@ -10,6 +10,26 @@ import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 
 import { ConsultationDoctor } from '../../../types/consultation'
 
+// Minimal browser SpeechRecognition types (not in all TS DOM libs)
+interface SpeechRecognitionResult {
+	readonly isFinal: boolean
+	readonly length: number
+	[index: number]: { transcript: string; confidence: number }
+}
+interface SpeechRecognitionResultList {
+	readonly length: number
+	readonly resultIndex: number
+	[index: number]: SpeechRecognitionResult
+}
+interface SpeechRecognitionEvent extends Event {
+	readonly resultIndex: number
+	readonly results: SpeechRecognitionResultList
+}
+interface SpeechRecognitionErrorEvent extends Event {
+	readonly error: string
+	readonly message: string
+}
+
 // Minimal SpeechRecognition interface (not in all TS DOM libs)
 interface ISpeechRecognition extends EventTarget {
 	continuous: boolean
