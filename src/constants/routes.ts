@@ -36,7 +36,12 @@ export const ROUTES = {
 	},
 
 	PHARMACY: {
-  ORDERS: "/pharmacy/orders",
-  ORDER_DETAIL: "/pharmacy/orders/:orderId",
-},
+		ORDERS: '/pharmacy/orders',
+		ORDER_DETAIL: '/pharmacy/orders/:orderId',
+		PROFILE: '/pharmacy/profile',
+	},
+
+	LABORATORY: {
+		PROFILE: '/laboratory/profile',
+	},
 }

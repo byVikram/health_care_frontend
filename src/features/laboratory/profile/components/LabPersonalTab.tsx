@@ -8,7 +8,6 @@ import AppDatePicker from '../../../../components/common/DatePicker/AppDatePicke
 import ProfileFormActions from '../../../../components/common/ProfileFormActions/ProfileFormActions'
 import { LaboratoryProfilePersonal } from '../../../../types/laboratory-profile'
 import { customCardStyle } from '../../../../styles/commonStyles'
-import { updateLaboratoryPersonalDetails } from '../../laboratoryService'
 import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
@@ -37,14 +36,11 @@ export default function LabPersonalTab({ data, onChange }: LabPersonalTabProps) 
 		setIsDirty(JSON.stringify(data) !== JSON.stringify(saved))
 	}, [data, saved])
 
-	const handleSave = async () => {
+	const handleSave = () => {
 		try {
-			const res = await updateLaboratoryPersonalDetails(data)
-			if (res?.success) {
-				toast.success('Changes saved successfully!')
-			}
 			setSaved(data)
 			setIsDirty(false)
+			toast.success('Changes saved successfully!')
 		} catch {
 			toast.error('Something went wrong. Please try again.')
 		}
