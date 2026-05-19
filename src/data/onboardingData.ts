@@ -7,7 +7,7 @@ import patientOrders from '../assets/onboarding/patient-orders.png'
 import radiology from '../assets/onboarding/radiology.png'
 // import patient from '../assets/onboarding/patient.png'
 
-export type UserRole = 'PATIENT' | 'PHARMACIST' | 'LABORATORY' | 'RADIOLOGY' | 'DOCTOR'
+export type UserRole = 'PATIENT' | 'PHARMACY' | 'LABORATORY' | 'RADIOLOGY' | 'DOCTOR'
 
 export interface OnboardingSlide {
 	image: string
@@ -27,7 +27,7 @@ export const onboardingData: Record<UserRole, OnboardingRoleData> = {
 			{ image: doctorTeam,        title: '10 million Indians connect with doctors every year through Whisper Ai' },
 		],
 	},
-	PHARMACIST: {
+	PHARMACY: {
 		screens: [
 			{ image: doctorOrders,  title: 'Get orders directly from doctors and pack it for patients instantly' },
 			{ image: patientOrders, title: 'Get orders directly from patients and pack it for them instantly' },

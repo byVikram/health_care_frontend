@@ -1,8 +1,9 @@
-// src/components/CommonCard.tsx
+// src/components/OrderCard.tsx
 import React from 'react'
 import { Box, Typography, Paper, Stack, SxProps, Theme } from '@mui/material'
+import { customCardStyle } from '../../../styles/commonStyles'
 
-export interface CommonCardProps {
+export interface OrderCardProps {
 	imageSrc: string
 
 	title: string
@@ -16,7 +17,7 @@ export interface CommonCardProps {
 	sx?: SxProps<Theme>
 }
 
-export const CommonCard: React.FC<CommonCardProps> = ({
+export const OrderCard: React.FC<OrderCardProps> = ({
 	imageSrc,
 	title,
 	stats,
@@ -29,12 +30,13 @@ export const CommonCard: React.FC<CommonCardProps> = ({
 			elevation={0}
 			onClick={onClick}
 			sx={{
-				p: 2,
-				borderRadius: 2,
-				bgcolor: '#fff',
-				boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-				transition: 'transform 0.2s, box-shadow 0.2s',
-				cursor: onClick ? 'pointer' : 'default',
+				...customCardStyle,
+				// p: 2,
+				// borderRadius: 2,
+				// bgcolor: '#fff',
+				// boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+				// transition: 'transform 0.2s, box-shadow 0.2s',
+				// cursor: onClick ? 'pointer' : 'default',
 				'&:hover': {
 					transform: 'translateY(-4px)',
 					boxShadow: '0 6px 14px rgba(0,0,0,0.08)',

@@ -36,7 +36,7 @@ export const ROUTES = {
 	},
 
 	PHARMACY: {
-		ORDERS: 'Pharmacy/OrderList',
-		ORDER_DETAIL: '/pharmacy/orders/:orderId',
-	},
+  ORDERS: "/pharmacy/orders",
+  ORDER_DETAIL: "/pharmacy/orders/:orderId",
+},
 }
