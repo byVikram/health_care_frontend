@@ -29,7 +29,7 @@ export interface AppointmentHospital {
 export interface Appointment {
 	id: string
 	public_id: string
-	appointment_mode: 'offline' | 'online'
+	appointment_mode: 'clinic_visit' | 'video_call'
 	appointment_date: string
 	start_time: string
 	end_time: string

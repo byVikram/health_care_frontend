@@ -37,7 +37,7 @@ export interface DoctorHospital {
 	isPrimary: boolean
 	phone_number?: string
 	video_consultation_fee?: string
-	offline_consultation_fee?: string
+	clinic_consultation_fee?: string
 }
 
 export interface DoctorAvailability {

@@ -58,6 +58,8 @@ interface PaymentState {
 	appointmentMode: 'clinic_visit' | 'video_call'
 	appointmentDate: string
 	startTime: string
+
+	allowPayLater?: boolean
 }
 
 interface PaymentOption {
@@ -111,12 +113,11 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
 		label: 'Credit Card',
 		icon: <Box component="img" src={creditCardImg} sx={{ width: 28, height: 28, objectFit: 'contain' }} />,
 	},
-
-
-
-
-
 ]
+
+// interface PaymentPageProps {
+// 	allowPayLater?: boolean
+// }
 
 /* ─── component ──────────────────────────────────────────────── */
 export default function PaymentPage() {
@@ -139,11 +140,13 @@ export default function PaymentPage() {
 		appointmentMode = 'clinic_visit',
 		appointmentDate = '',
 		startTime = '',
+
+		allowPayLater = true,
 	} = state
 
 	const total = consultationFee + serviceFee
 
-	const [paymentChoice, setPaymentChoice] = useState<'now' | 'later'>('later')
+	const [paymentChoice, setPaymentChoice] = useState<'now' | 'later'>(allowPayLater ? 'later' : 'now')
 	const [selectedPayment, setSelectedPayment] = useState('phonepe')
 	const [whatsapp, setWhatsapp] = useState(false)
 	const [booking, setBooking] = useState(false)
@@ -332,12 +335,14 @@ export default function PaymentPage() {
 							>
 								<FormControlLabel
 									value="later"
+									disabled={!allowPayLater}
 									sx={{
 										mx: 0,
 										px: 1.5,
 										width: '100%',
 										display: 'flex',
 										justifyContent: 'space-between',
+										opacity: !allowPayLater ? 0.5 : 1,
 									}}
 									control={
 										<Radio

@@ -120,7 +120,7 @@ export default function DoctorDetailPage() {
 			id: 'clinic',
 			label: 'Clinic Visit',
 			description: 'In-person consultation',
-			price: Number(selectedHospitalEntry?.offline_consultation_fee) || 0,
+			price: Number(selectedHospitalEntry?.clinic_consultation_fee) || 0,
 			duration: 30,
 		},
 		{
@@ -449,6 +449,7 @@ export default function DoctorDetailPage() {
 							doctorId: doctorDetail?.id ?? '',
 							hospitalId: selectedHospital,
 							appointmentMode: selectedType === 'clinic' ? 'clinic_visit' : 'video_call',
+							allowPayLater: selectedType === 'clinic',
 							appointmentDate: formatDateForApi(selectedDate),
 							startTime: formatTimeForApi(resolvedSelectedTime),
 						}
