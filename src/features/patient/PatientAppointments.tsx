@@ -286,7 +286,7 @@ export function PatientAppointments() {
 						{appointments.map((appt) => {
 							const status = statusOf(appt)
 							const style = getStatusStyle(status)
-							const isVirtual = appt.appointment_mode === 'online'
+							const isVirtual = appt.appointment_mode === 'video_call'
 							const canJoin = isVirtual && status === 'confirmed'
 							const canAct = status !== 'cancelled' && status !== 'completed'
 
@@ -401,7 +401,7 @@ export function PatientAppointments() {
 													/>
 												)}
 												<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-													{isVirtual ? 'Virtual' : 'In-person'}
+													{isVirtual ? 'Video Call' : 'Clinic Visit'}
 												</Typography>
 											</Box>
 										</Box>
@@ -561,32 +561,6 @@ export function PatientAppointments() {
 						label="Submit"
 						loading={cancelSubmitting}
 						onClick={handleCancelAppointment}
-						//  {
-						// 	if (!cancelAppt || !cancelledStatusId) return
-						// 	setCancelSubmitting(true)
-						// 	try {
-						// 		const res = await ApiService.patch<{ success: boolean; message: string }>(
-						// 			API_ENDPOINTS.APPOINTMENTS.UPDATE,
-						// 			{
-						// 				appointment_id: cancelAppt.id,
-						// 				status_id: cancelledStatusId,
-						// 				reason: cancelReason,
-						// 			}
-						// 		)
-						// 		if (res.data?.success) {
-						// 			toast.success('Appointment cancelled successfully')
-						// 			setAppointments((prev) => prev.filter((a) => a.id !== cancelAppt.id))
-						// 			setCancelOpen(false)
-						// 			setCancelReason('')
-						// 		} else {
-						// 			toast.error(res.data?.message || 'Failed to cancel appointment')
-						// 		}
-						// 	} catch {
-						// 		toast.error('Something went wrong. Please try again.')
-						// 	} finally {
-						// 		setCancelSubmitting(false)
-						// 	}
-						// }}
 						disabled={!cancelReason.trim()}
 					/>
 				</Box>

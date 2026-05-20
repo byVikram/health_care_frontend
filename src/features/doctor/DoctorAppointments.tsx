@@ -41,6 +41,8 @@ const formatTime12h = (t?: string | null) => {
 	return `${String(hour).padStart(2, '0')}:${String(m).padStart(2, '0')} ${suffix}`
 }
 
+const isVideoMode = (mode?: string | null) => mode === 'video_call'
+
 const allActionButtons = [
 	{ icon: ConfirmIcon, label: 'Confirm', bg: '#e8f5e9', color: '#4caf50', action: 'confirm' },
 	{ icon: RejectIcon, label: 'Reject', bg: '#ffeeee', color: '#e53935', action: 'reject' },
@@ -500,7 +502,7 @@ export function DoctorAppointments({
 											flexShrink: 0,
 										}}
 									>
-										{apt.appointment_mode === 'online' ? (
+										{isVideoMode(apt.appointment_mode) ? (
 											<VideocamIcon
 												sx={{ fontSize: 17, color: isCancelled ? '#b0b0b0' : '#0c7c7c' }}
 											/>

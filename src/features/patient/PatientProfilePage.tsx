@@ -12,6 +12,8 @@ import LifeStyleTab from './components/LifeStyleTab'
 import { Patient, PatientPersonal, PatientMedical, PatientLifeStyle } from '../../types/patient'
 import { updatePatientProfile, getPatientDetails } from './patientService'
 import { toast } from 'react-toastify'
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
+import PatientSettingTab from './components/SettingsTab'
 
 const EMPTY_PATIENT: Patient = {
 	id: '',
@@ -66,7 +68,7 @@ export default function PatientProfilePage() {
 	const [activeTab, setActiveTab] = useState<string>('personal')
 	const [patient, setPatient] = useState<Patient>(EMPTY_PATIENT)
 	const [loading, setLoading] = useState(false)
-	
+
 	useEffect(() => {
 		const fetchPatient = async () => {
 			try {
@@ -154,11 +156,7 @@ export default function PatientProfilePage() {
 				)
 			case 'medical':
 				return (
-					<MedicalTab
-						data={patient.medical}
-						onChange={handleMedicalUpdate}
-						handleSave={handleMedicalSave}
-					/>
+					<MedicalTab data={patient.medical} onChange={handleMedicalUpdate} handleSave={handleMedicalSave} />
 				)
 			case 'lifestyle':
 				return (
@@ -168,6 +166,12 @@ export default function PatientProfilePage() {
 						handleSave={handleLifeStyleSave}
 					/>
 				)
+
+			case 'settings':
+				return (
+					<PatientSettingTab />
+				)
+
 			default:
 				return null
 		}
@@ -181,14 +185,30 @@ export default function PatientProfilePage() {
 							{/* Skeleton: left sidebar */}
 							<Grid size={{ xs: 12, md: 3 }}>
 								<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-									<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, p: 3 }}>
+									<Box
+										sx={{
+											display: 'flex',
+											flexDirection: 'column',
+											alignItems: 'center',
+											gap: 1.5,
+											p: 3,
+										}}
+									>
 										<AppSkeleton width={90} height={90} sx={{ borderRadius: '50%' }} />
 										<AppSkeleton variant="text" width={140} height={24} />
 										<AppSkeleton variant="text" width={110} height={20} />
 										<AppSkeleton width={160} height={10} />
 									</Box>
 									<Divider />
-									<Box sx={{ display: 'flex',alignItems: 'center', flexDirection: 'column', gap: 1, px: 2 }}>
+									<Box
+										sx={{
+											display: 'flex',
+											alignItems: 'center',
+											flexDirection: 'column',
+											gap: 1,
+											px: 2,
+										}}
+									>
 										<AppSkeleton variant="text" width={180} height={36} />
 										<AppSkeleton variant="text" width={180} height={36} />
 										<AppSkeleton variant="text" width={180} height={36} />
@@ -231,7 +251,16 @@ export default function PatientProfilePage() {
 											label: 'Medical',
 											icon: <MedicalServicesOutlinedIcon fontSize="small" />,
 										},
-										{ id: 'lifestyle', label: 'Life Style', icon: <SpaOutlinedIcon fontSize="small" /> },
+										{
+											id: 'lifestyle',
+											label: 'Life Style',
+											icon: <SpaOutlinedIcon fontSize="small" />,
+										},
+										{
+											id: 'settings',
+											label: 'Settings',
+											icon: <SettingsOutlinedIcon fontSize="small" />,
+										},
 									]}
 									activeTab={activeTab}
 									onTabChange={setActiveTab}

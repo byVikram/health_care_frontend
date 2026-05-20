@@ -10,7 +10,7 @@ export interface DoctorProfileApiHospital {
 	id: string
 	is_primary: boolean
 	video_consultation_fee: string
-	offline_consultation_fee: string
+	clinic_consultation_fee: string
 	available_days: string[]
 	working_hours: string
 	hospital: {

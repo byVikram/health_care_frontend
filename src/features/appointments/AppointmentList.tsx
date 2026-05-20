@@ -230,8 +230,8 @@ export default function AppointmentList() {
 
 	const modeOptions = [
 		{ value: 'all', label: 'All' },
-		{ value: 'offline', label: 'Offline' },
-		{ value: 'online', label: 'Online' },
+		{ value: 'clinic', label: 'Clinic Visit' },
+		{ value: 'video', label: 'Video Call' },
 	]
 
 	const dateOptions = [

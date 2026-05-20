@@ -41,7 +41,7 @@ const EMPTY_FORM = {
 	fullAddress: '',
 	phone_number: '',
 	video_consultation_fee: '',
-	offline_consultation_fee: '',
+	clinic_consultation_fee: '',
 }
 
 const getSuccessMessage = (response: unknown) => {
@@ -294,7 +294,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 				full_address: trimmedAddress,
 				is_primary: isPrimary,
 				video_consultation_fee: form.video_consultation_fee.trim(),
-				offline_consultation_fee: form.offline_consultation_fee.trim(),
+				clinic_consultation_fee: form.clinic_consultation_fee.trim(),
 				free_followup_validity_days: followUpDays,
 				reschedule_allowed_until_hours: rescheduleCutoff,
 				allow_pay_later: allowPayLater,
@@ -356,10 +356,10 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 						onChange={(e) => setForm((prev) => ({ ...prev, video_consultation_fee: e.target.value }))}
 					/>
 					<AppInput
-						label="Offline consultation fee"
-						value={form.offline_consultation_fee}
+						label="Clinic consultation fee"
+						value={form.clinic_consultation_fee}
 						placeholder="e.g. 300"
-						onChange={(e) => setForm((prev) => ({ ...prev, offline_consultation_fee: e.target.value }))}
+						onChange={(e) => setForm((prev) => ({ ...prev, clinic_consultation_fee: e.target.value }))}
 					/>
 
 					{/* Working Hours */}
