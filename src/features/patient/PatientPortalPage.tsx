@@ -1,31 +1,16 @@
 // src/features/patient/PatientPortalPage.tsx
 import { Box, Typography, Container, Grid } from '@mui/material'
 import React, { useState } from 'react'
-// import MicIcon from '@mui/icons-material/Mic'
-// import GridViewIcon from '@mui/icons-material/GridView'
-// import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-// import PeopleAltIcon from '@mui/icons-material/PeopleAlt'
-// import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
 import { PatientAppointments } from './PatientAppointments'
-// import SearchIcon from '@mui/icons-material/Search'
-// import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AppButton from '../../components/common/Button/AppButton'
 
-// import drImage from '../../../../assets/Services/doctors-service.png'
-// import patientImage from '../../assets/Banner/patient.png'
-// import patientImage from '../../assets/Banner/banner.png'
 import videoImage from '../../assets/blog-and-community/video-image.png'
 import adImage from '../../assets/blog-and-community/ad-image.png'
-// import AiChatBotImg from '../../assets/Banner/aichatbot.png'
 import groupImage from '../../assets/blog-and-community/community-1.svg'
 import blogImage from '../../assets/blog-and-community/blog-1.svg'
-// import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined'
-// import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
-// import LocationOnIcon from '@mui/icons-material/LocationOn'
-// import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import HealthQuestionsSection from '../dashboard/HealthQuestionsSection'
 
 import AppointmentsIcon from '../../assets/quick-services/appointments.svg'
@@ -33,10 +18,6 @@ import PharmacyIcon from '../../assets/quick-services/pharmacy.svg'
 import RadiologyIcon from '../../assets/quick-services/radiology.svg'
 import AncilaryIcon from '../../assets/quick-services/ancilary.svg'
 import LabIcon from '../../assets/quick-services/lab.svg'
-import AmbulanceIcon from '../../assets/quick-services/ambulance.svg'
-import BloodBankIcon from '../../assets/quick-services/blood-bank.svg'
-import IcuIcon from '../../assets/quick-services/icu.svg'
-import EmergencyIcon from '../../assets/quick-services/emergency.svg'
 
 const communities = [
 	{ id: 1, name: 'Diabatics Associations', location: 'Rajajinagar, Bengaluru', avatar: groupImage },
@@ -90,6 +71,8 @@ const eventList = [
 	{ id: 4, day: '20', month: 'JUN', name: 'Online Yoga & Wellness Workshop', location: 'Virtual Event' },
 ]
 
+const carouselImages = [videoImage, adImage, videoImage, adImage, videoImage]
+
 export default function PatientPortalPage() {
 	const [activeSlide, setActiveSlide] = useState(0)
 
@@ -101,91 +84,8 @@ export default function PatientPortalPage() {
 					{/* LEFT */}
 					<Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
 						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%', flex: 1 }}>
-							{/* Video + Right Services row */}
-							<Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-								{/* Video Image with dots */}
-								<Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-									<Box sx={{ borderRadius: '16px', overflow: 'hidden' }}>
-										<Box
-											component="img"
-											src={videoImage}
-											alt="Video"
-											sx={{
-												width: '100%',
-												display: 'block',
-												objectFit: 'cover',
-												maxHeight: '480px',
-												minHeight: '400px',
-											}}
-										/>
-									</Box>
-									{/* Slider dots */}
-									<Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, pt: 1.5 }}>
-										{Array.from({ length: 5 }).map((_, i) => (
-											<Box
-												key={i}
-												sx={{
-													width: i === 0 ? 20 : 10,
-													height: 10,
-													borderRadius: '5px',
-													bgcolor: i === 0 ? '#0c7c7c' : '#d0d0d0',
-													transition: 'all 0.3s ease',
-												}}
-											/>
-										))}
-									</Box>
-								</Box>
 
-								{/* Right vertical services: Emergency, Ambulance, Blood Bank, ICU */}
-								<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 1 }}>
-									{[
-										{ title: 'Emergency', image: EmergencyIcon },
-										{ title: 'Ambulance', image: AmbulanceIcon },
-										{ title: 'Blood Bank', image: BloodBankIcon },
-										{ title: 'ICU', image: IcuIcon },
-									].map((s) => (
-										<Box
-											key={s.title}
-											sx={{
-												display: 'flex',
-												flexDirection: 'column',
-												alignItems: 'center',
-												gap: 0.5,
-												cursor: 'pointer',
-												minWidth: 80,
-												pb: 1,
-												borderBottom: '1px solid #e0e0e0',
-												'&:last-child': { borderBottom: 'none' },
-												'&:hover img': { transform: 'translateY(-2px)' },
-											}}
-										>
-											<Box
-												component="img"
-												src={s.image}
-												alt={s.title}
-												sx={{
-													width: 52,
-													height: 52,
-													objectFit: 'contain',
-													transition: 'transform 0.2s ease',
-												}}
-											/>
-											<Typography
-												sx={{
-													fontSize: '12px',
-													fontWeight: 600,
-													color: 'text.primary',
-													textAlign: 'center',
-												}}
-											>
-												{s.title}
-											</Typography>
-										</Box>
-									))}
-								</Box>
-							</Box>
-
-							{/* Bottom 5 horizontal service icons */}
+							{/* 1. Service icons row — now at the TOP */}
 							<Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', pt: 1 }}>
 								{[
 									{ title: 'Appointment', image: AppointmentsIcon },
@@ -229,7 +129,8 @@ export default function PatientPortalPage() {
 									</Box>
 								))}
 							</Box>
-							{/* Ad Image Slider */}
+
+							{/* 2. Carousel image — now BELOW the service icons */}
 							<Box
 								sx={{
 									borderRadius: '16px',
@@ -237,27 +138,28 @@ export default function PatientPortalPage() {
 									display: 'flex',
 									flexDirection: 'column',
 									flex: 1,
-									minHeight: 280,
 									bgcolor: '#fff',
+									position: 'relative',
 								}}
 							>
 								<Box
 									component="img"
-									src={adImage}
-									alt="Advertisement"
+									src={carouselImages[activeSlide]}
+									alt="Carousel"
 									sx={{
 										width: '100%',
-										height: '100%',
+										flex: 1,
 										display: 'block',
-										objectFit: 'contain',
-										objectPosition: 'center',
+										objectFit: 'cover',
+										minHeight: 360,
+										transition: 'opacity 0.4s ease',
 									}}
 								/>
-								{/* Slider dots */}
+								{/* Carousel dots */}
 								<Box
 									sx={{ display: 'flex', justifyContent: 'center', gap: 1, py: 1.5, bgcolor: '#fff' }}
 								>
-									{Array.from({ length: 4 }).map((_, i) => (
+									{carouselImages.map((_, i) => (
 										<Box
 											key={i}
 											onClick={() => setActiveSlide(i)}
@@ -273,6 +175,7 @@ export default function PatientPortalPage() {
 									))}
 								</Box>
 							</Box>
+
 						</Box>
 					</Grid>
 

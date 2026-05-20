@@ -1,9 +1,8 @@
-﻿import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Box, Typography } from '@mui/material'
 import { toast } from 'react-toastify'
-import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked'
-import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 import AppButton from '../../../../components/common/Button/AppButton'
+import AppSelect from '../../../../components/common/Select/AppSelect'
 import DateSlotPicker, { SlotGroup, TimeSlot } from '../../../../components/common/DateSlotPicker/DateSlotPicker'
 import { DoctorHospital, DoctorAvailability } from '../../../../types/doctor-profile'
 import { customCardStyle } from '../../../../styles/commonStyles'
@@ -21,6 +20,38 @@ interface DoctorAvailabilityTabProps {
 }
 
 type UnselectedSlotsByDate = Record<string, string[]>
+type AvailabilityMode = 'clinic' | 'video'
+type ApiAvailabilityMode = 'clinic_visit' | 'video_call'
+type ApiAvailabilityBlock = {
+	appointment_mode?: ApiAvailabilityMode
+	sessions?: SlotGroup[]
+}
+
+const EMPTY_MODE_SLOTS: Record<AvailabilityMode, SlotGroup[]> = { clinic: [], video: [] }
+
+const normalizeAvailabilityByMode = (payload: unknown): Record<AvailabilityMode, SlotGroup[]> => {
+	const data = Array.isArray(payload)
+		? payload
+		: payload && typeof payload === 'object' && Array.isArray((payload as { data?: unknown[] }).data)
+			? (payload as { data: unknown[] }).data
+			: []
+
+	if (data.length === 0) return EMPTY_MODE_SLOTS
+
+	// Backward compatibility: older API returned SlotGroup[] directly.
+	if (data[0] && typeof data[0] === 'object' && 'label' in (data[0] as object) && 'slots' in (data[0] as object)) {
+		return { clinic: data as SlotGroup[], video: [] }
+	}
+
+	const mapped: Record<AvailabilityMode, SlotGroup[]> = { clinic: [], video: [] }
+	for (const item of data as ApiAvailabilityBlock[]) {
+		const mode = item.appointment_mode
+		const sessions = Array.isArray(item.sessions) ? item.sessions : []
+		if (mode === 'clinic_visit') mapped.clinic = sessions
+		if (mode === 'video_call') mapped.video = sessions
+	}
+	return mapped
+}
 
 export default function DoctorAvailabilityTab({ hospitals, availability, onChange }: DoctorAvailabilityTabProps) {
 	const [selectedHospitalId, setSelectedHospitalId] = useState<string>(
@@ -33,6 +64,8 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 	const [pendingOverrides, setPendingOverrides] = useState<SlotOverridePayload[]>([])
 	const [saveLoading, setSaveLoading] = useState(false)
 	const [pendingSaveToast, setPendingSaveToast] = useState<string | null>(null)
+	const [selectedAppointmentType, setSelectedAppointmentType] = useState<'clinic' | 'video'>('clinic')
+	const [toggleRefreshing, setToggleRefreshing] = useState(false)
 
 	const formatDateForApi = (date: Date) => {
 		const year = date.getFullYear()
@@ -60,33 +93,33 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 		}
 	}
 
-	const fetchAvailability = useCallback(async () => {
+	const fetchAvailability = async () => {
 		if (!selectedHospitalId || !selectedDate) return
+
 		try {
 			setSlotsLoading(true)
+
 			const res = await getDoctorAvailability({
 				hospital_id: selectedHospitalId,
 				date: formatDateForApi(selectedDate),
 			})
-			let processedData: SlotGroup[] = []
-			if (Array.isArray(res)) {
-				processedData = res as SlotGroup[]
-			} else if (res && Array.isArray(res.data)) {
-				processedData = res.data as SlotGroup[]
-			}
-			setAvailableSlotGroups(processedData)
+
+			const byMode = normalizeAvailabilityByMode(res)
+
+			setAvailableSlotGroups(byMode[selectedAppointmentType] ?? [])
 			setPendingOverrides([])
+			setUnselectedSlotsByDate({})
 		} catch (err) {
 			console.log(err)
 			setAvailableSlotGroups([])
 		} finally {
 			setSlotsLoading(false)
 		}
-	}, [selectedHospitalId, selectedDate])
+	}
 
 	useEffect(() => {
 		fetchAvailability()
-	}, [fetchAvailability])
+	}, [selectedHospitalId, selectedDate, selectedAppointmentType])
 
 	const dayKey = getDayKey(selectedDate)
 	const selectedDateKey = formatDateForApi(selectedDate)
@@ -208,6 +241,7 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 							hospital_id: override.hospital_id ?? null,
 							date: override.date,
 							slots: [],
+							appointment_mode: selectedAppointmentType === 'clinic' ? 'clinic_visit' : 'video_call',
 						}
 					}
 					acc[groupKey].slots.push({
@@ -246,76 +280,50 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 				Availability
 			</Typography>
 
-			<Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary', mb: 1.5, fontSize: '13px' }}>
-				Choose Hospital
-			</Typography>
-			<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 3 }}>
-				{hospitals.length === 0 ? (
-					<Typography variant="caption" sx={{ color: 'text.disabled' }}>
-						No hospitals added. Please add a hospital first.
+			{/* Hospital dropdown */}
+			{hospitals.length === 0 ? (
+				<Typography variant="caption" sx={{ color: 'text.disabled' }}>
+					No hospitals added. Please add a hospital first.
+				</Typography>
+			) : (
+				<Box sx={{ mb: 3 }}>
+					<Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary', mb: 1 }}>
+						Choose Hospital
 					</Typography>
-				) : (
-					hospitals.map((hospital, index) => {
-						const isSelected = selectedHospitalId === hospital.id
-						return (
-							<Box
-								key={hospital.id}
-								onClick={() => setSelectedHospitalId(hospital.id)}
-								sx={{
-									display: 'flex',
-									alignItems: 'center',
-									gap: 2,
-									border: '1px solid',
-									borderRadius: '12px',
-									px: 2,
-									py: 1.5,
-									cursor: 'pointer',
-									borderColor: isSelected ? 'primary.main' : 'divider',
-									bgcolor: isSelected ? 'rgba(43,111,113,0.04)' : 'background.paper',
-									transition: 'all 0.15s',
-									'&:hover': { borderColor: 'primary.main' },
-								}}
-							>
-								<Box
-									sx={{
-										width: 28,
-										height: 28,
-										borderRadius: '50%',
-										flexShrink: 0,
-										bgcolor: isSelected ? 'primary.main' : 'rgba(43,111,113,0.1)',
-										display: 'flex',
-										alignItems: 'center',
-										justifyContent: 'center',
-									}}
-								>
-									<Typography
-										variant="caption"
-										sx={{
-											fontWeight: 700,
-											fontSize: '12px',
-											color: isSelected ? '#fff' : 'primary.main',
-										}}
-									>
-										{index + 1}
-									</Typography>
-								</Box>
-								<Box sx={{ flex: 1 }}>
-									<Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', fontSize: '13.5px' }}>
-										{hospital.name}
-									</Typography>
-									<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '11.5px' }}>
-										{hospital.fullAddress}
-									</Typography>
-								</Box>
-								{isSelected ? (
-									<RadioButtonCheckedIcon sx={{ color: 'primary.main', fontSize: 22 }} />
-								) : (
-									<RadioButtonUncheckedIcon sx={{ color: 'text.disabled', fontSize: 22 }} />
-								)}
-							</Box>
-						)
-					})
-				)}
+					<AppSelect
+						value={selectedHospitalId}
+						onChange={(e) => setSelectedHospitalId(e.target.value as string)}
+						options={hospitals.map((h) => ({ value: h.id, label: h.name }))}
+						size="small"
+						sx={{
+							'& .MuiOutlinedInput-root': { borderRadius: '10px' },
+						}}
+					/>
+				</Box>
+			)}
+
+			<Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: -4 }}>
+				<AppButton
+					label="Today"
+					variant="outlined"
+					size="small"
+					onClick={() => setSelectedDate(new Date())}
+					sx={{
+						borderRadius: '10px',
+						border: '1px solid #0c7c7c',
+						color: '#0c7c7c',
+						textTransform: 'none',
+						fontWeight: 500,
+						px: 1.5,
+						py: 0.4,
+						minWidth: 'auto',
+						mt: 0.5,
+						'&:hover': {
+							borderColor: '#0c7c7c',
+							backgroundColor: '#e0f2f1',
+						},
+					}}
+				/>
 			</Box>
 
 			<DateSlotPicker
@@ -325,11 +333,11 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 				selectedTime={selectedSlots}
 				onTimeChange={handleTimeChange}
 				dateLabel="Select follow up date"
-				timeLabel="Select Follow up time"
+				hideNavigation
 				timeSlotColumns={5}
 				disableBookedSlots={false}
 				availableSlots={slotGroupsForPicker.length > 0 ? slotGroupsForPicker : undefined}
-				loading={slotsLoading}
+				loading={slotsLoading || toggleRefreshing}
 				onSelectAll={() => {
 					stageSlotSelection(allSelectableSlots)
 					setPendingSaveToast('Selected All Successfully')
@@ -338,8 +346,13 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 					stageSlotSelection([])
 					setPendingSaveToast('Unselected All Successfully')
 				}}
+				selectedAppointmentType={selectedAppointmentType}
+				onAppointmentTypeChange={(type) => {
+					setToggleRefreshing(true)
+					setSelectedAppointmentType(type)
+					setTimeout(() => setToggleRefreshing(false), 300)
+				}}
 			/>
-
 			<Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
 				<AppButton
 					variant="outlined"

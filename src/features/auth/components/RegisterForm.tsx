@@ -1,33 +1,27 @@
-// features/auth/components/RegisterForm.tsx
+﻿// features/auth/components/RegisterForm.tsx
 import AppInput from '../../../components/common/Input/AppInput'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Box, Button, Typography } from '@mui/material'
 import Grid from '@mui/material/Grid'
-import AppSelect from '../../../components/common/Select/AppSelect'
-import { createUser, getRoles } from '../authService'
+import { createUser } from '../authService'
 import axios from 'axios'
 
-type Role = {
-	value: string
-	label: string
-}
-
-type RoleId = {
-	id: string
-	label: string
-}
-
 interface RegisterFormProps {
-	onSubmit: (mobile: string) => void
+	onSubmit: (mobile: string, name: string, email: string) => void
 	mode?: 'page' | 'modal'
 	onSwitchToLogin?: () => void
+	roleId?: string   // UUID from api/auth/get-roles
+
+	initialName?: string
+	initialEmail?: string
+	initialMobile?: string
 }
 
-export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin }: RegisterFormProps) {
-	const [registerAs, setRegisterAs] = useState('')
+export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin, roleId, initialName = '', initialEmail = '', initialMobile = '' }: RegisterFormProps) {
+	// Pre-select the role if roleId was passed in from the onboarding flow
+	// const registerAs = useState(roleId ?? '')
 	const navigate = useNavigate()
-	// const isMobile = useMediaQuery('(max-width: 600px)') // ← true on phone, false on desktop
 
 	const handleSwitchToLogin = () => {
 		if (onSwitchToLogin) {
@@ -36,48 +30,22 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin 
 		}
 		navigate('/login')
 	}
+
 	const [loading, setLoading] = useState(false)
-	const [roles, setRoles] = useState<Role[]>([])
 	const [formError, setFormError] = useState('')
 	const [mobileError, setMobileError] = useState('')
-	const [roleError, setRoleError] = useState('')
 	const [nameError, setNameError] = useState('')
 	const [emailError, setEmailError] = useState('')
-	const [name, setName] = useState('')
-	const [email, setEmail] = useState('')
-	const [mobile, setMobile] = useState('')
-
-	useEffect(() => {
-		setLoading(true)
-		const fetchSpecialities = async () => {
-			try {
-				const res = await getRoles()
-				const rawData = Array.isArray(res.data) ? res.data : [res.data]
-				const formattedRoles = rawData.map((role: RoleId) => ({
-					value: role.id,
-					label: role.label,
-				}))
-				setRoles(formattedRoles)
-			} catch (err) {
-				console.log(err)
-			} finally {
-				setLoading(false)
-			}
-		}
-		fetchSpecialities()
-	}, [])
+	const [name, setName] = useState(initialName)
+	const [email, setEmail] = useState(initialEmail)
+	const [mobile, setMobile] = useState(initialMobile)
 
 	const handleRegister = async () => {
 		setFormError('')
 		setMobileError('')
-		setRoleError('')
 		setNameError('')
 		setEmailError('')
 
-		if (!registerAs) {
-			setRoleError('Role is required')
-			return
-		}
 		if (!name.trim()) {
 			setNameError('Name is required')
 			return
@@ -99,7 +67,8 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin 
 			return
 		}
 
-		const payload = { role_id: registerAs, name, email, contact_number: mobile }
+		// roleId comes from the onboarding flow (passed as prop, never changes)
+		const payload = { role_id: roleId ?? '', name, email, contact_number: mobile }
 		console.log('API Payload:', payload)
 
 		try {
@@ -107,7 +76,7 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin 
 			const res = await createUser(payload)
 			console.log('API Response:', res)
 			if (res.success) {
-				onSubmit(mobile)
+				onSubmit(mobile, name, email)
 			} else {
 				setFormError(res.message || 'Failed to create user')
 			}
@@ -134,22 +103,6 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin 
 					Register
 				</Typography>
 			)}
-
-			<AppSelect
-				label="Role"
-				value={registerAs}
-				options={roles}
-				disabled={loading}
-				placeholder="Select a role"
-				onChange={(e) => {
-					setRegisterAs(e.target.value)
-					if (roleError) setRoleError('')
-					if (formError) setFormError('')
-				}}
-				error={!!roleError}
-				helperText={roleError}
-				sx={{ mt: 1 }}
-			/>
 
 			<AppInput
 				sx={{ mt: 2 }}
@@ -213,14 +166,16 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin 
 					Login
 				</span>
 			</Typography>
+
 			<Box sx={{ display: 'flex', gap: '12px' }}>
 				<Button
 					onClick={handleRegister}
 					variant="contained"
 					fullWidth
+					disabled={loading}
 					sx={{ backgroundColor: '#0d9488', '&:hover': { backgroundColor: '#0f766e' }, padding: '12px' }}
 				>
-					Register
+					{loading ? 'Registering...' : 'Register'}
 				</Button>
 			</Box>
 
@@ -234,61 +189,64 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin 
 		return <Box sx={{ width: '100%' }}>{formFields}</Box>
 	}
 
-
-	// ════════════════════════════════════════════════════════════════════════════
-	// DESKTOP layout — original Box version, 50/50 side-by-side
-	// Shown when screen width > 600px  (unchanged from original)
-	// ════════════════════════════════════════════════════════════════════════════
+	// DESKTOP layout — 50/50 side-by-side
 	return (
-		<Grid container sx={{ height: { xs: '50vh', md: '100vh' } }} size={{ xs: 12, md: 6 }}>
+		<Grid container sx={{ height: { xs: '50vh', md: '100vh' } }}>
 			{/* Left Side — teal */}
-			<Box
-				sx={{
-					width: '50%',
-					background: '#528C91',
-					display: 'flex',
-					flexDirection: 'column',
-					alignItems: 'center',
-					justifyContent: 'space-between',
-					padding: '40px',
-				}}
-			>
-				<Box sx={{ display: 'flex', alignItems: 'center', gap: '16px', alignSelf: 'center', marginLeft: '30px' }}>
-					<img src="/src/assets/Banner/logo.png" alt="Whisper AI" style={{ width: '80px' }} />
-					<Box>
-						<Typography sx={{ color: 'white', fontWeight: 'bold', fontSize: '30px' }}>
-							Whisper ai.
-						</Typography>
-						<Typography sx={{ color: 'white', fontSize: '12px' }}>Smart Care. Simple Access</Typography>
+			<Grid size={{ xs: 12, md: 6 }}>
+				<Box
+					sx={{
+						width: '100%',
+						height: '100%',
+						background: '#528C91',
+						display: 'flex',
+						flexDirection: 'column',
+						alignItems: 'center',
+						justifyContent: 'space-between',
+						padding: '40px',
+					}}
+				>
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: '16px', alignSelf: 'center', marginLeft: '30px' }}>
+						<img src="/src/assets/Banner/logo.png" alt="Whisper AI" style={{ width: '80px' }} />
+						<Box>
+							<Typography sx={{ color: 'white', fontWeight: 'bold', fontSize: '30px' }}>
+								Whisper ai.
+							</Typography>
+							<Typography sx={{ color: 'white', fontSize: '12px' }}>Smart Care. Simple Access</Typography>
+						</Box>
 					</Box>
+
+					<img
+						src="/src/assets/Banner/banner.png"
+						alt="Doctor"
+						style={{ width: '70%', height: '60%', objectFit: 'contain', marginLeft: '40px', marginBottom: '30px' }}
+					/>
+
+					<Typography sx={{ color: 'white', fontSize: '12px' }}>
+						&copy; 2025 Whisper ai. All rights reserved.
+					</Typography>
 				</Box>
-
-				<img
-					src="/src/assets/Banner/banner.png"
-					alt="Doctor"
-					style={{ width: '70%', height: '60%', objectFit: 'contain', marginLeft: '40px', marginBottom: '30px' }}
-				/>
-
-				<Typography sx={{ color: 'white', fontSize: '12px' }}>
-					© 2025 Whisper ai. All rights reserved.
-				</Typography>
-			</Box>
+			</Grid>
 
 			{/* Right Side — white form */}
-			<Box
-				sx={{
-					width: '50%',
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					backgroundColor: '#fff',
-				}}
-			>
-				<Box sx={{ width: '380px' }}>
-					{formFields}
+			<Grid size={{ xs: 12, md: 6 }}>
+				<Box
+					sx={{
+						width: '100%',
+						height: '100%',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						backgroundColor: '#fff',
+					}}
+				>
+					<Box sx={{ width: '380px' }}>
+						{formFields}
+					</Box>
 				</Box>
-			</Box>
+			</Grid>
 		</Grid>
 	)
 }
+
 

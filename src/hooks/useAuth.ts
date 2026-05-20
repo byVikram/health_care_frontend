@@ -1,9 +1,10 @@
-﻿// src/hooks/useAuth.ts
+﻿
 import { useState, useEffect } from 'react'
 import { SpecialitiesResponse } from '../types/speciality'
 import { AppointmentStatus } from '../types/appointment'
+import { UserRole as OnboardingUserRole } from '../data/onboardingData'
 
-export type UserRole = 'doctor' | 'patient'
+export type UserRole = 'doctor' | 'patient' | 'laboratory' | 'PHARMACY' | 'radiology'
 
 export interface AuthUser {
 	id?: string
@@ -15,7 +16,6 @@ export interface AuthUser {
 	showQr?: boolean
 }
 
-// Matches backend GET /api/lookup -> data.hospitals[]
 export interface LookupHospital {
 	id: string
 	label: string
@@ -36,9 +36,6 @@ export interface AuthState {
 	lookupData: LookupData | null
 }
 
-// ---------------------------------------------------------------------------
-// Read snapshot from localStorage (pure, no React)
-// ---------------------------------------------------------------------------
 function readAuthSnapshot(): AuthState {
 	try {
 		const role = localStorage.getItem('role') as UserRole | null
@@ -54,20 +51,15 @@ function readAuthSnapshot(): AuthState {
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Reactive hook - re-renders when auth changes
-// ---------------------------------------------------------------------------
 export function useAuth(): AuthState {
 	const [auth, setAuth_] = useState<AuthState>(readAuthSnapshot)
 
 	useEffect(() => {
-		// Listen for storage events from OTHER tabs
 		const onStorage = (e: StorageEvent) => {
 			if (['role', 'user', 'access_token', 'refresh_token', 'lookup'].includes(e.key ?? '')) {
 				setAuth_(readAuthSnapshot())
 			}
 		}
-		// Listen for our own custom event (same tab)
 		const onAuthChange = () => setAuth_(readAuthSnapshot())
 
 		window.addEventListener('storage', onStorage)
@@ -81,9 +73,6 @@ export function useAuth(): AuthState {
 	return auth
 }
 
-// ---------------------------------------------------------------------------
-// setAuth - stores to localStorage then fires event so useAuth hooks update
-// ---------------------------------------------------------------------------
 export function setAuth(
 	role: UserRole,
 	user: AuthUser,
@@ -98,7 +87,6 @@ export function setAuth(
 	if (lookupData != null) {
 		localStorage.setItem('lookup', JSON.stringify(lookupData))
 	}
-	// Notify all useAuth() hooks in this tab to re-read
 	window.dispatchEvent(new Event('auth-changed'))
 }
 
@@ -114,3 +102,61 @@ export function clearAuth(): void {
 export function getAccessToken(): string | null {
 	return localStorage.getItem('access_token')
 }
+
+
+export const ROLE_ID_MAP: Record<OnboardingUserRole, number> = {
+	PATIENT:    1,
+	DOCTOR:     2,
+	LABORATORY: 3,
+	PHARMACY: 4,
+	RADIOLOGY:  5,
+}
+
+export interface OnboardingFlow {
+	selectedRole:           OnboardingUserRole | null
+	selectedRoleId:         number | null
+	onboardingStep:         'roleSelect' | 'onboarding' | 'register'
+	handleRoleSelect:       (role: OnboardingUserRole) => void
+	handleOnboardingFinish: (roleId: number) => void
+	goToRegister:           () => void
+}
+
+
+export function useOnboardingFlow(): OnboardingFlow {
+	
+	const [selectedRole, setSelectedRole] = useState<OnboardingUserRole | null>(null)
+
+	
+	const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)
+
+	
+	const [onboardingStep, setOnboardingStep] = useState<'roleSelect' | 'onboarding' | 'register'>('roleSelect')
+
+	
+	const handleRoleSelect = (role: OnboardingUserRole) => {
+		if (role === 'RADIOLOGY') return
+		const roleId = ROLE_ID_MAP[role]
+		setSelectedRole(role)
+		setSelectedRoleId(roleId)
+		setOnboardingStep('onboarding')
+	}
+
+	
+	const handleOnboardingFinish = (roleId: number) => {
+		setSelectedRoleId(roleId)
+		setOnboardingStep('register')
+	}
+
+	
+	const goToRegister = () => setOnboardingStep('register')
+
+	return {
+		selectedRole,
+		selectedRoleId,
+		onboardingStep,
+		handleRoleSelect,
+		handleOnboardingFinish,
+		goToRegister,
+	}
+}
+

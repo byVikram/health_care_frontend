@@ -1,4 +1,4 @@
-﻿// src/types/appointment.ts
+// src/types/appointment.ts
 
 export type AppointmentStatusValue = 'pending' | 'confirmed' | 'completed' | 'cancelled' | string
 
@@ -16,6 +16,8 @@ export interface AppointmentPatient {
 	id: string
 	name: string
 	avatar_s3_key: string | null
+	age: number
+	gender: string
 }
 
 export interface AppointmentHospital {
@@ -29,13 +31,17 @@ export interface Appointment {
 	public_id: string
 	appointment_mode: 'offline' | 'online'
 	appointment_date: string
-	appointment_time: string
+	start_time: string
+	end_time: string
 	fees: number
 	created_at: string
 	status: AppointmentStatusValue | AppointmentStatus
 	doctor: AppointmentDoctor
 	patient: AppointmentPatient | null
 	hospital: AppointmentHospital | null
+	symptoms?: string | null
+	duration?: string | null
+	severity?: 'mild' | 'moderate' | 'severe' | null
 }
 
 export interface AppointmentsResponse {

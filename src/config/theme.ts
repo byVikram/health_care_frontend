@@ -20,9 +20,9 @@ const themeOptions: ThemeOptions = {
 			contrastText: '#ffffff',
 		},
 
-		error: { main: '#d32f2f' },
+		error: { main: '#da2828' },
 		warning: { main: '#f57c00' },
-		success: { main: '#3c9c41' },
+		success: { main: '#13854E' },
 
 		background: {
 			default: '#f4f6f9',

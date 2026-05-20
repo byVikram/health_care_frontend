@@ -17,7 +17,7 @@ import { getPatientDetails } from '../../services/userService'
 import { Patient } from '../../types/patient'
 import { getAppointmentById } from '../../services/userService'
 import { Appointment } from '../../types/appointment'
-import { useAuth } from '../../hooks/useAuth'
+import { useAuth, LookupHospital } from '../../hooks/useAuth'
 import { getDoctorProfile, mapDoctorProfileApi } from '../doctor/doctorService'
 import { DoctorProfile } from '../../types/doctor-profile'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
@@ -176,6 +176,8 @@ export default function ConsultationPage() {
 	const [rescheduleDate, setRescheduleDate] = useState<Date>(new Date())
 	const [rescheduleTime, setRescheduleTime] = useState('')
 	const [rescheduleSubmitting] = useState(false)
+	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
+	const [appointmentType, setAppointmentType] = useState<'clinic' | 'video'>('clinic')
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -227,6 +229,12 @@ export default function ConsultationPage() {
 		doctorProfile != null
 			? mapDoctorProfileToConsultationDoctor(doctorProfile, activeHospital, appointment)
 			: mapAppointmentToConsultationDoctor(appointment)
+
+	const rescheduleHospitalsMapped: LookupHospital[] = (doctorProfile?.hospitals || []).map((h) => ({
+		id: h.id,
+		label: h.name,
+		address: h.fullAddress || h.location || '',
+	}))
 
 	return (
 		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
@@ -284,7 +292,7 @@ export default function ConsultationPage() {
 				</Box>
 
 				{/* Right: Follow up button */}
-				<AppButton variant="contained" label="+ Follow up" borderRadius="20px" sx={{ px: 4 }} onClick={() => setRescheduleOpen(true)} />
+				<AppButton variant="contained" label="+ Reconnect" borderRadius="20px" sx={{ px: 4 }} onClick={() => setRescheduleOpen(true)} />
 			</Box>
 
 			{/* Tabs */}
@@ -322,7 +330,7 @@ export default function ConsultationPage() {
 						</Grid>
 					</Grid>
 				)}
-				{activeTab === 1 && <VitalsTab />}
+				{activeTab === 1 && patientId && <VitalsTab patientPublicId={patientId}/>}
 			</Container>
 			<RescheduleDrawer
 				rescheduleOpen={rescheduleOpen}
@@ -336,6 +344,11 @@ export default function ConsultationPage() {
 				rescheduleSlotsLoading={false}
 				rescheduleSubmitting={rescheduleSubmitting}
 				handleRescheduleConfirm={() => setRescheduleOpen(false)}
+				rescheduleHospitals={rescheduleHospitalsMapped}
+				rescheduleHospitalId={rescheduleHospitalId}
+				setRescheduleHospitalId={setRescheduleHospitalId}
+			appointmentType={appointmentType}
+			setAppointmentType={setAppointmentType}
 			/>
 		</Box>
 	)

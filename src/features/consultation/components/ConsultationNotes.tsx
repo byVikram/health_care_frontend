@@ -1,15 +1,46 @@
 // src/features/consultation/components/ConsultationNotes.tsx
-import { useEffect, useRef, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import { Box, Typography, Divider, IconButton, Tooltip } from '@mui/material'
 import UndoIcon from '@mui/icons-material/Undo'
 import RedoIcon from '@mui/icons-material/Redo'
 import TextFieldsIcon from '@mui/icons-material/TextFields'
-import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined'
 import CameraAltOutlinedIcon from '@mui/icons-material/CameraAltOutlined'
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted'
+
 import { ConsultationDoctor } from '../../../types/consultation'
+
+// Minimal browser SpeechRecognition types (not in all TS DOM libs)
+interface SpeechRecognitionResult {
+	readonly isFinal: boolean
+	readonly length: number
+	[index: number]: { transcript: string; confidence: number }
+}
+interface SpeechRecognitionResultList {
+	readonly length: number
+	readonly resultIndex: number
+	[index: number]: SpeechRecognitionResult
+}
+interface SpeechRecognitionEvent extends Event {
+	readonly resultIndex: number
+	readonly results: SpeechRecognitionResultList
+}
+interface SpeechRecognitionErrorEvent extends Event {
+	readonly error: string
+	readonly message: string
+}
+
+// Minimal SpeechRecognition interface (not in all TS DOM libs)
+interface ISpeechRecognition extends EventTarget {
+	continuous: boolean
+	interimResults: boolean
+	lang: string
+	start(): void
+	stop(): void
+	onresult: ((event: SpeechRecognitionEvent) => void) | null
+	onerror: ((event: SpeechRecognitionErrorEvent) => void) | null
+	onend: (() => void) | null
+}
 
 interface ConsultationNotesProps {
 	doctor: ConsultationDoctor
@@ -19,11 +50,10 @@ const TOOLBAR_ACTIONS = [
 	{ icon: <UndoIcon fontSize="small" />, label: 'Undo' },
 	{ icon: <RedoIcon fontSize="small" />, label: 'Redo' },
 	{ icon: <TextFieldsIcon fontSize="small" />, label: 'Text' },
-	{ icon: <EmojiEmotionsOutlinedIcon fontSize="small" />, label: 'Emoji' },
 	{ icon: <CameraAltOutlinedIcon fontSize="small" />, label: 'Camera' },
 	{ icon: <ImageOutlinedIcon fontSize="small" />, label: 'Image' },
 	{ icon: <MicNoneOutlinedIcon fontSize="small" />, label: 'Voice' },
-	{ icon: <FormatListBulletedIcon fontSize="small" />, label: 'List' },
+
 ]
 
 export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
@@ -33,6 +63,12 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 	const lastPointRef = useRef<{ x: number; y: number } | null>(null)
 	const undoStackRef = useRef<ImageData[]>([])
 	const pendingSnapshotRef = useRef<ImageData | null>(null)
+	const [isListening, setIsListening] = useState(false)
+
+	const [transcript, setTranscript] = useState('')
+	const recognitionRef = useRef<ISpeechRecognition | null>(null)
+	const manualStopRef = useRef(false)
+
 
 	const captureSnapshot = () => {
 		const canvas = canvasRef.current
@@ -133,6 +169,81 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 		context.putImageData(previousSnapshot, 0, 0)
 	}
 
+
+
+
+	const handleVoiceRecording = async () => {
+		// STOP if already recording
+		if (isListening) {
+			manualStopRef.current = true
+			recognitionRef.current?.stop()
+			setIsListening(false)
+			return
+		}
+
+		// 1. Ask browser for mic permission explicitly — this shows the allow/deny popup
+		try {
+			const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+			// Permission granted — stop the stream immediately, we only needed the prompt
+			stream.getTracks().forEach((track) => track.stop())
+		} catch {
+			// User denied mic permission
+			alert('Microphone access was denied. Please allow it in your browser settings.')
+			return
+		}
+
+		// 2. START speech recognition only after permission is granted
+		const win = window as Window & { SpeechRecognition?: new () => ISpeechRecognition; webkitSpeechRecognition?: new () => ISpeechRecognition }
+		const SpeechRecognitionAPI = win.SpeechRecognition ?? win.webkitSpeechRecognition
+		if (!SpeechRecognitionAPI) {
+			alert('Speech Recognition is not supported. Use Chrome on desktop.')
+			return
+		}
+
+		const recognition = new SpeechRecognitionAPI()
+		recognition.continuous = true
+		recognition.interimResults = true
+		recognition.lang = 'en-US'
+		recognitionRef.current = recognition
+		manualStopRef.current = false
+
+		// Keep finalized text separate so interim results never duplicate it
+		let finalizedText = transcript
+
+		recognition.onresult = (event: SpeechRecognitionEvent) => {
+			let interimText = ''
+			for (let i = event.resultIndex; i < event.results.length; i++) {
+				const result = event.results[i]
+				if (result.isFinal) {
+					finalizedText += result[0].transcript + ' '
+				} else {
+					interimText += result[0].transcript
+				}
+			}
+			setTranscript(finalizedText + interimText)
+		}
+
+		recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+			// 'no-speech' is harmless in continuous mode - ignore it
+			if (event.error === 'no-speech') return
+			setIsListening(false)
+		}
+
+		recognition.onend = () => {
+			// Chrome stops after silence even with continuous=true.
+			// Restart automatically UNLESS the user manually clicked stop.
+			if (!manualStopRef.current) {
+				try { recognition.start() } catch { /* restart failed silently */ }
+			} else {
+				setIsListening(false)
+			}
+		}
+
+		recognition.start()
+		setIsListening(true)
+	}
+
+
 	return (
 		<Box
 			sx={{
@@ -194,9 +305,15 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 					<Tooltip key={i} title={action.label} placement="top">
 						<IconButton
 							size="small"
-							onClick={action.label === 'Undo' ? handleUndo : undefined}
+							onClick={
+								action.label === 'Undo'
+									? handleUndo
+									: action.label === 'Voice'
+										? handleVoiceRecording
+										: undefined
+							}
 							sx={{
-								color: 'text.secondary',
+								color: action.label === 'Voice' && isListening ? 'error.main' : 'text.secondary',
 								borderRadius: '6px',
 								'&:hover': { bgcolor: 'rgba(43,111,113,0.08)', color: 'primary.main' },
 								'&:focus': { outline: 'none' },
@@ -210,21 +327,53 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 
 			{/* Notes editor area */}
 			<Box
-				component="canvas"
-				ref={canvasRef}
-				onPointerDown={handlePointerDown}
-				onPointerMove={handlePointerMove}
-				onPointerUp={stopDrawing}
-				onPointerLeave={stopDrawing}
 				sx={{
 					flex: 1,
-					width: '100%',
-					border: 'none',
-					outline: 'none',
+					position: 'relative',
 					bgcolor: 'background.paper',
-					cursor: 'pointer',
 				}}
-			/>
+			>
+				{/* Voice Transcript */}
+				<Box
+					sx={{
+						position: 'absolute',
+						top: 16,
+						left: 16,
+						right: 16,
+						zIndex: 1,
+						pointerEvents: 'none',
+					}}
+				>
+					<Typography
+						sx={{
+							fontSize: '15px',
+							color: 'text.primary',
+							whiteSpace: 'pre-wrap',
+						}}
+					>
+						{transcript}
+					</Typography>
+				</Box>
+
+				{/* Drawing Canvas */}
+				<Box
+					component="canvas"
+					ref={canvasRef}
+				onPointerDown={handlePointerDown}
+				onPointerMove={handlePointerMove}
+					onPointerUp={stopDrawing}
+					onPointerLeave={stopDrawing}
+					sx={{
+						flex: 1,
+						width: '100%',
+						height: '100%',
+						border: 'none',
+						outline: 'none',
+						bgcolor: 'transparent',
+					cursor: 'crosshair',
+					}}
+				/>
+			</Box>
 		</Box>
 	)
 }

@@ -1,13 +1,15 @@
-﻿import { useState, useEffect } from 'react'
-import { Box, Typography, TextField, InputAdornment, Divider, Chip } from '@mui/material'
-import SearchIcon from '@mui/icons-material/Search'
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
+import { useState, useEffect } from 'react'
+import { Box, Typography, InputAdornment, Divider, Chip, Popover, Dialog, DialogContent, Tooltip } from '@mui/material'
+import SearchIcon from '@mui/icons-material/Search'
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import HomeIcon from '@mui/icons-material/Home'
+import VideocamIcon from '@mui/icons-material/Videocam'
 import { Appointment } from '../../types/appointment'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import ConfirmIcon from '../../assets/icons/confirm.svg'
@@ -17,12 +19,27 @@ import ReferIcon from '../../assets/icons/refer.svg'
 import { updateAppointmentsStatus } from '../../features/dashboard/dashboardService'
 import { toast } from 'react-toastify'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
+import DoctorFavouritesTab from './profile/components/DoctorFavouritesTab'
 import { getDoctorAvailability } from './doctorService'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { useNavigate } from 'react-router-dom'
+import { LookupHospital, useAuth } from '../../hooks/useAuth'
+import AppButton from '../../components/common/Button/AppButton'
+import AppInput from '../../components/common/Input/AppInput'
+import OtpForm from '../auth/components/OtpForm'
+import { customScrollbar } from '../../styles/commonStyles'
+import completeProfileImg from '../../assets/Banner/complete-profile.png'
+import { ROUTES } from '../../constants/routes'
 
+const formatTime12h = (t?: string | null) => {
+	if (!t) return '--'
+	const [h, m] = t.split(':').map(Number)
+	const suffix = h >= 12 ? 'PM' : 'AM'
+	const hour = h > 12 ? h - 12 : h === 0 ? 12 : h
+	return `${String(hour).padStart(2, '0')}:${String(m).padStart(2, '0')} ${suffix}`
+}
 
 const allActionButtons = [
 	{ icon: ConfirmIcon, label: 'Confirm', bg: '#e8f5e9', color: '#4caf50', action: 'confirm' },
@@ -53,12 +70,41 @@ export function DoctorAppointments({
 	setSearchQuery: (value: string) => void
 }) {
 	const navigate = useNavigate()
-	// ── Appointment action state ──────────────────────────────────────────────
+	const { lookupData } = useAuth()
+
+	// ── New-registration profile-prompt overlay ──────────────────────────────
+	const [showProfilePrompt, setShowProfilePrompt] = useState(
+		() => localStorage.getItem('show_profile_prompt') === 'true'
+	)
+
+	const handleProfilePromptContinue = () => {
+		localStorage.removeItem('show_profile_prompt')
+		setShowProfilePrompt(false)
+		navigate(ROUTES.PORTAL.PROFILE)
+	}
+	// ────────────────────────────────────────────────────────────────────────
+
+	const [otpModalOpen, setOtpModalOpen] = useState(false)
+	const [referModalOpen, setReferModalOpen] = useState(false)
+	const [selectedAppointmentId, setSelectedAppointmentId] = useState('')
+	const [selectedPatientId, setSelectedPatientId] = useState('')
+	// Appointment action state
 	const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({})
 
-	// const [debouncedQuery, setDebouncedQuery] = useState('')
+	// Reject confirmation popover state
+	const [rejectAnchorEl, setRejectAnchorEl] = useState<HTMLElement | null>(null)
+	const [pendingRejectId, setPendingRejectId] = useState<string | null>(null)
 
-	// ── Reschedule drawer state ───────────────────────────────────────────────
+	useEffect(() => {
+		const shouldRefresh = sessionStorage.getItem('refreshAppointments')
+
+		if (shouldRefresh === 'true') {
+			sessionStorage.removeItem('refreshAppointments')
+			window.location.reload()
+		}
+	}, [])
+
+	// Reschedule drawer state
 	const [rescheduleOpen, setRescheduleOpen] = useState(false)
 	const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null)
 	const [rescheduleDate, setRescheduleDate] = useState(new Date())
@@ -66,19 +112,22 @@ export function DoctorAppointments({
 	const [rescheduleSlots, setRescheduleSlots] = useState<SlotGroup[]>([])
 	const [rescheduleSlotsLoading, setRescheduleSlotsLoading] = useState(false)
 	const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false)
+	const [rescheduleHospitals, setRescheduleHospitals] = useState<LookupHospital[]>([])
+	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
+	const [appointmentType, setAppointmentType] = useState<'clinic' | 'video'>('clinic')
 
-	// ── Helpers ───────────────────────────────────────────────────────────────
+	// Helpers
 	const getStatusLabel = (apt: Appointment): string => {
 		if (localStatuses[apt.id]) return localStatuses[apt.id]
 		return typeof apt.status === 'string' ? apt.status : (apt.status?.label ?? 'pending')
 	}
 
-	// ── Fetch slots whenever the reschedule date changes ─────────────────────
+	// Fetch slots whenever the reschedule date changes
 	useEffect(() => {
 		if (!rescheduleOpen || !rescheduleAppt) return
 
 		const doctorId = rescheduleAppt.doctor?.id
-		const hospitalId = rescheduleAppt.hospital?.id
+		const hospitalId = rescheduleHospitalId || rescheduleAppt.hospital?.id
 
 		if (!doctorId || !hospitalId) return
 
@@ -89,14 +138,18 @@ export function DoctorAppointments({
 			setRescheduleSlots([])
 			setRescheduleTime('')
 			try {
-				const data = await getDoctorAvailability({
+				const responseData = await getDoctorAvailability({
 					doctor_id: doctorId,
 					hospital_id: hospitalId,
 					date: dateStr,
 				})
-				if (Array.isArray(data)) {
-					setRescheduleSlots(data as SlotGroup[])
+				let processedData: SlotGroup[] = []
+				if (Array.isArray(responseData)) {
+					processedData = responseData as SlotGroup[]
+				} else if (responseData && Array.isArray((responseData as { data: SlotGroup[] }).data)) {
+					processedData = (responseData as { data: SlotGroup[] }).data
 				}
+				setRescheduleSlots(processedData)
 			} catch {
 				toast.error('Could not load available slots.')
 			} finally {
@@ -105,9 +158,9 @@ export function DoctorAppointments({
 		}
 
 		fetchSlots()
-	}, [rescheduleDate, rescheduleOpen, rescheduleAppt])
+	}, [rescheduleDate, rescheduleOpen, rescheduleAppt, rescheduleHospitalId])
 
-	// ── Submit reschedule ─────────────────────────────────────────────────────
+	// Submit reschedule
 	const handleRescheduleConfirm = async () => {
 		if (!rescheduleAppt || !rescheduleTime) {
 			toast.warning('Please select a time slot before confirming.')
@@ -116,12 +169,15 @@ export function DoctorAppointments({
 		setRescheduleSubmitting(true)
 		try {
 			const dateStr = rescheduleDate.toISOString().split('T')[0]
-			const res = await ApiService.patch<{ success: boolean; message: string }>(
-				`${API_ENDPOINTS.APPOINTMENTS.UPDATE}`,
+			const res = await ApiService.post<{ success: boolean; message: string }>(
+				`${API_ENDPOINTS.APPOINTMENTS.RESCHEDULE}`,
 				{
 					appointment_id: rescheduleAppt.id,
 					appointment_date: dateStr,
-					appointment_time: rescheduleTime,
+					start_time: rescheduleTime,
+					end_time: null,
+					hospital_id: rescheduleHospitalId || rescheduleAppt.hospital?.id,
+					reason: 'Doctor unavailable',
 				}
 			)
 			if (res.data?.success) {
@@ -138,8 +194,8 @@ export function DoctorAppointments({
 		}
 	}
 
-	// ── Action button handler ─────────────────────────────────────────────────
-	const handleAction = async (action: string, appointmentId: string) => {
+	// Action button handler
+	const handleAction = async (action: string, appointmentId: string, anchorEl?: HTMLElement | null) => {
 		try {
 			if (action === 'confirm') {
 				const res = await updateAppointmentsStatus(appointmentId, '3f9a2c8e-7b61-4d2a-9a3f-5c8e1b2d4f90')
@@ -149,59 +205,161 @@ export function DoctorAppointments({
 				}
 			}
 			if (action === 'reject') {
-				const res = await updateAppointmentsStatus(appointmentId, 'a7d4e1c2-9f6b-4c83-b2e1-6f3a9d8c7b12')
-				if (res.success) {
-					toast.success(res.message)
-					setLocalStatuses((prev) => ({ ...prev, [appointmentId]: 'cancelled' }))
-				}
+				setPendingRejectId(appointmentId)
+				setRejectAnchorEl(anchorEl ?? null)
 			}
 			if (action === 'reschedule') {
 				const apt = appointments.find((a) => a.id === appointmentId) ?? null
 				setRescheduleAppt(apt)
+				setRescheduleHospitalId(apt?.hospital?.id ?? '')
 				setRescheduleDate(new Date())
 				setRescheduleTime('')
 				setRescheduleSlots([])
+				setRescheduleHospitals(lookupData?.hospitals ?? [])
 				setRescheduleOpen(true)
 			}
 			if (action === 'refer') {
-				alert('Refer coming soon!')
+				setReferModalOpen(true)
 			}
 		} catch {
 			toast.error('Something went wrong. Please try again.')
 		}
 	}
 
+	// Confirm reject after popover confirmation
+	const handleConfirmReject = async () => {
+		if (!pendingRejectId) return
+		setRejectAnchorEl(null)
+		try {
+			const res = await updateAppointmentsStatus(pendingRejectId, 'a7d4e1c2-9f6b-4c83-b2e1-6f3a9d8c7b12')
+			if (res.success) {
+				toast.success(res.message)
+				setLocalStatuses((prev) => ({ ...prev, [pendingRejectId]: 'cancelled' }))
+			}
+		} catch {
+			toast.error('Something went wrong. Please try again.')
+		} finally {
+			setPendingRejectId(null)
+		}
+	}
 
-	// ── Render ────────────────────────────────────────────────────────────────
+	const handleStartConsultation = async (appointmentId: string, patientId: string) => {
+		try {
+			const res = await ApiService.post<{ success: boolean }>(
+				`${API_ENDPOINTS.APPOINTMENTS.GET_BY_ID(appointmentId)}/start-consultation`,
+				{}
+			)
+
+			if (res.data.success) {
+				setSelectedAppointmentId(appointmentId)
+				setSelectedPatientId(patientId)
+				setOtpModalOpen(true)
+			}
+		} catch {
+			toast.error('Failed to generate OTP')
+		}
+	}
+
+	const handleCancelReject = () => {
+		setRejectAnchorEl(null)
+		setPendingRejectId(null)
+	}
+
+	// Render
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
+
+			{/* ── Complete-profile overlay (new registration only) ─────────────── */}
+			{showProfilePrompt && (
+				<Box
+					sx={{
+						position: 'fixed',
+						inset: 0,
+						zIndex: 1300,
+						bgcolor: 'rgba(0,0,0,0.55)',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+					}}
+				>
+					{/* No card — content floats directly over the dim overlay */}
+					<Box
+						sx={{
+							display: 'flex',
+							flexDirection: 'column',
+							alignItems: 'center',
+							textAlign: 'center',
+							maxWidth: 420,
+							width: '90%',
+						}}
+					>
+						<Box
+							component="img"
+							src={completeProfileImg}
+							alt="Complete your profile"
+							sx={{ width: 220, mb: 3, objectFit: 'contain' }}
+						/>
+						<Typography sx={{ fontWeight: 700, fontSize: '22px', color: '#fff', mb: 1 }}>
+							Please complete your profile and proceed
+						</Typography>
+						<AppButton
+							label="Continue"
+							onClick={handleProfilePromptContinue}
+							sx={{
+								mt: 3,
+								width: '100%',
+								py: 1.6,
+								fontSize: '16px',
+								fontWeight: 600,
+								borderRadius: '12px',
+							}}
+						/>
+					</Box>
+				</Box>
+			)}
+			{/* ────────────────────────────────────────────────────────────────── */}
+
 			<Box>
 				<Typography sx={{ fontWeight: 700, fontSize: '16px', color: 'text.primary', mb: 1.5 }}>
 					Search Patient
 				</Typography>
-				<TextField
+				<AppInput
 					fullWidth
 					placeholder="Search Patient ID, Name..."
 					value={searchQuery}
-					onChange={(e) => setSearchQuery(e.target.value)}
+					onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
 					size="small"
-					InputProps={{
-						startAdornment: (
-							<InputAdornment position="start">
-								<SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-							</InputAdornment>
-						),
-						endAdornment: (
-							<InputAdornment position="end">
-								<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-									<MicNoneOutlinedIcon sx={{ fontSize: 20, color: '#0c7c7c', cursor: 'pointer' }} />
-									<Box sx={{ width: '1px', height: '18px', bgcolor: '#e0e0e0' }} />
-									<QrCodeScannerIcon sx={{ fontSize: 20, color: '#0c7c7c', cursor: 'pointer' }} />
-								</Box>
-							</InputAdornment>
-						),
+					slotProps={{
+						input: {
+							startAdornment: (
+								<InputAdornment position="start">
+									<SearchIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
+								</InputAdornment>
+							),
+							endAdornment: (
+								<InputAdornment position="end">
+									<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+										<MicNoneOutlinedIcon
+											sx={{ fontSize: 20, color: 'text.disabled', cursor: 'pointer' }}
+										/>
+										<Box sx={{ width: '1px', height: '18px', bgcolor: 'divider' }} />
+										<QrCodeScannerIcon
+											sx={{ fontSize: 20, color: 'text.disabled', cursor: 'pointer' }}
+										/>
+									</Box>
+								</InputAdornment>
+							),
+						},
 					}}
-					sx={{ '& fieldset': { borderRadius: '10px' } }}
+					sx={{
+						'& .MuiOutlinedInput-root': {
+							borderRadius: '12px',
+							bgcolor: 'background.default',
+							'& fieldset': { borderColor: 'divider' },
+							'&:hover fieldset': { borderColor: 'primary.main' },
+							'&.Mui-focused fieldset': { borderColor: 'primary.main' },
+						},
+					}}
 				/>
 			</Box>
 
@@ -210,10 +368,39 @@ export function DoctorAppointments({
 					<Typography sx={{ fontWeight: 700, fontSize: '17px', color: 'text.primary' }}>
 						Today's Appointments
 					</Typography>
-					<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+						<AppButton
+							label="Today"
+							variant="outlined"
+							size="small"
+							onClick={() => {
+								const todayIndex = weekDays.findIndex(
+									(d) => d.dateObj.toDateString() === new Date().toDateString()
+								)
+								if (todayIndex !== -1) {
+									setSelectedDate(todayIndex)
+								}
+							}}
+							sx={{
+								borderRadius: '15px',
+								border: '1px solid #0c7c7c',
+								color: '#0c7c7c',
+								textTransform: 'none',
+								fontWeight: 500,
+								px: 1.5,
+								py: 0.6,
+								minWidth: 'auto',
+								'&:hover': {
+									borderColor: '#0c7c7c',
+									backgroundColor: '#eef1f1',
+								},
+							}}
+						/>
+
 						<Typography sx={{ fontSize: '13px', color: '#0c7c7c', fontWeight: 600 }}>
 							{selectedDateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
 						</Typography>
+
 						<ChevronRightIcon sx={{ fontSize: 18, color: '#0c7c7c' }} />
 					</Box>
 				</Box>
@@ -271,156 +458,457 @@ export function DoctorAppointments({
 							No appointments for the selected date.
 						</Typography>
 					)}
-					{appointments.map((apt) => {
-						const statusLabel = getStatusLabel(apt)
-						const isCancelled = statusLabel === 'cancelled'
-						const isConfirmed = statusLabel === 'confirmed'
-						const patientName = apt.patient?.name ?? 'Unknown Patient'
+					{appointments
+						.filter((apt) => getStatusLabel(apt) !== 'cancelled')
+						.map((apt) => {
+							const statusLabel = getStatusLabel(apt)
+							const isCancelled = statusLabel === 'cancelled'
+							const isConfirmed = statusLabel === 'confirmed'
+							const patientName = apt.patient?.name ?? 'Unknown Patient'
 
-						const visibleActions = allActionButtons.filter(
-							(btn) => !(btn.action === 'confirm' && isConfirmed)
-						)
+							const visibleActions = allActionButtons.filter(
+								(btn) => !(btn.action === 'confirm' && isConfirmed)
+							)
 
-						return (
-							<Box
-								key={apt.id}
-								onClick={() => {
-									if (apt.patient?.id && apt.id) {
-										navigate(`/consultation/${apt.patient?.id}/${apt.id}`)
-									}
-								}}
-								sx={{
-									p: 1.5,
-									borderRadius: '12px',
-									border: isCancelled ? '1px solid #f5c6c6' : '1px solid #e0e0e0',
-									bgcolor: isCancelled ? '#fff5f5' : '#fff',
-									display: 'flex',
-									alignItems: 'center',
-									gap: 1.5,
-								}}
-							// onClick={() => navigate(`/consultation/${apt.patient?.id}/${apt.id}`)}
-							>
+							return (
 								<Box
+									key={apt.id}
+									onClick={() => {
+										if (apt.patient?.id && apt.id) {
+											handleStartConsultation(apt.id, apt.patient.id)
+										}
+									}}
 									sx={{
-										width: 30,
-										height: 30,
-										borderRadius: '6px',
-										bgcolor: isCancelled ? '#f5c6c6' : '#e8f5e9',
+										p: 1.5,
+										borderRadius: '12px',
+										opacity: isCancelled ? 0.5 : 1,
+										bgcolor: '#fff',
 										display: 'flex',
 										alignItems: 'center',
-										justifyContent: 'center',
-										flexShrink: 0,
+										gap: 1.5,
 									}}
 								>
-									<HomeIcon sx={{ fontSize: 17, color: isCancelled ? '#b0b0b0' : '#0c7c7c' }} />
-								</Box>
-
-								<Box sx={{ flex: 1, minWidth: 0 }}>
 									<Box
 										sx={{
+											width: 30,
+											height: 30,
+											borderRadius: '6px',
+											bgcolor: '#f5f5f5',
 											display: 'flex',
 											alignItems: 'center',
-											gap: 0.8,
-											mb: 0.3,
-											flexWrap: 'wrap',
+											justifyContent: 'center',
+											flexShrink: 0,
 										}}
 									>
-										<Typography
+										{apt.appointment_mode === 'online' ? (
+											<VideocamIcon
+												sx={{ fontSize: 17, color: isCancelled ? '#b0b0b0' : '#0c7c7c' }}
+											/>
+										) : (
+											<HomeIcon
+												sx={{ fontSize: 17, color: isCancelled ? '#b0b0b0' : '#0c7c7c' }}
+											/>
+										)}
+									</Box>
+
+									<Box sx={{ flex: 1, minWidth: 0 }}>
+										<Box
 											sx={{
-												fontWeight: 600,
-												fontSize: '13px',
-												color: isCancelled ? 'text.secondary' : 'text.primary',
+												display: 'flex',
+												alignItems: 'center',
+												gap: 0.8,
+												mb: 0.3,
+												flexWrap: 'wrap',
 											}}
 										>
-											{patientName}
-										</Typography>
-										<Chip
-											label={statusLabel}
-											size="small"
+											<Typography
+												sx={{
+													fontWeight: 600,
+													fontSize: '14px',
+													color: isCancelled ? 'text.secondary' : 'text.primary',
+												}}
+											>
+												{patientName}
+											</Typography>
+											<Chip
+												label={statusLabel}
+												size="small"
+												sx={{
+													fontSize: '9px',
+													height: 16,
+													bgcolor: isCancelled
+														? '#ffeeee'
+														: isConfirmed
+															? '#e8f5e9'
+															: '#fff8e8',
+													color: isCancelled
+														? '#e53935'
+														: isConfirmed
+															? '#4caf50'
+															: '#f59e0b',
+													fontWeight: 600,
+												}}
+											/>
+
+											{/* Symptoms info tooltip */}
+											{(() => {
+												const key =
+													'symptoms_' +
+													apt.doctor?.id +
+													'_' +
+													apt.appointment_date +
+													'_' +
+													(apt.start_time ? apt.start_time.slice(0, 5) : '')
+												const raw = sessionStorage.getItem(key)
+												let info: { symptoms?: string; duration?: string; severity?: string } =
+													{}
+												let hasSymptoms = false
+												if (raw) {
+													try {
+														info = JSON.parse(raw)
+														hasSymptoms = !!(
+															info.symptoms ||
+															info.duration ||
+															info.severity
+														)
+													} catch {
+														/* ignore */
+													}
+												}
+												const severityColors: Record<string, string> = {
+													mild: '#4caf50',
+													moderate: '#f59e0b',
+													severe: '#e53935',
+												}
+												return (
+													<Tooltip
+														arrow
+														placement="bottom-start"
+														slotProps={{
+															tooltip: {
+																sx: { bgcolor: 'transparent', p: 0, boxShadow: 'none' },
+															},
+															arrow: { sx: { color: 'background.paper' } },
+														}}
+														title={
+															<Box
+																sx={{
+																	bgcolor: 'background.paper',
+																	borderRadius: '12px',
+																	border: '1px solid',
+																	borderColor: 'divider',
+																	boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+																	p: 2,
+																	minWidth: 220,
+																	maxWidth: 280,
+																}}
+															>
+																<Typography
+																	fontSize={12}
+																	fontWeight={700}
+																	color="text.primary"
+																	mb={1.2}
+																>
+																	Patient Symptoms
+																</Typography>
+																{hasSymptoms ? (
+																	<>
+																		{info.symptoms && (
+																			<Box mb={0.8}>
+																				<Typography
+																					fontSize={10}
+																					color="text.disabled"
+																					fontWeight={600}
+																					textTransform="uppercase"
+																					letterSpacing={0.5}
+																				>
+																					Symptoms
+																				</Typography>
+																				<Typography
+																					fontSize={12}
+																					color="text.primary"
+																					mt={0.3}
+																				>
+																					{info.symptoms}
+																				</Typography>
+																			</Box>
+																		)}
+																		{info.duration && (
+																			<Box mb={0.8}>
+																				<Typography
+																					fontSize={10}
+																					color="text.disabled"
+																					fontWeight={600}
+																					textTransform="uppercase"
+																					letterSpacing={0.5}
+																				>
+																					Duration
+																				</Typography>
+																				<Typography
+																					fontSize={12}
+																					color="text.primary"
+																					mt={0.3}
+																				>
+																					{info.duration}
+																				</Typography>
+																			</Box>
+																		)}
+																		{info.severity && (
+																			<Box>
+																				<Typography
+																					fontSize={10}
+																					color="text.disabled"
+																					fontWeight={600}
+																					textTransform="uppercase"
+																					letterSpacing={0.5}
+																				>
+																					Severity
+																				</Typography>
+																				<Box
+																					sx={{
+																						display: 'inline-flex',
+																						alignItems: 'center',
+																						gap: 0.5,
+																						mt: 0.4,
+																						px: 1,
+																						py: 0.3,
+																						borderRadius: '20px',
+																						bgcolor:
+																							(severityColors[
+																								info.severity
+																							] ?? '#9e9e9e') + '22',
+																						border: '1px solid',
+																						borderColor:
+																							severityColors[
+																								info.severity
+																							] ?? '#9e9e9e',
+																					}}
+																				>
+																					<Box
+																						sx={{
+																							width: 6,
+																							height: 6,
+																							borderRadius: '50%',
+																							bgcolor:
+																								severityColors[
+																									info.severity
+																								] ?? '#9e9e9e',
+																						}}
+																					/>
+																					<Typography
+																						fontSize={11}
+																						fontWeight={700}
+																						color={
+																							severityColors[
+																								info.severity
+																							] ?? '#9e9e9e'
+																						}
+																						textTransform="capitalize"
+																					>
+																						{info.severity}
+																					</Typography>
+																				</Box>
+																			</Box>
+																		)}
+																	</>
+																) : (
+																	<Typography
+																		fontSize={12}
+																		color="text.secondary"
+																		fontStyle="italic"
+																	>
+																		No symptoms entered by patient.
+																	</Typography>
+																)}
+															</Box>
+														}
+													>
+														<InfoOutlinedIcon
+															onClick={(e) => e.stopPropagation()}
+															sx={{
+																fontSize: 14,
+																color: hasSymptoms ? '#0c7c7c' : 'text.disabled',
+																cursor: 'pointer',
+																'&:hover': { color: 'primary.main' },
+																verticalAlign: 'middle',
+																ml: 0.3,
+															}}
+														/>
+													</Tooltip>
+												)
+											})()}
+										</Box>
+										<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+											<Typography variant="body2">
+												{apt.patient?.age} years / {apt.patient?.gender}
+											</Typography>
+											<Typography variant="body2">|</Typography>
+											<AccessTimeIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
+											<Typography variant="body2">
+												{formatTime12h(apt.start_time)} - {formatTime12h(apt.end_time)}
+											</Typography>
+										</Box>
+									</Box>
+
+									{isCancelled ? (
+										<Box
 											sx={{
-												fontSize: '9px',
-												height: 16,
-												bgcolor: isCancelled ? '#ffeeee' : isConfirmed ? '#e8f5e9' : '#fff8e8',
-												color: isCancelled ? '#e53935' : isConfirmed ? '#4caf50' : '#f59e0b',
-												fontWeight: 600,
+												display: 'flex',
+												alignItems: 'center',
+												gap: 1,
+												bgcolor: '#e8c7c7',
+												borderRadius: '8px',
+												px: 1.5,
+												py: 0.8,
 											}}
-										/>
-									</Box>
-									<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-										<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-											{apt.appointment_mode ?? 'offline'}
-										</Typography>
-										<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>|</Typography>
-										<AccessTimeIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
-										<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-											{apt.appointment_time ?? '--'}
-										</Typography>
-									</Box>
-								</Box>
-
-								{isCancelled ? (
-									<Box
-										sx={{
-											display: 'flex',
-											alignItems: 'center',
-											gap: 1,
-											bgcolor: '#ffe0e0',
-											borderRadius: '8px',
-											px: 1.5,
-											py: 0.8,
-										}}
-									>
-										<CancelOutlinedIcon sx={{ fontSize: 16, color: '#e53935' }} />
-										<Typography sx={{ fontSize: '10px', color: '#e53935', fontWeight: 600 }}>
-											Patient has canceled the appointment
-										</Typography>
-									</Box>
-								) : (
-									<Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
-										{visibleActions.map((action, i) => (
-											<Box key={i}>
-												<Box
-													onClick={() => handleAction(action.action, apt.id)}
-													sx={{
-														display: 'flex',
-														flexDirection: 'column',
-														alignItems: 'center',
-														gap: 0.4,
-														cursor: 'pointer',
-														bgcolor: action.bg,
-														borderRadius: '8px',
-														px: 1,
-														py: 1,
-														minWidth: 28,
-														transition: 'opacity 0.2s',
-														'&:hover': { opacity: 0.75 },
-													}}
-												>
-													<img src={action.icon} width={16} height={16} alt={action.label} />
+										>
+											<CancelOutlinedIcon sx={{ fontSize: 16, color: '#e53935' }} />
+											<Typography sx={{ fontSize: '10px', color: '#e53935', fontWeight: 600 }}>
+												Doctor rejected the appointment
+											</Typography>
+										</Box>
+									) : (
+										<Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
+											{visibleActions.map((action, i) => (
+												<Box key={i}>
+													<Box
+														onClick={(e) => {
+															e.stopPropagation()
+															handleAction(
+																action.action,
+																apt.id,
+																e.currentTarget as HTMLElement
+															)
+														}}
+														sx={{
+															display: 'flex',
+															flexDirection: 'column',
+															alignItems: 'center',
+															gap: 0.4,
+															cursor: 'pointer',
+															bgcolor: action.bg,
+															borderRadius: '8px',
+															px: 1,
+															py: 1,
+															minWidth: 28,
+															transition: 'opacity 0.2s',
+															'&:hover': { opacity: 0.75 },
+														}}
+													>
+														<img
+															src={action.icon}
+															width={16}
+															height={16}
+															alt={action.label}
+														/>
+													</Box>
+													<Typography
+														sx={{
+															mt: 0.4,
+															fontSize: '10px',
+															fontWeight: 400,
+															textAlign: 'center',
+														}}
+													>
+														{action.label}
+													</Typography>
 												</Box>
-												<Typography
-													sx={{
-														mt: 0.4,
-														fontSize: '10px',
-														fontWeight: 400,
-														textAlign: 'center',
-													}}
-												>
-													{action.label}
-												</Typography>
-											</Box>
-										))}
-									</Box>
-								)}
+											))}
+										</Box>
+									)}
 
-								<ChevronRightIcon sx={{ fontSize: 16, color: 'text.secondary', flexShrink: 0 }} />
-							</Box>
-						)
-					})}
+									<ChevronRightIcon sx={{ fontSize: 16, color: 'text.secondary', flexShrink: 0 }} />
+								</Box>
+							)
+						})}
 				</Box>
 			</Box>
 
-			{/* ── Reschedule drawer ── */}
+			{/* Reject Confirmation Popover */}
+			<Popover
+				open={Boolean(rejectAnchorEl)}
+				anchorEl={rejectAnchorEl}
+				onClose={handleCancelReject}
+				anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+				transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+				disableScrollLock
+				sx={{ zIndex: 9999 }}
+				slotProps={{
+					paper: {
+						sx: {
+							borderRadius: '16px',
+							px: 3,
+							py: 3,
+							maxWidth: 300,
+							width: 280,
+							textAlign: 'center',
+							boxShadow: '0px 8px 40px rgba(0,0,0,0.18)',
+							mt: 1,
+							overflow: 'visible',
+							'&::before': {
+								content: '""',
+								position: 'absolute',
+								top: -8,
+								left: '50%',
+								transform: 'translateX(-50%)',
+								width: 0,
+								height: 0,
+								borderLeft: '9px solid transparent',
+								borderRight: '9px solid transparent',
+								borderBottom: '9px solid #fff',
+								filter: 'drop-shadow(0px -2px 2px rgba(0,0,0,0.06))',
+							},
+						},
+					},
+				}}
+			>
+				<Typography sx={{ fontWeight: 700, fontSize: '16px', color: 'text.primary', mb: 0.5 }}>
+					Are you sure?
+				</Typography>
+				<Typography sx={{ fontSize: '14px', color: 'text.primary', fontWeight: 600, mb: 3 }}>
+					You want to reject appointment
+				</Typography>
+				<Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center' }}>
+					<Box
+						onClick={handleCancelReject}
+						sx={{
+							flex: 1,
+							py: 1.2,
+							border: '2px solid #0c7c7c',
+							borderRadius: '50px',
+							color: '#0c7c7c',
+							fontWeight: 600,
+							fontSize: '13px',
+							cursor: 'pointer',
+							textAlign: 'center',
+							transition: 'background 0.2s',
+							'&:hover': { bgcolor: 'rgba(12,124,124,0.06)' },
+						}}
+					>
+						Cancel
+					</Box>
+					<Box
+						onClick={handleConfirmReject}
+						sx={{
+							flex: 1,
+							py: 1.2,
+							bgcolor: '#e53935',
+							borderRadius: '50px',
+							color: '#fff',
+							fontWeight: 600,
+							fontSize: '13px',
+							cursor: 'pointer',
+							textAlign: 'center',
+							transition: 'opacity 0.2s',
+							'&:hover': { opacity: 0.88 },
+						}}
+					>
+						Yes, Reject
+					</Box>
+				</Box>
+			</Popover>
+
+			{/* Reschedule drawer */}
 			<RescheduleDrawer
 				rescheduleOpen={rescheduleOpen}
 				setRescheduleOpen={setRescheduleOpen}
@@ -433,7 +921,68 @@ export function DoctorAppointments({
 				rescheduleSlotsLoading={rescheduleSlotsLoading}
 				rescheduleSubmitting={rescheduleSubmitting}
 				handleRescheduleConfirm={handleRescheduleConfirm}
+				rescheduleHospitals={rescheduleHospitals}
+				rescheduleHospitalId={rescheduleHospitalId}
+				setRescheduleHospitalId={setRescheduleHospitalId}
+				appointmentType={appointmentType}
+				setAppointmentType={setAppointmentType}
 			/>
+
+			{/* Refer Modal – renders DoctorFavouritesTab inside a centered Dialog */}
+			<Dialog
+				open={referModalOpen}
+				onClose={() => setReferModalOpen(false)}
+				maxWidth="sm"
+				fullWidth
+				slotProps={{
+					paper: {
+						sx: {
+							borderRadius: '20px',
+							boxShadow: '0px 16px 56px rgba(0,0,0,0.18)',
+							overflow: 'hidden',
+							maxHeight: '80vh',
+						},
+					},
+				}}
+			>
+				<DialogContent
+					sx={{
+						p: 0,
+						maxHeight: '70vh',
+						overflowY: 'auto',
+						...customScrollbar,
+					}}
+				>
+					<DoctorFavouritesTab
+						mode="refer"
+						title="Refer a doctor"
+						onShare={(doctor) => {
+							toast.success(`Referred to ${doctor.name}`)
+							setReferModalOpen(false)
+						}}
+					/>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={otpModalOpen} onClose={() => setOtpModalOpen(false)} maxWidth="xs" fullWidth>
+				<DialogContent sx={{ pt: 3 }}>
+					<OtpForm
+						contactNumber=""
+						mode="modal"
+						onVerify={() => {
+							setOtpModalOpen(false)
+							navigate(`/consultation/${selectedPatientId}/${selectedAppointmentId}`)
+						}}
+						onCustomVerify={async (otp: string) => {
+							const res = await ApiService.post<{ success: boolean }>(
+								`${API_ENDPOINTS.APPOINTMENTS.GET_BY_ID(selectedAppointmentId)}/verify-otp`,
+								{ otp }
+							)
+							return res.data.success
+						}}
+					/>
+				</DialogContent>
+			</Dialog>
 		</Box>
 	)
 }

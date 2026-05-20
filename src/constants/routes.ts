@@ -7,8 +7,8 @@ export const ROUTES = {
 	},
 
 	PUBLIC: {
-		ACCOUNT: '/account',
-		WELCOME_DOCTOR: '/welcome-doctor',
+		WELCOME: '/welcome',
+		WELCOME_DOCTOR: '/welcome-doctor', // kept for backward compat
 	},
 
 	DOCTORS: {
@@ -19,9 +19,24 @@ export const ROUTES = {
 	TEST: '/test',
 	TEST_REGISTER: '/test-register',
 
+	ROLE_SELECT: '/role-select',
+	ONBOARDING_ROLE: '/onboarding/:roleId',
+	ONBOARDING_REGISTER: '/onboarding/register',
+
+	DOCTOR_ACCOUNT_DETAILS: '/doctor/account-details',
+
+	PAYMENT: '/payment',
+
+	APPOINTMENTS: '/portal/appointments',
+
 	PORTAL: {
 		HOME: '/portal',
 		PROFILE: '/profile',
 		CONSULTATION: '/consultation/:patientId/:appointmentId',
 	},
+
+	PHARMACY: {
+  ORDERS: "/pharmacy/orders",
+  ORDER_DETAIL: "/pharmacy/orders/:orderId",
+},
 }

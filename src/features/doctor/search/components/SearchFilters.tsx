@@ -1,4 +1,5 @@
 // src/features/doctor/components/SearchFilters.tsx
+import { formatINR } from '../../../../utils/Utils'
 import { Box, Typography, Slider, Divider } from '@mui/material'
 import { customCardStyle } from '../../../../styles/commonStyles'
 import StarIcon from '@mui/icons-material/Star'
@@ -187,7 +188,7 @@ export default function SearchFilters({ filters, onChange }: SearchFiltersProps)
 						Max Price
 					</Typography>
 					<Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 700 }}>
-						{`\u20B9${filters.maxPrice}`}
+						{formatINR(filters.maxPrice)}
 					</Typography>
 				</Box>
 				<Slider

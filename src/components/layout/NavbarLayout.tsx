@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import { USER_ROLES } from '../../constants/constants'
 import { LookupHospital } from '../../hooks/useAuth'
 
+
 const NAVBAR_HEIGHT = 64
 
 // Account type definition
@@ -34,6 +35,7 @@ const PATIENT_PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
 	{ divider: true },
 	{ label: 'Profile', path: '/profile' },
 	{ label: 'Settings', path: '#' },
+	{ label: 'Help Line', path: '#help-line' },
 	{ divider: true },
 	{ label: 'Logout', path: '/logout', danger: true },
 ]
@@ -44,7 +46,8 @@ const DOCTOR_PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
 	{ label: 'My Patients', path: '#' },
 	{ divider: true },
 	{ label: 'Profile', path: '/profile' },
-	{ label: 'Settings', path: '#' },
+	{ label: 'Settings', path: '/profile?tab=settings' },
+	{ label: 'Help Line', path: '#help-line' },
 	{ divider: true },
 	{ label: 'Logout', path: '/logout', danger: true },
 ]
@@ -123,7 +126,7 @@ function AccountSwitcher({
 			ref={ref}
 			elevation={3}
 			sx={{
-				position: 'absolute',
+				position: 'fixed',
 				top: `${NAVBAR_HEIGHT}px`,
 				right: 16,
 				minWidth: 280,
@@ -243,7 +246,7 @@ function ProfileDropdown({
 			ref={ref}
 			elevation={3}
 			sx={{
-				position: 'absolute',
+				position: 'fixed',
 				top: `${NAVBAR_HEIGHT}px`,
 				right: 16,
 				minWidth: 280,
@@ -410,7 +413,10 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 
 	const handleHospitalChange = (e: LookupHospital | null) => {
 		setActiveHospital(e)
-		if (e) localStorage.setItem('active_hospital_id', e.id)
+		if (e) {
+			localStorage.setItem('active_hospital_id', e.id)
+			window.dispatchEvent(new Event('hospital-changed'))
+		}
 	}
 
 	return (

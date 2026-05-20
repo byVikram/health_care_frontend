@@ -82,10 +82,6 @@ export default function PatientInfoCard({ patient }: PatientInfoCardProps) {
 							<Value>{patient.name}</Value>
 						</Box>
 						<Box>
-							<Label>Patient ID: </Label>
-							<Value>{patient.patientId}</Value>
-						</Box>
-						<Box>
 							<Label>Age: </Label>
 							<Value>{patient.age} years</Value>
 						</Box>
