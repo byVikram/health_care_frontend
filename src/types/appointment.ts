@@ -10,6 +10,7 @@ export interface AppointmentStatus {
 export interface AppointmentDoctor {
 	id: string
 	name: string
+	avatar_s3_key: string | undefined
 }
 
 export interface AppointmentPatient {

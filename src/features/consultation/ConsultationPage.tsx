@@ -322,7 +322,7 @@ export default function ConsultationPage() {
 					<Grid container spacing={3}>
 						<Grid size={{ xs: 12, md: 6 }}>
 							<PatientInfoCard patient={consultationPatient} />
-							<PastMedicalHistory />
+							<PastMedicalHistory patientPublicId={patientId}/>
 						</Grid>
 						<Grid size={{ xs: 12, md: 6 }} display={'flex'} flexDirection={'column'}>
 							<ConsultationNotes doctor={consultationDoctor} />

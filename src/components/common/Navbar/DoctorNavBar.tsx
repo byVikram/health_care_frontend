@@ -7,16 +7,16 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined'
 
 import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined'
-import drImage from '../../../assets/Services/doctors-service.png'
 import { useAuth, LookupHospital } from '../../../hooks/useAuth'
 import { USER_ROLES } from '../../../constants/constants'
 
 interface DoctorNavBarProps {
 	onProfileClick?: () => void
 	onHospitalChange?: (hospital: LookupHospital | null) => void
+	avatarSrc?: string
 }
 
-export default function DoctorNavBar({ onProfileClick, onHospitalChange }: DoctorNavBarProps) {
+export default function DoctorNavBar({ onProfileClick, onHospitalChange, avatarSrc }: DoctorNavBarProps) {
 	const { role, user, lookupData } = useAuth()
 	const navigate = useNavigate()
 
@@ -211,9 +211,11 @@ export default function DoctorNavBar({ onProfileClick, onHospitalChange }: Docto
 				>
 					<Box sx={{ position: 'relative' }}>
 						<Avatar
-							src={user?.avatar || drImage}
+							src={avatarSrc || user?.avatar || undefined}
 							sx={{ width: 36, height: 36, border: '2px solid rgba(255,255,255,0.5)' }}
-						/>
+						>
+							{!(avatarSrc || user?.avatar) ? ' ' : null}
+						</Avatar>
 						<Box
 							sx={{
 								position: 'absolute', bottom: 1, right: 1,

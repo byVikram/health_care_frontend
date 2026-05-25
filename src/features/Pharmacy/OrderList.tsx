@@ -300,7 +300,7 @@ export default function OrderList() {
 	
 	const handleRowClick = useCallback((row: OrderRow) => {
 		
-		navigate(`/order-detail/${row.orderId}`)
+		navigate(`/pharmacy/orders/${row.orderId}`)
 	
 	}, [navigate])
 

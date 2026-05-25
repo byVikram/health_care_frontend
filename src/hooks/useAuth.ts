@@ -22,10 +22,19 @@ export interface LookupHospital {
 	address?: string
 }
 
+export interface PatientProfile {
+	id: string
+	name: string
+	relation: string
+	avatar_s3_key?: string
+	is_self: boolean
+}
+
 export interface LookupData {
-	appoinment_statuses: AppointmentStatus[]
+	appointment_statuses: AppointmentStatus[]
 	specialities: SpecialitiesResponse[]
 	hospitals: LookupHospital[]
+	patient_profiles: PatientProfile[]
 }
 
 export interface AuthState {

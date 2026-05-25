@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routes'
 import { getAppointments, getDoctorAvailability, getDoctorById } from '../doctor/doctorService'
 import { Appointment } from '../../types/appointment'
-import drImage from '../../assets/Services/doctors-service.png'
+// import drImage from '../../assets/Services/doctors-service.png'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 import { LookupHospital } from '../../hooks/useAuth'
@@ -20,6 +20,7 @@ import AppButton from '../../components/common/Button/AppButton'
 import AppInput from '../../components/common/Input/AppInput'
 import { customScrollbar } from '../../styles/commonStyles'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
+
 
 const STATUS_STYLES: Record<string, { color: string; bgColor: string; text: string }> = {
 	confirmed: { color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)', text: 'Confirmed' },
@@ -322,14 +323,14 @@ export function PatientAppointments() {
 													height: 48,
 													borderRadius: '50%',
 													overflow: 'hidden',
-													border: '2px solid',
-													borderColor: style.color,
+
+
 													flexShrink: 0,
 												}}
 											>
 												<Box
 													component="img"
-													src={drImage}
+													src={appt.doctor.avatar_s3_key}
 													alt={appt.doctor.name}
 													sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
 												/>

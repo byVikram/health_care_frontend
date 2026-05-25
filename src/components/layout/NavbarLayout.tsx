@@ -6,13 +6,12 @@ import DoctorNavBar from '../common/Navbar/DoctorNavBar'
 import { clearAuth, useAuth } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { USER_ROLES } from '../../constants/constants'
-import { LookupHospital } from '../../hooks/useAuth'
-
+import { useMemo } from 'react'
+import { LookupHospital, PatientProfile } from '../../hooks/useAuth'
 
 const NAVBAR_HEIGHT = 64
 
-// Account type definition
-type Account = {
+type ProfileAccount = {
 	id: string
 	name: string
 	email?: string
@@ -57,28 +56,6 @@ const getProfileMenuItems = (role: string): readonly ProfileMenuItem[] => {
 	return PATIENT_PROFILE_MENU_ITEMS
 }
 
-// Sample accounts data - replace with actual data from your auth context
-const SAMPLE_ACCOUNTS: Account[] = [
-	{
-		id: '1',
-		name: 'John Doe',
-		email: 'john.doe@example.com',
-		relation: 'self',
-	},
-	{
-		id: '2',
-		name: 'Sarah John',
-		email: 'john.doe@example.com',
-		relation: 'wife',
-	},
-	{
-		id: '3',
-		name: 'Steven John',
-		email: 'john.doe@example.com',
-		relation: 'son',
-	},
-]
-
 // ---- Account Switcher Dropdown ----
 function AccountSwitcher({
 	accounts,
@@ -86,9 +63,9 @@ function AccountSwitcher({
 	onSwitchAccount,
 	onClose,
 }: {
-	accounts: Account[]
-	currentAccount: Account
-	onSwitchAccount: (account: Account) => void
+	accounts: PatientProfile[]
+	currentAccount: PatientProfile | null
+	onSwitchAccount: (account: PatientProfile) => void
 	onClose: () => void
 }) {
 	const ref = useRef<HTMLDivElement>(null)
@@ -103,7 +80,7 @@ function AccountSwitcher({
 		return () => document.removeEventListener('mousedown', handleClickOutside)
 	}, [onClose])
 
-	const handleSwitch = (account: Account) => {
+	const handleSwitch = (account: PatientProfile) => {
 		onSwitchAccount(account)
 		onClose()
 	}
@@ -172,6 +149,7 @@ function AccountSwitcher({
 				>
 					<Stack direction="row" spacing={2} alignItems="center" flex={1}>
 						<Avatar
+							src={account.avatar_s3_key || undefined}
 							sx={{
 								// bgcolor: getRoleColor(account.role),
 								width: 40,
@@ -184,7 +162,7 @@ function AccountSwitcher({
 						<Box flex={1}>
 							<Typography variant="body2" fontWeight={500}>
 								{account.name}
-								{account.relation}
+								{/* {account.relation} */}
 							</Typography>
 							<Typography
 								variant="caption"
@@ -199,7 +177,7 @@ function AccountSwitcher({
 							</Typography>
 						</Box>
 					</Stack>
-					{currentAccount.id === account.id && <CheckIcon fontSize="small" color="primary" />}
+					{currentAccount?.id === account.id && <CheckIcon fontSize="small" color="primary" />}
 				</MenuItem>
 			))}
 		</Paper>
@@ -214,7 +192,7 @@ function ProfileDropdown({
 	role = 'patient',
 }: {
 	onClose: () => void
-	currentAccount: Account
+	currentAccount: ProfileAccount
 	onOpenAccountSwitcher: () => void
 	role: string
 }) {
@@ -371,34 +349,47 @@ interface NavbarLayoutProps {
 }
 
 export default function NavbarLayout({ children }: NavbarLayoutProps) {
-	const { role, user } = useAuth()
-
+	const { role, user, lookupData } = useAuth()
+	const activePatientId = localStorage.getItem('patient_id')
 	const [dropdownOpen, setDropdownOpen] = useState(false)
 	const [activeHospital, setActiveHospital] = useState<LookupHospital | null>(null)
 	const [accountSwitcherOpen, setAccountSwitcherOpen] = useState(false)
 
 	// Replace with actual current account from your auth context
-	const [currentAccount, setCurrentAccount] = useState<Account>(SAMPLE_ACCOUNTS[0])
-	const [availableAccounts] = useState<Account[]>(SAMPLE_ACCOUNTS)
-	const profileAccount: Account = {
-		id: user?.id || currentAccount.id,
-		name: user?.name || currentAccount.name,
-		email: user?.email || currentAccount.email,
-		relation: currentAccount.relation,
-		avatar: user?.avatar || currentAccount.avatar,
+	const availableAccounts = useMemo(() => lookupData?.patient_profiles ?? [], [lookupData])
+	const currentAccount = useMemo(() => {
+		if (!lookupData?.patient_profiles?.length) {
+			return null
+		}
+
+		return (
+			lookupData.patient_profiles.find((profile) => profile.id === activePatientId) ||
+			lookupData.patient_profiles[0]
+		)
+	}, [lookupData, activePatientId])
+
+	useEffect(() => {
+		if (!localStorage.getItem('patient_id') && lookupData?.patient_profiles?.length) {
+			const selfProfile = lookupData.patient_profiles.find((profile) => profile.is_self)
+
+			if (selfProfile) {
+				localStorage.setItem('patient_id', selfProfile.id)
+			}
+		}
+	}, [lookupData])
+
+	const profileAccount = {
+		id: currentAccount?.id || '',
+		name: currentAccount?.name || '',
+		email: user?.email || '',
+		relation: currentAccount?.relation || '',
+		avatar: currentAccount?.avatar_s3_key || '',
 	}
 
-	const handleSwitchAccount = (account: Account) => {
-		setCurrentAccount(account)
-		// Here you would also update your auth context, redirect based on role, etc.
-		console.log('Switched to account:', account)
+	const handleSwitchAccount = (account: PatientProfile) => {
+		localStorage.setItem('patient_id', account.id)
 
-		// Optional: Navigate to role-specific dashboard
-		// if (account.role === 'doctor') {
-		//   navigate('/doctor/dashboard')
-		// } else if (account.role === 'patient') {
-		//   navigate('/patient/dashboard')
-		// }
+		window.dispatchEvent(new Event('auth-changed'))
 	}
 
 	const handleOpenAccountSwitcher = () => {
@@ -436,19 +427,20 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 						setAccountSwitcherOpen(false)
 						setDropdownOpen((prev) => !prev)
 					}}
-					onHospitalChange={handleHospitalChange}
+				onHospitalChange={handleHospitalChange}
+				avatarSrc={role === 'patient' ? (profileAccount.avatar || undefined) : (user?.avatar || undefined)}
 				/>
 			</Box>
 
-    	{/* Dropdowns */}
-    	{dropdownOpen && (
-      		<ProfileDropdown
-        		onClose={handleCloseAll}
-        		currentAccount={profileAccount}
-        		onOpenAccountSwitcher={handleOpenAccountSwitcher}
-        		role={role || 'patient'}
-      	/>
-    	)}
+			{/* Dropdowns */}
+			{dropdownOpen && (
+				<ProfileDropdown
+					onClose={handleCloseAll}
+					currentAccount={profileAccount}
+					onOpenAccountSwitcher={handleOpenAccountSwitcher}
+					role={role || 'patient'}
+				/>
+			)}
 
 			{accountSwitcherOpen && (
 				<AccountSwitcher
