@@ -41,6 +41,7 @@ export interface CreateAppointmentPayload {
 	appointment_mode: 'clinic_visit' | 'video_call'
 	appointment_date: string
 	start_time: string
+	patient_id?: string
 }
 
 export interface CreateAppointmentResponse {

@@ -96,6 +96,10 @@ export function PatientAppointments() {
 		}
 
 		fetchData()
+
+		const onAccountSwitch = () => fetchData()
+		window.addEventListener('auth-changed', onAccountSwitch)
+		return () => window.removeEventListener('auth-changed', onAccountSwitch)
 	}, [])
 
 	useEffect(() => {

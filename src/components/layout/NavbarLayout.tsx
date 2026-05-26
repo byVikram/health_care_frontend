@@ -350,6 +350,7 @@ interface NavbarLayoutProps {
 
 export default function NavbarLayout({ children }: NavbarLayoutProps) {
 	const { role, user, lookupData } = useAuth()
+	const navigate = useNavigate()
 	const activePatientId = localStorage.getItem('patient_id')
 	const [dropdownOpen, setDropdownOpen] = useState(false)
 	const [activeHospital, setActiveHospital] = useState<LookupHospital | null>(null)
@@ -390,6 +391,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 		localStorage.setItem('patient_id', account.id)
 
 		window.dispatchEvent(new Event('auth-changed'))
+		navigate(0)
 	}
 
 	const handleOpenAccountSwitcher = () => {
