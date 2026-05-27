@@ -22,6 +22,7 @@ export interface AppointmentParams {
 	hospital_id?: string
 	status?: string
 	appSearch?: string
+	variant?: 'all' | 'upcoming'
 }
 
 export interface DoctorSearchParams {

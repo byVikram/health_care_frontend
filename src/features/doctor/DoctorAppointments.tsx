@@ -145,6 +145,7 @@ export function DoctorAppointments({
 					hospital_id: hospitalId,
 					date: dateStr,
 				})
+				console.log('Slots API Response:', responseData)
 				let processedData: SlotGroup[] = []
 				if (Array.isArray(responseData)) {
 					processedData = responseData as SlotGroup[]

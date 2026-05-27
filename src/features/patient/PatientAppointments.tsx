@@ -1,4 +1,4 @@
-import { Box, Typography, Chip, Stack, Paper } from '@mui/material'
+﻿import { Box, Typography, Chip, Stack, Paper } from '@mui/material'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import VideocamIcon from '@mui/icons-material/Videocam'
@@ -76,7 +76,7 @@ export function PatientAppointments() {
 				setLoading(true)
 				setError('')
 				const [apptRes, statusRes] = await Promise.all([
-					getAppointments({ limit: 10 }),
+					getAppointments({ limit: 10, variant: 'upcoming' }),
 					ApiService.get<{ success: boolean; data: { id: string; label: string }[] }>(
 						API_ENDPOINTS.APPOINTMENTS.STATUSES
 					),
@@ -334,8 +334,8 @@ export function PatientAppointments() {
 											>
 												<Box
 													component="img"
-													src={appt.doctor.avatar_s3_key}
-													alt={appt.doctor.name}
+													src={appt.doctor?.avatar_s3_key ?? ''}
+													alt={appt.doctor?.name ?? ''}
 													sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
 												/>
 											</Box>
@@ -355,7 +355,7 @@ export function PatientAppointments() {
 															color: 'text.primary',
 														}}
 													>
-														{appt.doctor.name}
+														{appt.doctor?.name ?? 'Unknown Doctor'}
 													</Typography>
 													<Chip
 														label={style.text}
