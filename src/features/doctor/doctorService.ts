@@ -82,16 +82,33 @@ export const getSpecialities = async (): Promise<SpecialitiesResponse> => {
 	return res.data
 }
 
+export type ApiAvailabilityMode = 'clinic_visit' | 'video_call'
+
+export interface AvailabilityModeBlock {
+	appointment_mode?: ApiAvailabilityMode
+	sessions?: SlotGroup[]
+}
+
 export interface AvailabilityResponse {
-	data?: SlotGroup[]
+	data?: SlotGroup[] | AvailabilityModeBlock[]
+}
+
+export type DoctorAvailabilityResponse = SlotGroup[] | AvailabilityModeBlock[] | AvailabilityResponse
+
+export const isAvailabilityModeBlock = (item: unknown): item is AvailabilityModeBlock =>
+	typeof item === 'object' && item !== null && ('appointment_mode' in item || 'sessions' in item)
+
+export const getAvailabilityModeBlocks = (response: DoctorAvailabilityResponse): AvailabilityModeBlock[] => {
+	const items = Array.isArray(response) ? response : Array.isArray(response.data) ? response.data : []
+	return items.filter(isAvailabilityModeBlock)
 }
 
 export const getDoctorAvailability = async (params: {
 	doctor_id?: string
 	hospital_id: number | string
 	date: string
-}): Promise<SlotGroup[] | AvailabilityResponse> => {
-	const res = await ApiService.getWithParams<SlotGroup[] | AvailabilityResponse>(
+}): Promise<DoctorAvailabilityResponse> => {
+	const res = await ApiService.getWithParams<DoctorAvailabilityResponse>(
 		API_ENDPOINTS.DOCTORS.AVAILABILITY,
 		params as Record<string, unknown>
 	)

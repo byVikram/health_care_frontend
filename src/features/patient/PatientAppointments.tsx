@@ -6,7 +6,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routes'
-import { getAppointments, getDoctorAvailability, getDoctorById } from '../doctor/doctorService'
+import { getAppointments, getDoctorAvailability, getDoctorById, getAvailabilityModeBlocks } from '../doctor/doctorService'
 import { Appointment } from '../../types/appointment'
 // import drImage from '../../assets/Services/doctors-service.png'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
@@ -143,12 +143,13 @@ export function PatientAppointments() {
 					hospital_id: hospitalId,
 					date: dateStr,
 				})
-				let processedData: SlotGroup[] = []
-				if (Array.isArray(responseData)) {
-					processedData = responseData as SlotGroup[]
-				} else if (responseData && Array.isArray((responseData as { data: SlotGroup[] }).data)) {
-					processedData = (responseData as { data: SlotGroup[] }).data
-				}
+				const selectedTypeMode = appointmentType === 'clinic' ? 'clinic_visit' : 'video_call'
+				const selectedModeData = getAvailabilityModeBlocks(responseData).find(
+					(item) => item.appointment_mode === selectedTypeMode
+				)
+
+				const processedData = selectedModeData?.sessions || []
+
 				setRescheduleSlots(processedData)
 			} catch {
 				toast.error('Could not load available slots.')
@@ -158,7 +159,7 @@ export function PatientAppointments() {
 		}
 
 		fetchSlots()
-	}, [rescheduleDate, rescheduleOpen, rescheduleAppt, rescheduleHospitalId])
+	}, [rescheduleDate, rescheduleOpen, rescheduleAppt, rescheduleHospitalId,appointmentType])
 
 	const statusOf = (appt: Appointment) =>
 		localStatuses[appt.id] ||
