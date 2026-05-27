@@ -89,8 +89,18 @@ export default function OtpForm({ contactNumber, onVerify, mode = 'page', onCust
 			}
 
 			// Default: auth login OTP flow
-			const res = await verifyOtp(contactNumber, otp.join(''))
-
+			// const res = await verifyOtp(contactNumber, otp.join(''))
+			const res = await verifyOtp({
+				contact_number: contactNumber,
+				otp: otp.join(''),
+				device_type: 'web',
+				device_name: navigator.userAgent,
+				fcm_token: null,
+				device_metadata: {
+					browser: navigator.userAgent,
+					platform: navigator.platform,
+				},
+			})
 			if (res.success) {
 				const { user, access_token, refresh_token } = res.data
 
