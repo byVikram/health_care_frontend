@@ -18,11 +18,11 @@ export interface PatientPersonal {
 }
 
 export interface PatientMedical {
-  allergies: string;
-  chronic_conditions: string;
-  current_medications: string;
-  past_surgeries: string;
-  family_history: string;
+  allergies: string[];
+  chronic_conditions: string[];
+  current_medications: string[];
+  past_surgeries: string[];
+  family_history: string[];
 }
 
 export interface PatientLifeStyle {

@@ -20,7 +20,7 @@ import { updateAppointmentsStatus } from '../../features/dashboard/dashboardServ
 import { toast } from 'react-toastify'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
 import DoctorFavouritesTab from './profile/components/DoctorFavouritesTab'
-import { getDoctorAvailability } from './doctorService'
+import { getDoctorAvailability, getAvailabilityModeBlocks } from './doctorService'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
@@ -145,12 +145,14 @@ export function DoctorAppointments({
 					hospital_id: hospitalId,
 					date: dateStr,
 				})
-				let processedData: SlotGroup[] = []
-				if (Array.isArray(responseData)) {
-					processedData = responseData as SlotGroup[]
-				} else if (responseData && Array.isArray((responseData as { data: SlotGroup[] }).data)) {
-					processedData = (responseData as { data: SlotGroup[] }).data
-				}
+				console.log('Slots API Response:', responseData)
+				const selectedTypeMode = appointmentType === 'clinic' ? 'clinic_visit' : 'video_call'
+				const selectedModeData = getAvailabilityModeBlocks(responseData).find(
+					(item) => item.appointment_mode === selectedTypeMode
+				)
+
+				const processedData = selectedModeData?.sessions || []
+
 				setRescheduleSlots(processedData)
 			} catch {
 				toast.error('Could not load available slots.')
@@ -160,7 +162,7 @@ export function DoctorAppointments({
 		}
 
 		fetchSlots()
-	}, [rescheduleDate, rescheduleOpen, rescheduleAppt, rescheduleHospitalId])
+	}, [rescheduleDate, rescheduleOpen, rescheduleAppt, rescheduleHospitalId, appointmentType])
 
 	// Submit reschedule
 	const handleRescheduleConfirm = async () => {
@@ -270,7 +272,6 @@ export function DoctorAppointments({
 	// Render
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
-
 			{/* ── Complete-profile overlay (new registration only) ─────────────── */}
 			{showProfilePrompt && (
 				<Box

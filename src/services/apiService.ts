@@ -1,5 +1,5 @@
 ﻿// src/services/apiService.ts
-import axios, { AxiosResponse } from 'axios'
+import axios, { AxiosResponse, AxiosRequestConfig } from 'axios'
 import { clearAuth } from '../hooks/useAuth'
 import { toast } from 'react-toastify'
 
@@ -38,8 +38,8 @@ axiosInstance.interceptors.response.use(
 
 // ── ApiService ────────────────────────────────────────────────────────────────
 const ApiService = {
-	get<T = unknown>(url: string): Promise<AxiosResponse<T>> {
-		return axiosInstance.get<T>(url)
+	get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+		return axiosInstance.get<T>(url, config)
 	},
 
 	getWithParams<T = unknown>(url: string, params: Record<string, unknown>): Promise<AxiosResponse<T>> {
@@ -50,8 +50,8 @@ const ApiService = {
 		return axiosInstance.post<T>(url, body)
 	},
 
-	patch<T = unknown>(url: string, body: unknown): Promise<AxiosResponse<T>> {
-		return axiosInstance.patch<T>(url, body)
+	patch<T = unknown>(url: string, body: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+		return axiosInstance.patch<T>(url, body, config)
 	},
 
 	put<T = unknown>(url: string, body: unknown): Promise<AxiosResponse<T>> {

@@ -1,4 +1,4 @@
-import { Box, Typography, Chip, Stack, Paper } from '@mui/material'
+﻿import { Box, Typography, Chip, Stack, Paper } from '@mui/material'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import VideocamIcon from '@mui/icons-material/Videocam'
@@ -6,7 +6,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routes'
-import { getAppointments, getDoctorAvailability, getDoctorById } from '../doctor/doctorService'
+import { getAppointments, getDoctorAvailability, getDoctorById, getAvailabilityModeBlocks } from '../doctor/doctorService'
 import { Appointment } from '../../types/appointment'
 // import drImage from '../../assets/Services/doctors-service.png'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
@@ -76,7 +76,7 @@ export function PatientAppointments() {
 				setLoading(true)
 				setError('')
 				const [apptRes, statusRes] = await Promise.all([
-					getAppointments({ limit: 10 }),
+					getAppointments({ limit: 10, variant: 'upcoming' }),
 					ApiService.get<{ success: boolean; data: { id: string; label: string }[] }>(
 						API_ENDPOINTS.APPOINTMENTS.STATUSES
 					),
@@ -96,6 +96,10 @@ export function PatientAppointments() {
 		}
 
 		fetchData()
+
+		const onAccountSwitch = () => fetchData()
+		window.addEventListener('auth-changed', onAccountSwitch)
+		return () => window.removeEventListener('auth-changed', onAccountSwitch)
 	}, [])
 
 	useEffect(() => {
@@ -139,12 +143,13 @@ export function PatientAppointments() {
 					hospital_id: hospitalId,
 					date: dateStr,
 				})
-				let processedData: SlotGroup[] = []
-				if (Array.isArray(responseData)) {
-					processedData = responseData as SlotGroup[]
-				} else if (responseData && Array.isArray((responseData as { data: SlotGroup[] }).data)) {
-					processedData = (responseData as { data: SlotGroup[] }).data
-				}
+				const selectedTypeMode = appointmentType === 'clinic' ? 'clinic_visit' : 'video_call'
+				const selectedModeData = getAvailabilityModeBlocks(responseData).find(
+					(item) => item.appointment_mode === selectedTypeMode
+				)
+
+				const processedData = selectedModeData?.sessions || []
+
 				setRescheduleSlots(processedData)
 			} catch {
 				toast.error('Could not load available slots.')
@@ -154,7 +159,7 @@ export function PatientAppointments() {
 		}
 
 		fetchSlots()
-	}, [rescheduleDate, rescheduleOpen, rescheduleAppt, rescheduleHospitalId])
+	}, [rescheduleDate, rescheduleOpen, rescheduleAppt, rescheduleHospitalId,appointmentType])
 
 	const statusOf = (appt: Appointment) =>
 		localStatuses[appt.id] ||
@@ -330,8 +335,8 @@ export function PatientAppointments() {
 											>
 												<Box
 													component="img"
-													src={appt.doctor.avatar_s3_key}
-													alt={appt.doctor.name}
+													src={appt.doctor?.avatar_s3_key ?? ''}
+													alt={appt.doctor?.name ?? ''}
 													sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
 												/>
 											</Box>
@@ -351,7 +356,7 @@ export function PatientAppointments() {
 															color: 'text.primary',
 														}}
 													>
-														{appt.doctor.name}
+														{appt.doctor?.name ?? 'Unknown Doctor'}
 													</Typography>
 													<Chip
 														label={style.text}

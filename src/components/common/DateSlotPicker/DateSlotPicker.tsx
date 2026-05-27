@@ -135,7 +135,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 			props.onTimeChange(props.selectedTime === slot ? '' : slot)
 		}
 	}
-	
+
 	const slotsToRender = availableSlots ?? []
 	const isDoctorView = !!(onSelectAll && onUnselectAll)
 	const useCompactAppointmentToggle = compactAppointmentToggle || isDoctorView
@@ -264,7 +264,11 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 
 							<Typography
 								variant="body2"
-								sx={{ fontWeight: 600, color: 'text.primary', fontSize: hideNavigation ? '16px' : undefined }}
+								sx={{
+									fontWeight: 600,
+									color: 'text.primary',
+									fontSize: hideNavigation ? '16px' : undefined,
+								}}
 							>
 								{monthLabel}
 							</Typography>
@@ -326,24 +330,23 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 										>
 											{DAYS[date.getDay()]}
 										</Typography>
-										
-											<Typography
-												variant="body2"
-												sx={{
-													fontWeight: 700,
-													fontSize: '15px',
-													color: isSelected
-														? '#fff'
-														: past
-															? 'text.disabled'
-															: isSat
-																? 'error.main'
-																: 'text.primary',
-												}}
-											>
-												{date.getDate()}
-											</Typography>
-										
+
+										<Typography
+											variant="body2"
+											sx={{
+												fontWeight: 700,
+												fontSize: '15px',
+												color: isSelected
+													? '#fff'
+													: past
+														? 'text.disabled'
+														: isSat
+															? 'error.main'
+															: 'text.primary',
+											}}
+										>
+											{date.getDate()}
+										</Typography>
 									</Box>
 								)
 							})}
@@ -353,9 +356,12 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 					{/* Appointment type pill toggle */}
 					{onAppointmentTypeChange && (
 						<Box sx={{ mb: 2, mt: 1 }}>
-						<Typography variant="body2" sx={{ fontWeight: 500, mb: 1.5, color: 'text.secondary', fontSize: '13px' }}>
-							Type of Appointment
-						</Typography>
+							<Typography
+								variant="body2"
+								sx={{ fontWeight: 500, mb: 1.5, color: 'text.secondary', fontSize: '13px' }}
+							>
+								Type of Appointment
+							</Typography>
 							<Box
 								sx={{
 									display: 'flex',
@@ -381,8 +387,8 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 											flexDirection: 'column',
 											justifyContent: 'center',
 											flex: useCompactAppointmentToggle ? '0 0 auto' : 1,
-											px: 1.8,
-											py: 0.4,
+											px: 3,
+											py: 1,
 											borderRadius: '50px',
 											cursor: 'pointer',
 											bgcolor: selectedAppointmentType === 'clinic' ? '#fff' : 'transparent',
@@ -424,8 +430,8 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 											flexDirection: 'column',
 											justifyContent: 'center',
 											flex: useCompactAppointmentToggle ? '0 0 auto' : 1,
-											px: 1.8,
-											py: 0.4,
+											px: 3,
+											py: 1,
 											borderRadius: '50px',
 											cursor: 'pointer',
 											bgcolor: selectedAppointmentType === 'video' ? '#fff' : 'transparent',
@@ -465,123 +471,126 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 					)}
 
 					{/* Time label + legend + slot grid — hidden when hideSlots=true */}
-					
-						<>
-							<Box
-								sx={{
-									display: 'flex',
-									alignItems: 'center',
-									justifyContent: 'space-between',
-									mb: 2,
-									flexWrap: 'wrap',
-									gap: 1,
-								}}
-							>
-								<Typography variant="h5" sx={{ fontWeight: 600 }}>
-									{timeLabel}
+
+					<>
+						<Box
+							sx={{
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'space-between',
+								mb: 2,
+								flexWrap: 'wrap',
+								gap: 1,
+							}}
+						>
+							<Typography variant="h5" sx={{ fontWeight: 600 }}>
+								{timeLabel}
+							</Typography>
+							{timeLegend}
+						</Box>
+
+						{/* No slots message */}
+						{availableSlots && availableSlots.length === 0 && (
+							<Typography variant="body2" sx={{ color: 'text.secondary', mt: 2 }}>
+								No slots available for the selected day.
+							</Typography>
+						)}
+
+						{/* Time slots grouped by period */}
+						{/* {slotsToRender.map((group) => (
+								<Box key={group.label} sx={{ mb: 2 }}> */}
+						{slotsToRender.map((group, index) => (
+							<Box key={`${group.label}-${index}`} sx={{ mb: 2 }}>
+								<Typography
+									variant="caption"
+									sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.5, display: 'block' }}
+								>
+									{group.label}
 								</Typography>
-								{timeLegend}
-							</Box>
 
-							{/* No slots message */}
-							{availableSlots && availableSlots.length === 0 && (
-								<Typography variant="body2" sx={{ color: 'text.secondary', mt: 2 }}>
-									No slots available for the selected day.
-								</Typography>
-							)}
+								<Box
+									sx={{
+										display: 'grid',
+										gridTemplateColumns: `repeat(${timeSlotColumns}, 1fr)`,
+										gap: 1,
+									}}
+								>
+									{/* {group.slots.map((slot) => { */}
+									{(group.slots || []).map((slot) => {
+										console.log("Slot Data:", slot)
+										const isPatientView = disableBookedSlots
 
-							{/* Time slots grouped by period */}
-							{slotsToRender.map((group) => (
-								<Box key={group.label} sx={{ mb: 2 }}>
-									<Typography
-										variant="caption"
-										sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.5, display: 'block' }}
-									>
-										{group.label}
-									</Typography>
+										// Patient view: hide BLOCKED slots and doctor-disabled slots entirely
+										if (isPatientView && (slot.status === 'BLOCKED' || !slot.is_enabled))
+											return null
 
-									<Box
-										sx={{
-											display: 'grid',
-											gridTemplateColumns: `repeat(${timeSlotColumns}, 1fr)`,
-											gap: 1,
-										}}
-									>
-										{group.slots.map((slot) => {
-											const isPatientView = disableBookedSlots
+										const isSelected = isSlotSelected(slot.start_time)
+										const isBooked = slot.is_booked
+										const isDisabled = !slot.is_enabled
 
-											// Patient view: hide BLOCKED slots and doctor-disabled slots entirely
-											if (isPatientView && (slot.status === 'BLOCKED' || !slot.is_enabled))
-												return null
-
-											const isSelected = isSlotSelected(slot.start_time)
-											const isBooked = slot.is_booked
-											const isDisabled = !slot.is_enabled
-
-											return (
-												<Box
-													key={slot.start_time}
-													onClick={() => {
-														if (isBooked || isDisabled) return
-														handleSlotClick(slot.start_time)
-													}}
-													sx={{
-														py: 0.6,
-														px: 0.4,
-														textAlign: 'center',
-														border: '1.5px solid',
-														borderColor: isSelected ? 'primary.main' : 'divider',
-														borderRadius: '8px',
-														cursor: isBooked
-															? 'default'
-															: isDisabled
-																? 'not-allowed'
-																: 'pointer',
-														bgcolor: isBooked
-															? 'rgba(0,0,0,0.08)'
-															: props.multiSelect
-																? slot.status === 'BLOCKED'
-																	? 'error.main'
-																	: isSelected
-																		? 'success.main'
-																		: 'error.main'
+										return (
+											<Box
+												key={slot.start_time}
+												onClick={() => {
+													if (isBooked || isDisabled) return
+													handleSlotClick(slot.start_time)
+												}}
+												sx={{
+													py: 0.6,
+													px: 0.4,
+													textAlign: 'center',
+													border: '1.5px solid',
+													borderColor: isSelected ? 'primary.main' : 'divider',
+													borderRadius: '8px',
+													cursor: isBooked
+														? 'default'
+														: isDisabled
+															? 'not-allowed'
+															: 'pointer',
+													bgcolor: isBooked
+														? 'rgba(0,0,0,0.08)'
+														: props.multiSelect
+															? slot.status === 'BLOCKED'
+																? 'error.main'
 																: isSelected
+																	? 'success.main'
+																	: 'error.main'
+															: isSelected
+																? 'primary.main'
+																: 'background.paper',
+													transition: 'all 0.15s',
+													'&:hover': isBooked
+														? {}
+														: {
+																borderColor: 'primary.main',
+																bgcolor: isSelected
 																	? 'primary.main'
-																	: 'background.paper',
-														transition: 'all 0.15s',
-														'&:hover': isBooked
-															? {}
-															: {
-																	borderColor: 'primary.main',
-																	bgcolor: isSelected
-																		? 'primary.main'
-																		: 'rgba(43,111,113,0.06)',
-																},
+																	: 'rgba(43,111,113,0.06)',
+															},
+												}}
+											>
+												<Typography
+													variant="body1"
+													sx={{
+														fontWeight: isSelected ? 600 : 400,
+														color: props.multiSelect
+															? '#fff'
+															: isSelected
+																? '#fff'
+																: isBooked
+																	? 'text.disabled'
+																	: 'text.primary',
 													}}
 												>
-													<Typography
-														variant="body1"
-														sx={{
-															fontWeight: isSelected ? 600 : 400,
-															color: props.multiSelect
-																? '#fff'
-																: isSelected
-																	? '#fff'
-																	: isBooked
-																		? 'text.disabled'
-																		: 'text.primary',
-														}}
-													>
-														{to12hr(slot.start_time)}
-													</Typography>
-												</Box>
-											)
-										})}
-									</Box>
+													{to12hr(slot.start_time)}
+												</Typography>
+											</Box>
+										)
+									})}
 								</Box>
-							))}
-						</>
-					
+							</Box>
+						))}
+					</>
 				</>
 			)}
 		</Box>

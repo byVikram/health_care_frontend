@@ -34,11 +34,11 @@ const EMPTY_PATIENT: Patient = {
 		avatar: '',
 	},
 	medical: {
-		allergies: '',
-		chronic_conditions: '',
-		current_medications: '',
-		past_surgeries: '',
-		family_history: '',
+		allergies: [],
+		chronic_conditions: [],
+		current_medications: [],
+		past_surgeries: [],
+		family_history: [],
 	},
 	lifestyle: {
 		smoking_status: '',
@@ -54,10 +54,16 @@ function calcCompletion(patient: Patient): number {
 		.filter(([key]) => !['contact_verified', 'email_verified', 'avatar', 'emergency_contact'].includes(key))
 		.map(([, val]) => val as string)
 	const ecFields = [patient.personal.emergency_contact.name, patient.personal.emergency_contact.number]
+
+	// For medical fields (string[]), count as filled if the array has at least one entry
+	const medicalValues = Object.values(patient.medical).map((arr) =>
+		Array.isArray(arr) ? (arr.length > 0 ? 'filled' : '') : arr
+	)
+
 	const allFields = [
 		...personalFields,
 		...ecFields,
-		...Object.values(patient.medical),
+		...medicalValues,
 		...Object.values(patient.lifestyle),
 	]
 	const filled = allFields.filter((v) => v && String(v).trim()).length
@@ -73,7 +79,12 @@ export default function PatientProfilePage() {
 		const fetchPatient = async () => {
 			try {
 				setLoading(true)
-				const data = await getPatientDetails()
+				const patientId = localStorage.getItem('patient_id')
+				if (!patientId) {
+				console.error('Patient ID not found')
+				return
+				}
+				const data = await getPatientDetails(patientId)
 				setPatient(data.data)
 			} catch (err) {
 				console.error('Failed to load patient:', err)
