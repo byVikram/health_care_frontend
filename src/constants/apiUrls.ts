@@ -8,6 +8,8 @@ export const API_ENDPOINTS = {
 		LOGOUT: `${BASE_URL}/api/auth/logout`,
 		GET_ROLES: `${BASE_URL}/api/auth/get-roles`,
 		CREATE_USER: `${BASE_URL}/api/auth/create-user`,
+		SESSIONS: `${BASE_URL}/api/auth/sessions`,
+		SESSION_LOGOUT: (id: string) => `${BASE_URL}/api/auth/sessions/${id}`,
 	},
 	DOCTORS: {
 		SEARCH: `${BASE_URL}/api/doctors`,

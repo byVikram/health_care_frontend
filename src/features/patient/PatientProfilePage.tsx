@@ -13,7 +13,9 @@ import { Patient, PatientPersonal, PatientMedical, PatientLifeStyle } from '../.
 import { updatePatientProfile, getPatientDetails } from './patientService'
 import { toast } from 'react-toastify'
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
+import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined'
 import PatientSettingTab from './components/SettingsTab'
+import SessionsTab from '../../components/common/SessionsTab/SessionsTab'
 
 const EMPTY_PATIENT: Patient = {
 	id: '',
@@ -183,6 +185,9 @@ export default function PatientProfilePage() {
 					<PatientSettingTab />
 				)
 
+			case 'sessions':
+				return <SessionsTab />
+
 			default:
 				return null
 		}
@@ -266,6 +271,11 @@ export default function PatientProfilePage() {
 											id: 'lifestyle',
 											label: 'Life Style',
 											icon: <SpaOutlinedIcon fontSize="small" />,
+										},
+										{
+											id: 'sessions',
+											label: 'Active Sessions',
+											icon: <DesktopWindowsOutlinedIcon fontSize="small" />,
 										},
 										{
 											id: 'settings',
