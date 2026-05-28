@@ -61,4 +61,15 @@ export const API_ENDPOINTS = {
 		RESCHEDULE: `${BASE_URL}/api/appointments/reschedule`,
 		STATUSES: `${BASE_URL}/api/appointments/statuses`,
 	},
+	PHARMACIES: {
+		LIST: `${BASE_URL}/api/pharmacies`,
+		ME: `${BASE_URL}/api/pharmacies/me`,
+		ME_DETAILS: `${BASE_URL}/api/pharmacies/me/details`,
+	},
+	PHARMACY_ORDERS: {
+		CREATE: `${BASE_URL}/api/pharmacy-orders`,
+		LIST: `${BASE_URL}/api/pharmacy-orders`,
+		GET_BY_ID: (id: string) => `${BASE_URL}/api/pharmacy-orders/${id}`,
+		UPDATE_STATUS: (id: string) => `${BASE_URL}/api/pharmacy-orders/${id}/status`,
+	},
 }

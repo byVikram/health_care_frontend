@@ -290,14 +290,14 @@ export default function PharmacyProfessionalTab({ data, onChange }: PharmacyProf
 								<AppInput
 									label="Pharmacy Registration Number *"
 									value={data.registrationNumber}
-									placeholder="Enter pharmacy registration number"
+									placeholder="Enter Pharmacy registration number"
 									onChange={(e) => onChange({ registrationNumber: e.target.value })}
 								/>
 							</Grid>
 							<Grid size={{ xs: 12, sm: 4 }}>
 								<UploadBox
 									label=""
-									required
+
 									onChange={(file) => onChange({ registrationProof: file.name })}
 								/>
 							</Grid>
