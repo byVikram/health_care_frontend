@@ -42,6 +42,8 @@ export const API_ENDPOINTS = {
 		ME: `${BASE_URL}/api/patients/me/details`,
 		UPDATE: `${BASE_URL}/api/patients/me/details`,
 		GET_BY_ID: (id: string) => `${BASE_URL}/api/patients/${id}/details`,
+		ADDRESSES: `${BASE_URL}/api/patients/me/addresses`,
+		ADDRESS_UPDATE: (id: string) => `${BASE_URL}/api/patients/me/addresses/${id}`,
 		VITALS_CREATE: `${BASE_URL}/api/patients/vitals`,
 		VITALS_LATEST: (id: string) => `${BASE_URL}/api/patients/${id}/vitals/latest`,
 		VITALS_HISTORY: (id: string) => `${BASE_URL}/api/patients/${id}/vitals`,
