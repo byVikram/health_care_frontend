@@ -1,15 +1,18 @@
 // src/features/Pharmacy/profile/PharmacyProfilePage.tsx
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Box, Container, Grid, CircularProgress, Typography } from '@mui/material'
 import AppProfileSidebar from '../../../components/common/ProfileSidebar/AppProfileSidebar'
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline'
 import WorkOutlineIcon from '@mui/icons-material/WorkOutline'
 import MedicationOutlinedIcon from '@mui/icons-material/MedicationOutlined'
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
+import MiscellaneousServicesOutlinedIcon from '@mui/icons-material/MiscellaneousServicesOutlined'
 import PharmacyPersonalTab from '../components/PersonalTab'
 import PharmacyProfessionalTab, { PharmacyProfileProfessional } from '../components/ProfessionalTab'
+import PharmacyServiceTab, { PharmacyProfileServices } from '../components/ServiceTab'
 import PharmacySettingTab from '../components/SettingsTab'
 import { customCardStyle } from '../../../styles/commonStyles'
+import { getMyPharmacyDetails, mapPharmacyDetailsApi } from '../pharmacyService'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,13 +30,14 @@ export interface PharmacyProfilePersonal {
 	facebook: string
 }
 
-export type { PharmacyProfileProfessional }
+export type { PharmacyProfileProfessional, PharmacyProfileServices }
 
 export interface PharmacyProfile {
 	id: string
 	pharmacyType: string
 	personal: PharmacyProfilePersonal
 	professional: PharmacyProfileProfessional
+	services: PharmacyProfileServices
 }
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
@@ -41,6 +45,7 @@ export interface PharmacyProfile {
 const PHARMACY_NAV_ITEMS = [
 	{ id: 'personal', label: 'Personal details', icon: <PersonOutlineIcon fontSize="small" /> },
 	{ id: 'professional', label: 'Professional details', icon: <WorkOutlineIcon fontSize="small" /> },
+	{ id: 'services', label: 'Service details', icon: <MiscellaneousServicesOutlinedIcon fontSize="small" /> },
 	{ id: 'inventory', label: 'Inventory', icon: <MedicationOutlinedIcon fontSize="small" /> },
 	{ id: 'settings', label: 'Settings', icon: <SettingsOutlinedIcon fontSize="small" /> },
 ]
@@ -52,7 +57,12 @@ function calcCompletion(pharmacy: PharmacyProfile): number {
 		.filter(([key]) => !['contactVerified', 'emailVerified', 'avatar', 'instagram', 'facebook'].includes(key))
 		.map(([, val]) => val as string)
 	const professionalFields = Object.values(pharmacy.professional) as string[]
-	const allFields = [...personalFields, ...professionalFields]
+	const serviceFields = [
+		String(pharmacy.services.is_24_x_7),
+		pharmacy.services.open_days.length > 0 ? 'filled' : '',
+		pharmacy.services.payment_methods.length > 0 ? 'filled' : '',
+	]
+	const allFields = [...personalFields, ...professionalFields, ...serviceFields]
 	const filled = allFields.filter((v) => v && String(v).trim()).length
 	return Math.round((filled / allFields.length) * 100)
 }
@@ -94,6 +104,17 @@ const EMPTY_PHARMACY: PharmacyProfile = {
 		certificationProof: '',
 		about: '',
 	},
+	services: {
+		is_24_x_7: false,
+		open_days: [],
+		operating_hours: {},
+		home_delivery_available: false,
+		delivery_radius_km: '',
+		estimated_delivery_time_mins: '',
+		min_order_amount: '',
+		emergency_medicine_available: false,
+		payment_methods: [],
+	},
 }
 
 // ─── Page component ───────────────────────────────────────────────────────────
@@ -101,8 +122,29 @@ const EMPTY_PHARMACY: PharmacyProfile = {
 export default function PharmacyProfilePage() {
 	const [activeTab, setActiveTab] = useState<string>('personal')
 	const [pharmacy, setPharmacy] = useState<PharmacyProfile>(EMPTY_PHARMACY)
-	const [loading] = useState(false)
-	const [error] = useState<string | null>(null)
+	const [loading, setLoading] = useState(true)
+	const [error, setError] = useState<string | null>(null)
+
+	useEffect(() => {
+		const fetchProfile = async () => {
+			try {
+				setLoading(true)
+				const res = await getMyPharmacyDetails()
+				if (res.success && res.data) {
+					setPharmacy(mapPharmacyDetailsApi(res.data))
+				}
+			} catch (err: unknown) {
+				// 404 = pharmacy record not created yet — show empty form so they can fill it in
+				const status = (err as { response?: { status?: number } })?.response?.status
+				if (status !== 404) {
+					setError(`Failed to load pharmacy profile. (${status ?? 'unknown'})`)
+				}
+			} finally {
+				setLoading(false)
+			}
+		}
+		fetchProfile()
+	}, [])
 
 	const completionPercent = useMemo(() => calcCompletion(pharmacy), [pharmacy])
 
@@ -111,6 +153,9 @@ export default function PharmacyProfilePage() {
 
 	const handleProfessionalChange = (updated: Partial<PharmacyProfileProfessional>) =>
 		setPharmacy((prev) => ({ ...prev, professional: { ...prev.professional, ...updated } }))
+
+	const handleServicesChange = (updated: Partial<PharmacyProfileServices>) =>
+		setPharmacy((prev) => ({ ...prev, services: { ...prev.services, ...updated } }))
 
 	const handleAvatarChange = (file: File) => {
 		const localPreviewUrl = URL.createObjectURL(file)
@@ -141,6 +186,8 @@ export default function PharmacyProfilePage() {
 				return <PharmacyPersonalTab data={pharmacy.personal} onChange={handlePersonalChange} />
 			case 'professional':
 				return <PharmacyProfessionalTab data={pharmacy.professional} onChange={handleProfessionalChange} />
+			case 'services':
+				return <PharmacyServiceTab data={pharmacy.services} onChange={handleServicesChange} />
 			case 'inventory':
 				return (
 					<Box sx={{ ...customCardStyle, p: 4, color: 'text.secondary', textAlign: 'center' }}>
