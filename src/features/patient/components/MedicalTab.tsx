@@ -5,15 +5,11 @@ import {
 	Typography,
 	IconButton,
 	Collapse,
-	Dialog,
-	DialogTitle,
-	DialogContent,
-	DialogActions,
-	Divider,
+	Chip,
+	Card,
 } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import AppInput from '../../../components/common/Input/AppInput'
 import { PatientMedical } from '../../../types/patient'
 import { customCardStyle } from '../../../styles/commonStyles'
@@ -49,11 +45,12 @@ export default function MedicalTab({ data, onChange, handleSave }: MedicalTabPro
 		past_surgeries: false,
 		family_history: false,
 	})
-	const [dialogOpen, setDialogOpen] = useState(false)
-	const [activeSection, setActiveSection] = useState<Section | null>(null)
-	const [inputValue, setInputValue] = useState('')
 	const [isDirty, setIsDirty] = useState(false)
 	const [saving, setSaving] = useState(false)
+
+	// Inline adding state
+	const [activeInputSection, setActiveInputSection] = useState<SectionKey | null>(null)
+	const [inputValue, setInputValue] = useState('')
 
 	const getItems = (key: SectionKey): string[] => {
 		const val = data[key]
@@ -64,21 +61,28 @@ export default function MedicalTab({ data, onChange, handleSave }: MedicalTabPro
 		setExpanded((prev) => ({ ...prev, [key]: !prev[key] }))
 	}
 
-	const openAddDialog = (section: Section) => {
-		setActiveSection(section)
+	const startAdding = (section: Section) => {
+		setActiveInputSection(section.key)
 		setInputValue('')
-		setDialogOpen(true)
+		// auto-expand if collapsed
+		if (!expanded[section.key]) {
+			setExpanded((prev) => ({ ...prev, [section.key]: true }))
+		}
 	}
 
-	const handleDialogAdd = () => {
-		if (!activeSection || !inputValue.trim()) return
-		const current = getItems(activeSection.key)
-		const patch: Partial<PatientMedical> = {}
-		patch[activeSection.key] = [...current, inputValue.trim()]
-		onChange(patch)
-		setDialogOpen(false)
+	const cancelAdding = () => {
+		setActiveInputSection(null)
 		setInputValue('')
-		setExpanded((prev) => ({ ...prev, [activeSection!.key]: true }))
+	}
+
+	const handleInlineAdd = () => {
+		if (!activeInputSection || !inputValue.trim()) return
+		const current = getItems(activeInputSection)
+		const patch: Partial<PatientMedical> = {}
+		patch[activeInputSection] = [...current, inputValue.trim()]
+		onChange(patch)
+		setInputValue('')
+		setActiveInputSection(null)
 		setIsDirty(true)
 	}
 
@@ -101,92 +105,144 @@ export default function MedicalTab({ data, onChange, handleSave }: MedicalTabPro
 	}
 
 	return (
-		<Box sx={{ ...customCardStyle }}>
-			<Typography variant="h4" sx={{ fontWeight: 700, mb: 3, color: 'text.primary' }}>
+		<Box sx={{ ...customCardStyle, p: 2.5 }}>
+			{/* Header */}
+			<Typography variant="h6" fontWeight={600} sx={{ mb: 2.5, color: 'text.primary' }}>
 				Medical Details
 			</Typography>
 
-			<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+			<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
 				{SECTIONS.map((section) => {
 					const items = getItems(section.key)
 					const isExpanded = expanded[section.key]
+					const isAdding = activeInputSection === section.key
+
 					return (
-						<Box
+						<Card
 							key={section.key}
 							sx={{
 								border: '1px solid',
 								borderColor: 'divider',
-								borderRadius: '10px',
+								borderRadius: 1,
 								overflow: 'hidden',
-								bgcolor: 'background.paper',
 							}}
 						>
-							<Box sx={{ display: 'flex', alignItems: 'center', px: 2.5, py: 1.5 }}>
-								<Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: 'text.primary', flexGrow: 1 }}>
+							{/* Section header */}
+							<Box
+								sx={{
+									display: 'flex',
+									alignItems: 'center',
+									px: 2,
+									py: 1,
+									cursor: 'pointer',
+									'&:hover': { bgcolor: 'action.hover' },
+								}}
+								onClick={() => toggleExpand(section.key)}
+							>
+								<Typography
+									variant="subtitle2"
+									fontWeight={600}
+									sx={{ flexGrow: 1, color: 'text.primary', fontSize: '0.9rem' }}
+								>
 									{section.label}
 								</Typography>
 								<Typography
-									onClick={() => openAddDialog(section)}
+									onClick={(e) => {
+										e.stopPropagation() // don't toggle expand on "+ add"
+										startAdding(section)
+									}}
 									sx={{
-										fontSize: '0.82rem',
+										fontSize: '0.75rem',
 										fontWeight: 600,
 										color: 'primary.main',
 										cursor: 'pointer',
 										mr: 1,
 										'&:hover': { textDecoration: 'underline' },
+										userSelect: 'none',
 									}}
 								>
 									+ add
 								</Typography>
-								<IconButton size="small" onClick={() => toggleExpand(section.key)}>
+								<IconButton size="small" sx={{ p: 0.3 }}>
 									{isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
 								</IconButton>
 							</Box>
+
 							<Collapse in={isExpanded}>
+								{/* Inline add input */}
+								{isAdding && (
+									<Box sx={{ px: 2, pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+										<AppInput
+											size="small"
+											value={inputValue}
+											onChange={(e) => setInputValue(e.target.value)}
+											onKeyDown={(e) => {
+												if (e.key === 'Enter') handleInlineAdd()
+												if (e.key === 'Escape') cancelAdding()
+											}}
+											placeholder={`Add ${section.dialogLabel}`}
+											autoFocus
+											fullWidth={false}
+											sx={{ minWidth: 280 }}
+											inputProps={{ style: { fontSize: '0.82rem' } }}
+										/>
+										<AppButton
+											variant="contained"
+											size="small"
+											label="Add"
+											onClick={handleInlineAdd}
+											disabled={!inputValue.trim()}
+											sx={{ whiteSpace: 'nowrap', px: 2 }}
+										/>
+									</Box>
+								)}
+
+								{/* Items as chips */}
 								{items.length > 0 && (
-									<Box>
+									<Box sx={{ px: 1.5, pb: 1.5, pt: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
 										{items.map((item, idx) => (
-											<Box key={idx}>
-												<Divider />
-												<Box sx={{ display: 'flex', alignItems: 'center', px: 2.5, py: 1.2 }}>
-													<Typography sx={{ flexGrow: 1, fontSize: '0.88rem', color: 'text.secondary' }}>
-														{item}
-													</Typography>
-													<IconButton size="small" onClick={() => handleDelete(section.key, idx)} sx={{ color: 'error.main', p: 0.5 }}>
-														<DeleteOutlineIcon fontSize="small" />
-													</IconButton>
-												</Box>
-											</Box>
+											<Chip
+												key={idx}
+												label={item}
+												size="small"
+												onDelete={() => handleDelete(section.key, idx)}
+												sx={{
+													fontSize: '0.78rem',
+													height: 28,
+													bgcolor: 'action.hover',
+													'& .MuiChip-deleteIcon': {
+														fontSize: '1rem',
+														color: 'text.secondary',
+													},
+												}}
+											/>
 										))}
 									</Box>
 								)}
+
+								{!isAdding && items.length === 0 && (
+									<Box sx={{ px: 2, pb: 1.5 }}>
+										<Typography variant="caption" sx={{ color: 'text.disabled' }}>
+											No items added yet.
+										</Typography>
+									</Box>
+								)}
 							</Collapse>
-						</Box>
+						</Card>
 					)
 				})}
 			</Box>
 
-			<Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-				<AppButton variant="contained" label="Save" disabled={!isDirty} loading={saving} onClick={onSave} />
+			{/* Save button */}
+			<Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2.5 }}>
+				<AppButton
+					variant="contained"
+					label="Save Changes"
+					disabled={!isDirty}
+					loading={saving}
+					onClick={onSave}
+				/>
 			</Box>
-
-			<Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="xs">
-				<DialogTitle sx={{ fontWeight: 600 }}>Add {activeSection?.dialogLabel}</DialogTitle>
-				<DialogContent>
-					<Box sx={{ pt: 1 }}>
-						<AppInput
-							label={activeSection?.dialogLabel}
-							value={inputValue}
-							onChange={(e) => setInputValue(e.target.value)}
-							onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') handleDialogAdd() }}
-						/>
-					</Box>
-				</DialogContent>
-				<DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
-					<AppButton variant="outlined" label="Cancel" onClick={() => setDialogOpen(false)} />
-					<AppButton variant="contained" label="Add" disabled={!inputValue.trim()} onClick={handleDialogAdd} />
-				</DialogActions>
-			</Dialog>
 		</Box>
 	)
 }

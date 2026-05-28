@@ -20,23 +20,10 @@ import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import AppButton from '../../../components/common/Button/AppButton'
 import AppInput from '../../../components/common/Input/AppInput'
-import ApiService from '../../../services/apiService'
-import { API_ENDPOINTS } from '../../../constants/apiUrls'
 import { customCardStyle } from '../../../styles/commonStyles'
 import { toast } from 'react-toastify'
+import { getPatientAddresses, addPatientAddress, updatePatientAddress, PatientAddressOut } from '../patientService'
 
-export interface PatientAddressOut {
-	id: string
-	label: string
-	address_line: string
-	city: string
-	state: string
-	pincode: string
-	latitude?: number | null
-	longitude?: number | null
-	is_default: boolean
-	created_at: string
-}
 
 export default function PatientAddressesTab() {
 	const [addresses, setAddresses] = useState<PatientAddressOut[]>([])
@@ -56,11 +43,9 @@ export default function PatientAddressesTab() {
 	const fetchAddresses = async () => {
 		try {
 			setLoading(true)
-			const res = await ApiService.get<{ success: boolean; data: PatientAddressOut[] }>(
-				API_ENDPOINTS.PATIENT.ADDRESSES
-			)
-			if (res.data?.success) {
-				setAddresses(res.data.data)
+			const res = await getPatientAddresses()
+			if (res.success) {
+				setAddresses(res.data)
 			}
 		} catch (err) {
 			console.error('Failed to fetch addresses', err)
@@ -116,10 +101,10 @@ export default function PatientAddressesTab() {
 				is_default: isDefault,
 			}
 			if (editingId) {
-				await ApiService.patch(API_ENDPOINTS.PATIENT.ADDRESS_UPDATE(editingId), payload)
+				await updatePatientAddress(editingId, payload)
 				toast.success('Address updated successfully')
 			} else {
-				await ApiService.post(API_ENDPOINTS.PATIENT.ADDRESSES, payload)
+				await addPatientAddress(payload)
 				toast.success('Address added successfully')
 			}
 
@@ -141,19 +126,20 @@ export default function PatientAddressesTab() {
 	}
 
 	return (
-		<Box sx={{ ...customCardStyle, p: 4 }}>
-			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+		<Box sx={{ ...customCardStyle, p: 2.5 }}>
+			{/* Header – compact, one line */}
+			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
 				<Typography variant="h6" fontWeight={600} sx={{ color: 'text.primary' }}>
 					My Addresses
 				</Typography>
 				<AppButton variant="contained" size="small" label="+ Add Address" onClick={() => handleOpen()} />
 			</Box>
-			<Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
+			<Typography variant="body2" sx={{ color: 'text.secondary', mb: 2.5 }}>
 				Manage your saved addresses for home sample collection and medicine delivery.
 			</Typography>
 
 			{loading ? (
-				<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+				<Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
 					<CircularProgress size={28} sx={{ color: 'primary.main' }} />
 				</Box>
 			) : (
@@ -168,8 +154,8 @@ export default function PatientAddressesTab() {
 								<Box
 									sx={{
 										display: 'flex',
-										alignItems: 'flex-start',
-										py: 2.5,
+										alignItems: 'center', // center vertically for better compact alignment
+										py: 1.5,
 										px: 1,
 										gap: 2,
 										borderRadius: 2,
@@ -179,9 +165,10 @@ export default function PatientAddressesTab() {
 										},
 									}}
 								>
+									{/* Icon */}
 									<Box
 										sx={{
-											p: 1.2,
+											p: 1,
 											borderRadius: 1.5,
 											bgcolor: 'rgba(43,111,113,0.08)',
 											color: 'primary.main',
@@ -192,9 +179,15 @@ export default function PatientAddressesTab() {
 										{getIcon(addr.label)}
 									</Box>
 
+									{/* Address details */}
 									<Box sx={{ flex: 1, minWidth: 0 }}>
-										<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mb: 0.5 }}>
-											<Typography variant="subtitle2" fontWeight={600}>
+										<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.25 }}>
+											<Typography
+												variant="subtitle2"
+												fontWeight={600}
+												noWrap
+												sx={{ maxWidth: { xs: '100%', sm: 200 } }}
+											>
 												{addr.label}
 											</Typography>
 											{addr.is_default && (
@@ -207,20 +200,25 @@ export default function PatientAddressesTab() {
 														fontWeight: 600,
 														fontSize: '0.65rem',
 														height: 20,
-														'& .MuiChip-label': { px: 1 },
+														'& .MuiChip-label': { px: 0.8 },
 													}}
 												/>
 											)}
 										</Box>
-										<Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>
+										<Typography variant="caption" sx={{ color: 'text.disabled', display: 'block' }}>
 											{addr.address_line}
-										</Typography>
-										<Typography variant="body2" sx={{ color: 'text.secondary' }}>
-											{addr.city}, {addr.state} {addr.pincode}
+											{addr.city ? ' · ' : ''}
+											{addr.city && addr.state ? `${addr.city}, ${addr.state}` : ''}
+											{addr.pincode ? ` ${addr.pincode}` : ''}
 										</Typography>
 									</Box>
 
-									<IconButton size="small" onClick={() => handleOpen(addr)}>
+									{/* Edit button */}
+									<IconButton
+										size="small"
+										onClick={() => handleOpen(addr)}
+										sx={{ flexShrink: 0 }}
+									>
 										<EditOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
 									</IconButton>
 								</Box>
