@@ -13,7 +13,11 @@ import { Patient, PatientPersonal, PatientMedical, PatientLifeStyle } from '../.
 import { updatePatientProfile, getPatientDetails } from './patientService'
 import { toast } from 'react-toastify'
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
+import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined'
+import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
 import PatientSettingTab from './components/SettingsTab'
+import SessionsTab from '../../components/common/SessionsTab/SessionsTab'
+import PatientAddressesTab from './components/PatientAddressesTab'
 
 const EMPTY_PATIENT: Patient = {
 	id: '',
@@ -81,8 +85,8 @@ export default function PatientProfilePage() {
 				setLoading(true)
 				const patientId = localStorage.getItem('patient_id')
 				if (!patientId) {
-				console.error('Patient ID not found')
-				return
+					console.error('Patient ID not found')
+					return
 				}
 				const data = await getPatientDetails(patientId)
 				setPatient(data.data)
@@ -183,6 +187,12 @@ export default function PatientProfilePage() {
 					<PatientSettingTab />
 				)
 
+			case 'sessions':
+				return <SessionsTab />
+
+			case 'addresses':
+				return <PatientAddressesTab />
+
 			default:
 				return null
 		}
@@ -266,6 +276,16 @@ export default function PatientProfilePage() {
 											id: 'lifestyle',
 											label: 'Life Style',
 											icon: <SpaOutlinedIcon fontSize="small" />,
+										},
+										{
+											id: 'addresses',
+											label: 'My Addresses',
+											icon: <LocationOnOutlinedIcon fontSize="small" />,
+										},
+										{
+											id: 'sessions',
+											label: 'Active Sessions',
+											icon: <DesktopWindowsOutlinedIcon fontSize="small" />,
 										},
 										{
 											id: 'settings',
