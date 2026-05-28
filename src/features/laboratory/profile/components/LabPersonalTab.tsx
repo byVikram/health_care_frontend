@@ -56,7 +56,7 @@ export default function LabPersonalTab({ data, onChange }: LabPersonalTabProps) 
 				<Grid container spacing={2}>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
-							label="Full Name"
+							label="Full Name*"
 							value={data.name}
 							placeholder="Enter your full name"
 							onChange={(e) => onChange({ name: e.target.value })}
@@ -64,7 +64,7 @@ export default function LabPersonalTab({ data, onChange }: LabPersonalTabProps) 
 					</Grid>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
-							label="Location"
+							label="Location*"
 							value={data.location}
 							placeholder="Enter your location"
 							onChange={(e) => onChange({ location: e.target.value })}
@@ -75,7 +75,7 @@ export default function LabPersonalTab({ data, onChange }: LabPersonalTabProps) 
 				<Grid container spacing={2}>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
-							label="Mobile Number"
+							label="Mobile Number*"
 							value={data.contactNumber}
 							placeholder="+91 XXXXXXXXXX"
 							type="tel"
@@ -85,7 +85,7 @@ export default function LabPersonalTab({ data, onChange }: LabPersonalTabProps) 
 					</Grid>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
-							label="Email ID"
+							label="Email ID*"
 							value={data.email}
 							placeholder="Enter your email"
 							type="email"
@@ -98,7 +98,7 @@ export default function LabPersonalTab({ data, onChange }: LabPersonalTabProps) 
 				<Grid container spacing={2}>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppSelect
-							label="Gender"
+							label="Gender*"
 							value={data.gender || ''}
 							options={GENDER_OPTIONS}
 							placeholder="Select gender"

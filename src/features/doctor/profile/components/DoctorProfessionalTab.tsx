@@ -287,7 +287,7 @@ export default function DoctorProfessionalTab({ data, onChange }: DoctorProfessi
 							<Grid size={{ xs: 12, sm: 4 }}>
 								<UploadBox
 									label=""
-									required
+
 									onChange={(file) => onChange({ registrationProof: file.name })}
 								/>
 							</Grid>
