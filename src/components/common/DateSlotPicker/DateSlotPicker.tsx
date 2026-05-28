@@ -136,6 +136,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		}
 	}
 
+
 	const slotsToRender = availableSlots ?? []
 	const isDoctorView = !!(onSelectAll && onUnselectAll)
 	const useCompactAppointmentToggle = compactAppointmentToggle || isDoctorView
@@ -387,8 +388,8 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 											flexDirection: 'column',
 											justifyContent: 'center',
 											flex: useCompactAppointmentToggle ? '0 0 auto' : 1,
-											px: 1.8,
-											py: 0.4,
+											px: 3,
+											py: 1,
 											borderRadius: '50px',
 											cursor: 'pointer',
 											bgcolor: selectedAppointmentType === 'clinic' ? '#fff' : 'transparent',
@@ -430,8 +431,8 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 											flexDirection: 'column',
 											justifyContent: 'center',
 											flex: useCompactAppointmentToggle ? '0 0 auto' : 1,
-											px: 1.8,
-											py: 0.4,
+											px: 3,
+											py: 1,
 											borderRadius: '50px',
 											cursor: 'pointer',
 											bgcolor: selectedAppointmentType === 'video' ? '#fff' : 'transparent',
@@ -489,6 +490,23 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 							{timeLegend}
 						</Box>
 
+					<>
+						<Box
+							sx={{
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'space-between',
+								mb: 2,
+								flexWrap: 'wrap',
+								gap: 1,
+							}}
+						>
+							<Typography variant="h5" sx={{ fontWeight: 600 }}>
+								{timeLabel}
+							</Typography>
+							{timeLegend}
+						</Box>
+
 						{/* No slots message */}
 						{availableSlots && availableSlots.length === 0 && (
 							<Typography variant="body2" sx={{ color: 'text.secondary', mt: 2 }}>
@@ -520,6 +538,9 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 										console.log('Slot Data:', slot)
 										const isPatientView = disableBookedSlots
 
+										// Patient view: hide BLOCKED slots and doctor-disabled slots entirely
+										if (isPatientView && (slot.status === 'BLOCKED' || !slot.is_enabled))
+											return null
 										// Patient view: hide BLOCKED slots and doctor-disabled slots entirely
 										if (isPatientView && (slot.status === 'BLOCKED' || !slot.is_enabled))
 											return null

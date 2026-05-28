@@ -157,6 +157,7 @@ export default function PaymentPage() {
 	const [severity, setSeverity] = useState<'mild' | 'moderate' | 'severe' | ''>('')
 	// const [reportFile, setReportFile] = useState<File | null>(null)
 	const [errorMsg, setErrorMsg] = useState<string | null>(null)
+	const patientId = localStorage.getItem('patient_id')
 
 	const infoRows = [
 		{ icon: <CalendarToday sx={{ fontSize: 14, color: 'text.secondary' }} />, label: 'Date:', value: date },
@@ -179,6 +180,7 @@ export default function PaymentPage() {
 				appointment_mode: appointmentMode,
 				appointment_date: appointmentDate,
 				start_time: startTime,
+				patient_id: patientId || undefined, 
 			})
 			setSuccessOpen(true)
 		} catch {

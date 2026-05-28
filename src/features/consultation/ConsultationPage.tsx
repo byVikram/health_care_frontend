@@ -18,9 +18,13 @@ import { Patient } from '../../types/patient'
 import { getAppointmentById } from '../../services/userService'
 import { Appointment } from '../../types/appointment'
 import { useAuth, LookupHospital } from '../../hooks/useAuth'
-import { getDoctorProfile, mapDoctorProfileApi } from '../doctor/doctorService'
+import { getDoctorProfile, mapDoctorProfileApi, getDoctorAvailability, getAvailabilityModeBlocks } from '../doctor/doctorService'
 import { DoctorProfile } from '../../types/doctor-profile'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
+import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
+import ApiService from '../../services/apiService'
+import { API_ENDPOINTS } from '../../constants/apiUrls'
+import { toast } from 'react-toastify'
 
 interface PatientDetailsResponse {
 	success: boolean
@@ -48,11 +52,8 @@ const MOCK_DOCTOR: ConsultationDoctor = {
 	clinicAddress: '1 main, KR Market, Bengaluru - 580036',
 }
 
-const splitCsv = (value: string) =>
-	value
-		.split(',')
-		.map((item) => item.trim())
-		.filter(Boolean)
+const splitCsv = (value: string | string[]) =>
+	(Array.isArray(value) ? value : value.split(',')).map((item) => item.trim()).filter(Boolean)
 
 const formatDisplayValue = (value: string) =>
 	value
@@ -160,6 +161,9 @@ const mapDoctorProfileToConsultationDoctor = (
 	}
 }
 
+const getDrawerAppointmentType = (appointmentMode?: Appointment['appointment_mode']) =>
+	appointmentMode === 'video_call' ? 'video' : 'clinic'
+
 export default function ConsultationPage() {
 	const [activeTab, setActiveTab] = useState(0)
 	const navigate = useNavigate()
@@ -175,7 +179,9 @@ export default function ConsultationPage() {
 	const [rescheduleOpen, setRescheduleOpen] = useState(false)
 	const [rescheduleDate, setRescheduleDate] = useState<Date>(new Date())
 	const [rescheduleTime, setRescheduleTime] = useState('')
-	const [rescheduleSubmitting] = useState(false)
+	const [rescheduleSlots, setRescheduleSlots] = useState<SlotGroup[]>([])
+	const [rescheduleSlotsLoading, setRescheduleSlotsLoading] = useState(false)
+	const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false)
 	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
 	const [appointmentType, setAppointmentType] = useState<'clinic' | 'video'>('clinic')
 
@@ -218,6 +224,50 @@ export default function ConsultationPage() {
 		fetchData()
 	}, [patientId, appointmentId])
 
+	useEffect(() => {
+		if (!appointment) return
+
+		setAppointmentType(getDrawerAppointmentType(appointment.appointment_mode))
+		setRescheduleHospitalId(appointment.hospital?.id ?? '')
+	}, [appointment])
+
+	useEffect(() => {
+		if (!rescheduleOpen || !appointment) return
+
+		const doctorId = appointment.doctor?.id
+		const hospitalId = rescheduleHospitalId || appointment.hospital?.id || doctorProfile?.hospitals[0]?.id
+
+		if (!doctorId || !hospitalId) return
+
+		const dateStr = rescheduleDate.toISOString().split('T')[0]
+
+		const fetchSlots = async () => {
+			setRescheduleSlotsLoading(true)
+			setRescheduleSlots([])
+			setRescheduleTime('')
+
+			try {
+				const responseData = await getDoctorAvailability({
+					doctor_id: doctorId,
+					hospital_id: hospitalId,
+					date: dateStr,
+				})
+				const selectedTypeMode = appointmentType === 'clinic' ? 'clinic_visit' : 'video_call'
+				const selectedModeData = getAvailabilityModeBlocks(responseData).find(
+					(item) => item.appointment_mode === selectedTypeMode
+				)
+
+				setRescheduleSlots(selectedModeData?.sessions || [])
+			} catch {
+				toast.error('Could not load available slots.')
+			} finally {
+				setRescheduleSlotsLoading(false)
+			}
+		}
+
+		fetchSlots()
+	}, [appointment, appointmentType, doctorProfile, rescheduleDate, rescheduleHospitalId, rescheduleOpen])
+
 	if (loading) return <div>Loading...</div>
 	if (!patient) return <div>Unable to load patient details.</div>
 
@@ -230,11 +280,92 @@ export default function ConsultationPage() {
 			? mapDoctorProfileToConsultationDoctor(doctorProfile, activeHospital, appointment)
 			: mapAppointmentToConsultationDoctor(appointment)
 
-	const rescheduleHospitalsMapped: LookupHospital[] = (doctorProfile?.hospitals || []).map((h) => ({
-		id: h.id,
-		label: h.name,
-		address: h.fullAddress || h.location || '',
-	}))
+	const rescheduleHospitalsMapped: LookupHospital[] = Array.from(
+		new Map(
+			[
+				...(doctorProfile?.hospitals || []).map((hospital) => ({
+					id: hospital.id,
+					label: hospital.name,
+					address: hospital.fullAddress || hospital.location || '',
+				})),
+				...(lookupData?.hospitals || []),
+				...(appointment?.hospital
+					? [
+							{
+								id: appointment.hospital.id,
+								label: appointment.hospital.name,
+								address: appointment.hospital.address,
+							},
+						]
+					: []),
+			].map((hospital) => [hospital.id, hospital] as const)
+		).values()
+	)
+
+	const handleOpenReconnect = () => {
+		if (!appointment) {
+			toast.warning('Appointment details are not available yet.')
+			return
+		}
+
+		setRescheduleDate(new Date())
+		setRescheduleTime('')
+		setRescheduleSlots([])
+		setRescheduleHospitalId(appointment.hospital?.id ?? rescheduleHospitalsMapped[0]?.id ?? '')
+		setAppointmentType(getDrawerAppointmentType(appointment.appointment_mode))
+		setRescheduleOpen(true)
+	}
+
+	const handleRescheduleConfirm = async () => {
+		if (!appointment || !rescheduleTime) {
+			toast.warning('Please select a time slot before confirming.')
+			return
+		}
+
+		setRescheduleSubmitting(true)
+		try {
+			const dateStr = rescheduleDate.toISOString().split('T')[0]
+			const res = await ApiService.post<{ success: boolean; message: string }>(API_ENDPOINTS.APPOINTMENTS.RESCHEDULE, {
+				appointment_id: appointment.id,
+				appointment_date: dateStr,
+				start_time: rescheduleTime,
+				end_time: null,
+				hospital_id: rescheduleHospitalId || appointment.hospital?.id,
+				reason: 'Doctor unavailable',
+			})
+
+			if (res.data?.success) {
+				const selectedHospital = rescheduleHospitalsMapped.find(
+					(hospital) => hospital.id === (rescheduleHospitalId || appointment.hospital?.id)
+				)
+
+				setAppointment((prev) =>
+					prev
+						? {
+								...prev,
+								appointment_date: dateStr,
+								start_time: rescheduleTime,
+								hospital: selectedHospital
+									? {
+											id: selectedHospital.id,
+											name: selectedHospital.label,
+											address: selectedHospital.address ?? '',
+										}
+									: prev.hospital,
+							}
+						: prev
+				)
+				toast.success(res.data.message || 'Appointment rescheduled!')
+				setRescheduleOpen(false)
+			} else {
+				toast.error(res.data?.message || 'Reschedule failed. Please try again.')
+			}
+		} catch {
+			toast.error('Something went wrong. Please try again.')
+		} finally {
+			setRescheduleSubmitting(false)
+		}
+	}
 
 	return (
 		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
@@ -292,7 +423,7 @@ export default function ConsultationPage() {
 				</Box>
 
 				{/* Right: Follow up button */}
-				<AppButton variant="contained" label="+ Reconnect" borderRadius="20px" sx={{ px: 4 }} onClick={() => setRescheduleOpen(true)} />
+				<AppButton variant="contained" label="+ Reconnect" borderRadius="20px" sx={{ px: 4 }} onClick={handleOpenReconnect} />
 			</Box>
 
 			{/* Tabs */}
@@ -340,15 +471,15 @@ export default function ConsultationPage() {
 				setRescheduleDate={setRescheduleDate}
 				rescheduleTime={rescheduleTime}
 				setRescheduleTime={setRescheduleTime}
-				rescheduleSlots={[]}
-				rescheduleSlotsLoading={false}
+				rescheduleSlots={rescheduleSlots}
+				rescheduleSlotsLoading={rescheduleSlotsLoading}
 				rescheduleSubmitting={rescheduleSubmitting}
-				handleRescheduleConfirm={() => setRescheduleOpen(false)}
+				handleRescheduleConfirm={handleRescheduleConfirm}
 				rescheduleHospitals={rescheduleHospitalsMapped}
 				rescheduleHospitalId={rescheduleHospitalId}
 				setRescheduleHospitalId={setRescheduleHospitalId}
-			appointmentType={appointmentType}
-			setAppointmentType={setAppointmentType}
+				appointmentType={appointmentType}
+				setAppointmentType={setAppointmentType}
 			/>
 		</Box>
 	)

@@ -81,6 +81,7 @@ export default function AppointmentList() {
 	const [filterMode, setFilterMode] = useState('all')
 	const [filterDate, setFilterDate] = useState('all')
 	const [filterStatus, setFilterStatus] = useState('all')
+	const patientId = localStorage.getItem('patient_id')
 
 	useEffect(() => {
 		const fetchAppointments = async () => {
@@ -90,6 +91,7 @@ export default function AppointmentList() {
 				const params: Record<string, unknown> = {
 					page,
 					limit: size,
+					patient_id: patientId,
 				}
 
 				if (search) params.search = search
@@ -125,7 +127,7 @@ export default function AppointmentList() {
 		}
 
 		fetchAppointments()
-	}, [page, search, size])
+	}, [page, search, size,  patientId])
 
 	// ── Name column — shown once, based on viewAs ───────────────────────────
 	const patientNameColumn: ColDef = {
