@@ -8,6 +8,8 @@ export const API_ENDPOINTS = {
 		LOGOUT: `${BASE_URL}/api/auth/logout`,
 		GET_ROLES: `${BASE_URL}/api/auth/get-roles`,
 		CREATE_USER: `${BASE_URL}/api/auth/create-user`,
+		SESSIONS: `${BASE_URL}/api/auth/sessions`,
+		SESSION_LOGOUT: (id: string) => `${BASE_URL}/api/auth/sessions/${id}`,
 	},
 	DOCTORS: {
 		SEARCH: `${BASE_URL}/api/doctors`,
@@ -43,6 +45,8 @@ export const API_ENDPOINTS = {
 		ME: `${BASE_URL}/api/patients/me/details`,
 		UPDATE: `${BASE_URL}/api/patients/me/details`,
 		GET_BY_ID: (id: string) => `${BASE_URL}/api/patients/${id}/details`,
+		ADDRESSES: `${BASE_URL}/api/patients/me/addresses`,
+		ADDRESS_UPDATE: (id: string) => `${BASE_URL}/api/patients/me/addresses/${id}`,
 		VITALS_CREATE: `${BASE_URL}/api/patients/vitals`,
 		VITALS_LATEST: (id: string) => `${BASE_URL}/api/patients/${id}/vitals/latest`,
 		VITALS_HISTORY: (id: string) => `${BASE_URL}/api/patients/${id}/vitals`,
@@ -63,5 +67,16 @@ export const API_ENDPOINTS = {
 		GET_BY_ID: (id: string | number) => `${BASE_URL}/api/appointments/${id}`,
 		RESCHEDULE: `${BASE_URL}/api/appointments/reschedule`,
 		STATUSES: `${BASE_URL}/api/appointments/statuses`,
+	},
+	PHARMACIES: {
+		LIST: `${BASE_URL}/api/pharmacies`,
+		ME: `${BASE_URL}/api/pharmacies/me`,
+		ME_DETAILS: `${BASE_URL}/api/pharmacies/me/details`,
+	},
+	PHARMACY_ORDERS: {
+		CREATE: `${BASE_URL}/api/pharmacy-orders`,
+		LIST: `${BASE_URL}/api/pharmacy-orders`,
+		GET_BY_ID: (id: string) => `${BASE_URL}/api/pharmacy-orders/${id}`,
+		UPDATE_STATUS: (id: string) => `${BASE_URL}/api/pharmacy-orders/${id}/status`,
 	},
 }

@@ -4,7 +4,7 @@ import { SpecialitiesResponse } from '../types/speciality'
 import { AppointmentStatus } from '../types/appointment'
 import { UserRole as OnboardingUserRole } from '../data/onboardingData'
 
-export type UserRole = 'doctor' | 'patient' | 'laboratory' | 'PHARMACY' | 'radiology'
+export type UserRole = 'doctor' | 'patient' | 'laboratory' | 'pharmacy' | 'radiology'
 
 export interface AuthUser {
 	id?: string

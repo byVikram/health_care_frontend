@@ -8,6 +8,7 @@ import WorkOutlineIcon from '@mui/icons-material/WorkOutline'
 import LocalHospitalOutlinedIcon from '@mui/icons-material/LocalHospitalOutlined'
 import EventAvailableOutlinedIcon from '@mui/icons-material/EventAvailableOutlined'
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
+import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined'
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
 import DoctorPersonalTab from './components/DoctorPersonalTab'
 import DoctorProfessionalTab from './components/DoctorProfessionalTab'
@@ -15,6 +16,7 @@ import DoctorHospitalsTab from './components/DoctorHospitalsTab'
 import DoctorAvailabilityTab from './components/DoctorAvailabilityTab'
 import DoctorSettingTab from './components/DoctorSettingTab'
 import DoctorFavouritesTab from './components/DoctorFavouritesTab'
+import SessionsTab from '../../../components/common/SessionsTab/SessionsTab'
 import { DoctorProfile, DoctorProfilePersonal, DoctorProfileProfessional } from '../../../types/doctor-profile'
 import { customCardStyle } from '../../../styles/commonStyles'
 import { getDoctorProfile, mapDoctorProfileApi } from '../doctorService'
@@ -27,6 +29,7 @@ const DOCTOR_NAV_ITEMS = [
 	{ id: 'hospitals', label: 'My hospitals', icon: <LocalHospitalOutlinedIcon fontSize="small" /> },
 	{ id: 'availability', label: 'Availability', icon: <EventAvailableOutlinedIcon fontSize="small" /> },
 	{ id: 'favourites', label: 'Favourite doctors', icon: <FavoriteBorderIcon fontSize="small" /> },
+	{ id: 'sessions', label: 'Active Sessions', icon: <DesktopWindowsOutlinedIcon fontSize="small" /> },
 	{ id: 'settings', label: 'Settings', icon: <SettingsOutlinedIcon fontSize="small" /> },
 ]
 
@@ -137,6 +140,8 @@ export default function DoctorProfilePage() {
 				)
 			case 'favourites':
 				return <DoctorFavouritesTab />
+			case 'sessions':
+				return <SessionsTab />
 			case 'settings':
 				return <DoctorSettingTab />
 			default:
