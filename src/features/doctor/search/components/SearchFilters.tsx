@@ -1,10 +1,9 @@
 // src/features/doctor/components/SearchFilters.tsx
+import { useState, useEffect } from 'react'
 import { formatINR } from '../../../../utils/Utils'
 import { Box, Typography, Slider, Divider } from '@mui/material'
 import { customCardStyle } from '../../../../styles/commonStyles'
 import StarIcon from '@mui/icons-material/Star'
-// import { getSpecialityIcon } from '../../../../components/common/SpecialityIconMap'
-// import { SpecialityItem } from '../../../../types/speciality'
 
 export interface FilterState {
 	speciality: string
@@ -16,10 +15,18 @@ export interface FilterState {
 interface SearchFiltersProps {
 	filters: FilterState
 	onChange: (filters: FilterState) => void
-	// specialities: SpecialityItem[]
 }
 
 export default function SearchFilters({ filters, onChange }: SearchFiltersProps) {
+	// Local slider value — updates smoothly on every drag pixel
+	// but only propagates to parent (and triggers a fetch) on mouse-up
+	const [localMaxPrice, setLocalMaxPrice] = useState(filters.maxPrice)
+
+	// Keep local value in sync if parent resets filters (e.g. on search clear)
+	useEffect(() => {
+		setLocalMaxPrice(filters.maxPrice)
+	}, [filters.maxPrice])
+
 	const consultationTypes = [
 		{ id: 'all', label: 'All' },
 		{ id: 'clinic', label: 'Clinic Visit' },
@@ -40,66 +47,6 @@ export default function SearchFilters({ filters, onChange }: SearchFiltersProps)
 			<Typography variant="h5" sx={{ fontWeight: 700 }}>
 				Filters
 			</Typography>
-
-			{/* <Divider /> */}
-
-			{/* Speciality */}
-			{/* <Box>
-				<Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, color: 'text.primary' }}>
-					Speciality
-				</Typography>
-				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8 }}>
-					<Box
-						onClick={() => onChange({ ...filters, speciality: '' })}
-						sx={{
-							px: 1.5,
-							py: 0.8,
-							borderRadius: '8px',
-							cursor: 'pointer',
-							bgcolor: filters.speciality === '' ? 'primary.main' : 'transparent',
-							color: filters.speciality === '' ? '#fff' : 'text.secondary',
-							fontSize: '13px',
-							fontWeight: filters.speciality === '' ? 600 : 400,
-							transition: 'all 0.15s',
-							'&:hover': {
-								bgcolor: filters.speciality === '' ? 'primary.main' : 'rgba(43,111,113,0.06)',
-							},
-						}}
-					>
-						All Specialities
-					</Box>
-					{specialities.map((s) => (
-						<Box
-							key={s.id}
-							onClick={() => onChange({ ...filters, speciality: s.id })}
-							sx={{
-								display: 'flex',
-								alignItems: 'center',
-								gap: 1.5,
-								px: 1.5,
-								py: 0.8,
-								borderRadius: '8px',
-								cursor: 'pointer',
-								bgcolor: filters.speciality === s.id ? 'primary.main' : 'transparent',
-								color: filters.speciality === s.id ? '#fff' : 'text.secondary',
-								fontSize: '13px',
-								fontWeight: filters.speciality === s.id ? 600 : 400,
-								transition: 'all 0.15s',
-								'&:hover': {
-									bgcolor: filters.speciality === s.id ? 'primary.main' : 'rgba(43,111,113,0.06)',
-								},
-							}}
-						>
-							<Box
-								sx={{ display: 'flex', alignItems: 'center', '& svg': { fontSize: '18px !important' } }}
-							>
-								{getSpecialityIcon(s.icon_key, filters.speciality === s.id ? '#fff' : 'primary.main')}
-							</Box>
-							{s.label}
-						</Box>
-					))}
-				</Box>
-			</Box> */}
 
 			<Divider />
 
@@ -188,15 +135,18 @@ export default function SearchFilters({ filters, onChange }: SearchFiltersProps)
 						Max Price
 					</Typography>
 					<Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 700 }}>
-						{formatINR(filters.maxPrice)}
+						{formatINR(localMaxPrice)}
 					</Typography>
 				</Box>
 				<Slider
-					value={filters.maxPrice}
+					value={localMaxPrice}
 					min={100}
 					max={1000}
 					step={50}
-					onChange={(_, val) => onChange({ ...filters, maxPrice: val as number })}
+					// Update display only — no API call while dragging
+					onChange={(_, val) => setLocalMaxPrice(val as number)}
+					// Fire the actual filter change (and fetch) only when the user releases
+					onChangeCommitted={(_, val) => onChange({ ...filters, maxPrice: val as number })}
 					sx={{ color: 'primary.main' }}
 				/>
 				<Box sx={{ display: 'flex', justifyContent: 'space-between' }}>

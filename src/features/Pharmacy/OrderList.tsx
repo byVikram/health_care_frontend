@@ -6,11 +6,8 @@ import {
 	Typography,
 	Avatar,
 	InputAdornment,
-	OutlinedInput,
-	CircularProgress,
 	Chip,
-	TextField,
-	MenuItem,
+	// MenuItem,
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
@@ -18,6 +15,10 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 import { useNavigate } from 'react-router-dom'
 import AppTable from '../appointments/components/AppTable'
+import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
+import AppSelect from '../../components/common/Select/AppSelect'
+import AppInput from '../../components/common/Input/AppInput'
+import Grid from '@mui/material/Grid'
 
 
 interface OrderRow extends Record<string, unknown> {
@@ -58,7 +59,7 @@ interface OrdersResponse {
 	}
 }
 
-// ─── Mock Data (from the image) ───────────────────────────────────────────
+// ─── Mock Data ───────────────────────────────────────────
 
 const MOCK_ORDERS: OrderRow[] = [
 	{
@@ -244,7 +245,7 @@ const fetchOrdersApi = async (
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function OrderList() {
-	const navigate = useNavigate()  // ← ADDED for navigation
+	const navigate = useNavigate()
 	const [search, setSearch] = useState('')
 	const [page, setPage] = useState(1)
 	const [size, setSize] = useState(10)
@@ -259,6 +260,11 @@ export default function OrderList() {
 	const [loading, setLoading] = useState(false)
 
 	const uniqueDates = Array.from(new Set(MOCK_ORDERS.map((order) => order.date)))
+
+	const dateOptions = [
+		{ value: '', label: 'All Dates' },
+		...uniqueDates.map((date) => ({ value: date, label: date })),
+	]
 
 	const fetchOrders = useCallback(async () => {
 		setLoading(true)
@@ -297,12 +303,12 @@ export default function OrderList() {
 		return () => clearTimeout(timer)
 	}, [fetchOrders])
 
-	
-	const handleRowClick = useCallback((row: OrderRow) => {
-		
-		navigate(`/pharmacy/orders/${row.orderId}`)
-	
-	}, [navigate])
+	const handleRowClick = useCallback(
+		(row: OrderRow) => {
+			navigate(`/pharmacy/orders/${row.orderId}`)
+		},
+		[navigate]
+	)
 
 	const columns: {
 		id: keyof OrderRow
@@ -360,7 +366,6 @@ export default function OrderList() {
 			sortable: true,
 			format: (value, row) => (
 				<Box>
-					
 					<Typography fontSize={13} color="text.primary" fontWeight={500}>
 						{value as string}
 					</Typography>
@@ -379,97 +384,107 @@ export default function OrderList() {
 			width: '130px',
 			sortable: true,
 			format: (value, row) => (
-				<Chip
-					label={value as string}
-					size="small"
-					sx={getStatusChipSx(row.status)}
-					variant="filled"
-				/>
+				<Chip label={value as string} size="small" sx={getStatusChipSx(row.status)} variant="filled" />
 			),
 		},
 	]
 
 	return (
 		<Box sx={{ p: 3 }}>
-			{/* top bar */}
-			<Box
-				sx={{
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'space-between',
-					mb: 2,
-					flexWrap: 'wrap',
-					gap: 1.5,
-				}}
-			>
-				<Typography fontSize={13} fontWeight={400} color="text.secondary">
-					Showing all medicine orders
-				</Typography>
-
-				<Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-					<TextField
-						select
-						size="small"
-						placeholder="Select date"
-						value={dateFilter}
-						onChange={(e) => {
-							setDateFilter(e.target.value)
-							setPage(1)
-						}}
-						InputProps={{
-							startAdornment: (
-								<InputAdornment position="start">
-									<CalendarTodayIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-								</InputAdornment>
-							),
-						}}
-						sx={{
-							width: 180,
-							'& .MuiSelect-select': { fontSize: 13, py: 1 },
-						}}
-					>
-						<MenuItem value="">All Dates</MenuItem>
-						{uniqueDates.map((date) => (
-							<MenuItem key={date} value={date}>
-								{date}
-							</MenuItem>
-						))}
-					</TextField>
-
-					<OutlinedInput
-						size="small"
-						placeholder="Search Order ID, Patient Name..."
-						value={search}
-						onChange={(e) => {
-							setSearch(e.target.value)
-							setPage(1)
-						}}
-						startAdornment={
-							<InputAdornment position="start">
-								<SearchIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-							</InputAdornment>
-						}
-						endAdornment={
-							<InputAdornment position="end">
-								<MicNoneOutlinedIcon sx={{ color: 'text.disabled', fontSize: 20, cursor: 'pointer' }} />
-							</InputAdornment>
-						}
-						sx={{
-							fontSize: 14,
-							width: 350,
-							height: 44,
-							borderRadius: '10px',
-							bgcolor: 'background.paper',
-							'& .MuiOutlinedInput-notchedOutline': { borderColor: 'divider' },
-						}}
-					/>
-				</Box>
-			</Box>
-
-			{/* table */}
+			{/* Filter bar — skeleton while loading, real controls otherwise */}
 			{loading ? (
-				<Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-					<CircularProgress size={32} />
+				<Grid container spacing={2} sx={{ mb: 2, alignItems: 'center' }}>
+					<Grid size={{ xs: 12, lg: 8 }}>
+						<Grid container spacing={2} sx={{ alignItems: 'center' }}>
+							<Grid size={{ xs: 12, sm: 6, md: 3 }}>
+								<AppSkeleton variant="rounded" width="100%" height={44} />
+							</Grid>
+						</Grid>
+					</Grid>
+					<Grid size={{ xs: 12, lg: 4 }}>
+						<AppSkeleton variant="rounded" width="100%" height={44} />
+					</Grid>
+				</Grid>
+			) : (
+				<Grid container spacing={2} sx={{ mb: 2, alignItems: 'center' }}>
+					<Grid size={{ xs: 12, lg: 8 }}>
+						<Grid container spacing={2} sx={{ alignItems: 'center' }}>
+							<Grid size={{ xs: 12, sm: 6, md: 3 }}>
+								<AppSelect
+									label="Date"
+									value={dateFilter}
+									onChange={(e) => {
+										setDateFilter(e.target.value)
+										setPage(1)
+									}}
+									options={dateOptions}
+									slotProps={{
+										select: {
+											displayEmpty: true,
+											renderValue: (selected: unknown) => {
+												const found = dateOptions.find((o) => o.value === selected)
+												return found && found.value !== '' ? found.label : ''
+											},
+											startAdornment: (
+												<InputAdornment position="start">
+													<CalendarTodayIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+												</InputAdornment>
+											),
+											MenuProps: {
+												PaperProps: {
+													sx: { mt: 1, boxShadow: '0 6px 20px rgba(0,0,0,0.12)' },
+												},
+											},
+										},
+									}}
+								/>
+							</Grid>
+						</Grid>
+					</Grid>
+					<Grid size={{ xs: 12, lg: 4 }}>
+						<AppInput
+							fullWidth
+							size="small"
+							placeholder="Search Order ID, Patient Name..."
+							value={search}
+							onChange={(e) => {
+								setSearch(e.target.value)
+								setPage(1)
+							}}
+							InputProps={{
+								startAdornment: (
+									<InputAdornment position="start">
+										<SearchIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
+									</InputAdornment>
+								),
+								endAdornment: (
+									<InputAdornment position="end">
+										<MicNoneOutlinedIcon
+											sx={{ color: 'text.disabled', fontSize: 20, cursor: 'pointer' }}
+										/>
+									</InputAdornment>
+								),
+							}}
+							sx={{
+								fontSize: 14,
+								height: 44,
+								borderRadius: '10px',
+								bgcolor: 'background.paper',
+								'& .MuiOutlinedInput-notchedOutline': {
+									borderColor: 'divider',
+								},
+							}}
+						/>
+					</Grid>
+				</Grid>
+			)}
+
+			{/* Table — skeleton while loading, real table otherwise */}
+			{loading ? (
+				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+					{Array.from({ length: 7 }).map((_, i) => (
+						<AppSkeleton key={i} variant="rounded" width="100%" height={70} />
+					))}
 				</Box>
 			) : (
 				<AppTable<OrderRow>
@@ -487,7 +502,7 @@ export default function OrderList() {
 						setPage(newPage)
 						setSize(newSize)
 					}}
-					onRowClick={handleRowClick}   // ← ADDED: navigates when row clicked
+					onRowClick={handleRowClick}
 				/>
 			)}
 		</Box>

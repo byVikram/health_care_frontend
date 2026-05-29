@@ -69,13 +69,6 @@ const stats = [
 	{ label: 'Emergency Patients', value: '01', color: '#DE3B40' },
 ]
 
-const quickServices = [
-	{ title: 'Appointment', image: AppointmentsIcon },
-	{ title: 'Pharmacy', image: PharmacyIcon },
-	{ title: 'Laboratory', image: LabIcon },
-	{ title: 'Radiology', image: RadiologyIcon },
-	{ title: 'Pharamedicals', image: null },
-]
 
 const othersPopupItems = [
 	{ title: 'Ancillary', image: AncilaryIcon },
@@ -90,10 +83,37 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 	const { role, user } = useAuth()
 	const navigate = useNavigate()
 
-	const handleAppointmentIconClick = () => {
-		const view = role === USER_ROLES.DOCTOR ? USER_ROLES.DOCTOR : USER_ROLES.PATIENT
-		navigate(`${ROUTES.APPOINTMENTS}?view=${view}`)
+	const handleServiceIconClick = (title: string) => {
+		if (title === 'Appointment') {
+			navigate(ROUTES.APPOINTMENTS)
+		} else if (title === 'Orders') {
+			navigate(ROUTES.PHARMACY.ORDERS)
+		}
 	}
+
+	const getQuickServices = () => {
+		const baseServices = [
+			{ title: 'Appointment', image: AppointmentsIcon },
+			{ title: 'Pharmacy', image: PharmacyIcon },
+			{ title: 'Laboratory', image: LabIcon },
+			{ title: 'Radiology', image: RadiologyIcon },
+			{ title: 'Pharamedicals', image: null },
+		]
+
+		if (role === USER_ROLES.PHARMACY) {
+			return [
+				{ title: 'Orders', image: AppointmentsIcon },
+				{ title: 'Pharmacy', image: PharmacyIcon },
+				{ title: 'Laboratory', image: LabIcon },
+				{ title: 'Radiology', image: RadiologyIcon },
+				{ title: 'Pharamedicals', image: null },
+			]
+		}
+
+		return baseServices
+	}
+
+	const quickServices = getQuickServices()
 
 	const [activeSlide, setActiveSlide] = useState(0)
 	const totalSlides = 4
@@ -391,7 +411,7 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 									) : (
 										<Box
 											key={s.title}
-											onClick={s.title === 'Appointment' ? handleAppointmentIconClick : undefined}
+											onClick={() => handleServiceIconClick(s.title)}
 											sx={{
 												display: 'flex',
 												flexDirection: 'column',
