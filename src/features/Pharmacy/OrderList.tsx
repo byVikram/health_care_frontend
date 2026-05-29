@@ -6,7 +6,7 @@ import {
 	Typography,
 	Avatar,
 	InputAdornment,
-	OutlinedInput,
+	// OutlinedInput,
 	CircularProgress,
 	Chip,
 	TextField,
@@ -15,10 +15,10 @@ import {
 import SearchIcon from '@mui/icons-material/Search'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
-import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
+// import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
+import AppInput from '../../components/common/Input/AppInput'
 import { useNavigate } from 'react-router-dom'
 import AppTable from '../appointments/components/AppTable'
-
 
 interface OrderRow extends Record<string, unknown> {
 	id: string
@@ -244,7 +244,7 @@ const fetchOrdersApi = async (
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function OrderList() {
-	const navigate = useNavigate()  // ← ADDED for navigation
+	const navigate = useNavigate() // ← ADDED for navigation
 	const [search, setSearch] = useState('')
 	const [page, setPage] = useState(1)
 	const [size, setSize] = useState(10)
@@ -297,12 +297,12 @@ export default function OrderList() {
 		return () => clearTimeout(timer)
 	}, [fetchOrders])
 
-	
-	const handleRowClick = useCallback((row: OrderRow) => {
-		
-		navigate(`/pharmacy/orders/${row.orderId}`)
-	
-	}, [navigate])
+	const handleRowClick = useCallback(
+		(row: OrderRow) => {
+			navigate(`/pharmacy/orders/${row.orderId}`)
+		},
+		[navigate]
+	)
 
 	const columns: {
 		id: keyof OrderRow
@@ -360,7 +360,6 @@ export default function OrderList() {
 			sortable: true,
 			format: (value, row) => (
 				<Box>
-					
 					<Typography fontSize={13} color="text.primary" fontWeight={500}>
 						{value as string}
 					</Typography>
@@ -379,12 +378,7 @@ export default function OrderList() {
 			width: '130px',
 			sortable: true,
 			format: (value, row) => (
-				<Chip
-					label={value as string}
-					size="small"
-					sx={getStatusChipSx(row.status)}
-					variant="filled"
-				/>
+				<Chip label={value as string} size="small" sx={getStatusChipSx(row.status)} variant="filled" />
 			),
 		},
 	]
@@ -436,7 +430,7 @@ export default function OrderList() {
 						))}
 					</TextField>
 
-					<OutlinedInput
+					{/* <OutlinedInput
 						size="small"
 						placeholder="Search Order ID, Patient Name..."
 						value={search}
@@ -461,6 +455,30 @@ export default function OrderList() {
 							borderRadius: '10px',
 							bgcolor: 'background.paper',
 							'& .MuiOutlinedInput-notchedOutline': { borderColor: 'divider' },
+						}}
+					/> */}
+					<AppInput
+						size="small"
+						placeholder="Search Order ID, Patient Name..."
+						value={search}
+						onChange={(e) => {
+							setSearch(e.target.value)
+							setPage(1)
+						}}
+						startIcon={<SearchIcon sx={{ fontSize: 20, color: 'text.secondary' }} />}
+						enableVoiceSearch
+						onVoiceResult={(text) => {
+							setSearch(text)
+							setPage(1)
+						}}
+						sx={{
+							width: 350,
+							height: 44,
+							borderRadius: '10px',
+							bgcolor: 'background.paper',
+							'& .MuiOutlinedInput-notchedOutline': {
+								borderColor: 'divider',
+							},
 						}}
 					/>
 				</Box>
@@ -487,7 +505,7 @@ export default function OrderList() {
 						setPage(newPage)
 						setSize(newSize)
 					}}
-					onRowClick={handleRowClick}   // ← ADDED: navigates when row clicked
+					onRowClick={handleRowClick} // ← ADDED: navigates when row clicked
 				/>
 			)}
 		</Box>
