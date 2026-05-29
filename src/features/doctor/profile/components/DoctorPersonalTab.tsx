@@ -4,7 +4,7 @@ import ProfileFormActions from '../../../../components/common/ProfileFormActions
 import { Box, Typography, Grid, InputAdornment } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import AppInput from '../../../../components/common/Input/AppInput'
-// Removed: import AppmultiSelect from ... (typo, unused)
+
 import AppSelect from '../../../../components/common/Select/AppSelect'
 import { DoctorProfilePersonal } from '../../../../types/doctor-profile'
 import { customCardStyle } from '../../../../styles/commonStyles'

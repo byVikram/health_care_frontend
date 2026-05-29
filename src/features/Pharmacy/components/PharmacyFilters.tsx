@@ -1,5 +1,5 @@
-import { Card, CardContent, FormControlLabel, MenuItem, Switch, Typography } from '@mui/material'
-import AppInput from '../../../components/common/Input/AppInput'
+import { Card, CardContent, FormControlLabel, Switch, Typography } from '@mui/material'
+import AppSelect from '../../../components/common/Select/AppSelect'
 
 export interface PharmacyFilterState {
 	city: string
@@ -13,31 +13,28 @@ interface Props {
 	onChange: (newFilters: PharmacyFilterState) => void
 }
 
-const CITIES = [
-	'All Cities',
-	'Mumbai',
-	'Delhi',
-	'Bangalore',
-	'Chennai',
-	'Kolkata',
-	'Hyderabad',
-	'Pune',
-	'Ahmedabad',
-	'Jaipur',
-	'Surat',
+const CITY_OPTIONS = [
+	{ label: 'All Cities', value: '' },
+	{ label: 'Mumbai', value: 'Mumbai' },
+	{ label: 'Delhi', value: 'Delhi' },
+	{ label: 'Bangalore', value: 'Bangalore' },
+	{ label: 'Chennai', value: 'Chennai' },
+	{ label: 'Kolkata', value: 'Kolkata' },
+	{ label: 'Hyderabad', value: 'Hyderabad' },
+	{ label: 'Pune', value: 'Pune' },
+	{ label: 'Ahmedabad', value: 'Ahmedabad' },
+	{ label: 'Jaipur', value: 'Jaipur' },
+	{ label: 'Surat', value: 'Surat' },
 ]
 
 export default function PharmacyFilters({ filters, onChange }: Props) {
 	const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const value = e.target.value
-		onChange({ ...filters, city: value === 'All Cities' ? '' : value })
+		onChange({ ...filters, city: e.target.value })
 	}
 
-	const handleToggle =
-		(key: keyof Omit<PharmacyFilterState, 'city'>) =>
-		(e: React.ChangeEvent<HTMLInputElement>) => {
-			onChange({ ...filters, [key]: e.target.checked })
-		}
+	const handleToggle = (key: keyof Omit<PharmacyFilterState, 'city'>) => (e: React.ChangeEvent<HTMLInputElement>) => {
+		onChange({ ...filters, [key]: e.target.checked })
+	}
 
 	return (
 		<Card sx={{ borderRadius: 3, border: '1px solid #EAECF0' }}>
@@ -46,20 +43,13 @@ export default function PharmacyFilters({ filters, onChange }: Props) {
 					Filters
 				</Typography>
 
-				<AppInput
-					select
-					label="City"
-					value={filters.city || 'All Cities'}
-					onChange={handleCityChange}
-					size="small"
-					sx={{ mb: 2 }}
-				>
-					{CITIES.map((city) => (
-						<MenuItem key={city} value={city}>
-							{city}
-						</MenuItem>
-					))}
-				</AppInput>
+				<AppSelect
+    label="City"
+    value={filters.city}
+    onChange={handleCityChange}
+    options={CITY_OPTIONS}
+    sx={{ mb: 2 }}
+/>
 
 				<FormControlLabel
 					control={
@@ -74,13 +64,7 @@ export default function PharmacyFilters({ filters, onChange }: Props) {
 					labelPlacement="start"
 				/>
 				<FormControlLabel
-					control={
-						<Switch
-							checked={filters.is24x7}
-							onChange={handleToggle('is24x7')}
-							color="primary"
-						/>
-					}
+					control={<Switch checked={filters.is24x7} onChange={handleToggle('is24x7')} color="primary" />}
 					label="Open 24×7"
 					sx={{ mb: 1, display: 'flex', justifyContent: 'space-between', ml: 0 }}
 					labelPlacement="start"

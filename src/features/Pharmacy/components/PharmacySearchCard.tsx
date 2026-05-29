@@ -1,10 +1,10 @@
 // src/features/pharmacy/components/PharmacySearchCard.tsx
-import { Box, Typography, Avatar, Chip } from '@mui/material'
+import { Box, Typography, Avatar, Chip, Card } from '@mui/material'
 import LocalShippingIcon from '@mui/icons-material/LocalShipping'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import EmergencyIcon from '@mui/icons-material/Emergency'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
-// import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
 // import { useNavigate } from 'react-router-dom'
 import AppButton from '../../../components/common/Button/AppButton'
 import { PharmacyItem } from '../../../types/pharmacy'
@@ -51,7 +51,7 @@ export default function PharmacySearchCard({ pharmacy }: PharmacySearchCardProps
 	}
 
 	return (
-		<Box
+		<Card
 			onClick={handleCardClick}
 			sx={{
 				bgcolor: 'background.paper',
@@ -63,14 +63,13 @@ export default function PharmacySearchCard({ pharmacy }: PharmacySearchCardProps
 				transition: 'box-shadow 0.2s, transform 0.2s',
 				display: 'flex',
 				flexDirection: 'column',
-				height: '100%', // Makes all cards same height in grid
+				height: '100%',
 				'&:hover': {
 					boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
 					transform: 'translateY(-2px)',
 				},
 			}}
 		>
-			{/* Fixed image area */}
 			<Box sx={{ position: 'relative', height: 160, flexShrink: 0 }}>
 				<Avatar
 					src={getPharmacyImage(id)}
@@ -136,7 +135,7 @@ export default function PharmacySearchCard({ pharmacy }: PharmacySearchCardProps
 				<AppButton
 					label="Place Order"
 					fullWidth
-					// startIcon={<ShoppingCartIcon />}
+					startIcon={<ShoppingCartIcon />}
 					onClick={handlePlaceOrder}
 					sx={{
 						borderRadius: '10px',
@@ -146,6 +145,6 @@ export default function PharmacySearchCard({ pharmacy }: PharmacySearchCardProps
 					}}
 				/>
 			</Box>
-		</Box>
+		</Card>
 	)
 }

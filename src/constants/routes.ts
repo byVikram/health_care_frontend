@@ -16,12 +16,11 @@ export const ROUTES = {
 		SEARCH: '/doctors/search',
 	},
 
-	// ✅ Add pharmacy search route
 	PHARMACY: {
 		ORDERS: '/pharmacy/orders',
 		ORDER_DETAIL: '/pharmacy/orders/:orderId',
 		PROFILE: '/pharmacy/profile',
-		SEARCH: '/pharmacies', // <-- new
+		SEARCH: '/pharmacies',
 	},
 
 	LABORATORY: {

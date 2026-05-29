@@ -15,7 +15,7 @@ import MicIcon from '@mui/icons-material/Mic'
 import TuneIcon from '@mui/icons-material/Tune'
 import PharmacySearchCard from '../../Pharmacy/components/PharmacySearchCard'
 import PharmacyFilters, { PharmacyFilterState } from '../../Pharmacy/components/PharmacyFilters'
-import { getPharmacies } from '../../../services/pharmacyService'
+import { getPharmacies } from '../../Pharmacy/pharmacyService'
 import { PharmacyItem } from '../../../types/pharmacy'
 import AppSkeleton from '../../../components/common/Skeleton/AppSkeleton'
 import AppInput from '../../../components/common/Input/AppInput'
@@ -56,31 +56,36 @@ export default function PharmacySearchPage() {
 	}, [filters, page, searchQuery, setSearchParams])
 
 	useEffect(() => {
-		let active = true
+	let active = true
 
-		const fetchPharmacies = async () => {
-			setLoading(true)
-			setError(null)
+	const fetchPharmacies = async () => {
+		setLoading(true)
+		setError(null)
 
-			try {
-				const response = await getPharmacies()
-				if (!active) return
-				setAllPharmacies(response.data ?? [])
-			} catch (err) {
-				console.log(err)
-				if (!active) return
-				setError('Failed to load pharmacies')
-			} finally {
-				if (active) setLoading(false)
-			}
+		try {
+			const response = await getPharmacies()
+			if (!active) return
+		
+			const mappedPharmacies: PharmacyItem[] = (response.data ?? []).map((item) => ({
+				...item,
+				owner_name: item.owner_name ?? '',
+			}))
+			setAllPharmacies(mappedPharmacies)
+		} catch (err) {
+			console.log(err)
+			if (!active) return
+			setError('Failed to load pharmacies')
+		} finally {
+			if (active) setLoading(false)
 		}
+	}
 
-		fetchPharmacies()
+	fetchPharmacies()
 
-		return () => {
-			active = false
-		}
-	}, [])
+	return () => {
+		active = false
+	}
+}, [])
 
 	const filteredPharmacies = allPharmacies.filter((pharmacy) => {
 		const query = searchQuery.trim().toLowerCase()
