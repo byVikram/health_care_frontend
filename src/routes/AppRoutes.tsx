@@ -1,4 +1,3 @@
-// src/routes/AppRoutes.tsx
 import { Routes, Route, Outlet } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
 import LoginPage from '../features/auth/LoginPage'
@@ -24,6 +23,7 @@ import OrderList from '../features/Pharmacy/OrderList'
 import OrderDetailPage from '../features/Pharmacy/OrderDetailPage'
 import PharmacyProfilePage from '../features/Pharmacy/profile/PharmacyProfilePage'
 import LaboratoryProfilePage from '../features/laboratory/profile/LaboratoryProfilePage'
+import PharmacySearchPage from '../features/doctor/search/PharmacySearchPage' // ✅ correct import path
 
 function ProtectedLayout() {
 	return (
@@ -56,21 +56,13 @@ export default function AppRoutes() {
 		<Routes>
 			{/* Public routes */}
 			<Route path={ROUTES.AUTH.LOGIN} element={<LoginPage />} />
-
-			{/*
-			  Register route — owns the full sign-up journey internally:
-			    /register  →  RoleSelectorPage (fetches roles from api/auth/get-roles)
-			                → OnBoardingPage   (role-specific slides)
-			                → RegisterForm     (submits with selected roleId UUID)
-			*/}
 			<Route path={ROUTES.AUTH.REGISTER} element={<RegisterPage />} />
-
-			<Route path={ROUTES.TEST_REGISTER} element={<TestRegister onSubmit={(email) => console.log('Registered:', email)} />} />
+			<Route
+				path={ROUTES.TEST_REGISTER}
+				element={<TestRegister onSubmit={(email) => console.log('Registered:', email)} />}
+			/>
 			<Route path={ROUTES.DOCTOR_ACCOUNT_DETAILS} element={<DoctorAccountDetailsPage />} />
-
-			{/* Welcome page — single route, role passed via ?role=<roleKey> query param */}
 			<Route path={ROUTES.PUBLIC.WELCOME} element={<WelcomePage />} />
-			{/* Backward-compat alias for doctor welcome */}
 			<Route path={ROUTES.PUBLIC.WELCOME_DOCTOR} element={<WelcomePage role="doctor" />} />
 
 			{/* Protected routes */}
@@ -81,6 +73,8 @@ export default function AppRoutes() {
 					<Route path={ROUTES.DOCTORS.SEARCH} element={<DoctorSearchPage />} />
 					<Route path={ROUTES.PAYMENT} element={<PaymentPage />} />
 					<Route path={ROUTES.TEST} element={<TestPage />} />
+					{/* ✅ Pharmacy search route inside MainLayout */}
+					<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
 				</Route>
 			</Route>
 
@@ -93,7 +87,7 @@ export default function AppRoutes() {
 				<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
 			</Route>
 
-			{/* Pharmacy routes */}
+			{/* Pharmacy orders & profile (no layout wrapper? adjust as needed) */}
 			<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
 			<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
 			<Route path={ROUTES.PHARMACY.PROFILE} element={<PharmacyProfilePage />} />

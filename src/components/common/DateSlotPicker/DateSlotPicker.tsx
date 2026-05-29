@@ -72,7 +72,6 @@ type CommonProps = {
 	onAppointmentTypeChange?: (type: 'clinic' | 'video') => void
 	clinicPrice?: number
 	videoPrice?: number
-	/** When true, hides the time label, legend and slot grid entirely */
 }
 
 type DateSlotPickerProps = CommonProps & (SingleProps | MultiProps)
@@ -136,7 +135,6 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		}
 	}
 
-
 	const slotsToRender = availableSlots ?? []
 	const isDoctorView = !!(onSelectAll && onUnselectAll)
 	const useCompactAppointmentToggle = compactAppointmentToggle || isDoctorView
@@ -145,6 +143,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		{ label: 'Blocked', color: 'error.main' },
 		{ label: 'Booked', color: 'rgba(0,0,0,0.08)', border: '1.5px solid', borderColor: 'divider' },
 	]
+
 	const timeLegend = isDoctorView ? (
 		<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
 			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -471,25 +470,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 						</Box>
 					)}
 
-					{/* Time label + legend + slot grid — hidden when hideSlots=true */}
-
-					<>
-						<Box
-							sx={{
-								display: 'flex',
-								alignItems: 'center',
-								justifyContent: 'space-between',
-								mb: 2,
-								flexWrap: 'wrap',
-								gap: 1,
-							}}
-						>
-							<Typography variant="h5" sx={{ fontWeight: 600 }}>
-								{timeLabel}
-							</Typography>
-							{timeLegend}
-						</Box>
-
+					{/* Time label + legend + slot grid */}
 					<>
 						<Box
 							sx={{
@@ -515,8 +496,6 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 						)}
 
 						{/* Time slots grouped by period */}
-						{/* {slotsToRender.map((group) => (
-								<Box key={group.label} sx={{ mb: 2 }}> */}
 						{slotsToRender.map((group, index) => (
 							<Box key={`${group.label}-${index}`} sx={{ mb: 2 }}>
 								<Typography
@@ -533,14 +512,9 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 										gap: 1,
 									}}
 								>
-									{/* {group.slots.map((slot) => { */}
-									{(group.slots || []).map((slot) => {
-										console.log('Slot Data:', slot)
+									{group.slots.map((slot) => {
 										const isPatientView = disableBookedSlots
 
-										// Patient view: hide BLOCKED slots and doctor-disabled slots entirely
-										if (isPatientView && (slot.status === 'BLOCKED' || !slot.is_enabled))
-											return null
 										// Patient view: hide BLOCKED slots and doctor-disabled slots entirely
 										if (isPatientView && (slot.status === 'BLOCKED' || !slot.is_enabled))
 											return null

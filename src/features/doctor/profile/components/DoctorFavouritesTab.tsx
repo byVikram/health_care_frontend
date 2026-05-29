@@ -1,8 +1,17 @@
 ﻿// src/features/doctor/profile/components/DoctorFavouritesTab.tsx
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-	Box, Typography, InputAdornment, Avatar, IconButton,
-	Divider, Chip, Button, Dialog, DialogContent, DialogTitle,
+	Box,
+	Typography,
+	InputAdornment,
+	Avatar,
+	IconButton,
+	Divider,
+	Chip,
+	Button,
+	Dialog,
+	DialogContent,
+	DialogTitle,
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
@@ -20,7 +29,7 @@ import AppSkeleton from '../../../../components/common/Skeleton/AppSkeleton'
 import AppInput from '../../../../components/common/Input/AppInput'
 
 // ---------------------------------------------------------------------------
-// Types & mappers (previously in favouriteDoctorsTypes.ts)
+// Types & mappers
 // ---------------------------------------------------------------------------
 
 export type DoctorRow = {
@@ -36,7 +45,6 @@ export type DoctorRow = {
 export type FavDoctorsListMode = 'bookmark' | 'refer'
 
 export interface FavouriteDoctorsListProps {
-	/** 'bookmark' shows bookmark toggle; 'refer' shows Share button */
 	mode: FavDoctorsListMode
 	favouriteIds?: Set<string>
 	favourites?: DoctorRow[]
@@ -51,7 +59,6 @@ export interface ReferModalProps {
 	onClose: () => void
 }
 
-// Internal mappers – not exported to avoid Fast Refresh ESLint warning
 function mapFavToRow(f: FavouriteDoctor): DoctorRow {
 	return {
 		id: f.id,
@@ -98,7 +105,7 @@ export function DoctorRowSkeleton() {
 }
 
 // ---------------------------------------------------------------------------
-// DoctorCard – bookmark toggle OR Share button
+// DoctorCard
 // ---------------------------------------------------------------------------
 
 function DoctorCard({
@@ -177,7 +184,13 @@ function DoctorCard({
 							<LocationOnOutlinedIcon sx={{ fontSize: 12, color: 'text.disabled' }} />
 							<Typography
 								variant="caption"
-								sx={{ color: 'text.disabled', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160 }}
+								sx={{
+									color: 'text.disabled',
+									whiteSpace: 'nowrap',
+									overflow: 'hidden',
+									textOverflow: 'ellipsis',
+									maxWidth: 160,
+								}}
 							>
 								{doctor.location}
 							</Typography>
@@ -245,11 +258,15 @@ export function FavouriteDoctorsList({
 	const [searchResults, setSearchResults] = useState<DoctorRow[]>([])
 	const [searchLoading, setSearchLoading] = useState(false)
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-	const isSearching = searchQuery.trim().length >= 3
+
+	// Search when query is not empty (any length)
+	const isSearching = searchQuery.trim().length > 0
 
 	useEffect(() => {
 		if (debounceRef.current) clearTimeout(debounceRef.current)
-		if (searchQuery.trim().length < 3) {
+
+		const trimmed = searchQuery.trim()
+		if (!trimmed) {
 			setSearchResults([])
 			setSearchLoading(false)
 			return
@@ -258,10 +275,16 @@ export function FavouriteDoctorsList({
 		debounceRef.current = setTimeout(async () => {
 			setSearchLoading(true)
 			try {
-				const res = await getDoctors({ search: searchQuery.trim(), limit: 20 })
-				if (res.success) setSearchResults(res.data.map(mapSearchToRow))
-			} catch {
+				const res = await getDoctors({ search: trimmed, limit: 20 })
+				if (res.success) {
+					setSearchResults(res.data.map(mapSearchToRow))
+				} else {
+					setSearchResults([])
+				}
+			} catch (error) {
+				console.error('Search failed', error)
 				toast.error('Search failed')
+				setSearchResults([])
 			} finally {
 				setSearchLoading(false)
 			}
@@ -272,76 +295,43 @@ export function FavouriteDoctorsList({
 		}
 	}, [searchQuery])
 
-	const filteredSearchResults = searchResults.filter((doc) => !favouriteIds.has(doc.id))
-
 	return (
 		<>
 			{/* Search bar */}
 			<Box sx={{ px: 3, py: 2 }}>
-				{mode === 'refer' ? (
-					<AppInput
-						fullWidth
-						placeholder="Search doctor..."
-						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
-						size="small"
-						autoFocus
-						InputProps={{
-							startAdornment: (
-								<InputAdornment position="start">
-									<SearchIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
-								</InputAdornment>
-							),
-							endAdornment: (
-								<InputAdornment position="end">
-									<MicNoneOutlinedIcon sx={{ color: 'text.disabled', fontSize: 20, cursor: 'pointer' }} />
-								</InputAdornment>
-							),
-						}}
-						sx={{
-							mb: 2,
-							'& .MuiOutlinedInput-root': {
-								borderRadius: '12px',
-								bgcolor: 'background.default',
-								'& fieldset': { borderColor: 'divider' },
-								'&:hover fieldset': { borderColor: 'primary.main' },
-								'&.Mui-focused fieldset': { borderColor: 'primary.main' },
-							},
-						}}
-					/>
-				) : (
-					<AppInput
-						fullWidth
-						placeholder="Search and add doctor"
-						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
-						size="small"
-						InputProps={{
-							startAdornment: (
-								<InputAdornment position="start">
-									<SearchIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
-								</InputAdornment>
-							),
-							endAdornment: (
-								<InputAdornment position="end">
-									<MicNoneOutlinedIcon sx={{ color: 'text.disabled', fontSize: 20, cursor: 'pointer' }} />
-								</InputAdornment>
-							),
-						}}
-						sx={{
-							'& .MuiOutlinedInput-root': {
-								borderRadius: '12px',
-								bgcolor: 'background.default',
-								'& fieldset': { borderColor: 'divider' },
-								'&:hover fieldset': { borderColor: 'primary.main' },
-								'&.Mui-focused fieldset': { borderColor: 'primary.main' },
-							},
-						}}
-					/>
-				)}
+				<AppInput
+					fullWidth
+					placeholder={mode === 'refer' ? 'Search doctor...' : 'Search and add doctor'}
+					value={searchQuery}
+					onChange={(e) => setSearchQuery(e.target.value)}
+					size="small"
+					autoFocus={mode === 'refer'}
+					InputProps={{
+						startAdornment: (
+							<InputAdornment position="start">
+								<SearchIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
+							</InputAdornment>
+						),
+						endAdornment: (
+							<InputAdornment position="end">
+								<MicNoneOutlinedIcon sx={{ color: 'text.disabled', fontSize: 20, cursor: 'pointer' }} />
+							</InputAdornment>
+						),
+					}}
+					sx={{
+						...(mode === 'refer' && { mb: 2 }),
+						'& .MuiOutlinedInput-root': {
+							borderRadius: '12px',
+							bgcolor: 'background.default',
+							'& fieldset': { borderColor: 'divider' },
+							'&:hover fieldset': { borderColor: 'primary.main' },
+							'&.Mui-focused fieldset': { borderColor: 'primary.main' },
+						},
+					}}
+				/>
 			</Box>
 
-			{/* Search results */}
+			{/* Search results – shown when user has typed something */}
 			{isSearching && (
 				<Box sx={{ px: 3, pb: 2 }}>
 					<Typography
@@ -351,24 +341,26 @@ export function FavouriteDoctorsList({
 							fontWeight: 600,
 							textTransform: 'uppercase',
 							letterSpacing: 0.5,
-							px: 0,
 							display: 'block',
 							mb: 0.5,
 						}}
 					>
 						Search Results
 					</Typography>
+
 					{searchLoading ? (
 						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-							{[1, 2, 3].map((i) => <DoctorRowSkeleton key={i} />)}
+							{[1, 2, 3].map((i) => (
+								<DoctorRowSkeleton key={i} />
+							))}
 						</Box>
-					) : filteredSearchResults.length === 0 ? (
+					) : searchResults.length === 0 ? (
 						<Typography variant="body2" sx={{ color: 'text.disabled', textAlign: 'center', py: 3 }}>
 							No doctors found
 						</Typography>
 					) : (
 						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-							{filteredSearchResults.map((doc) => (
+							{searchResults.map((doc) => (
 								<DoctorCard
 									key={doc.id}
 									doctor={doc}
@@ -384,79 +376,90 @@ export function FavouriteDoctorsList({
 				</Box>
 			)}
 
-			{isSearching && favourites.length > 0 && (
-				<Divider sx={{ mx: 3 }} />
-			)}
-
-			{/* Saved / Favourite section */}
-			<Box sx={{ px: 3, pb: 3 }}>
-				<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5, pt: 1 }}>
-					<Typography
-						variant="caption"
-						sx={{
-							color: 'text.secondary',
-							fontWeight: 600,
-							textTransform: 'uppercase',
-							letterSpacing: 0.5,
-							px: 0,
-							display: 'block',
-						}}
-					>
-						{mode === 'refer' ? 'Favourite Doctors' : 'Saved'}
-					</Typography>
-					{mode === 'bookmark' && favourites.length > 0 && (
-						<Chip
-							label={favourites.length}
-							size="small"
+			{/* Saved / Favourites section – hidden while searching to avoid duplication */}
+			{!isSearching && (
+				<>
+					{favourites.length > 0 && <Divider sx={{ mx: 3 }} />}
+					<Box sx={{ px: 3, pb: 3 }}>
+						<Box
 							sx={{
-								height: 18,
-								fontSize: '11px',
-								bgcolor: 'primary.main',
-								color: '#fff',
-								'& .MuiChip-label': { px: 1 },
+								display: 'flex',
+								alignItems: 'center',
+								gap: 1,
+								mb: 1.5,
+								pt: favourites.length > 0 ? 1 : 0,
 							}}
-						/>
-					)}
-				</Box>
+						>
+							<Typography
+								variant="caption"
+								sx={{
+									color: 'text.secondary',
+									fontWeight: 600,
+									textTransform: 'uppercase',
+									letterSpacing: 0.5,
+								}}
+							>
+								{mode === 'refer' ? 'Favourite Doctors' : 'Saved'}
+							</Typography>
+							{mode === 'bookmark' && favourites.length > 0 && (
+								<Chip
+									label={favourites.length}
+									size="small"
+									sx={{
+										height: 18,
+										fontSize: '11px',
+										bgcolor: 'primary.main',
+										color: '#fff',
+										'& .MuiChip-label': { px: 1 },
+									}}
+								/>
+							)}
+						</Box>
 
-				{favLoading ? (
-					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-						{[1, 2].map((i) => <DoctorRowSkeleton key={i} />)}
+						{favLoading ? (
+							<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+								{[1, 2].map((i) => (
+									<DoctorRowSkeleton key={i} />
+								))}
+							</Box>
+						) : favourites.length === 0 ? (
+							<Box sx={{ textAlign: 'center', py: mode === 'refer' ? 4 : 5 }}>
+								<BookmarkBorderIcon
+									sx={{ fontSize: mode === 'refer' ? 36 : 40, color: 'text.disabled', mb: 1 }}
+								/>
+								<Typography variant="body2" sx={{ color: 'text.disabled' }}>
+									No favourite doctors yet
+								</Typography>
+								<Typography variant="caption" sx={{ color: 'text.disabled' }}>
+									{mode === 'refer'
+										? 'Search above to find and refer a doctor'
+										: 'Use the search bar above to find and save doctors'}
+								</Typography>
+							</Box>
+						) : (
+							<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+								{favourites.map((doc) => (
+									<DoctorCard
+										key={doc.id}
+										doctor={doc}
+										mode={mode}
+										isFavourited={favouriteIds.has(doc.id)}
+										toggling={togglingIds.has(doc.id)}
+										onToggle={onToggle}
+										onShare={onShare}
+									/>
+								))}
+							</Box>
+						)}
 					</Box>
-				) : favourites.length === 0 ? (
-					<Box sx={{ textAlign: 'center', py: mode === 'refer' ? 4 : 5 }}>
-						<BookmarkBorderIcon sx={{ fontSize: mode === 'refer' ? 36 : 40, color: 'text.disabled', mb: 1 }} />
-						<Typography variant="body2" sx={{ color: 'text.disabled' }}>
-							No favourite doctors yet
-						</Typography>
-						<Typography variant="caption" sx={{ color: 'text.disabled' }}>
-							{mode === 'refer'
-								? 'Search above to find and refer a doctor'
-								: 'Use the search bar above to find and save doctors'}
-						</Typography>
-					</Box>
-				) : (
-					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-						{favourites.map((doc) => (
-							<DoctorCard
-								key={doc.id}
-								doctor={doc}
-								mode={mode}
-								isFavourited={favouriteIds.has(doc.id)}
-								toggling={togglingIds.has(doc.id)}
-								onToggle={onToggle}
-								onShare={onShare}
-							/>
-						))}
-					</Box>
-				)}
-			</Box>
+				</>
+			)}
 		</>
 	)
 }
 
 // ---------------------------------------------------------------------------
-// ReferModal – centered Dialog shown when Refer button clicked
+// ReferModal
 // ---------------------------------------------------------------------------
 
 export function ReferModal({ open, onClose }: ReferModalProps) {
@@ -503,14 +506,7 @@ export function ReferModal({ open, onClose }: ReferModalProps) {
 			}}
 		>
 			<DialogTitle
-				sx={{
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'space-between',
-					px: 3,
-					pt: 2.5,
-					pb: 1,
-				}}
+				sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, pt: 2.5, pb: 1 }}
 			>
 				<Typography variant="h6" sx={{ fontWeight: 700, fontSize: '17px' }}>
 					Refer to Doctor
@@ -519,19 +515,8 @@ export function ReferModal({ open, onClose }: ReferModalProps) {
 					<CloseIcon fontSize="small" />
 				</IconButton>
 			</DialogTitle>
-
 			<Divider />
-
-			<DialogContent
-				sx={{
-					px: 2,
-					pt: 0,
-					pb: 2,
-					maxHeight: '60vh',
-					overflowY: 'auto',
-					...customScrollbar,
-				}}
-			>
+			<DialogContent sx={{ px: 2, pt: 0, pb: 2, maxHeight: '60vh', overflowY: 'auto', ...customScrollbar }}>
 				<FavouriteDoctorsList
 					mode="refer"
 					favouriteIds={favIds}
@@ -576,7 +561,6 @@ export default function DoctorFavouritesTab({
 				setFavLoading(false)
 			}
 		}
-
 		load()
 	}, [])
 
@@ -618,9 +602,7 @@ export default function DoctorFavouritesTab({
 					{title}
 				</Typography>
 			</Box>
-
 			<Divider />
-
 			<FavouriteDoctorsList
 				mode={mode}
 				favouriteIds={favouriteIds}

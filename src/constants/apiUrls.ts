@@ -15,6 +15,9 @@ export const API_ENDPOINTS = {
 		AVAILABILITY: `${BASE_URL}/api/doctors/availability`,
 		OVERRIDES: `${BASE_URL}/api/doctors/availability/overrides`,
 	},
+	PHARMACIES: {
+		LIST: `${BASE_URL}/api/pharmacies`,
+	},
 	DOCTOR_PROFILE: {
 		DETAILS: `${BASE_URL}/api/doctors/details`,
 		PROFESSIONAL_DETAILS: `${BASE_URL}/api/doctors/professional-details`,
