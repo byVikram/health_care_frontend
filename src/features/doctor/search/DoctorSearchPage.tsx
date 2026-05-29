@@ -1,9 +1,17 @@
 // src/features/doctor/DoctorSearchPage.tsx
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Box, Container, Typography, Grid, InputAdornment, TextField, Chip, Card } from '@mui/material'
+import {
+	Box,
+	Container,
+	Typography,
+	Grid,
+	//  InputAdornment, TextField,
+	Chip,
+	Card,
+} from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
-import MicIcon from '@mui/icons-material/Mic'
+// import MicIcon from '@mui/icons-material/Mic'
 import TuneIcon from '@mui/icons-material/Tune'
 import DoctorSearchCard from './components/DoctorSearchCard'
 import AppSelect from '../../../components/common/Select/AppSelect'
@@ -230,6 +238,35 @@ export default function DoctorSearchPage() {
 								bgcolor: 'background.paper',
 								borderRadius: '10px',
 								'& .MuiOutlinedInput-root': { borderRadius: '10px' },
+							}}
+						/> */}
+
+						<AppInput
+							fullWidth
+							placeholder="Search by doctor name, speciality, clinic..."
+							value={searchQuery}
+							onChange={(e) => {
+								setLoading(true)
+								setError(null)
+								setSearchQuery(e.target.value)
+								setPage(1)
+							}}
+							size="small"
+							startIcon={<SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />}
+							enableVoiceSearch
+							onVoiceResult={(text) => {
+								setLoading(true)
+								setError(null)
+								setSearchQuery(text)
+								setPage(1)
+							}}
+							sx={{
+								bgcolor: 'background.paper',
+								borderColor: '#000',
+								borderRadius: '10px',
+								'& .MuiOutlinedInput-root': {
+									borderRadius: '10px',
+								},
 							}}
 						/>
 					</Box>
