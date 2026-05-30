@@ -6,8 +6,13 @@ import { PharmacyProfile } from '../Pharmacy/profile/PharmacyProfilePage'
 // ── Types: Pharmacy list ──────────────────────────────────────────────────────
 
 export interface PharmacyListParams {
-	page?: number
-	limit?: number
+  page?: number;
+  limit?: number;
+  search?: string;
+  city?: string;
+  home_delivery?: boolean;
+  is_24_x_7?: boolean;
+  emergency_medicine?: boolean;
 }
 
 export interface PharmacyListItem {
@@ -248,7 +253,8 @@ export const mapPharmacyDetailsApi = (data: PharmacyDetailsApiData): PharmacyPro
 			operating_hours: sv?.operating_hours ?? {},
 			home_delivery_available: sv?.home_delivery_available ?? false,
 			delivery_radius_km: sv?.delivery_radius_km != null ? String(sv.delivery_radius_km) : '',
-			estimated_delivery_time_mins: sv?.estimated_delivery_time_mins != null ? String(sv.estimated_delivery_time_mins) : '',
+			estimated_delivery_time_mins:
+				sv?.estimated_delivery_time_mins != null ? String(sv.estimated_delivery_time_mins) : '',
 			min_order_amount: sv?.min_order_amount != null ? String(sv.min_order_amount) : '',
 			emergency_medicine_available: sv?.emergency_medicine_available ?? false,
 			payment_methods: sv?.payment_methods ?? [],
@@ -269,13 +275,13 @@ export const getPharmacies = async (params?: PharmacyListParams): Promise<Pharma
 
 /** GET /api/pharmacies/me — basic profile of the logged-in pharmacy owner */
 export const getMyPharmacyProfile = async (): Promise<PharmacyMeApiResponse> => {
-	const res = await ApiService.get<PharmacyMeApiResponse>(API_ENDPOINTS.PHARMACIES.ME)
+	const res = await ApiService.get<PharmacyMeApiResponse>(API_ENDPOINTS.PHARMACY.ME)
 	return res.data
 }
 
 /** GET /api/pharmacies/me/details — full pharmacy details (personal, pharmacy, services) */
 export const getMyPharmacyDetails = async (): Promise<PharmacyDetailsApiResponse> => {
-	const res = await ApiService.get<PharmacyDetailsApiResponse>(API_ENDPOINTS.PHARMACIES.ME_DETAILS)
+	const res = await ApiService.get<PharmacyDetailsApiResponse>(API_ENDPOINTS.PHARMACY.ME_DETAILS)
 	return res.data
 }
 
@@ -283,23 +289,15 @@ export const getMyPharmacyDetails = async (): Promise<PharmacyDetailsApiResponse
 export const updateMyPharmacyDetails = async (
 	payload: PharmacyDetailsUpdatePayload
 ): Promise<PharmacyUpdateResponse> => {
-	const res = await ApiService.patch<PharmacyUpdateResponse>(
-		API_ENDPOINTS.PHARMACIES.ME_DETAILS,
-		payload
-	)
+	const res = await ApiService.patch<PharmacyUpdateResponse>(API_ENDPOINTS.PHARMACY.ME_DETAILS, payload)
 	return res.data
 }
 
 // ── Pharmacy orders API calls ─────────────────────────────────────────────────
 
 /** POST /api/pharmacy-orders — patient places a new order */
-export const createPharmacyOrder = async (
-	payload: PharmacyOrderCreatePayload
-): Promise<PharmacyOrderResponse> => {
-	const res = await ApiService.post<PharmacyOrderResponse>(
-		API_ENDPOINTS.PHARMACY_ORDERS.CREATE,
-		payload
-	)
+export const createPharmacyOrder = async (payload: PharmacyOrderCreatePayload): Promise<PharmacyOrderResponse> => {
+	const res = await ApiService.post<PharmacyOrderResponse>(API_ENDPOINTS.PHARMACY_ORDERS.CREATE, payload)
 	return res.data
 }
 
@@ -311,9 +309,7 @@ export const getPharmacyOrders = async (): Promise<PharmacyOrdersListResponse> =
 
 /** GET /api/pharmacy-orders/:id — get a specific order by public ID */
 export const getPharmacyOrderById = async (orderPublicId: string): Promise<PharmacyOrderResponse> => {
-	const res = await ApiService.get<PharmacyOrderResponse>(
-		API_ENDPOINTS.PHARMACY_ORDERS.GET_BY_ID(orderPublicId)
-	)
+	const res = await ApiService.get<PharmacyOrderResponse>(API_ENDPOINTS.PHARMACY_ORDERS.GET_BY_ID(orderPublicId))
 	return res.data
 }
 

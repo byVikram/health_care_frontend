@@ -8,12 +8,23 @@ export const ROUTES = {
 
 	PUBLIC: {
 		WELCOME: '/welcome',
-		WELCOME_DOCTOR: '/welcome-doctor', // kept for backward compat
+		WELCOME_DOCTOR: '/welcome-doctor',
 	},
 
 	DOCTORS: {
 		DETAIL: '/doctors/:id',
 		SEARCH: '/doctors/search',
+	},
+
+	PHARMACY: {
+		ORDERS: '/pharmacy/orders',
+		ORDER_DETAIL: '/pharmacy/orders/:orderId',
+		PROFILE: '/pharmacy/profile',
+		SEARCH: '/pharmacies',
+	},
+
+	LABORATORY: {
+		PROFILE: '/laboratory/profile',
 	},
 
 	TEST: '/test',
@@ -33,15 +44,5 @@ export const ROUTES = {
 		HOME: '/portal',
 		PROFILE: '/profile',
 		CONSULTATION: '/consultation/:patientId/:appointmentId',
-	},
-
-	PHARMACY: {
-		ORDERS: '/pharmacy/orders',
-		ORDER_DETAIL: '/pharmacy/orders/:orderId',
-		PROFILE: '/pharmacy/profile',
-	},
-
-	LABORATORY: {
-		PROFILE: '/laboratory/profile',
 	},
 }
