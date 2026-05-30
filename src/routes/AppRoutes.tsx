@@ -24,7 +24,7 @@ import OrderList from '../features/Pharmacy/OrderList'
 import OrderDetailPage from '../features/Pharmacy/OrderDetailPage'
 import PharmacyProfilePage from '../features/Pharmacy/profile/PharmacyProfilePage'
 import LaboratoryProfilePage from '../features/laboratory/profile/LaboratoryProfilePage'
-
+import PharmacySearchPage from '../features/Pharmacy/components/PharmacySearchPage'
 function ProtectedLayout() {
 	return (
 		<MainLayout>
@@ -57,20 +57,18 @@ export default function AppRoutes() {
 			{/* Public routes */}
 			<Route path={ROUTES.AUTH.LOGIN} element={<LoginPage />} />
 
-			{/*
-			  Register route — owns the full sign-up journey internally:
-			    /register  →  RoleSelectorPage (fetches roles from api/auth/get-roles)
-			                → OnBoardingPage   (role-specific slides)
-			                → RegisterForm     (submits with selected roleId UUID)
-			*/}
+			
 			<Route path={ROUTES.AUTH.REGISTER} element={<RegisterPage />} />
 
-			<Route path={ROUTES.TEST_REGISTER} element={<TestRegister onSubmit={(email) => console.log('Registered:', email)} />} />
+			<Route
+				path={ROUTES.TEST_REGISTER}
+				element={<TestRegister onSubmit={(email) => console.log('Registered:', email)} />}
+			/>
 			<Route path={ROUTES.DOCTOR_ACCOUNT_DETAILS} element={<DoctorAccountDetailsPage />} />
 
-			{/* Welcome page — single route, role passed via ?role=<roleKey> query param */}
+		
 			<Route path={ROUTES.PUBLIC.WELCOME} element={<WelcomePage />} />
-			{/* Backward-compat alias for doctor welcome */}
+		
 			<Route path={ROUTES.PUBLIC.WELCOME_DOCTOR} element={<WelcomePage role="doctor" />} />
 
 			{/* Protected routes */}
@@ -94,11 +92,11 @@ export default function AppRoutes() {
 				<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
 			</Route>
 
-			{/* Pharmacy routes */}
+		
 			<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
 			<Route path={ROUTES.PHARMACY.PROFILE} element={<PharmacyProfilePage />} />
-
-			{/* Laboratory routes */}
+			<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
+			
 			<Route path={ROUTES.LABORATORY.PROFILE} element={<LaboratoryProfilePage />} />
 
 			<Route path="*" element={<NotFoundPage />} />

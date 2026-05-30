@@ -10,9 +10,8 @@ import { useAuth } from '../../hooks/useAuth'
 import drImage from '../../assets/Banner/banner.png'
 import adImage from '../../assets/blog-and-community/ad-image.png'
 import AnswerQuestionsSection from '../dashboard/AnswerQuestionsSection'
-import videoImage from '../../assets/blog-and-community/video-image.png'
-import DashboardCarousel from '../../components/common/Carousel/DashboardCarousel'
-import { LookupHospital } from '../../hooks/useAuth'
+import videoFile from '../../assets/blog-and-community/video.mp4'
+// import { LookupHospital } from '../../hooks/useAuth'
 
 import AppointmentsIcon from '../../assets/quick-services/appointments.svg'
 import PharmacyIcon from '../../assets/quick-services/pharmacy.svg'
@@ -33,6 +32,175 @@ import { ROUTES } from '../../constants/routes'
 
 import OrderDetails from '../Pharmacy/components/OrderSection'
 import { customCardStyle } from '../../styles/commonStyles'
+
+// ----------------------------- Video Slide Component -----------------------------
+interface VideoSlideProps {
+	src: string
+	width: number
+	onPlayStateChange: (isPlaying: boolean) => void
+	onVideoFinish: () => void
+}
+
+const VideoSlide: React.FC<VideoSlideProps> = ({ src, width, onPlayStateChange, onVideoFinish }) => {
+	const [isPlaying, setIsPlaying] = useState(false)
+	const videoRef = useRef<HTMLVideoElement>(null)
+
+	const handlePlay = async () => {
+		if (!videoRef.current) return
+		setIsPlaying(true)
+		onPlayStateChange(true)
+		await videoRef.current.play()
+	}
+
+	const handlePause = () => {
+		if (!videoRef.current) return
+		setIsPlaying(false)
+		onPlayStateChange(false)
+		videoRef.current.pause()
+	}
+
+	const handleVideoEnd = () => {
+		setIsPlaying(false)
+		onPlayStateChange(false)
+		onVideoFinish()
+	}
+
+	return (
+		<Box
+			sx={{
+				position: 'relative',
+				width: width,
+				flexShrink: 0,
+				borderRadius: '16px',
+				overflow: 'hidden',
+				height: 300, // increased height
+				bgcolor: '#000',
+			}}
+		>
+			<video
+				ref={videoRef}
+				src={src}
+				style={{
+					width: '100%',
+					height: '100%',
+					objectFit: 'cover',
+				}}
+				onEnded={handleVideoEnd}
+			/>
+
+			{!isPlaying && (
+				<Box
+					sx={{
+						position: 'absolute',
+						top: 0,
+						left: 0,
+						right: 0,
+						bottom: 0,
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						bgcolor: 'rgba(0,0,0,0.3)',
+						cursor: 'pointer',
+					}}
+					onClick={handlePlay}
+				>
+					<Box
+						sx={{
+							width: 64,
+							height: 64,
+							borderRadius: '50%',
+							bgcolor: 'rgba(0,0,0,0.6)',
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'center',
+						}}
+					>
+						<Box
+							sx={{
+								width: 0,
+								height: 0,
+								borderLeft: '18px solid white',
+								borderTop: '10px solid transparent',
+								borderBottom: '10px solid transparent',
+								marginLeft: '5px',
+							}}
+						/>
+					</Box>
+				</Box>
+			)}
+
+			{isPlaying && (
+				<Box
+					sx={{
+						position: 'absolute',
+						top: 0,
+						left: 0,
+						right: 0,
+						bottom: 0,
+						cursor: 'pointer',
+					}}
+					onClick={handlePause}
+				/>
+			)}
+		</Box>
+	)
+}
+
+// ----------------------------- Ad Slide -----------------------------
+const AdSlide: React.FC<{ width: number; src: string }> = ({ width, src }) => (
+	<Box
+		component="img"
+		src={src}
+		sx={{
+			width: width,
+			height: 300, // increased height to match video
+			objectFit: 'cover',
+			flexShrink: 0,
+		}}
+	/>
+)
+
+// ----------------------------- Ping‑Pong Scroll Hook -----------------------------
+function usePingPongScroll(
+	length: number,
+	intervalMs: number,
+	enabled: boolean,
+	containerRef: React.RefObject<HTMLDivElement | null>,
+	setActiveIndex: React.Dispatch<React.SetStateAction<number>>
+) {
+	const directionRef = useRef<1 | -1>(1)
+	const intervalRef = useRef<number | null>(null)
+
+	useEffect(() => {
+		if (!enabled || length <= 1) return
+
+		intervalRef.current = window.setInterval(() => {
+			setActiveIndex((prev) => {
+				let next = prev + directionRef.current
+
+				if (next >= length) {
+					directionRef.current = -1
+					next = length - 2
+				} else if (next < 0) {
+					directionRef.current = 1
+					next = 1
+				}
+
+				if (containerRef.current) {
+					const scrollAmount = next * containerRef.current.clientWidth
+					containerRef.current.scrollTo({ left: scrollAmount, behavior: 'smooth' })
+				}
+				return next
+			})
+		}, intervalMs)
+
+		return () => {
+			if (intervalRef.current) clearInterval(intervalRef.current)
+		}
+	}, [enabled, length, intervalMs, containerRef, setActiveIndex])
+}
+
+// ----------------------------- Helper to build week days -----------------------------
 const buildWeekDays = () => {
 	const today = new Date()
 	const days = []
@@ -50,17 +218,16 @@ const buildWeekDays = () => {
 	return days
 }
 
-// Staggered entrance animation for the items
 const fadeInUp = keyframes`
-	from {
-		opacity: 0;
-		transform: translateY(8px);
-	}
-	to {
-		opacity: 1;
-		transform: translateY(0);
-	}
-`;
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`
 
 const stats = [
 	{ label: 'Total Patients', value: '20', color: '#4264D0' },
@@ -78,8 +245,9 @@ const othersPopupItems = [
 	{ title: 'Emergency', image: EmergencyIcon },
 ]
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export default function PortalPage({ activeHospital = null }: { activeHospital?: LookupHospital | null }) {
+// ----------------------------- Main Component -----------------------------
+export default function PortalPage() {
+	// removed unused activeHospital prop
 	const { role, user } = useAuth()
 	const navigate = useNavigate()
 
@@ -115,8 +283,6 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 
 	const quickServices = getQuickServices()
 
-	const [activeSlide, setActiveSlide] = useState(0)
-	const totalSlides = 4
 	const [selectedDate, setSelectedDate] = useState(0)
 	const [activeHospitalId, setActiveHospitalId] = useState<string | null>(() =>
 		localStorage.getItem('active_hospital_id')
@@ -131,6 +297,71 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 	const [searchQuery, setSearchQuery] = useState('')
 	const debouncedQuery = useDebouncedValue(searchQuery, 300)
 
+	// ----- Video Carousel state -----
+	const VIDEO_SOURCES = [videoFile, videoFile, videoFile, videoFile]
+	const [activeVideoIndex, setActiveVideoIndex] = useState(0)
+	const [videoContainerWidth, setVideoContainerWidth] = useState(0)
+	const videoScrollRef = useRef<HTMLDivElement>(null)
+	const [isVideoPlaying, setIsVideoPlaying] = useState(false)
+	const autoScrollEnabled = videoContainerWidth > 0 && !isVideoPlaying && VIDEO_SOURCES.length > 1
+
+	usePingPongScroll(VIDEO_SOURCES.length, 4000, autoScrollEnabled, videoScrollRef, setActiveVideoIndex)
+
+	// ----- Ad Carousel state -----
+	const AD_IMAGES = [adImage, adImage, adImage]
+	const [activeAdIndex, setActiveAdIndex] = useState(0)
+	const [adContainerWidth, setAdContainerWidth] = useState(0)
+	const adScrollRef = useRef<HTMLDivElement>(null)
+	const adAutoScrollEnabled = adContainerWidth > 0 && AD_IMAGES.length > 1
+
+	usePingPongScroll(AD_IMAGES.length, 3000, adAutoScrollEnabled, adScrollRef, setActiveAdIndex)
+
+	// ----- Handlers for video carousel -----
+	const handleVideoScroll = () => {
+		if (!videoScrollRef.current || videoContainerWidth === 0) return
+		const scrollLeft = videoScrollRef.current.scrollLeft
+		const newIndex = Math.round(scrollLeft / videoContainerWidth)
+		if (newIndex !== activeVideoIndex && newIndex >= 0 && newIndex < VIDEO_SOURCES.length) {
+			setActiveVideoIndex(newIndex)
+		}
+	}
+
+	const handleVideoDotClick = (index: number) => {
+		setActiveVideoIndex(index)
+		if (videoScrollRef.current) {
+			videoScrollRef.current.scrollTo({ left: index * videoContainerWidth, behavior: 'smooth' })
+		}
+	}
+
+	// ----- Handlers for ad carousel -----
+	const handleAdScroll = () => {
+		if (!adScrollRef.current || adContainerWidth === 0) return
+		const scrollLeft = adScrollRef.current.scrollLeft
+		const newIndex = Math.round(scrollLeft / adContainerWidth)
+		if (newIndex !== activeAdIndex && newIndex >= 0 && newIndex < AD_IMAGES.length) {
+			setActiveAdIndex(newIndex)
+		}
+	}
+
+	const handleAdDotClick = (index: number) => {
+		setActiveAdIndex(index)
+		if (adScrollRef.current) {
+			adScrollRef.current.scrollTo({ left: index * adContainerWidth, behavior: 'smooth' })
+		}
+	}
+
+	// Watch container widths
+	useEffect(() => {
+		const updateWidths = () => {
+			if (videoScrollRef.current) setVideoContainerWidth(videoScrollRef.current.clientWidth)
+			if (adScrollRef.current) setAdContainerWidth(adScrollRef.current.clientWidth)
+		}
+		updateWidths()
+		window.addEventListener('resize', updateWidths)
+		return () => window.removeEventListener('resize', updateWidths)
+	}, [])
+
+	// ----- Appointments fetch effect -----
 	const formatDateForApi = (date: Date) => {
 		const year = date.getFullYear()
 		const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -159,9 +390,8 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 	}, [])
 
 	useEffect(() => {
-		// Only fetch appointments for doctor or patient roles
 		if (role !== USER_ROLES.DOCTOR && role !== USER_ROLES.PATIENT) {
-			setApptLoading(false) // stop loading state
+			setApptLoading(false)
 			return
 		}
 
@@ -191,12 +421,14 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 
 		fetchAppointments()
 	}, [selectedDate, weekDays, debouncedQuery, activeHospitalId, role])
+
+	// ----------------------------- Render -----------------------------
 	return (
 		<Box sx={{ bgcolor: '#f5f7fa' }}>
 			<Container maxWidth="lg" sx={{ py: 3 }}>
 				{/* TOP 50/50: Welcome+Services | Search+Appointments */}
 				<Grid container spacing={3} alignItems="flex-start">
-					{/* LEFT */}
+					{/* LEFT COLUMN */}
 					<Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
 						{/* Doctor welcome banner */}
 						{role === USER_ROLES.DOCTOR && (
@@ -290,7 +522,6 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 												position: 'relative',
 											}}
 										>
-											{/* Others icon: 2x2 colored squares referencing the noun project style */}
 											<Box
 												sx={{
 													width: 44,
@@ -324,7 +555,6 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 												Pharamedicals
 											</Typography>
 
-											{/* Hover popup with ancillary, ambulance, blood bank, ICU, emergency */}
 											<Popper
 												open={Boolean(othersAnchorEl)}
 												anchorEl={othersAnchorEl}
@@ -337,9 +567,7 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 													<Grow
 														{...TransitionProps}
 														timeout={200}
-														style={{
-															transformOrigin: 'top right',
-														}}
+														style={{ transformOrigin: 'top right' }}
 													>
 														<Paper
 															elevation={0}
@@ -352,7 +580,8 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 																background: 'rgba(255, 255, 255, 0.8)',
 																backdropFilter: 'blur(200px)',
 																WebkitBackdropFilter: 'blur(20px)',
-																boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.2)',
+																boxShadow:
+																	'0 8px 32px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.2)',
 															}}
 														>
 															{othersPopupItems.map((item, index) => (
@@ -369,12 +598,8 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 																		animation: `${fadeInUp} 0.4s ease forwards`,
 																		animationDelay: `${index * 60}ms`,
 																		transition: 'transform 0.2s ease',
-																		'&:hover': {
-																			transform: 'scale(1.05)',
-																		},
-																		'& img': {
-																			transition: 'transform 0.2s ease',
-																		},
+																		'&:hover': { transform: 'scale(1.05)' },
+																		'& img': { transition: 'transform 0.2s ease' },
 																		'&:hover img': {
 																			transform: 'translateY(-4px)',
 																		},
@@ -448,12 +673,52 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 								)}
 							</Box>
 
-							{/* Video carousel */}
+							{/* VIDEO CAROUSEL (same dimensions and border radius as original image carousel) */}
 							<Box sx={{ borderRadius: '16px', overflow: 'hidden', minWidth: 0 }}>
-								<DashboardCarousel images={[videoImage, videoImage, videoImage, videoImage]} />
+								<Box
+									ref={videoScrollRef}
+									onScroll={handleVideoScroll}
+									sx={{
+										display: 'flex',
+										overflowX: 'auto',
+										scrollSnapType: 'x mandatory',
+										scrollBehavior: 'smooth',
+										'&::-webkit-scrollbar': { display: 'none' },
+										scrollbarWidth: 'none',
+									}}
+								>
+									{VIDEO_SOURCES.map((src, idx) => (
+										<Box key={idx} sx={{ scrollSnapAlign: 'start', width: '100%', flexShrink: 0 }}>
+											<VideoSlide
+												src={src}
+												width={videoContainerWidth}
+												onPlayStateChange={setIsVideoPlaying}
+												onVideoFinish={() => setIsVideoPlaying(false)}
+											/>
+										</Box>
+									))}
+								</Box>
+								{VIDEO_SOURCES.length > 1 && (
+									<Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, py: 1.5 }}>
+										{VIDEO_SOURCES.map((_, idx) => (
+											<Box
+												key={idx}
+												onClick={() => handleVideoDotClick(idx)}
+												sx={{
+													width: idx === activeVideoIndex ? 20 : 10,
+													height: 10,
+													borderRadius: '4px',
+													bgcolor: idx === activeVideoIndex ? '#0c7c7c' : '#d0d0d0',
+													cursor: 'pointer',
+													transition: 'width 0.2s',
+												}}
+											/>
+										))}
+									</Box>
+								)}
 							</Box>
 
-							{/* Ad slider */}
+							{/* Ad slider (carousel with dots) */}
 							<Box
 								sx={{
 									bgcolor: '#fff',
@@ -464,23 +729,35 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 								}}
 							>
 								<Box
-									component="img"
-									src={adImage}
-									alt="Advertisement"
-									sx={{ width: '100%', display: 'block', objectFit: 'cover' }}
-								/>
+									ref={adScrollRef}
+									onScroll={handleAdScroll}
+									sx={{
+										display: 'flex',
+										overflowX: 'auto',
+										scrollSnapType: 'x mandatory',
+										scrollBehavior: 'smooth',
+										'&::-webkit-scrollbar': { display: 'none' },
+										scrollbarWidth: 'none',
+									}}
+								>
+									{AD_IMAGES.map((src, idx) => (
+										<Box key={idx} sx={{ scrollSnapAlign: 'start', width: '100%', flexShrink: 0 }}>
+											<AdSlide width={adContainerWidth} src={src} />
+										</Box>
+									))}
+								</Box>
 								<Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, py: 1.5 }}>
-									{Array.from({ length: totalSlides }).map((_, i) => (
+									{AD_IMAGES.map((_, idx) => (
 										<Box
-											key={i}
-											onClick={() => setActiveSlide(i)}
+											key={idx}
+											onClick={() => handleAdDotClick(idx)}
 											sx={{
-												width: i === activeSlide ? 20 : 8,
+												width: idx === activeAdIndex ? 20 : 8,
 												height: 8,
 												borderRadius: '4px',
-												bgcolor: i === activeSlide ? '#0c7c7c' : '#d0d0d0',
+												bgcolor: idx === activeAdIndex ? '#0c7c7c' : '#d0d0d0',
 												cursor: 'pointer',
-												transition: 'all 0.3s ease',
+												transition: 'width 0.2s',
 											}}
 										/>
 									))}
@@ -489,7 +766,7 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 						</Box>
 					</Grid>
 
-					{/* RIGHT — appointments panel */}
+					{/* RIGHT COLUMN — appointments panel */}
 					<Grid size={{ xs: 12, md: 6 }}>
 						{role === USER_ROLES.DOCTOR && (
 							<DoctorAppointments
@@ -522,25 +799,14 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 							</Box>
 						)}
 						{role === USER_ROLES.PHARMACY && (
-							<Box
-								sx={{
-									// bgcolor: '#fff',
-									// borderRadius: '16px',
-									// border: '1px solid #f0f2f5',
-									// height: 'auto',
-									// maxHeight: '112vh',
-									// overflow: 'auto',
-									// boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-									...customCardStyle,
-								}}
-							>
+							<Box sx={customCardStyle}>
 								<OrderDetails />
 							</Box>
 						)}
 					</Grid>
 				</Grid>
 
-				{/* BOTTOM: Community & Blogs | Upcoming Events */}
+				{/* BOTTOM sections */}
 				<Grid container spacing={3} alignItems="stretch" sx={{ mt: 3 }}>
 					<Grid size={{ xs: 12, md: 6 }}>
 						<CommunityBlogsSection variant={'column'} />
@@ -550,7 +816,6 @@ export default function PortalPage({ activeHospital = null }: { activeHospital?:
 					</Grid>
 				</Grid>
 
-				{/* Answer Patients Questions Section */}
 				<AnswerQuestionsSection />
 			</Container>
 		</Box>

@@ -120,7 +120,7 @@ export default function DoctorDetailPage() {
 			id: 'clinic',
 			label: 'Clinic Visit',
 			description: 'In-person consultation',
-			price: Number(selectedHospitalEntry?.clinic_consultation_fee) || 0,
+			price: Number(selectedHospitalEntry?.offline_consultation_fee) || 0,		
 			duration: 30,
 		},
 		{
