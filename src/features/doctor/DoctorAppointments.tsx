@@ -1,8 +1,6 @@
-// import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
+import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 import { useState, useEffect } from 'react'
-import { Box, Typography, 
-	// InputAdornment, 
-	Divider, Chip, Popover, Dialog, DialogContent, Tooltip } from '@mui/material'
+import { Box, Typography, InputAdornment, Divider, Chip, Popover, Dialog, DialogContent, Tooltip } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
@@ -328,7 +326,7 @@ export function DoctorAppointments({
 				<Typography sx={{ fontWeight: 700, fontSize: '16px', color: 'text.primary', mb: 1.5 }}>
 					Search Patient
 				</Typography>
-				{/* <AppInput
+				<AppInput
 					fullWidth
 					placeholder="Search Patient ID, Name..."
 					value={searchQuery}
@@ -364,34 +362,7 @@ export function DoctorAppointments({
 							'&:hover fieldset': { borderColor: 'primary.main' },
 							'&.Mui-focused fieldset': { borderColor: 'primary.main' },
 						},
-					}} */}
-				{/* /> */}
-				<AppInput
-					fullWidth
-					placeholder="Search Patient ID, Name..."
-					value={searchQuery}
-					onChange={(e) => setSearchQuery(e.target.value)}
-					enableVoiceSearch
-					onVoiceResult={(text) => setSearchQuery(text)}
-					startIcon={<SearchIcon sx={{ color: 'text.disabled', fontSize: 20 }} />}
-					endIcon={
-						<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-							<Box
-								sx={{
-									width: '1px',
-									height: '18px',
-									bgcolor: 'divider',
-								}}
-							/>
-							<QrCodeScannerIcon
-								sx={{
-									fontSize: 20,
-									color: 'text.disabled',
-									cursor: 'pointer',
-								}}
-							/>
-						</Box>
-					}
+					}}
 				/>
 			</Box>
 

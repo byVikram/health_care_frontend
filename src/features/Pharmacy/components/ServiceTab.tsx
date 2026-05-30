@@ -47,15 +47,15 @@ const PAYMENT_METHOD_OPTIONS = [
 ]
 
 const switchSx = {
-	width: 48,
-	height: 26,
+	width: 56,
+	height: 30,
 	padding: 0,
 	'& .MuiSwitch-switchBase': {
 		padding: 0,
 		margin: '3px',
 		transitionDuration: '300ms',
 		'&.Mui-checked': {
-			transform: 'translateX(22px)',
+			transform: 'translateX(26px)',
 			color: '#fff',
 			'& + .MuiSwitch-track': {
 				backgroundColor: TEAL,
@@ -66,12 +66,12 @@ const switchSx = {
 	},
 	'& .MuiSwitch-thumb': {
 		boxSizing: 'border-box',
-		width: 20,
-		height: 20,
+		width: 24,
+		height: 24,
 		boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
 	},
 	'& .MuiSwitch-track': {
-		borderRadius: 13,
+		borderRadius: 15,
 		backgroundColor: '#E2E8F0',
 		opacity: 1,
 		transition: 'background-color 300ms',
