@@ -42,6 +42,18 @@ export default function SearchFilters({ filters, onChange }: SearchFiltersProps)
 				display: 'flex',
 				flexDirection: 'column',
 				gap: 3,
+				maxHeight: 'calc(100vh - 48px)',
+				overflowY: 'auto',
+				'&::-webkit-scrollbar': {
+					width: '6px',
+				},
+				'&::-webkit-scrollbar-thumb': {
+					backgroundColor: 'rgba(0,0,0,0.1)',
+					borderRadius: '4px',
+				},
+				'&::-webkit-scrollbar-thumb:hover': {
+					backgroundColor: 'rgba(0,0,0,0.2)',
+				},
 			}}
 		>
 			<Typography variant="h5" sx={{ fontWeight: 700 }}>
@@ -87,7 +99,7 @@ export default function SearchFilters({ filters, onChange }: SearchFiltersProps)
 			<Divider />
 
 			{/* Minimum Rating */}
-			<Box>
+			{/* <Box>
 				<Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, color: 'text.primary' }}>
 					Minimum Rating
 				</Typography>
@@ -126,7 +138,7 @@ export default function SearchFilters({ filters, onChange }: SearchFiltersProps)
 				</Box>
 			</Box>
 
-			<Divider />
+			<Divider /> */}
 
 			{/* Max Price */}
 			<Box>

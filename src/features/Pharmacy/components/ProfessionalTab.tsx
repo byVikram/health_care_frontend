@@ -33,15 +33,32 @@ function UploadBox({
 	label,
 	fileName,
 	onChange,
+	isImagePreview = false,
 }: {
 	label: string
 	fileName?: string
 	onChange?: (file: File) => void
+	isImagePreview?: boolean
 }) {
 	const ref = useRef<HTMLInputElement>(null)
+	const [imageError, setImageError] = useState(false)
+
+	useEffect(() => {
+		setImageError(false)
+	}, [fileName])
+
+	const showPreview = isImagePreview && fileName && !imageError
 
 	return (
-		<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+		// <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+		<Box
+			sx={{
+				display: 'flex',
+				alignItems: 'flex-start',
+				gap: 2,
+				minHeight: 80,
+			}}
+		>
 			<Box sx={{ flex: 1 }}>
 				<Typography
 					variant="caption"
@@ -53,7 +70,9 @@ function UploadBox({
 					variant="caption"
 					sx={{ color: 'text.secondary', fontSize: '11.5px', display: 'block', lineHeight: 1.5 }}
 				>
-					{fileName ? `Selected: ${fileName}` : 'Upload image or PDF'}
+					{fileName
+						? (showPreview ? '' : `Selected: ${fileName.split('/').pop()?.split('\\').pop()}`)
+						: 'Upload image or PDF'}
 				</Typography>
 			</Box>
 
@@ -63,8 +82,8 @@ function UploadBox({
 					flexShrink: 0,
 					width: 80,
 					height: 80,
-					border: '1.5px dashed',
-					borderColor: 'divider',
+					border: showPreview ? '1px solid' : '1.5px dashed',
+					borderColor: showPreview ? 'primary.main' : 'divider',
 					borderRadius: '10px',
 					display: 'flex',
 					flexDirection: 'column',
@@ -72,14 +91,32 @@ function UploadBox({
 					justifyContent: 'center',
 					cursor: 'pointer',
 					bgcolor: 'rgba(43,111,113,0.03)',
+					overflow: 'hidden',
+					position: 'relative',
 					'&:hover': { borderColor: 'primary.main', bgcolor: 'rgba(43,111,113,0.06)' },
 					transition: 'all 0.15s',
 				}}
 			>
-				<CloudUploadOutlinedIcon sx={{ fontSize: 26, color: 'primary.main', mb: 0.5 }} />
-				<Typography variant="caption" sx={{ color: 'primary.main', fontSize: '11px', fontWeight: 600 }}>
-					Upload
-				</Typography>
+				{showPreview ? (
+					<Box
+						component="img"
+						src={fileName}
+						alt={label}
+						onError={() => setImageError(true)}
+						sx={{
+							width: '100%',
+							height: '100%',
+							objectFit: 'cover',
+						}}
+					/>
+				) : (
+					<>
+						<CloudUploadOutlinedIcon sx={{ fontSize: 26, color: 'primary.main', mb: 0.5 }} />
+						<Typography variant="caption" sx={{ color: 'primary.main', fontSize: '11px', fontWeight: 600 }}>
+							Upload
+						</Typography>
+					</>
+				)}
 				<input
 					ref={ref}
 					type="file"
@@ -170,130 +207,243 @@ export default function PharmacyProfessionalTab({ data, onChange }: PharmacyProf
 			</Typography>
 
 			<Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-				{/* ── 1. Pharmacy Information ──────────────────────────────────── */}
-				<Box>
-					<Typography variant="h6" sx={{ fontWeight: 700, fontSize: '16px', color: 'text.primary', mb: 2 }}>
-						Pharmacy Information
-					</Typography>
-					<Grid container spacing={2.5}>
-						<Grid size={{ xs: 12, sm: 8 }}>
-							<AppInput
-								label="Pharmacy Name *"
-								value={data.pharmacyName}
-								placeholder="Enter pharmacy name"
-								onChange={(e) => onChange({ pharmacyName: e.target.value })}
-							/>
-						</Grid>
-						<Grid size={{ xs: 12, sm: 4 }}>
-							<UploadBox
-								label="Pharmacy Logo"
-								fileName={data.logo}
-								onChange={(file) => onChange({ logo: file.name })}
-							/>
-						</Grid>
+				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+					{/* Pharmacy Identity */}
+					<Box>
+						<Typography
+							variant="h6"
+							sx={{
+								fontWeight: 700,
+								fontSize: '16px',
+								color: 'text.primary',
+								mb: 2,
+							}}
+						>
+							Pharmacy Identity
+						</Typography>
 
-						<Grid size={{ xs: 12, sm: 8 }}>
-							<AppInput
-								label="Drug Licence Number *"
-								value={data.drugLicenseNumber}
-								placeholder="Enter drug licence number"
-								onChange={(e) => onChange({ drugLicenseNumber: e.target.value })}
-							/>
-						</Grid>
-						<Grid size={{ xs: 12, sm: 4 }}>
-							<UploadBox
-								label="Drug Licence Proof"
-								fileName={data.drugLicenseProof}
-								onChange={(file) => onChange({ drugLicenseProof: file.name })}
-							/>
-						</Grid>
+						<Grid container spacing={2.5} alignItems="flex-start">
+							<Grid size={{ xs: 12, md: 8 }}>
+								<AppInput
+									label="Pharmacy Name *"
+									value={data.pharmacyName}
+									placeholder="Enter pharmacy name"
+									onChange={(e) => onChange({ pharmacyName: e.target.value })}
+								/>
+							</Grid>
 
-						<Grid size={{ xs: 12, sm: 8 }}>
-							<AppInput
-								label="GST Number *"
-								value={data.gstNumber}
-								placeholder="Enter GST number"
-								onChange={(e) => onChange({ gstNumber: e.target.value })}
-							/>
+							<Grid size={{ xs: 12, md: 4 }}>
+								<UploadBox
+									label="Pharmacy Logo"
+									fileName={data.logo}
+									isImagePreview={true}
+									onChange={(file) =>
+										onChange({
+											logo: URL.createObjectURL(file),
+										})
+									}
+								/>
+							</Grid>
 						</Grid>
-						<Grid size={{ xs: 12, sm: 4 }}>
-							<UploadBox
-								label="GST Certificate"
-								fileName={data.gstCertificateProof}
-								onChange={(file) => onChange({ gstCertificateProof: file.name })}
-							/>
-						</Grid>
-					</Grid>
-				</Box>
+					</Box>
 
-				<Divider />
+					<Divider />
 
-				{/* ── 2. Pharmacy Address & Location ──────────────────────────── */}
-				<Box>
-					<Typography variant="h6" sx={{ fontWeight: 700, fontSize: '16px', color: 'text.primary', mb: 2 }}>
-						Pharmacy Address & Location
-					</Typography>
-					<Grid container spacing={2.5}>
-						<Grid size={{ xs: 12 }}>
-							<AppInput
-								label="Street Address *"
-								value={data.address}
-								placeholder="Enter street address"
-								onChange={(e) => onChange({ address: e.target.value })}
-							/>
-						</Grid>
+					{/* Regulatory & Tax Information */}
+					<Box>
+						<Typography
+							variant="h6"
+							sx={{
+								fontWeight: 700,
+								fontSize: '16px',
+								color: 'text.primary',
+								mb: 2,
+							}}
+						>
+							Regulatory & Tax Information
+						</Typography>
 
-						<Grid size={{ xs: 12, sm: 6 }}>
-							<AppInput
-								label="Landmark"
-								value={data.landmark}
-								placeholder="Enter landmark (optional)"
-								onChange={(e) => onChange({ landmark: e.target.value })}
-							/>
-						</Grid>
-						<Grid size={{ xs: 12, sm: 6 }}>
-							<AppInput
-								label="Pincode *"
-								value={data.pincode}
-								placeholder="Enter 6-digit pincode"
-								onChange={(e) => onChange({ pincode: e.target.value })}
-							/>
-						</Grid>
+						<Grid container spacing={2.5} alignItems="flex-start">
+							<Grid size={{ xs: 12, md: 8 }}>
+								<AppInput
+									label="Drug Licence Number *"
+									value={data.drugLicenseNumber}
+									placeholder="Enter drug licence number"
+									onChange={(e) =>
+										onChange({
+											drugLicenseNumber: e.target.value,
+										})
+									}
+								/>
+							</Grid>
 
-						<Grid size={{ xs: 12, sm: 6 }}>
-							<AppInput
-								label="City *"
-								value={data.city}
-								placeholder="Enter city"
-								onChange={(e) => onChange({ city: e.target.value })}
-							/>
-						</Grid>
-						<Grid size={{ xs: 12, sm: 6 }}>
-							<AppInput
-								label="State *"
-								value={data.state}
-								placeholder="Enter state"
-								onChange={(e) => onChange({ state: e.target.value })}
-							/>
-						</Grid>
+							<Grid size={{ xs: 12, md: 4 }}>
+								<UploadBox
+									label="Drug Licence Proof"
+									fileName={data.drugLicenseProof}
+									onChange={(file) =>
+										onChange({
+											drugLicenseProof: file.name,
+										})
+									}
+								/>
+							</Grid>
 
-						<Grid size={{ xs: 12, sm: 6 }}>
-							<AppInput
-								label="Latitude"
-								value={data.latitude}
-								placeholder="E.g. 19.076"
-								onChange={(e) => onChange({ latitude: e.target.value })}
-							/>
+							<Grid size={{ xs: 12, md: 8 }}>
+								<AppInput
+									label="GST Number *"
+									value={data.gstNumber}
+									placeholder="Enter GST number"
+									onChange={(e) =>
+										onChange({
+											gstNumber: e.target.value,
+										})
+									}
+								/>
+							</Grid>
+
+							<Grid size={{ xs: 12, md: 4 }}>
+								<UploadBox
+									label="GST Certificate"
+									fileName={data.gstCertificateProof}
+									onChange={(file) =>
+										onChange({
+											gstCertificateProof: file.name,
+										})
+									}
+								/>
+							</Grid>
 						</Grid>
-						<Grid size={{ xs: 12, sm: 6 }}>
-							<AppInput
-								label="Longitude"
-								value={data.longitude}
-								placeholder="E.g. 72.8777"
-								onChange={(e) => onChange({ longitude: e.target.value })}
-							/>
+					</Box>
+
+					<Divider />
+
+					{/* Address Details */}
+					<Box>
+						<Typography
+							variant="h6"
+							sx={{
+								fontWeight: 700,
+								fontSize: '16px',
+								color: 'text.primary',
+								mb: 2,
+							}}
+						>
+							Address Details
+						</Typography>
+
+						<Grid container spacing={2.5}>
+							<Grid size={{ xs: 12 }}>
+								<AppInput
+									label="Street Address *"
+									value={data.address}
+									placeholder="Enter street address"
+									onChange={(e) =>
+										onChange({
+											address: e.target.value,
+										})
+									}
+								/>
+							</Grid>
+
+							<Grid size={{ xs: 12, sm: 6 }}>
+								<AppInput
+									label="Landmark"
+									value={data.landmark}
+									placeholder="Enter landmark"
+									onChange={(e) =>
+										onChange({
+											landmark: e.target.value,
+										})
+									}
+								/>
+							</Grid>
+
+							<Grid size={{ xs: 12, sm: 6 }}>
+								<AppInput
+									label="Pincode *"
+									value={data.pincode}
+									placeholder="Enter pincode"
+									onChange={(e) =>
+										onChange({
+											pincode: e.target.value,
+										})
+									}
+								/>
+							</Grid>
+
+							<Grid size={{ xs: 12, sm: 6 }}>
+								<AppInput
+									label="City *"
+									value={data.city}
+									placeholder="Enter city"
+									onChange={(e) =>
+										onChange({
+											city: e.target.value,
+										})
+									}
+								/>
+							</Grid>
+
+							<Grid size={{ xs: 12, sm: 6 }}>
+								<AppInput
+									label="State *"
+									value={data.state}
+									placeholder="Enter state"
+									onChange={(e) =>
+										onChange({
+											state: e.target.value,
+										})
+									}
+								/>
+							</Grid>
 						</Grid>
-					</Grid>
+					</Box>
+
+					<Divider />
+
+					{/* Location Coordinates */}
+					{/* <Box>
+						<Typography
+							variant="h6"
+							sx={{
+								fontWeight: 700,
+								fontSize: '16px',
+								color: 'text.primary',
+								mb: 2,
+							}}
+						>
+							Location Coordinates
+						</Typography>
+
+						<Grid container spacing={2.5}>
+							<Grid size={{ xs: 12, sm: 6 }}>
+								<AppInput
+									label="Latitude"
+									value={data.latitude}
+									placeholder="19.0760"
+									onChange={(e) =>
+										onChange({
+											latitude: e.target.value,
+										})
+									}
+								/>
+							</Grid>
+
+							<Grid size={{ xs: 12, sm: 6 }}>
+								<AppInput
+									label="Longitude"
+									value={data.longitude}
+									placeholder="72.8777"
+									onChange={(e) =>
+										onChange({
+											longitude: e.target.value,
+										})
+									}
+								/>
+							</Grid>
+						</Grid>
+					</Box> */}
 				</Box>
 			</Box>
 
@@ -301,7 +451,7 @@ export default function PharmacyProfessionalTab({ data, onChange }: PharmacyProf
 				isDirty={isDirty}
 				showSuccess={false}
 				onSave={handleSave}
-				onCloseSnackbar={() => {}}
+				onCloseSnackbar={() => { }}
 			/>
 		</Box>
 	)

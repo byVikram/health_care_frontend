@@ -6,17 +6,17 @@ export interface AppSwitchProps extends SwitchProps {
 }
 
 const defaultSwitchSx = {
-	width: 56,
-	height: 30,
+	width: 34,
+	height: 18,
 	padding: 0,
 
 	'& .MuiSwitch-switchBase': {
 		padding: 0,
-		margin: '3px',
+		margin: '2px',
 		transitionDuration: '300ms',
 
 		'&.Mui-checked': {
-			transform: 'translateX(26px)',
+			transform: 'translateX(16px)',
 			color: '#fff',
 
 			'& + .MuiSwitch-track': {
@@ -29,13 +29,13 @@ const defaultSwitchSx = {
 
 	'& .MuiSwitch-thumb': {
 		boxSizing: 'border-box',
-		width: 24,
-		height: 24,
+		width: 14,
+		height: 14,
 		boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
 	},
 
 	'& .MuiSwitch-track': {
-		borderRadius: 15,
+		borderRadius: 9,
 		backgroundColor: '#E2E8F0',
 		opacity: 1,
 		transition: 'background-color 300ms',

@@ -1,5 +1,5 @@
 import { type KeyboardEvent, type ReactNode, useEffect, useState } from 'react'
-import { Box, Divider, Grid, Switch, Typography } from '@mui/material'
+import { Box, Divider, Grid, Typography } from '@mui/material'
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded'
 import RadioButtonUncheckedRoundedIcon from '@mui/icons-material/RadioButtonUncheckedRounded'
 import AppInput from '../../../components/common/Input/AppInput'
@@ -8,9 +8,9 @@ import { customCardStyle } from '../../../styles/commonStyles'
 import { toast } from 'react-toastify'
 import { updateMyPharmacyDetails, type PharmacyDetailsUpdatePayload } from '../pharmacyService'
 import 'react-toastify/dist/ReactToastify.css'
+import AppSwitch from '../../../components/common/Switch/AppSwitch'
 
 const TEAL = '#2B6F71'
-
 export interface PharmacyProfileServices {
 	is_24_x_7: boolean
 	open_days: string[]
@@ -46,38 +46,6 @@ const PAYMENT_METHOD_OPTIONS = [
 	{ value: 'net_banking', label: 'Net Banking' },
 ]
 
-const switchSx = {
-	width: 48,
-	height: 26,
-	padding: 0,
-	'& .MuiSwitch-switchBase': {
-		padding: 0,
-		margin: '3px',
-		transitionDuration: '300ms',
-		'&.Mui-checked': {
-			transform: 'translateX(22px)',
-			color: '#fff',
-			'& + .MuiSwitch-track': {
-				backgroundColor: TEAL,
-				opacity: 1,
-				border: 0,
-			},
-		},
-	},
-	'& .MuiSwitch-thumb': {
-		boxSizing: 'border-box',
-		width: 20,
-		height: 20,
-		boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-	},
-	'& .MuiSwitch-track': {
-		borderRadius: 13,
-		backgroundColor: '#E2E8F0',
-		opacity: 1,
-		transition: 'background-color 300ms',
-	},
-}
-
 function SectionTitle({ children }: { children: ReactNode }) {
 	return (
 		<Typography sx={{ color: 'text.primary', fontSize: '15px', fontWeight: 700, mb: 1.75 }}>
@@ -111,7 +79,7 @@ function ToggleRow({
 				<Typography sx={{ color: 'text.primary', fontSize: '13px', fontWeight: 600 }}>{label}</Typography>
 				<Typography sx={{ color: 'text.secondary', fontSize: '11px', mt: 0.45 }}>{description}</Typography>
 			</Box>
-			<Switch checked={checked} onChange={(e) => onChange(e.target.checked)} sx={switchSx} />
+			<AppSwitch checked={checked} onChange={(e) => onChange(e.target.checked)} />
 		</Box>
 	)
 }
