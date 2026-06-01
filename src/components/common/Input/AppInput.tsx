@@ -1,174 +1,174 @@
-// src/components/common/Input/AppInput.tsx
+ //src/components/common/Input/AppInput.tsx
 import React, { forwardRef, ReactNode, useState } from 'react'
 import { Box, TextField, InputAdornment, SxProps, Theme, TextFieldProps } from '@mui/material'
 import MicIcon from '@mui/icons-material/Mic'
 
 interface AppInputProps extends Omit<TextFieldProps, 'variant'> {
-	label?: string
-	value?: unknown
-	onChange?: React.ChangeEventHandler<HTMLInputElement>
-	placeholder?: string
-	type?: string
-	error?: boolean
-	helperText?: string
-	startIcon?: ReactNode
-	endIcon?: ReactNode
-	fullWidth?: boolean
-	disabled?: boolean
-	multiline?: boolean
-	rows?: number
-	variant?: 'outlined' | 'filled' | 'standard'
-	size?: 'small' | 'medium'
-	sx?: SxProps<Theme>
-	InputProps?: TextFieldProps['InputProps']
-	enableVoiceSearch?: boolean
-	onVoiceResult?: (text: string) => void
+    label?: string
+    value?: unknown
+    onChange?: React.ChangeEventHandler<HTMLInputElement>
+    placeholder?: string
+    type?: string
+    error?: boolean
+    helperText?: string
+    startIcon?: ReactNode
+    endIcon?: ReactNode
+    fullWidth?: boolean
+    disabled?: boolean
+    multiline?: boolean
+    rows?: number
+    variant?: 'outlined' | 'filled' | 'standard'
+    size?: 'small' | 'medium'
+    sx?: SxProps<Theme>
+    InputProps?: TextFieldProps['InputProps']
+    enableVoiceSearch?: boolean
+    onVoiceResult?: (text: string) => void
 }
 
 const AppInput = forwardRef<HTMLDivElement, AppInputProps>((props, ref) => {
-	const {
-		label,
-		value,
-		onChange,
-		placeholder,
-		type = 'text',
-		error = false,
-		helperText,
-		startIcon,
-		endIcon,
-		fullWidth = true,
-		disabled = false,
-		multiline = false,
-		rows,
-		variant = 'outlined',
-		size = 'small',
-		sx = {},
-		InputProps,
-		enableVoiceSearch = false,
-		onVoiceResult,
-		...rest
-	} = props
+    const {
+        label,
+        value,
+        onChange,
+        placeholder,
+        type = 'text',
+        error = false,
+        helperText,
+        startIcon,
+        endIcon,
+        fullWidth = true,
+        disabled = false,
+        multiline = false,
+        rows,
+        variant = 'outlined',
+        size = 'small',
+        sx = {},
+        InputProps,
+        enableVoiceSearch = false,
+        onVoiceResult,
+        ...rest
+    } = props
 
-	const [isListening, setIsListening] = useState(false)
-	const startListening = () => {
-		type SpeechRecognitionConstructor = new () => {
-			lang: string
-			continuous: boolean
-			interimResults: boolean
-			start: () => void
-			onresult: ((event: Event) => void) | null
-			onend: (() => void) | null
-			onerror: (() => void) | null
-		}
-		const SpeechRecognition =
-			(
-				window as typeof window & {
-					SpeechRecognition?: SpeechRecognitionConstructor
-					webkitSpeechRecognition?: SpeechRecognitionConstructor
-				}
-			).SpeechRecognition ||
-			(
-				window as typeof window & {
-					SpeechRecognition?: SpeechRecognitionConstructor
-					webkitSpeechRecognition?: SpeechRecognitionConstructor
-				}
-			).webkitSpeechRecognition
+    const [isListening, setIsListening] = useState(false)
+    const startListening = () => {
+        type SpeechRecognitionConstructor = new () => {
+            lang: string
+            continuous: boolean
+            interimResults: boolean
+            start: () => void
+            onresult: ((event: Event) => void) | null
+            onend: (() => void) | null
+            onerror: (() => void) | null
+        }
+        const SpeechRecognition =
+            (
+                window as typeof window & {
+                    SpeechRecognition?: SpeechRecognitionConstructor
+                    webkitSpeechRecognition?: SpeechRecognitionConstructor
+                }
+            ).SpeechRecognition ||
+            (
+                window as typeof window & {
+                    SpeechRecognition?: SpeechRecognitionConstructor
+                    webkitSpeechRecognition?: SpeechRecognitionConstructor
+                }
+            ).webkitSpeechRecognition
 
-		if (!SpeechRecognition) {
-			alert('Speech recognition is not supported in this browser')
-			return
-		}
+        if (!SpeechRecognition) {
+            alert('Speech recognition is not supported in this browser')
+            return
+        }
 
-		const recognition = new SpeechRecognition()
+        const recognition = new SpeechRecognition()
 
-		recognition.lang = 'en-US'
-		recognition.continuous = false
-		recognition.interimResults = false
+        recognition.lang = 'en-US'
+        recognition.continuous = false
+        recognition.interimResults = false
 
-		recognition.start()
+        recognition.start()
 
-		setIsListening(true)
+        setIsListening(true)
 
-		recognition.onresult = (event: Event) => {
-			const speechEvent = event as unknown as {
-				results: ArrayLike<ArrayLike<{ transcript: string }>>
-			}
+        recognition.onresult = (event: Event) => {
+            const speechEvent = event as unknown as {
+                results: ArrayLike<ArrayLike<{ transcript: string }>>
+            }
 
-			const transcript = speechEvent.results[0][0].transcript
+            const transcript = speechEvent.results[0][0].transcript
 
-			onVoiceResult?.(transcript)
-		}
-		recognition.onend = () => {
-			setIsListening(false)
-		}
+            onVoiceResult?.(transcript)
+        }
+        recognition.onend = () => {
+            setIsListening(false)
+        }
 
-		recognition.onerror = () => {
-			setIsListening(false)
-		}
-	}
+        recognition.onerror = () => {
+            setIsListening(false)
+        }
+    }
 
-	const inputProps = {
-		...InputProps,
-		startAdornment: startIcon ? (
-			<InputAdornment position="start">{startIcon}</InputAdornment>
-		) : (
-			InputProps?.startAdornment
-		),
+    const inputProps = {
+        ...InputProps,
+        startAdornment: startIcon ? (
+            <InputAdornment position="start">{startIcon}</InputAdornment>
+        ) : (
+            InputProps?.startAdornment
+        ),
 
-		endAdornment: (
-			<InputAdornment position="end">
-				<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-					{InputProps?.endAdornment}
+        endAdornment: (
+            <InputAdornment position="end">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    {InputProps?.endAdornment}
 
-					{endIcon}
+                    {endIcon}
 
-					{enableVoiceSearch && (
-						<MicIcon
-							onClick={startListening}
-							sx={{
-								cursor: 'pointer',
-								color: isListening ? 'red' : 'text.secondary',
-							}}
-						/>
-					)}
-				</Box>
-			</InputAdornment>
-		),
-	}
+                    {enableVoiceSearch && (
+                        <MicIcon
+                            onClick={startListening}
+                            sx={{
+                                cursor: 'pointer',
+                                color: isListening ? 'red' : 'text.secondary',
+                            }}
+                        />
+                    )}
+                </Box>
+            </InputAdornment>
+        ),
+    }
 
-	// 			{!endIcon && !enableVoiceSearch && InputProps?.endAdornment}
-	// 		</>
-	// 	),
-	// }
+    //             {!endIcon && !enableVoiceSearch && InputProps?.endAdornment}
+    //         </>
+    //     ),
+    // }
 
-	return (
-		<TextField
-			ref={ref}
-			label={label}
-			value={value}
-			onChange={onChange}
-			placeholder={placeholder}
-			type={type}
-			error={error}
-			helperText={helperText}
-			fullWidth={fullWidth}
-			disabled={disabled}
-			multiline={multiline}
-			rows={rows}
-			variant={variant}
-			size={size}
-			InputProps={inputProps}
-			sx={{
-				'& .MuiOutlinedInput-root': {
-					bgcolor: 'background.paper',
-					transition: 'all 0.2s ease',
-					borderRadius: '6px',
-				},
-				...sx,
-			}}
-			{...rest}
-		/>
-	)
+    return (
+        <TextField
+            ref={ref}
+            label={label}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            type={type}
+            error={error}
+            helperText={helperText}
+            fullWidth={fullWidth}
+            disabled={disabled}
+            multiline={multiline}
+            rows={rows}
+            variant={variant}
+            size={size}
+            InputProps={inputProps}
+            sx={{
+                '& .MuiOutlinedInput-root': {
+                    bgcolor: 'background.paper',
+                    transition: 'all 0.2s ease',
+                    borderRadius: '6px',
+                },
+                ...sx,
+            }}
+            {...rest}
+        />
+    )
 })
 
 AppInput.displayName = 'AppInput'
