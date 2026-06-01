@@ -121,9 +121,12 @@ export interface PharmacyDetailsUpdatePayload {
 	whatsapp_number?: string
 	// Pharmacy Core
 	name?: string
+	logo_s3_key?: string
 	// Compliance
 	drug_license_number?: string
+	drug_license_s3_key?: string
 	gst_number?: string
+	gst_certificate_s3_key?: string
 	// Location
 	address?: string
 	city?: string
@@ -137,9 +140,9 @@ export interface PharmacyDetailsUpdatePayload {
 	open_days?: string[]
 	payment_methods?: string[]
 	home_delivery_available?: boolean
-	delivery_radius_km?: number
-	estimated_delivery_time_mins?: number
-	min_order_amount?: number
+	delivery_radius_km?: number | null
+	estimated_delivery_time_mins?: number | null
+	min_order_amount?: number | null
 	is_24_x_7?: boolean
 	emergency_medicine_available?: boolean
 }
@@ -223,29 +226,19 @@ export const mapPharmacyDetailsApi = (data: PharmacyDetailsApiData): PharmacyPro
 			emailVerified: !!p?.email,
 			gender: '',
 			dateOfBirth: '',
-			location: [ph?.city, ph?.state].filter(Boolean).join(', '),
+			location: ph?.address ?? '',
+			city: ph?.city ?? '',
+			state: ph?.state ?? '',
 			avatar: p?.avatar_s3_key ?? '',
 			instagram: '',
 			facebook: '',
 		},
 		professional: {
-			specializationId: '',
-			specializationLabel: '',
-			degree: '',
-			college: '',
-			yearOfPassing: '',
-			qualificationProof: ph?.drug_license_s3_key ?? '',
-			registrationNumber: ph?.drug_license_number ?? '',
-			statePharmacyCouncil: '',
-			licenseExpiryDate: '',
-			registrationProof: ph?.drug_license_s3_key ?? '',
-			currentWorkplace: ph?.name ?? '',
-			yearsOfExperience: '',
-			pharmacyType: '',
-			previousOrganization: '',
-			certificationName: '',
-			certificationProof: '',
-			about: '',
+			pharmacyName: ph?.name ?? '',
+			drugLicenseNumber: ph?.drug_license_number ?? '',
+			drugLicenseProof: ph?.drug_license_s3_key ?? '',
+			gstNumber: ph?.gst_number ?? '',
+			gstCertificateProof: ph?.gst_certificate_s3_key ?? '',
 		},
 		services: {
 			is_24_x_7: sv?.is_24_x_7 ?? false,

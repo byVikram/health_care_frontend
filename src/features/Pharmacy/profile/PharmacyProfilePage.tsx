@@ -25,6 +25,8 @@ export interface PharmacyProfilePersonal {
 	gender: string
 	dateOfBirth: string
 	location: string
+	city: string
+	state: string
 	avatar: string
 	instagram: string
 	facebook: string
@@ -81,28 +83,18 @@ const EMPTY_PHARMACY: PharmacyProfile = {
 		gender: '',
 		dateOfBirth: '',
 		location: '',
+		city: '',
+		state: '',
 		avatar: '',
 		instagram: '',
 		facebook: '',
 	},
 	professional: {
-		specializationId: '',
-		specializationLabel: '',
-		degree: '',
-		college: '',
-		yearOfPassing: '',
-		qualificationProof: '',
-		registrationNumber: '',
-		statePharmacyCouncil: '',
-		licenseExpiryDate: '',
-		registrationProof: '',
-		currentWorkplace: '',
-		yearsOfExperience: '',
-		pharmacyType: '',
-		previousOrganization: '',
-		certificationName: '',
-		certificationProof: '',
-		about: '',
+		pharmacyName: '',
+		drugLicenseNumber: '',
+		drugLicenseProof: '',
+		gstNumber: '',
+		gstCertificateProof: '',
 	},
 	services: {
 		is_24_x_7: false,

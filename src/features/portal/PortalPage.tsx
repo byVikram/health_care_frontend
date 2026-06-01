@@ -265,7 +265,7 @@ export default function PortalPage() {
 			{ title: 'Pharmacy', image: PharmacyIcon },
 			{ title: 'Laboratory', image: LabIcon },
 			{ title: 'Radiology', image: RadiologyIcon },
-			{ title: 'Pharamedicals', image: null },
+			{ title: 'Paramedicals', image: null },
 		]
 
 		if (role === USER_ROLES.PHARMACY) {
@@ -274,7 +274,7 @@ export default function PortalPage() {
 				{ title: 'Pharmacy', image: PharmacyIcon },
 				{ title: 'Laboratory', image: LabIcon },
 				{ title: 'Radiology', image: RadiologyIcon },
-				{ title: 'Pharamedicals', image: null },
+				{ title: 'Paramedicals', image: null },
 			]
 		}
 
@@ -506,7 +506,7 @@ export default function PortalPage() {
 							{/* Quick service icons */}
 							<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 								{quickServices.map((s) =>
-									s.title === 'Pharamedicals' ? (
+									s.title === 'Paramedicals' ? (
 										<Box
 											key={s.title}
 											ref={othersRef}
@@ -552,7 +552,7 @@ export default function PortalPage() {
 													textAlign: 'center',
 												}}
 											>
-												Pharamedicals
+												Paramedicals
 											</Typography>
 
 											<Popper

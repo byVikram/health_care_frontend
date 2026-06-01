@@ -6,6 +6,7 @@ import AppInput from '../../../components/common/Input/AppInput'
 import ProfileFormActions from '../../../components/common/ProfileFormActions/ProfileFormActions'
 import { customCardStyle } from '../../../styles/commonStyles'
 import { toast } from 'react-toastify'
+import { updateMyPharmacyDetails, type PharmacyDetailsUpdatePayload } from '../pharmacyService'
 import 'react-toastify/dist/ReactToastify.css'
 
 const TEAL = '#2B6F71'
@@ -43,19 +44,18 @@ const PAYMENT_METHOD_OPTIONS = [
 	{ value: 'credit_card', label: 'Credit Card' },
 	{ value: 'debit_card', label: 'Debit Card' },
 	{ value: 'net_banking', label: 'Net Banking' },
-	{ value: 'wallet', label: 'Wallet' },
 ]
 
 const switchSx = {
-	width: 56,
-	height: 30,
+	width: 48,
+	height: 26,
 	padding: 0,
 	'& .MuiSwitch-switchBase': {
 		padding: 0,
 		margin: '3px',
 		transitionDuration: '300ms',
 		'&.Mui-checked': {
-			transform: 'translateX(26px)',
+			transform: 'translateX(22px)',
 			color: '#fff',
 			'& + .MuiSwitch-track': {
 				backgroundColor: TEAL,
@@ -66,12 +66,12 @@ const switchSx = {
 	},
 	'& .MuiSwitch-thumb': {
 		boxSizing: 'border-box',
-		width: 24,
-		height: 24,
+		width: 20,
+		height: 20,
 		boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
 	},
 	'& .MuiSwitch-track': {
-		borderRadius: 15,
+		borderRadius: 13,
 		backgroundColor: '#E2E8F0',
 		opacity: 1,
 		transition: 'background-color 300ms',
@@ -245,9 +245,18 @@ function getCurrentOperatingHours(openDays: string[], operatingHours: Record<str
 	return parseOperatingHours(firstValue)
 }
 
+function parseNullableNumber(value: string) {
+	const trimmedValue = value.trim()
+	if (!trimmedValue) {
+		return null
+	}
+
+	const parsedValue = Number(trimmedValue)
+	return Number.isFinite(parsedValue) ? parsedValue : null
+}
+
 export default function PharmacyServiceTab({ data, onChange }: PharmacyServiceTabProps) {
 	const [isDirty, setIsDirty] = useState(false)
-	const [showSuccess, setShowSuccess] = useState(false)
 	const [saved, setSaved] = useState(data)
 	const { opensAt, closesAt } = getCurrentOperatingHours(data.open_days, data.operating_hours)
 	const hoursDisabled = data.is_24_x_7 || data.open_days.length === 0
@@ -256,11 +265,30 @@ export default function PharmacyServiceTab({ data, onChange }: PharmacyServiceTa
 		setIsDirty(JSON.stringify(data) !== JSON.stringify(saved))
 	}, [data, saved])
 
-	const handleSave = () => {
+	const handleSave = async () => {
 		try {
+			const payload: PharmacyDetailsUpdatePayload = {
+				is_24_x_7: data.is_24_x_7,
+				open_days: data.open_days,
+				operating_hours: data.is_24_x_7
+					? data.open_days.reduce<Record<string, string>>((acc, day) => {
+							acc[day] = '24 Hours'
+							return acc
+					  }, {})
+					: data.operating_hours,
+				home_delivery_available: data.home_delivery_available,
+				delivery_radius_km: data.home_delivery_available ? parseNullableNumber(data.delivery_radius_km) : null,
+				estimated_delivery_time_mins: data.home_delivery_available
+					? parseNullableNumber(data.estimated_delivery_time_mins)
+					: null,
+				min_order_amount: data.home_delivery_available ? parseNullableNumber(data.min_order_amount) : null,
+				emergency_medicine_available: data.emergency_medicine_available,
+				payment_methods: data.payment_methods,
+			}
+
+			await updateMyPharmacyDetails(payload)
 			setSaved(data)
 			setIsDirty(false)
-			setShowSuccess(true)
 			toast.success('Service details saved successfully!')
 		} catch {
 			toast.error('Something went wrong. Please try again.')
@@ -493,9 +521,9 @@ export default function PharmacyServiceTab({ data, onChange }: PharmacyServiceTa
 
 			<ProfileFormActions
 				isDirty={isDirty}
-				showSuccess={showSuccess}
+				showSuccess={false}
 				onSave={handleSave}
-				onCloseSnackbar={() => setShowSuccess(false)}
+				onCloseSnackbar={() => {}}
 			/>
 		</Box>
 	)
