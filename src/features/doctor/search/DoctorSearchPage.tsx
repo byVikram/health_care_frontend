@@ -1,9 +1,11 @@
 // src/features/doctor/DoctorSearchPage.tsx
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Box, Container, Typography, Grid, InputAdornment, TextField, Chip, Card } from '@mui/material'
+import { Box, Container, Typography, Grid,
+	//  InputAdornment, TextField, 
+	 Chip, Card } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
-import MicIcon from '@mui/icons-material/Mic'
+// import MicIcon from '@mui/icons-material/Mic'
 import TuneIcon from '@mui/icons-material/Tune'
 import DoctorSearchCard from './components/DoctorSearchCard'
 import AppSelect from '../../../components/common/Select/AppSelect'
@@ -14,6 +16,7 @@ import { DoctorSearchItem } from '../../../types/doctor-search'
 import { SpecialityItem } from '../../../types/speciality'
 import AppSkeleton from '../../../components/common/Skeleton/AppSkeleton'
 import { getDoctors, getSpecialities } from '../doctorService'
+import AppInput from '../../../components/common/Input/AppInput'
 
 const SORT_OPTIONS = [
 	{ value: 'rating', label: 'Top Rated' },
@@ -203,33 +206,32 @@ export default function DoctorSearchPage() {
 			<Box sx={{ bgcolor: 'background.paper', py: 3 }}>
 				<Container maxWidth="lg">
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-						<TextField
+						<AppInput
 							fullWidth
 							placeholder="Search by doctor name, speciality, clinic..."
 							value={searchQuery}
 							onChange={(e) => {
-								resetAndFetch(() => {
-									setError(null)
-									setSearchQuery(e.target.value)
-								})
+								setLoading(true)
+								setError(null)
+								setSearchQuery(e.target.value)
+								setPage(1)
 							}}
 							size="small"
-							InputProps={{
-								startAdornment: (
-									<InputAdornment position="start">
-										<SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
-									</InputAdornment>
-								),
-								endAdornment: (
-									<InputAdornment position="end">
-										<MicIcon sx={{ color: 'text.secondary', fontSize: 20, cursor: 'pointer' }} />
-									</InputAdornment>
-								),
+							startIcon={<SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />}
+							enableVoiceSearch
+							onVoiceResult={(text) => {
+								setLoading(true)
+								setError(null)
+								setSearchQuery(text)
+								setPage(1)
 							}}
 							sx={{
 								bgcolor: 'background.paper',
+								borderColor: '#000',
 								borderRadius: '10px',
-								'& .MuiOutlinedInput-root': { borderRadius: '10px' },
+								'& .MuiOutlinedInput-root': {
+									borderRadius: '10px',
+								},
 							}}
 						/>
 					</Box>

@@ -4,7 +4,7 @@ import SearchIcon from '@mui/icons-material/Search'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import AppTable from './components/AppTable'
 import { customCardStyle } from '../../styles/commonStyles'
-import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
+// import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { useSearchParams } from 'react-router-dom'
@@ -368,17 +368,15 @@ export default function AppointmentList() {
 								setSearch(e.target.value)
 								setPage(1)
 							}}
+							enableVoiceSearch
+							onVoiceResult={(text) => {
+								setSearch(text)
+								setPage(1)
+							}}
 							InputProps={{
 								startAdornment: (
 									<InputAdornment position="start">
 										<SearchIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
-									</InputAdornment>
-								),
-								endAdornment: (
-									<InputAdornment position="end">
-										<MicNoneOutlinedIcon
-											sx={{ color: 'text.disabled', fontSize: 20, cursor: 'pointer' }}
-										/>
 									</InputAdornment>
 								),
 							}}
