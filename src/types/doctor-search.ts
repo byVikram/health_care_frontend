@@ -10,12 +10,20 @@ export interface DoctorSearchItem {
 	specialities: string[]
 }
 
-export interface DoctorSearchResponse {
-	success: boolean
-	message: string
-	data: DoctorSearchItem[]
+export interface DoctorSearchMeta {
 	total: number
 	page: number
 	limit: number
 	pages: number
+}
+
+export interface DoctorSearchResponse {
+	success: boolean
+	message: string
+	data: DoctorSearchItem[]
+	meta?: DoctorSearchMeta
+	total?: number
+	page?: number
+	limit?: number
+	pages?: number
 }

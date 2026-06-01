@@ -1,8 +1,8 @@
 // import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 import { useState, useEffect } from 'react'
 import { Box, Typography, 
-	// InputAdornment, 
-	Divider, Chip, Popover, Dialog, DialogContent, Tooltip } from '@mui/material'
+	// InputAdornment,
+	 Divider, Chip, Popover, Dialog, DialogContent, Tooltip } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
@@ -328,44 +328,6 @@ export function DoctorAppointments({
 				<Typography sx={{ fontWeight: 700, fontSize: '16px', color: 'text.primary', mb: 1.5 }}>
 					Search Patient
 				</Typography>
-				{/* <AppInput
-					fullWidth
-					placeholder="Search Patient ID, Name..."
-					value={searchQuery}
-					onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-					size="small"
-					slotProps={{
-						input: {
-							startAdornment: (
-								<InputAdornment position="start">
-									<SearchIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
-								</InputAdornment>
-							),
-							endAdornment: (
-								<InputAdornment position="end">
-									<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-										<MicNoneOutlinedIcon
-											sx={{ fontSize: 20, color: 'text.disabled', cursor: 'pointer' }}
-										/>
-										<Box sx={{ width: '1px', height: '18px', bgcolor: 'divider' }} />
-										<QrCodeScannerIcon
-											sx={{ fontSize: 20, color: 'text.disabled', cursor: 'pointer' }}
-										/>
-									</Box>
-								</InputAdornment>
-							),
-						},
-					}}
-					sx={{
-						'& .MuiOutlinedInput-root': {
-							borderRadius: '12px',
-							bgcolor: 'background.default',
-							'& fieldset': { borderColor: 'divider' },
-							'&:hover fieldset': { borderColor: 'primary.main' },
-							'&.Mui-focused fieldset': { borderColor: 'primary.main' },
-						},
-					}} */}
-				{/* /> */}
 				<AppInput
 					fullWidth
 					placeholder="Search Patient ID, Name..."

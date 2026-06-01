@@ -10,6 +10,7 @@ import { customCardStyle } from '../../../styles/commonStyles'
 import { PharmacyProfilePersonal } from '../profile/PharmacyProfilePage'
 import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import { updateMyPharmacyDetails } from '../pharmacyService'
 
 interface PharmacyPersonalTabProps {
 	data: PharmacyProfilePersonal
@@ -36,10 +37,29 @@ export default function PharmacyPersonalTab({ data, onChange }: PharmacyPersonal
 		setIsDirty(JSON.stringify(data) !== JSON.stringify(saved))
 	}, [data, saved])
 
-	const handleSave = () => {
+	const handleSave = async () => {
 		try {
-			setSaved(data)
-			setIsDirty(false)
+			const payload: Record<string, string> = {}
+			if (data.name !== saved.name) payload.owner_name = data.name
+			if (data.location !== saved.location) payload.address = data.location
+			if (data.city !== saved.city) payload.city = data.city
+			if (data.state !== saved.state) payload.state = data.state
+
+			if (Object.keys(payload).length === 0) {
+				toast.info('No API-backed personal changes to save yet.')
+				return
+			}
+
+			await updateMyPharmacyDetails(payload)
+
+			setSaved((prev) => ({
+				...prev,
+				name: data.name,
+				location: data.location,
+				city: data.city,
+				state: data.state,
+			}))
+
 			toast.success('Changes saved successfully!')
 		} catch {
 			toast.error('Something went wrong. Please try again.')
@@ -68,6 +88,25 @@ export default function PharmacyPersonalTab({ data, onChange }: PharmacyPersonal
 							value={data.location}
 							placeholder="Enter your location"
 							onChange={(e) => onChange({ location: e.target.value })}
+						/>
+					</Grid>
+				</Grid>
+
+				<Grid container spacing={2}>
+					<Grid size={{ xs: 12, sm: 6 }}>
+						<AppInput
+							label="City*"
+							value={data.city}
+							placeholder="Enter your city"
+							onChange={(e) => onChange({ city: e.target.value })}
+						/>
+					</Grid>
+					<Grid size={{ xs: 12, sm: 6 }}>
+						<AppInput
+							label="State*"
+							value={data.state}
+							placeholder="Enter your state"
+							onChange={(e) => onChange({ state: e.target.value })}
 						/>
 					</Grid>
 				</Grid>
@@ -111,29 +150,6 @@ export default function PharmacyPersonalTab({ data, onChange }: PharmacyPersonal
 							value={data.dateOfBirth}
 							onChange={(val) => onChange({ dateOfBirth: val ?? '' })}
 							disableFuture
-						/>
-					</Grid>
-				</Grid>
-
-				<Grid container spacing={2}>
-					<Grid size={{ xs: 12, sm: 6 }}>
-						<AppInput
-							label="Instagram"
-							value={data.instagram}
-							placeholder="https://instagram.com/your-handle"
-							type="url"
-							slotProps={{ inputLabel: { shrink: true } }}
-							onChange={(e) => onChange({ instagram: e.target.value })}
-						/>
-					</Grid>
-					<Grid size={{ xs: 12, sm: 6 }}>
-						<AppInput
-							label="Facebook"
-							value={data.facebook}
-							placeholder="https://facebook.com/your-profile"
-							type="url"
-							slotProps={{ inputLabel: { shrink: true } }}
-							onChange={(e) => onChange({ facebook: e.target.value })}
 						/>
 					</Grid>
 				</Grid>

@@ -89,10 +89,10 @@ export default function AppRoutes() {
 				<Route path={ROUTES.APPOINTMENTS} element={<DoctorAppointmentList />} />
 				<Route path={ROUTES.PORTAL.PROFILE} element={<ProfilePage />} />
 				<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
+				<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
 			</Route>
 
 		
-			<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
 			<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
 			<Route path={ROUTES.PHARMACY.PROFILE} element={<PharmacyProfilePage />} />
 			<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
