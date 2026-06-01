@@ -67,8 +67,16 @@ export default function PharmacySearchPage() {
 			if (!active) return
 		
 			const mappedPharmacies: PharmacyItem[] = (response.data ?? []).map((item) => ({
-				...item,
+				id: item.id,
+				name: item.name ?? '',
 				owner_name: item.owner_name ?? '',
+				avatar_s3_key: item.avatar_s3_key,
+				address: item.address ?? '',
+				city: item.city ?? '',
+				operating_hours: item.operating_hours as unknown as PharmacyItem['operating_hours'],
+				home_delivery_available: item.home_delivery_available,
+				is_24_x_7: item.is_24_x_7,
+				emergency_medicine_available: item.emergency_medicine_available,
 			}))
 			setAllPharmacies(mappedPharmacies)
 		} catch (err) {

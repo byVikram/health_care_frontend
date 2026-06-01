@@ -121,12 +121,9 @@ export interface PharmacyDetailsUpdatePayload {
 	whatsapp_number?: string
 	// Pharmacy Core
 	name?: string
-	logo_s3_key?: string
 	// Compliance
 	drug_license_number?: string
-	drug_license_s3_key?: string
 	gst_number?: string
-	gst_certificate_s3_key?: string
 	// Location
 	address?: string
 	city?: string
@@ -236,21 +233,24 @@ export const mapPharmacyDetailsApi = (data: PharmacyDetailsApiData): PharmacyPro
 			contactVerified: !!p?.mobile_number,
 			email: p?.email ?? '',
 			emailVerified: !!p?.email,
-			gender: '',
-			dateOfBirth: '',
-			location: ph?.address ?? '',
-			city: ph?.city ?? '',
-			state: ph?.state ?? '',
+			alternateMobile: p?.alternate_mobile ?? '',
+			whatsappNumber: p?.whatsapp_number ?? '',
 			avatar: p?.avatar_s3_key ?? '',
-			instagram: '',
-			facebook: '',
 		},
 		professional: {
 			pharmacyName: ph?.name ?? '',
+			logo: ph?.logo_s3_key ?? '',
 			drugLicenseNumber: ph?.drug_license_number ?? '',
 			drugLicenseProof: ph?.drug_license_s3_key ?? '',
 			gstNumber: ph?.gst_number ?? '',
 			gstCertificateProof: ph?.gst_certificate_s3_key ?? '',
+			address: ph?.address ?? '',
+			city: ph?.city ?? '',
+			state: ph?.state ?? '',
+			pincode: ph?.pincode ?? '',
+			landmark: ph?.landmark ?? '',
+			latitude: ph?.latitude != null ? String(ph.latitude) : '',
+			longitude: ph?.longitude != null ? String(ph.longitude) : '',
 		},
 		services: {
 			is_24_x_7: sv?.is_24_x_7 ?? false,
