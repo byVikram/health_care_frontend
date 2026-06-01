@@ -35,11 +35,9 @@ import {
 } from '@mui/material'
 import {
 	Phone,
-	Email,
 	Emergency,
 	LocalHospital,
 	Person,
-	AccessTime,
 	DeleteOutline,
 	AddCircleOutline,
 	NotificationsActive,
@@ -158,7 +156,7 @@ export default function PharmacyPrescriptionDashboard() {
 		},
 	])
 	const [reminderDate, setReminderDate] = useState<string>(
-		new Date(Date.now() + 13 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+		() => new Date(Date.now() + 13 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 	)
 	const [autoNotify, setAutoNotify] = useState<boolean>(true)
 	const [toast, setToast] = useState<{
@@ -170,8 +168,6 @@ export default function PharmacyPrescriptionDashboard() {
 		message: '',
 		severity: 'success',
 	})
-
-	const selectedVisit = sortedVisits.find((v) => v.id === selectedVisitId)!
 
 	// Handlers
 	const showToast = (message: string, severity: 'success' | 'info' | 'error') => {
@@ -847,7 +843,6 @@ export default function PharmacyPrescriptionDashboard() {
 				</Grid>
 			</Grid>
 
-		
 			<Snackbar
 				open={toast.open}
 				autoHideDuration={4000}

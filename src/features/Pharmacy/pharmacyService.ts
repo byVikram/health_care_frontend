@@ -6,13 +6,13 @@ import { PharmacyProfile } from '../Pharmacy/profile/PharmacyProfilePage'
 // ── Types: Pharmacy list ──────────────────────────────────────────────────────
 
 export interface PharmacyListParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  city?: string;
-  home_delivery?: boolean;
-  is_24_x_7?: boolean;
-  emergency_medicine?: boolean;
+	page?: number
+	limit?: number
+	search?: string
+	city?: string
+	home_delivery?: boolean
+	is_24_x_7?: boolean
+	emergency_medicine?: boolean
 }
 
 export interface PharmacyListItem {
@@ -181,19 +181,31 @@ export interface PharmacyOrderDeliveryAddress {
 
 export interface PharmacyOrder {
 	id: string
-	pharmacy_id: string
-	pharmacy_name: string
-	patient_name: string
-	treatment_id: string | null
-	external_prescription_s3_key: string | null
-	delivery_type: string
-	delivery_address: PharmacyOrderDeliveryAddress | null
-	status: string
-	bill_amount: number | null
-	rejection_reason: string | null
-	notes: string | null
 	created_at: string
 	updated_at: string
+	status: string
+	bill_amount: number
+	delivery_type: string
+	delivery_address: object | null
+	rejection_reason: string | null
+	notes: string | null
+	treatment_id: string
+	external_prescription_s3_key: string
+	pharmacy: {
+		id: string
+		name: string
+		avatar_s3_key: string | null
+		alternate_mobile: string
+		address: string
+		city: string
+	}
+	patient: {
+		id: string
+		name: string
+		avatar_s3_key: string | null
+		gender: string | null
+		age: number | null
+	}
 }
 
 export interface PharmacyOrderResponse {
