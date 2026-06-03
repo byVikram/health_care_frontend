@@ -462,8 +462,8 @@ export default function PharmacyServiceTab({ data, onChange }: PharmacyServiceTa
 				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.8 }}>
 					<SectionTitle>Additional Services</SectionTitle>
 					<ToggleRow
-						label="Emergency Medicine Available"
-						description="Enable if your pharmacy stocks or can source emergency medicines."
+						label="Emergency Service Available"
+						description="Enable if your pharmacy stocks or can source emergency services."
 						checked={data.emergency_medicine_available}
 						onChange={(checked) => onChange({ emergency_medicine_available: checked })}
 					/>

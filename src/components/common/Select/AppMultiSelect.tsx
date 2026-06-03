@@ -82,7 +82,7 @@ const AppMultiSelect = forwardRef<HTMLDivElement, AppMultiSelectProps>((props, r
 			}}
 			SelectProps={{
 				multiple: true,
-				displayEmpty: true,
+				displayEmpty: false,
 				MenuProps: {
 					PaperProps: {
 						sx: { mt: 1, boxShadow: '0 6px 20px rgba(0,0,0,0.12)', maxHeight: 280 },

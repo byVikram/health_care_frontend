@@ -23,6 +23,7 @@ import WelcomePage from '../features/auth/WelcomePage'
 import OrderList from '../features/Pharmacy/OrderList'
 import OrderDetailPage from '../features/Pharmacy/OrderDetailPage'
 import PharmacySearchPage from '../features/Pharmacy/components/PharmacySearchPage'
+import RadiologyProfilePage from '../features/radiology/profile/RadiologyProfilePage'
 function ProtectedLayout() {
 	return (
 		<MainLayout>
@@ -55,7 +56,6 @@ export default function AppRoutes() {
 			{/* Public routes */}
 			<Route path={ROUTES.AUTH.LOGIN} element={<LoginPage />} />
 
-
 			<Route path={ROUTES.AUTH.REGISTER} element={<RegisterPage />} />
 
 			<Route
@@ -63,7 +63,6 @@ export default function AppRoutes() {
 				element={<TestRegister onSubmit={(email) => console.log('Registered:', email)} />}
 			/>
 			<Route path={ROUTES.DOCTOR_ACCOUNT_DETAILS} element={<DoctorAccountDetailsPage />} />
-
 
 			<Route path={ROUTES.PUBLIC.WELCOME} element={<WelcomePage />} />
 
@@ -90,8 +89,8 @@ export default function AppRoutes() {
 				<Route path={ROUTES.PORTAL.PROFILE} element={<ProfilePage />} />
 				<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
 				<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
+				<Route path={ROUTES.RADIOLOGY.PROFILE} element={<RadiologyProfilePage />} />
 			</Route>
-
 
 			<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
 

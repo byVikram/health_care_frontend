@@ -22,6 +22,10 @@ export const ROUTES = {
 		SEARCH: '/pharmacies',
 	},
 
+	RADIOLOGY: {
+		PROFILE: '/radiology/profile',
+	},
+
 	TEST: '/test',
 	TEST_REGISTER: '/test-register',
 

@@ -1,6 +1,6 @@
-﻿// src/features/doctor/profile/components/DoctorHospitalsTab.tsx
+// src/features/doctor/profile/components/DoctorHospitalsTab.tsx
 import { useState } from 'react'
-import { Box, Typography, IconButton, Radio, Switch } from '@mui/material'
+import { Box, Typography, IconButton, Radio, Switch, Menu, MenuItem as MuiMenuItem } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
@@ -11,8 +11,8 @@ import AppButton from '../../../../components/common/Button/AppButton'
 import AppInput from '../../../../components/common/Input/AppInput'
 import { customCardStyle } from '../../../../styles/commonStyles'
 import type { DoctorHospital } from '../../../../types/doctor-profile'
-import { createHospital } from '../../doctorService'
-import { MenuItem, TextField } from '@mui/material'
+import { createHospital, updateHospital, updateAvailability } from '../../doctorService'
+import { TextField, MenuItem } from '@mui/material'
 
 interface DoctorHospitalsTabProps {
 	hospitals: DoctorHospital[]
@@ -41,7 +41,7 @@ const EMPTY_FORM = {
 	fullAddress: '',
 	phone_number: '',
 	video_consultation_fee: '',
-	clinic_consultation_fee: '',
+	offline_consultation_fee: '',
 }
 
 const getSuccessMessage = (response: unknown) => {
@@ -136,6 +136,36 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 	const [showForm, setShowForm] = useState(false)
 	const [form, setForm] = useState(EMPTY_FORM)
 	const [isSaving, setIsSaving] = useState(false)
+
+	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+	const [menuHospitalId, setMenuHospitalId] = useState<string | null>(null)
+	const [editingHospitalId, setEditingHospitalId] = useState<string | null>(null)
+
+	const handleOpenMenu = (e: React.MouseEvent<HTMLElement>, hospitalId: string) => {
+		e.stopPropagation()
+		setAnchorEl(e.currentTarget)
+		setMenuHospitalId(hospitalId)
+	}
+
+	const handleCloseMenu = () => {
+		setAnchorEl(null)
+		setMenuHospitalId(null)
+	}
+
+	const handleEdit = (hospitalId: string) => {
+		handleCloseMenu()
+		const h = hospitals.find((h) => h.id === hospitalId)
+		if (!h) return
+		setForm({
+			name: h.name,
+			fullAddress: h.fullAddress,
+			phone_number: h.phone_number ?? '',
+			video_consultation_fee: h.video_consultation_fee ?? '',
+			offline_consultation_fee: h.clinic_consultation_fee ?? '',
+		})
+		setEditingHospitalId(hospitalId)
+		setShowForm(true)
+	}
 
 	const [workingHoursByType, setWorkingHoursByType] = useState<Record<AppointmentType, WorkingHoursState>>({
 		clinic: {
@@ -272,6 +302,28 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		onChange(hospitals.map((h) => ({ ...h, isPrimary: h.id === id })))
 	}
 
+	// const buildSlots = () => {
+	// 	return Object.values(selectedWorkingHours.sections)
+	// 		.flat()
+	// 		.map((slot) => ({
+	// 			start_time: slot.start,
+	// 			end_time: slot.end,
+	// 			slot_duration: selectedWorkingHours.slotDuration,
+	// 			buffer_time: 0,
+	// 		}))
+	// }
+
+	const buildSlotsForType = (type: AppointmentType) => {
+		return Object.values(workingHoursByType[type].sections)
+			.flat()
+			.map((slot) => ({
+				start_time: slot.start,
+				end_time: slot.end,
+				slot_duration: workingHoursByType[type].slotDuration,
+				buffer_time: 0,
+			}))
+	}
+
 	const handleSave = async () => {
 		const trimmedName = form.name.trim()
 		const trimmedAddress = form.fullAddress.trim()
@@ -287,22 +339,76 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		}
 
 		setIsSaving(true)
+		setIsSaving(true)
 		try {
-			const response = await createHospital({
-				name: trimmedName,
-				phone_number: form.phone_number.trim(),
-				full_address: trimmedAddress,
-				is_primary: isPrimary,
-				video_consultation_fee: form.video_consultation_fee.trim(),
-				clinic_consultation_fee: form.clinic_consultation_fee.trim(),
-				free_followup_validity_days: followUpDays,
-				reschedule_allowed_until_hours: rescheduleCutoff,
-				allow_pay_later: allowPayLater,
-			})
-			toast.success(getSuccessMessage(response))
+			if (editingHospitalId) {
+				await updateHospital({
+					hospital_id: editingHospitalId,
+					video_consultation_fee: form.video_consultation_fee.trim(),
+					offline_consultation_fee: form.offline_consultation_fee.trim(),
+
+					free_followup_validity_days: followUpDays,
+					reschedule_allowed_until_hours: rescheduleCutoff,
+					allow_pay_later: allowPayLater,
+				})
+
+				await updateAvailability({
+					hospital_id: editingHospitalId,
+					day_of_week: selectedDate.getDay(),
+					appointment_mode: 'clinic_visit',
+					slots: buildSlotsForType('clinic'),
+					is_active: true,
+				})
+
+				await updateAvailability({
+					hospital_id: editingHospitalId,
+					day_of_week: selectedDate.getDay(),
+					appointment_mode: 'video_call',
+					slots: buildSlotsForType('video'),
+					is_active: true,
+				})
+
+				toast.success('Hospital updated successfully')
+			} else {
+				// Create flow
+				const response = await createHospital({
+					name: trimmedName,
+					phone_number: form.phone_number.trim(),
+					full_address: trimmedAddress,
+					is_primary: isPrimary,
+					video_consultation_fee: form.video_consultation_fee.trim(),
+					offline_consultation_fee: form.offline_consultation_fee.trim(),
+				})
+
+				const hospitalId = response.data.hospital_id
+
+				console.log('Update payload', {
+					hospital_id: hospitalId,
+					video_consultation_fee: form.video_consultation_fee.trim(),
+					offline_consultation_fee: form.offline_consultation_fee.trim(),
+				})
+
+				await updateAvailability({
+					hospital_id: hospitalId,
+					day_of_week: selectedDate.getDay(),
+					appointment_mode: 'clinic_visit',
+					slots: buildSlotsForType('clinic'),
+					is_active: true,
+				})
+
+				await updateAvailability({
+					hospital_id: hospitalId,
+					day_of_week: selectedDate.getDay(),
+					appointment_mode: 'video_call',
+					slots: buildSlotsForType('video'),
+					is_active: true,
+				})
+
+				toast.success(getSuccessMessage(response))
+			}
 			window.location.reload()
-		} catch (error) {
-			console.error('Failed to save hospital', error)
+		} catch (error: any) {
+			console.log(error?.response?.data)
 			toast.error('Failed to save hospital')
 		} finally {
 			setIsSaving(false)
@@ -318,13 +424,14 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 						onClick={() => {
 							setShowForm(false)
 							setForm(EMPTY_FORM)
+							setEditingHospitalId(null)
 						}}
 						sx={{ color: 'text.secondary', '&:focus': { outline: 'none' } }}
 					>
 						<ArrowBackIosNewIcon sx={{ fontSize: 15 }} />
 					</IconButton>
 					<Typography variant="h6" sx={{ fontWeight: 700, fontSize: '16px' }}>
-						Add new Hospital Details
+						{editingHospitalId ? 'Edit Hospital Details' : 'Add new Hospital Details'}
 					</Typography>
 				</Box>
 
@@ -357,9 +464,13 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 					/>
 					<AppInput
 						label="Clinic consultation fee"
-						value={form.clinic_consultation_fee}
-						placeholder="e.g. 300"
-						onChange={(e) => setForm((prev) => ({ ...prev, clinic_consultation_fee: e.target.value }))}
+						value={form.offline_consultation_fee}
+						onChange={(e) =>
+							setForm((prev) => ({
+								...prev,
+								offline_consultation_fee: e.target.value,
+							}))
+						}
 					/>
 
 					{/* Working Hours */}
@@ -864,6 +975,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 										'&:hover': { borderColor: 'primary.main' },
 										transition: 'all 0.15s',
 									}}
+									onClick={(e) => handleOpenMenu(e, hospital.id)}
 								>
 									<MoreHorizIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
 								</Box>
@@ -872,8 +984,38 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 					))}
 				</Box>
 			)}
+
+			{/* Context menu for each hospital */}
+			<Menu
+				anchorEl={anchorEl}
+				open={Boolean(anchorEl)}
+				onClose={handleCloseMenu}
+				anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+				transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+				PaperProps={{
+					elevation: 2,
+					sx: {
+						mt: 0.5,
+						minWidth: 140,
+						borderRadius: '10px',
+						border: '1px solid',
+						borderColor: 'divider',
+					},
+				}}
+			>
+				<MuiMenuItem
+					onClick={() => menuHospitalId && handleEdit(menuHospitalId)}
+					sx={{ fontSize: '14px', py: 1, px: 2, gap: 1 }}
+				>
+					Edit
+				</MuiMenuItem>
+				<MuiMenuItem
+					onClick={handleCloseMenu}
+					sx={{ fontSize: '14px', py: 1, px: 2, gap: 1, color: 'error.main' }}
+				>
+					Deactivate
+				</MuiMenuItem>
+			</Menu>
 		</Box>
 	)
 }
-
-
