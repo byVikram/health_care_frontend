@@ -64,7 +64,9 @@ export default function AppRoutes() {
 			/>
 			<Route path={ROUTES.DOCTOR_ACCOUNT_DETAILS} element={<DoctorAccountDetailsPage />} />
 
+
 			<Route path={ROUTES.PUBLIC.WELCOME} element={<WelcomePage />} />
+
 
 			<Route path={ROUTES.PUBLIC.WELCOME_DOCTOR} element={<WelcomePage role="doctor" />} />
 
@@ -88,11 +90,17 @@ export default function AppRoutes() {
 				<Route path={ROUTES.APPOINTMENTS} element={<DoctorAppointmentList />} />
 				<Route path={ROUTES.PORTAL.PROFILE} element={<ProfilePage />} />
 				<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
+				<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
+				<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
+				<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
+				{/* <Route path={ROUTES.PHARMACY.PROFILE} element={<PharmacyProfilePage />} /> */}
+				<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
+
 				<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
 				<Route path={ROUTES.RADIOLOGY.PROFILE} element={<RadiologyProfilePage />} />
 			</Route>
 
-			<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
+			{/* <Route path={ROUTES.LABORATORY.PROFILE} element={<LaboratoryProfilePage />} /> */}
 
 			<Route path="*" element={<NotFoundPage />} />
 		</Routes>
