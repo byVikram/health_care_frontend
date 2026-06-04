@@ -11,7 +11,7 @@ import AppButton from '../../../../components/common/Button/AppButton'
 import AppInput from '../../../../components/common/Input/AppInput'
 import { customCardStyle } from '../../../../styles/commonStyles'
  import type { DoctorHospital, AppointmentType, TimeSlot, SectionSlots, WorkingHoursState } from '../../../../types/doctor-profile'
-import { createHospital, updateHospital, updateAvailability } from '../../doctorService'
+import { createHospital, updateHospital, updateWeeklyAvailability } from '../../doctorService'
 import { TextField, MenuItem } from '@mui/material'
 
 interface DoctorHospitalsTabProps {
@@ -216,6 +216,40 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 	const selectedWorkingHours = weeklyAvailability[selectedDay]?.[selectedAppointmentType] || makeDefaultWorkingHours()[selectedAppointmentType]
 
 	// ── Reset all form state to defaults ────────────────────────────────────────
+
+	// Copy current selected day's working hours (for current appointment type) to all 7 days
+	const handleApplyToAll = () => {
+		const day = selectedDate.getDay()
+		const dayAvail = weeklyAvailability[day]
+		if (!dayAvail) return
+		setWeeklyAvailability((prev) => {
+			const updated = { ...prev }
+			for (let d = 0; d < 7; d++) {
+				if (d === day) continue
+				updated[d] = {
+					clinic: {
+						sections: {
+							morning: dayAvail.clinic.sections.morning.map((s) => ({ ...s })),
+							afternoon: dayAvail.clinic.sections.afternoon.map((s) => ({ ...s })),
+							evening: dayAvail.clinic.sections.evening.map((s) => ({ ...s })),
+						},
+						slotDuration: dayAvail.clinic.slotDuration,
+					},
+					video: {
+						sections: {
+							morning: dayAvail.video.sections.morning.map((s) => ({ ...s })),
+							afternoon: dayAvail.video.sections.afternoon.map((s) => ({ ...s })),
+							evening: dayAvail.video.sections.evening.map((s) => ({ ...s })),
+						},
+						slotDuration: dayAvail.video.slotDuration,
+					},
+				}
+			}
+			return updated
+		})
+		toast.success('Applied to all days')
+	}
+
 	const resetFormState = () => {
 		setForm(EMPTY_FORM)
 		setEditingHospitalId(null)
@@ -374,74 +408,37 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		onChange(hospitals.map((h) => ({ ...h, isPrimary: h.id === id })))
 	}
 
-	const buildSlotsForDayAndType = (day: number, type: AppointmentType) => {
-		const dayAvail = weeklyAvailability[day]
-		if (!dayAvail) return []
-		return Object.values(dayAvail[type].sections)
-			.flat()
-			.map((slot) => ({
-				start_time: slot.start,
-				end_time: slot.end,
-				slot_duration: dayAvail[type].slotDuration,
-				buffer_time: 0,
-			}))
-	}
 
+	// ── Save hospital details only (name, address, fees, rules) ─────────────
 	const handleSave = async () => {
 		const trimmedName = form.name.trim()
 		const trimmedAddress = form.fullAddress.trim()
 		const isPrimary = hospitals.length === 0
 
-		if (!trimmedName) {
-			toast.error('Hospital name is required')
-			return
-		}
-		if (!trimmedAddress) {
-			toast.error('Full address is required')
-			return
-		}
+		if (!trimmedName) { toast.error('Hospital name is required'); return }
+		if (!trimmedAddress) { toast.error('Full address is required'); return }
 
 		setIsSaving(true)
 		try {
 			if (editingHospitalId) {
-				// ── Edit flow ─────────────────────────────────────────────────────
-				await updateHospital({
-					hospital_id: editingHospitalId,
-					name: trimmedName,
-					full_address: trimmedAddress,
-					phone_number: form.phone_number.trim(),
-					video_consultation_fee: form.video_consultation_fee.trim(),
-					offline_consultation_fee: form.offline_consultation_fee.trim(),
-					free_followup_validity_days: followUpDays,
-					reschedule_allowed_until_hours: rescheduleCutoff,
-					allow_pay_later: allowPayLater,
-				})
-
-				// Save all 7 days of availability in parallel
-				const saveAvailabilityPromises = []
-				for (let day = 0; day < 7; day++) {
-					saveAvailabilityPromises.push(
-						updateAvailability({
-							hospital_id: editingHospitalId,
-							day_of_week: day,
-							appointment_mode: 'clinic_visit',
-							slots: buildSlotsForDayAndType(day, 'clinic'),
-							is_active: true,
-						})
-					)
-					saveAvailabilityPromises.push(
-						updateAvailability({
-							hospital_id: editingHospitalId,
-							day_of_week: day,
-							appointment_mode: 'video_call',
-							slots: buildSlotsForDayAndType(day, 'video'),
-							is_active: true,
-						})
-					)
-				}
-				await Promise.all(saveAvailabilityPromises)
-
-				// Reflect changes in local state immediately so the list updates on screen
+				// Edit: PATCH /hospitals + PATCH /availability in parallel
+				await Promise.all([
+					updateHospital({
+						hospital_id: editingHospitalId,
+						name: trimmedName,
+						full_address: trimmedAddress,
+						phone_number: form.phone_number.trim(),
+						video_consultation_fee: form.video_consultation_fee.trim(),
+						offline_consultation_fee: form.offline_consultation_fee.trim(),
+						free_followup_validity_days: followUpDays,
+						reschedule_allowed_until_hours: rescheduleCutoff,
+						allow_pay_later: allowPayLater,
+					}),
+					updateWeeklyAvailability({
+						hospital_id: editingHospitalId,
+						availability: weeklyAvailability,
+					}),
+				])
 				const updatedHospitals = hospitals.map((h) =>
 					h.id === editingHospitalId
 						? {
@@ -462,7 +459,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 				onChange(updatedHospitals)
 				toast.success('Hospital updated successfully')
 			} else {
-				// ── Create flow ───────────────────────────────────────────────────
+				// Create: POST /hospitals to get ID, then PATCH /availability
 				const response = await createHospital({
 					name: trimmedName,
 					phone_number: form.phone_number.trim(),
@@ -471,34 +468,11 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 					video_consultation_fee: form.video_consultation_fee.trim(),
 					offline_consultation_fee: form.offline_consultation_fee.trim(),
 				})
-
 				const hospitalId = response.data.public_id
-
-				// Save all 7 days of availability regardless of toggle state
-				const saveAvailabilityPromises = []
-				for (let day = 0; day < 7; day++) {
-					saveAvailabilityPromises.push(
-						updateAvailability({
-							hospital_id: hospitalId,
-							day_of_week: day,
-							appointment_mode: 'clinic_visit',
-							slots: buildSlotsForDayAndType(day, 'clinic'),
-							is_active: true,
-						})
-					)
-					saveAvailabilityPromises.push(
-						updateAvailability({
-							hospital_id: hospitalId,
-							day_of_week: day,
-							appointment_mode: 'video_call',
-							slots: buildSlotsForDayAndType(day, 'video'),
-							is_active: true,
-						})
-					)
-				}
-				await Promise.all(saveAvailabilityPromises)
-
-				// Append the new hospital to the list so it appears immediately
+				await updateWeeklyAvailability({
+					hospital_id: hospitalId,
+					availability: weeklyAvailability,
+				})
 				const newHospital: DoctorHospital = {
 					id: hospitalId,
 					name: trimmedName,
@@ -516,14 +490,12 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 				onChange([...hospitals, newHospital])
 				toast.success(getSuccessMessage(response))
 			}
-
-			// Reset form and return to list view
 			resetFormState()
 			setShowForm(false)
 		} catch (err: unknown) {
 			const apiError = err as { response?: { data?: { message?: string } } }
-			console.error('Failed to save hospital:', apiError?.response?.data)
-			toast.error(apiError?.response?.data?.message ?? 'Failed to save hospital')
+			console.error('Failed to save:', apiError?.response?.data)
+			toast.error(apiError?.response?.data?.message ?? 'Failed to save')
 		} finally {
 			setIsSaving(false)
 		}
@@ -590,9 +562,9 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 
 					{/* Working Hours */}
 					<Box sx={{ mt: 0.5 }}>
-						<Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-							<Typography sx={{ fontWeight: 700, fontSize: '18px' }}>Working Hours</Typography>
-						</Box>
+					<Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+						<Typography sx={{ fontWeight: 700, fontSize: '18px' }}>Working Hours</Typography>
+					</Box>
 
 						{/* Date strip + Clinic/Video toggle */}
 						<Box sx={{ mb: 3 }}>
@@ -972,8 +944,11 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 					</Box>
 				</Box>
 
-				<Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-					<AppButton variant="contained" onClick={handleSave} loading={isSaving} label="Save Details" />
+
+				{/* Apply All + Save */}
+				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1.5, mt: 3 }}>
+					<AppButton variant="contained" onClick={handleApplyToAll} label="Apply All" />
+					<AppButton variant="contained" onClick={handleSave} loading={isSaving} label="Save" />
 				</Box>
 			</Box>
 		)

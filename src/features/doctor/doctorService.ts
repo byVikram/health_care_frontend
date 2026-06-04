@@ -345,6 +345,12 @@ export interface UpdateAvailabilityPayload {
 	appointment_mode: string
 	slots: AvailabilitySlot[]
 	is_active?: boolean
+	
+}
+
+export interface BulkAvailabilityPayload {
+	hospital_id: string
+	availability: Record<number, Record<string, unknown>>
 }
 
 
@@ -358,5 +364,9 @@ export const updateHospital = async (payload: UpdateHospitalPayload) => {
 }
 
 export const updateAvailability = async (payload: UpdateAvailabilityPayload) => {
+	return ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.UPDATE_AVAILABILITY, payload)
+}
+
+export const updateWeeklyAvailability = async (payload: BulkAvailabilityPayload) => {
 	return ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.UPDATE_AVAILABILITY, payload)
 }
