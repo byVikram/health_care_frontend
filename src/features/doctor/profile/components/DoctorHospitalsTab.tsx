@@ -10,30 +10,13 @@ import { toast } from 'react-toastify'
 import AppButton from '../../../../components/common/Button/AppButton'
 import AppInput from '../../../../components/common/Input/AppInput'
 import { customCardStyle } from '../../../../styles/commonStyles'
-import type { DoctorHospital } from '../../../../types/doctor-profile'
+ import type { DoctorHospital, AppointmentType, TimeSlot, SectionSlots, WorkingHoursState } from '../../../../types/doctor-profile'
 import { createHospital, updateHospital, updateAvailability } from '../../doctorService'
 import { TextField, MenuItem } from '@mui/material'
 
 interface DoctorHospitalsTabProps {
 	hospitals: DoctorHospital[]
 	onChange: (hospitals: DoctorHospital[]) => void
-}
-
-type AppointmentType = 'clinic' | 'video'
-
-// A single time slot: start + end
-type TimeSlot = { start: string; end: string }
-
-// Per-section slots (1–3)
-type SectionSlots = {
-	morning: TimeSlot[]
-	afternoon: TimeSlot[]
-	evening: TimeSlot[]
-}
-
-type WorkingHoursState = {
-	sections: SectionSlots
-	slotDuration: number
 }
 
 const EMPTY_FORM = {
@@ -65,7 +48,6 @@ const getHospitalAddressText = (hospital: DoctorHospital) => {
 	return fullAddress || location
 }
 
-// Generate time options for a given hour range; value = 24h, label = 12h AM/PM
 // Generate time options for a given hour range with a custom step in minutes
 const makeTimeOptions = (startHour: number, endHour: number, stepMins: number = 30) => {
 	const options: { value: string; label: string }[] = []
@@ -132,6 +114,62 @@ const SECTION_META = [
 	},
 ]
 
+const makeDefaultWorkingHours = (): Record<AppointmentType, WorkingHoursState> => ({
+	clinic: {
+		sections: {
+			morning: [{ start: '08:00', end: '10:00' }],
+			afternoon: [{ start: '12:00', end: '14:00' }],
+			evening: [{ start: '17:00', end: '19:00' }],
+		},
+		slotDuration: 15,
+	},
+	video: {
+		sections: {
+			morning: [{ start: '08:00', end: '10:00' }],
+			afternoon: [{ start: '12:00', end: '14:00' }],
+			evening: [{ start: '17:00', end: '19:00' }],
+		},
+		slotDuration: 15,
+	},
+})
+
+const getInitialWeeklyAvailability = (h?: DoctorHospital): Record<number, Record<AppointmentType, WorkingHoursState>> => {
+	const initial: Record<number, Record<AppointmentType, WorkingHoursState>> = {}
+	for (let day = 0; day < 7; day++) {
+		initial[day] = {
+			clinic: {
+				sections: {
+					morning: h?.availability?.[day]?.clinic?.sections?.morning?.length
+						? h.availability[day].clinic.sections.morning.map(s => ({ ...s }))
+						: [{ start: '08:00', end: '10:00' }],
+					afternoon: h?.availability?.[day]?.clinic?.sections?.afternoon?.length
+						? h.availability[day].clinic.sections.afternoon.map(s => ({ ...s }))
+						: [{ start: '12:00', end: '14:00' }],
+					evening: h?.availability?.[day]?.clinic?.sections?.evening?.length
+						? h.availability[day].clinic.sections.evening.map(s => ({ ...s }))
+						: [{ start: '17:00', end: '19:00' }],
+				},
+				slotDuration: h?.availability?.[day]?.clinic?.slotDuration ?? 15,
+			},
+			video: {
+				sections: {
+					morning: h?.availability?.[day]?.video?.sections?.morning?.length
+						? h.availability[day].video.sections.morning.map(s => ({ ...s }))
+						: [{ start: '08:00', end: '10:00' }],
+					afternoon: h?.availability?.[day]?.video?.sections?.afternoon?.length
+						? h.availability[day].video.sections.afternoon.map(s => ({ ...s }))
+						: [{ start: '12:00', end: '14:00' }],
+					evening: h?.availability?.[day]?.video?.sections?.evening?.length
+						? h.availability[day].video.sections.evening.map(s => ({ ...s }))
+						: [{ start: '17:00', end: '19:00' }],
+				},
+				slotDuration: h?.availability?.[day]?.video?.slotDuration ?? 15,
+			},
+		}
+	}
+	return initial
+}
+
 export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospitalsTabProps) {
 	const [showForm, setShowForm] = useState(false)
 	const [form, setForm] = useState(EMPTY_FORM)
@@ -152,39 +190,9 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		setMenuHospitalId(null)
 	}
 
-	const handleEdit = (hospitalId: string) => {
-		handleCloseMenu()
-		const h = hospitals.find((h) => h.id === hospitalId)
-		if (!h) return
-		setForm({
-			name: h.name,
-			fullAddress: h.fullAddress,
-			phone_number: h.phone_number ?? '',
-			video_consultation_fee: h.video_consultation_fee ?? '',
-			offline_consultation_fee: h.clinic_consultation_fee ?? '',
-		})
-		setEditingHospitalId(hospitalId)
-		setShowForm(true)
-	}
-
-	const [workingHoursByType, setWorkingHoursByType] = useState<Record<AppointmentType, WorkingHoursState>>({
-		clinic: {
-			sections: {
-				morning: [{ start: '08:00', end: '10:00' }],
-				afternoon: [{ start: '12:00', end: '14:00' }],
-				evening: [{ start: '17:00', end: '19:00' }],
-			},
-			slotDuration: 15,
-		},
-		video: {
-			sections: {
-				morning: [{ start: '08:00', end: '10:00' }],
-				afternoon: [{ start: '12:00', end: '14:00' }],
-				evening: [{ start: '17:00', end: '19:00' }],
-			},
-			slotDuration: 15,
-		},
-	})
+	const [weeklyAvailability, setWeeklyAvailability] = useState<Record<number, Record<AppointmentType, WorkingHoursState>>>(
+		getInitialWeeklyAvailability()
+	)
 
 	const [selectedDate, setSelectedDate] = useState<Date>(new Date())
 	const [weekStart] = useState(() => {
@@ -204,12 +212,58 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 	const [rescheduleCutoff, setRescheduleCutoff] = useState(2)
 	const [allowPayLater, setAllowPayLater] = useState(false)
 
-	const selectedWorkingHours = workingHoursByType[selectedAppointmentType]
+	const selectedDay = selectedDate.getDay()
+	const selectedWorkingHours = weeklyAvailability[selectedDay]?.[selectedAppointmentType] || makeDefaultWorkingHours()[selectedAppointmentType]
+
+	// ── Reset all form state to defaults ────────────────────────────────────────
+	const resetFormState = () => {
+		setForm(EMPTY_FORM)
+		setEditingHospitalId(null)
+		setSelectedAppointmentType('clinic')
+		setFollowUpDays(7)
+		setRescheduleCutoff(2)
+		setAllowPayLater(false)
+		setWeeklyAvailability(getInitialWeeklyAvailability())
+	}
+
+	// ── Edit: populate form fields from existing hospital data and open the form ─
+	// NOTE: We do NOT call getDoctorAvailability here.
+	// That endpoint (/api/doctors/availability) is the patient-facing slot query — it
+	// requires a doctor_id and returns individual bookable slots for a calendar date.
+	// It is NOT a schedule-definition endpoint and returns a DB error when called
+	// without a doctor_id from the doctor's own profile context.
+	// The doctor sets/updates their working-hours schedule fresh each time they edit.
+	const handleEdit = (hospitalId: string) => {
+		handleCloseMenu()
+		const h = hospitals.find((h) => h.id === hospitalId)
+		if (!h) return
+
+		// Pre-fill all text fields from the hospital object in memory
+		setForm({
+			name: h.name,
+			fullAddress: h.fullAddress,
+			phone_number: h.phone_number ?? '',
+			video_consultation_fee: h.video_consultation_fee ?? '',
+			offline_consultation_fee: h.clinic_consultation_fee ?? '',
+		})
+
+		// Pre-fill appointment rule dropdowns
+		setFollowUpDays(h.free_followup_validity_days ?? 7)
+		setRescheduleCutoff(h.reschedule_allowed_until_hours ?? 2)
+		setAllowPayLater(h.allow_pay_later ?? false)
+
+		setWeeklyAvailability(getInitialWeeklyAvailability(h))
+
+		setEditingHospitalId(hospitalId)
+		setShowForm(true)
+	}
 
 	// Add a new slot to a section (max 3). New slot starts at previous slot's end time.
 	const addSlot = (sectionKey: keyof SectionSlots) => {
-		setWorkingHoursByType((prev) => {
-			const current = prev[selectedAppointmentType]
+		setWeeklyAvailability((prev) => {
+			const day = selectedDate.getDay()
+			const currentDayAvail = prev[day] || getInitialWeeklyAvailability()[day]
+			const current = currentDayAvail[selectedAppointmentType]
 			const slots = current.sections[sectionKey]
 			if (slots.length >= 3) return prev
 			const prevEnd = slots[slots.length - 1].end
@@ -223,11 +277,14 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 				String(Math.floor(clampedMins / 60)).padStart(2, '0') + ':' + String(clampedMins % 60).padStart(2, '0')
 			return {
 				...prev,
-				[selectedAppointmentType]: {
-					...current,
-					sections: {
-						...current.sections,
-						[sectionKey]: [...slots, { start: prevEnd, end: newEnd }],
+				[day]: {
+					...currentDayAvail,
+					[selectedAppointmentType]: {
+						...current,
+						sections: {
+							...current.sections,
+							[sectionKey]: [...slots, { start: prevEnd, end: newEnd }],
+						},
 					},
 				},
 			}
@@ -236,17 +293,22 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 
 	// Remove a slot by index (only slots 1+ can be removed, not index 0)
 	const removeSlot = (sectionKey: keyof SectionSlots, slotIndex: number) => {
-		setWorkingHoursByType((prev) => {
-			const current = prev[selectedAppointmentType]
+		setWeeklyAvailability((prev) => {
+			const day = selectedDate.getDay()
+			const currentDayAvail = prev[day] || getInitialWeeklyAvailability()[day]
+			const current = currentDayAvail[selectedAppointmentType]
 			const slots = current.sections[sectionKey]
 			if (slotIndex === 0) return prev
 			return {
 				...prev,
-				[selectedAppointmentType]: {
-					...current,
-					sections: {
-						...current.sections,
-						[sectionKey]: slots.filter((_, i) => i !== slotIndex),
+				[day]: {
+					...currentDayAvail,
+					[selectedAppointmentType]: {
+						...current,
+						sections: {
+							...current.sections,
+							[sectionKey]: slots.filter((_, i) => i !== slotIndex),
+						},
 					},
 				},
 			}
@@ -260,24 +322,31 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		field: 'start' | 'end',
 		value: string
 	) => {
-		setWorkingHoursByType((prev) => {
-			const current = prev[selectedAppointmentType]
+		setWeeklyAvailability((prev) => {
+			const day = selectedDate.getDay()
+			const currentDayAvail = prev[day] || getInitialWeeklyAvailability()[day]
+			const current = currentDayAvail[selectedAppointmentType]
 			const slots = current.sections[sectionKey].map((slot, i) =>
 				i === slotIndex ? { ...slot, [field]: value } : slot
 			)
 			return {
 				...prev,
-				[selectedAppointmentType]: {
-					...current,
-					sections: { ...current.sections, [sectionKey]: slots },
+				[day]: {
+					...currentDayAvail,
+					[selectedAppointmentType]: {
+						...current,
+						sections: { ...current.sections, [sectionKey]: slots },
+					},
 				},
 			}
 		})
 	}
 
 	const updateSlotDuration = (value: number) => {
-		setWorkingHoursByType((prev) => {
-			const current = prev[selectedAppointmentType]
+		setWeeklyAvailability((prev) => {
+			const day = selectedDate.getDay()
+			const currentDayAvail = prev[day] || getInitialWeeklyAvailability()[day]
+			const current = currentDayAvail[selectedAppointmentType]
 			// Snap all existing slot times to the new step so selected values stay valid
 			const snappedSections = Object.fromEntries(
 				Object.entries(current.sections).map(([sKey, slots]) => [
@@ -290,9 +359,12 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 			) as SectionSlots
 			return {
 				...prev,
-				[selectedAppointmentType]: {
-					sections: snappedSections,
-					slotDuration: value,
+				[day]: {
+					...currentDayAvail,
+					[selectedAppointmentType]: {
+						sections: snappedSections,
+						slotDuration: value,
+					},
 				},
 			}
 		})
@@ -302,24 +374,15 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		onChange(hospitals.map((h) => ({ ...h, isPrimary: h.id === id })))
 	}
 
-	// const buildSlots = () => {
-	// 	return Object.values(selectedWorkingHours.sections)
-	// 		.flat()
-	// 		.map((slot) => ({
-	// 			start_time: slot.start,
-	// 			end_time: slot.end,
-	// 			slot_duration: selectedWorkingHours.slotDuration,
-	// 			buffer_time: 0,
-	// 		}))
-	// }
-
-	const buildSlotsForType = (type: AppointmentType) => {
-		return Object.values(workingHoursByType[type].sections)
+	const buildSlotsForDayAndType = (day: number, type: AppointmentType) => {
+		const dayAvail = weeklyAvailability[day]
+		if (!dayAvail) return []
+		return Object.values(dayAvail[type].sections)
 			.flat()
 			.map((slot) => ({
 				start_time: slot.start,
 				end_time: slot.end,
-				slot_duration: workingHoursByType[type].slotDuration,
+				slot_duration: dayAvail[type].slotDuration,
 				buffer_time: 0,
 			}))
 	}
@@ -339,38 +402,67 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		}
 
 		setIsSaving(true)
-		setIsSaving(true)
 		try {
 			if (editingHospitalId) {
+				// ── Edit flow ─────────────────────────────────────────────────────
 				await updateHospital({
 					hospital_id: editingHospitalId,
+					name: trimmedName,
+					full_address: trimmedAddress,
+					phone_number: form.phone_number.trim(),
 					video_consultation_fee: form.video_consultation_fee.trim(),
 					offline_consultation_fee: form.offline_consultation_fee.trim(),
-
 					free_followup_validity_days: followUpDays,
 					reschedule_allowed_until_hours: rescheduleCutoff,
 					allow_pay_later: allowPayLater,
 				})
 
-				await updateAvailability({
-					hospital_id: editingHospitalId,
-					day_of_week: selectedDate.getDay(),
-					appointment_mode: 'clinic_visit',
-					slots: buildSlotsForType('clinic'),
-					is_active: true,
-				})
+				// Save all 7 days of availability in parallel
+				const saveAvailabilityPromises = []
+				for (let day = 0; day < 7; day++) {
+					saveAvailabilityPromises.push(
+						updateAvailability({
+							hospital_id: editingHospitalId,
+							day_of_week: day,
+							appointment_mode: 'clinic_visit',
+							slots: buildSlotsForDayAndType(day, 'clinic'),
+							is_active: true,
+						})
+					)
+					saveAvailabilityPromises.push(
+						updateAvailability({
+							hospital_id: editingHospitalId,
+							day_of_week: day,
+							appointment_mode: 'video_call',
+							slots: buildSlotsForDayAndType(day, 'video'),
+							is_active: true,
+						})
+					)
+				}
+				await Promise.all(saveAvailabilityPromises)
 
-				await updateAvailability({
-					hospital_id: editingHospitalId,
-					day_of_week: selectedDate.getDay(),
-					appointment_mode: 'video_call',
-					slots: buildSlotsForType('video'),
-					is_active: true,
-				})
-
+				// Reflect changes in local state immediately so the list updates on screen
+				const updatedHospitals = hospitals.map((h) =>
+					h.id === editingHospitalId
+						? {
+								...h,
+								name: trimmedName,
+								fullAddress: trimmedAddress,
+								location: trimmedAddress,
+								phone_number: form.phone_number.trim(),
+								video_consultation_fee: form.video_consultation_fee.trim(),
+								clinic_consultation_fee: form.offline_consultation_fee.trim(),
+								free_followup_validity_days: followUpDays,
+								reschedule_allowed_until_hours: rescheduleCutoff,
+								allow_pay_later: allowPayLater,
+								availability: weeklyAvailability,
+							}
+						: h
+				)
+				onChange(updatedHospitals)
 				toast.success('Hospital updated successfully')
 			} else {
-				// Create flow
+				// ── Create flow ───────────────────────────────────────────────────
 				const response = await createHospital({
 					name: trimmedName,
 					phone_number: form.phone_number.trim(),
@@ -380,36 +472,58 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 					offline_consultation_fee: form.offline_consultation_fee.trim(),
 				})
 
-				const hospitalId = response.data.hospital_id
+				const hospitalId = response.data.public_id
 
-				console.log('Update payload', {
-					hospital_id: hospitalId,
+				// Save all 7 days of availability regardless of toggle state
+				const saveAvailabilityPromises = []
+				for (let day = 0; day < 7; day++) {
+					saveAvailabilityPromises.push(
+						updateAvailability({
+							hospital_id: hospitalId,
+							day_of_week: day,
+							appointment_mode: 'clinic_visit',
+							slots: buildSlotsForDayAndType(day, 'clinic'),
+							is_active: true,
+						})
+					)
+					saveAvailabilityPromises.push(
+						updateAvailability({
+							hospital_id: hospitalId,
+							day_of_week: day,
+							appointment_mode: 'video_call',
+							slots: buildSlotsForDayAndType(day, 'video'),
+							is_active: true,
+						})
+					)
+				}
+				await Promise.all(saveAvailabilityPromises)
+
+				// Append the new hospital to the list so it appears immediately
+				const newHospital: DoctorHospital = {
+					id: hospitalId,
+					name: trimmedName,
+					location: trimmedAddress,
+					fullAddress: trimmedAddress,
+					isPrimary: isPrimary,
+					phone_number: form.phone_number.trim(),
 					video_consultation_fee: form.video_consultation_fee.trim(),
-					offline_consultation_fee: form.offline_consultation_fee.trim(),
-				})
-
-				await updateAvailability({
-					hospital_id: hospitalId,
-					day_of_week: selectedDate.getDay(),
-					appointment_mode: 'clinic_visit',
-					slots: buildSlotsForType('clinic'),
-					is_active: true,
-				})
-
-				await updateAvailability({
-					hospital_id: hospitalId,
-					day_of_week: selectedDate.getDay(),
-					appointment_mode: 'video_call',
-					slots: buildSlotsForType('video'),
-					is_active: true,
-				})
-
+					clinic_consultation_fee: form.offline_consultation_fee.trim(),
+					free_followup_validity_days: followUpDays,
+					reschedule_allowed_until_hours: rescheduleCutoff,
+					allow_pay_later: allowPayLater,
+					availability: weeklyAvailability,
+				}
+				onChange([...hospitals, newHospital])
 				toast.success(getSuccessMessage(response))
 			}
-			window.location.reload()
-		} catch (error: any) {
-			console.log(error?.response?.data)
-			toast.error('Failed to save hospital')
+
+			// Reset form and return to list view
+			resetFormState()
+			setShowForm(false)
+		} catch (err: unknown) {
+			const apiError = err as { response?: { data?: { message?: string } } }
+			console.error('Failed to save hospital:', apiError?.response?.data)
+			toast.error(apiError?.response?.data?.message ?? 'Failed to save hospital')
 		} finally {
 			setIsSaving(false)
 		}
@@ -423,8 +537,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 						size="small"
 						onClick={() => {
 							setShowForm(false)
-							setForm(EMPTY_FORM)
-							setEditingHospitalId(null)
+							resetFormState()
 						}}
 						sx={{ color: 'text.secondary', '&:focus': { outline: 'none' } }}
 					>
@@ -460,7 +573,9 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 						label="Video consultation fee"
 						value={form.video_consultation_fee}
 						placeholder="e.g. 500"
-						onChange={(e) => setForm((prev) => ({ ...prev, video_consultation_fee: e.target.value }))}
+						onChange={(e) =>
+							setForm((prev) => ({ ...prev, video_consultation_fee: e.target.value }))
+						}
 					/>
 					<AppInput
 						label="Clinic consultation fee"
@@ -752,6 +867,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 						</Box>
 					</Box>
 				</Box>
+
 				{/* Appointment Rules */}
 				<Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
 					<Typography sx={{ fontWeight: 700, fontSize: '18px' }}>Appointment Rules</Typography>
@@ -872,7 +988,10 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 				<AppButton
 					variant="contained"
 					startIcon={<AddIcon />}
-					onClick={() => setShowForm(true)}
+					onClick={() => {
+						resetFormState()
+						setShowForm(true)
+					}}
 					label="Add new hospital"
 				/>
 			</Box>

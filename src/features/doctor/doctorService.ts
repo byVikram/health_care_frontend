@@ -200,17 +200,21 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 		})
 	}
 
-	// Build hospitals
+	// Build hospitals — include all appointment-rules fields
 	const hospitals: DoctorProfile['hospitals'] = Array.isArray(data?.hospitals)
 		? data.hospitals.map((h: DoctorProfileApiHospital) => ({
-				id: h.hospital.id,
+				id: h.hospital?.id ?? h.id,
 				name: h.hospital?.name ?? '',
 				location: h.hospital?.address ?? '',
 				fullAddress: h.hospital?.address ?? '',
 				isPrimary: h.is_primary ?? false,
-				video_consultation_fee: h.hospital.video_consultation_fee ?? false,
-				clinic_consultation_fee: h.hospital.clinic_consultation_fee ?? false,
-				phone_number: h.hospital.contact_number ?? false,
+				video_consultation_fee: h.hospital?.video_consultation_fee ?? '',
+				clinic_consultation_fee: h.hospital?.clinic_consultation_fee ?? '',
+				phone_number: h.hospital?.contact_number ?? '',
+				free_followup_validity_days: h.appointment_rules?.free_followup_validity_days ?? h.free_followup_validity_days ?? 7,
+				reschedule_allowed_until_hours: h.appointment_rules?.reschedule_allowed_until_hours ?? h.reschedule_allowed_until_hours ?? 2,
+				allow_pay_later: h.appointment_rules?.allow_pay_later ?? h.allow_pay_later ?? false,
+				availability: h.availability,
 			}))
 		: []
 
@@ -307,26 +311,34 @@ export interface CreateHospitalResponse {
 	message: string
 	data: {
 		hospital_id: string
+		public_id : string
 	}
 }
 
 export interface UpdateHospitalPayload {
 	hospital_id: string
+	// Hospital table fields
+	name?: string
+	full_address?: string
+	phone_number?: string
+	// DoctorHospital link fields
 	is_primary?: boolean
 	video_consultation_fee?: string
 	offline_consultation_fee?: string
 	available_days?: string[]
 	working_hours?: string
 	free_followup_validity_days?: number
-    reschedule_allowed_until_hours?: number
-    allow_pay_later?: boolean
+	reschedule_allowed_until_hours?: number
+	allow_pay_later?: boolean
 }
+
 export interface AvailabilitySlot {
 	start_time: string
 	end_time: string
 	slot_duration: number
 	buffer_time: number
 }
+
 export interface UpdateAvailabilityPayload {
 	hospital_id: string
 	day_of_week: number

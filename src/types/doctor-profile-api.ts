@@ -1,5 +1,4 @@
-// src/types/doctor-profile-api.ts
-// Matches the /api/doctors/details API response shape
+import { WorkingHoursState, AppointmentType } from './doctor-profile'
 
 export interface DoctorProfileApiSpeciality {
 	id: string
@@ -11,6 +10,15 @@ export interface DoctorProfileApiHospital {
 	is_primary: boolean
 	available_days: string[]
 	working_hours: string
+	free_followup_validity_days?: number
+	reschedule_allowed_until_hours?: number
+	allow_pay_later?: boolean
+	appointment_rules?: {
+		free_followup_validity_days: number
+		reschedule_allowed_until_hours: number
+		allow_pay_later: boolean
+	}
+	availability?: Record<number, Record<AppointmentType, WorkingHoursState>>
 	hospital: {
 		id: string
 		name: string
