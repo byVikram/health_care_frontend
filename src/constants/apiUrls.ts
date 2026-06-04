@@ -78,5 +78,7 @@ export const API_ENDPOINTS = {
 		LIST: `${BASE_URL}/api/pharmacy-orders`,
 		GET_BY_ID: (id: string) => `${BASE_URL}/api/pharmacy-orders/${id}`,
 		UPDATE_STATUS: (id: string) => `${BASE_URL}/api/pharmacy-orders/${id}/status`,
+		UPDATE_MEDICINES: (id: string) => `${BASE_URL}/api/pharmacy-orders/${id}/medicines`,
+		SEND_REMINDER: (id: string) => `${BASE_URL}/api/pharmacy-orders/${id}/remind`,
 	},
 }

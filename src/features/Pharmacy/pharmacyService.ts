@@ -161,9 +161,27 @@ export interface PharmacyOrderCreatePayload {
 }
 
 export interface PharmacyOrderStatusUpdatePayload {
-	status: 'accepted' | 'rejected' | 'ready_for_pickup' | 'out_for_delivery' | 'completed'
+	status: string
 	bill_amount?: number
 	rejection_reason?: string
+}
+
+export interface PharmacyOrderMedicine {
+	id?: string
+	medication: string
+	frequency: string
+	totalTablets: number
+	purchasedTablets: number
+	instructions: string
+}
+
+export interface PharmacyOrderMedicinesUpdatePayload {
+	medicines: PharmacyOrderMedicine[]
+}
+
+export interface PharmacyOrderReminderPayload {
+	reminderDate: string
+	autoNotify: boolean
 }
 
 export interface PharmacyOrderDeliveryAddress {
@@ -203,6 +221,7 @@ export interface PharmacyOrder {
 		gender: string | null
 		age: number | null
 	}
+	medicines?: PharmacyOrderMedicine[]
 }
 
 export interface PharmacyOrderResponse {
@@ -332,6 +351,30 @@ export const updatePharmacyOrderStatus = async (
 ): Promise<PharmacyOrderResponse> => {
 	const res = await ApiService.patch<PharmacyOrderResponse>(
 		API_ENDPOINTS.PHARMACY_ORDERS.UPDATE_STATUS(orderPublicId),
+		payload
+	)
+	return res.data
+}
+
+/** PUT /api/pharmacy-orders/:id/medicines - update medicines for an order */
+export const updatePharmacyOrderMedicines = async (
+	orderPublicId: string,
+	payload: PharmacyOrderMedicinesUpdatePayload
+): Promise<PharmacyOrderResponse> => {
+	const res = await ApiService.put<PharmacyOrderResponse>(
+		API_ENDPOINTS.PHARMACY_ORDERS.UPDATE_MEDICINES(orderPublicId),
+		payload
+	)
+	return res.data
+}
+
+/** POST /api/pharmacy-orders/:id/remind - send medicine reminder */
+export const sendPharmacyOrderReminder = async (
+	orderPublicId: string,
+	payload: PharmacyOrderReminderPayload
+): Promise<PharmacyOrderResponse> => {
+	const res = await ApiService.post<PharmacyOrderResponse>(
+		API_ENDPOINTS.PHARMACY_ORDERS.SEND_REMINDER(orderPublicId),
 		payload
 	)
 	return res.data
