@@ -19,12 +19,11 @@ export const ROUTES = {
 	PHARMACY: {
 		ORDERS: '/pharmacy/orders',
 		ORDER_DETAIL: '/pharmacy/orders/:orderId',
-		PROFILE: '/pharmacy/profile',
 		SEARCH: '/pharmacies',
 	},
 
-	LABORATORY: {
-		PROFILE: '/laboratory/profile',
+	RADIOLOGY: {
+		PROFILE: '/radiology/profile',
 	},
 
 	TEST: '/test',

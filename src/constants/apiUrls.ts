@@ -24,6 +24,8 @@ export const API_ENDPOINTS = {
 		DETAILS: `${BASE_URL}/api/doctors/details`,
 		PROFESSIONAL_DETAILS: `${BASE_URL}/api/doctors/professional-details`,
 		HOSPITALS: `${BASE_URL}/api/doctors/hospitals`,
+		UPDATE_HOSPITAL: `${BASE_URL}/api/doctors/hospitals`,
+		UPDATE_AVAILABILITY: `${BASE_URL}/api/doctors/availability`,
 		DELETE_ACCOUNT: `${BASE_URL}/api/doctors/profile`,
 	},
 	LABORATORY_PROFILE: {

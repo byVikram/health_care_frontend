@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { Box, Typography, Avatar, InputAdornment, Card } from '@mui/material'
+import React, {  useEffect, useState } from 'react'
+import { Box, Typography, Avatar, InputAdornment,  Card } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import AppTable from './components/AppTable'
@@ -67,7 +67,8 @@ export default function AppointmentList() {
 	const { role } = useAuth()
 	const queryView = searchParams.get('view')
 	const viewAs: 'doctor' | 'patient' =
-		queryView === 'doctor' || queryView === 'patient' ? queryView : role === 'patient' ? 'patient' : 'doctor'
+		queryView === 'doctor' || queryView === 'patient' ? 
+		queryView : role === 'patient' ? 'patient' : 'doctor'
 
 	const [search, setSearch] = useState('')
 	const [page, setPage] = useState(1)
@@ -95,7 +96,7 @@ export default function AppointmentList() {
 
 				if (search) params.search = search
 
-				const res = await ApiService.getWithParams<AppointmentsResponse>(API_ENDPOINTS.APPOINTMENTS.GET, params)
+			const res = await ApiService.getWithParams<AppointmentsResponse>(API_ENDPOINTS.APPOINTMENTS.GET, params)
 
 				const mapped: AppointmentRow[] = res.data.data.map((appt) => ({
 					id: appt.id,
@@ -126,7 +127,7 @@ export default function AppointmentList() {
 		}
 
 		fetchAppointments()
-	}, [page, search, size, patientId])
+	}, [page, search, size,  patientId])
 
 	// ── Name column — shown once, based on viewAs ───────────────────────────
 	const patientNameColumn: ColDef = {
@@ -356,41 +357,6 @@ export default function AppointmentList() {
 						</Grid>
 					</Grid>
 					<Grid size={{ xs: 12, lg: 4 }}>
-						{/* <AppInput
-							fullWidth
-							size="small"
-							placeholder={
-								viewAs === 'doctor' ? 'Search Patient ID, Name...' : 'Search Doctor ID, Name...'
-							}
-							value={search}
-							onChange={(e) => {
-								setSearch(e.target.value)
-								setPage(1)
-							}}
-							InputProps={{
-								startAdornment: (
-									<InputAdornment position="start">
-										<SearchIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
-									</InputAdornment>
-								),
-								endAdornment: (
-									<InputAdornment position="end">
-										<MicNoneOutlinedIcon
-											sx={{ color: 'text.disabled', fontSize: 20, cursor: 'pointer' }}
-										/>
-									</InputAdornment>
-								),
-							}}
-							sx={{
-								fontSize: 14,
-								height: 44,
-								borderRadius: '10px',
-								bgcolor: 'background.paper',
-								'& .MuiOutlinedInput-notchedOutline': {
-									borderColor: 'divider',
-								},
-							}}
-						/> */}
 						<AppInput
 							fullWidth
 							size="small"

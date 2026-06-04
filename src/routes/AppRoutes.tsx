@@ -22,9 +22,8 @@ import DoctorAppointmentList from '../features/appointments/AppointmentList'
 import WelcomePage from '../features/auth/WelcomePage'
 import OrderList from '../features/Pharmacy/OrderList'
 import OrderDetailPage from '../features/Pharmacy/OrderDetailPage'
-import PharmacyProfilePage from '../features/Pharmacy/profile/PharmacyProfilePage'
-import LaboratoryProfilePage from '../features/laboratory/profile/LaboratoryProfilePage'
 import PharmacySearchPage from '../features/Pharmacy/components/PharmacySearchPage'
+import RadiologyProfilePage from '../features/radiology/profile/RadiologyProfilePage'
 function ProtectedLayout() {
 	return (
 		<MainLayout>
@@ -65,7 +64,9 @@ export default function AppRoutes() {
 			/>
 			<Route path={ROUTES.DOCTOR_ACCOUNT_DETAILS} element={<DoctorAccountDetailsPage />} />
 
+
 			<Route path={ROUTES.PUBLIC.WELCOME} element={<WelcomePage />} />
+
 
 			<Route path={ROUTES.PUBLIC.WELCOME_DOCTOR} element={<WelcomePage role="doctor" />} />
 
@@ -77,6 +78,8 @@ export default function AppRoutes() {
 					<Route path={ROUTES.DOCTORS.SEARCH} element={<DoctorSearchPage />} />
 					<Route path={ROUTES.PAYMENT} element={<PaymentPage />} />
 					<Route path={ROUTES.TEST} element={<TestPage />} />
+
+					<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
 				</Route>
 			</Route>
 
@@ -90,11 +93,14 @@ export default function AppRoutes() {
 				<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
 				<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
 				<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
-				<Route path={ROUTES.PHARMACY.PROFILE} element={<PharmacyProfilePage />} />
+				{/* <Route path={ROUTES.PHARMACY.PROFILE} element={<PharmacyProfilePage />} /> */}
 				<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
+
+				<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
+				<Route path={ROUTES.RADIOLOGY.PROFILE} element={<RadiologyProfilePage />} />
 			</Route>
 
-			<Route path={ROUTES.LABORATORY.PROFILE} element={<LaboratoryProfilePage />} />
+			{/* <Route path={ROUTES.LABORATORY.PROFILE} element={<LaboratoryProfilePage />} /> */}
 
 			<Route path="*" element={<NotFoundPage />} />
 		</Routes>

@@ -11,7 +11,6 @@ import {
 	Typography,
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
-import MicIcon from '@mui/icons-material/Mic'
 import TuneIcon from '@mui/icons-material/Tune'
 import PharmacySearchCard from '../../Pharmacy/components/PharmacySearchCard'
 import PharmacyFilters, { PharmacyFilterState } from '../../Pharmacy/components/PharmacyFilters'
@@ -33,7 +32,6 @@ export default function PharmacySearchPage() {
 	const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
 	const [page, setPage] = useState(getNumberParam('page', 1))
 	const [filters, setFilters] = useState<PharmacyFilterState>(() => ({
-		city: searchParams.get('city') || '',
 		homeDelivery: searchParams.get('home_delivery') === 'true',
 		is24x7: searchParams.get('is_24_x_7') === 'true',
 		emergencyMeds: searchParams.get('emergency_medicine') === 'true',
@@ -46,7 +44,6 @@ export default function PharmacySearchPage() {
 		const nextParams = new URLSearchParams()
 
 		if (searchQuery.trim()) nextParams.set('search', searchQuery.trim())
-		if (filters.city) nextParams.set('city', filters.city)
 		if (filters.homeDelivery) nextParams.set('home_delivery', 'true')
 		if (filters.is24x7) nextParams.set('is_24_x_7', 'true')
 		if (filters.emergencyMeds) nextParams.set('emergency_medicine', 'true')
@@ -56,36 +53,44 @@ export default function PharmacySearchPage() {
 	}, [filters, page, searchQuery, setSearchParams])
 
 	useEffect(() => {
-	let active = true
+		let active = true
 
-	const fetchPharmacies = async () => {
-		setLoading(true)
-		setError(null)
+		const fetchPharmacies = async () => {
+			setLoading(true)
+			setError(null)
 
-		try {
-			const response = await getPharmacies()
-			if (!active) return
-		
-			const mappedPharmacies: PharmacyItem[] = (response.data ?? []).map((item) => ({
-				...item,
-				owner_name: item.owner_name ?? '',
-			}))
-			setAllPharmacies(mappedPharmacies)
-		} catch (err) {
-			console.log(err)
-			if (!active) return
-			setError('Failed to load pharmacies')
-		} finally {
-			if (active) setLoading(false)
+			try {
+				const response = await getPharmacies()
+				if (!active) return
+
+				const mappedPharmacies: PharmacyItem[] = (response.data ?? []).map((item) => ({
+					id: item.id,
+					name: item.name ?? '',
+					owner_name: item.owner_name ?? '',
+					avatar_s3_key: item.avatar_s3_key,
+					address: item.address ?? '',
+					city: item.city ?? '',
+					operating_hours: item.operating_hours as unknown as PharmacyItem['operating_hours'],
+					home_delivery_available: item.home_delivery_available,
+					is_24_x_7: item.is_24_x_7,
+					emergency_medicine_available: item.emergency_medicine_available,
+				}))
+				setAllPharmacies(mappedPharmacies)
+			} catch (err) {
+				console.log(err)
+				if (!active) return
+				setError('Failed to load pharmacies')
+			} finally {
+				if (active) setLoading(false)
+			}
 		}
-	}
 
-	fetchPharmacies()
+		fetchPharmacies()
 
-	return () => {
-		active = false
-	}
-}, [])
+		return () => {
+			active = false
+		}
+	}, [])
 
 	const filteredPharmacies = allPharmacies.filter((pharmacy) => {
 		const query = searchQuery.trim().toLowerCase()
@@ -95,12 +100,11 @@ export default function PharmacySearchPage() {
 				.filter(Boolean)
 				.some((value) => value.toLowerCase().includes(query))
 
-		const matchesCity = !filters.city || pharmacy.city === filters.city
 		const matchesHomeDelivery = !filters.homeDelivery || pharmacy.home_delivery_available
 		const matches24x7 = !filters.is24x7 || pharmacy.is_24_x_7
 		const matchesEmergency = !filters.emergencyMeds || pharmacy.emergency_medicine_available
 
-		return matchesSearch && matchesCity && matchesHomeDelivery && matches24x7 && matchesEmergency
+		return matchesSearch && matchesHomeDelivery && matches24x7 && matchesEmergency
 	})
 
 	const total = filteredPharmacies.length
@@ -123,7 +127,7 @@ export default function PharmacySearchPage() {
 	}
 
 	const clearAllFilters = () => {
-		setFilters({ city: '', homeDelivery: false, is24x7: false, emergencyMeds: false })
+		setFilters({ homeDelivery: false, is24x7: false, emergencyMeds: false })
 		setSearchQuery('')
 		setPage(1)
 	}
@@ -136,9 +140,9 @@ export default function PharmacySearchPage() {
 						placeholder="Search by pharmacy name, owner, city..."
 						value={searchQuery}
 						onChange={handleSearchChange}
+						enableVoiceSearch
 						size="small"
 						startIcon={<SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />}
-						endIcon={<MicIcon sx={{ color: 'text.secondary', fontSize: 20, cursor: 'pointer' }} />}
 						sx={{
 							'& .MuiOutlinedInput-root': {
 								borderRadius: '10px',
@@ -172,14 +176,6 @@ export default function PharmacySearchPage() {
 								<Typography variant="h5" sx={{ fontWeight: 600 }}>
 									{total} Pharmacies Found
 								</Typography>
-								{filters.city && (
-									<Chip
-										label={filters.city}
-										size="small"
-										onDelete={() => handleFilterChange({ ...filters, city: '' })}
-										sx={{ bgcolor: '#e8f5f5', color: 'primary.main', fontWeight: 600 }}
-									/>
-								)}
 								{(filters.homeDelivery || filters.is24x7 || filters.emergencyMeds || searchQuery) && (
 									<Chip
 										label="Clear all filters"

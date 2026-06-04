@@ -115,11 +115,6 @@ export const getDoctorAvailability = async (params: {
 	return res.data
 }
 
-export const createHospital = async (data: Record<string, unknown>) => {
-	const res = await ApiService.post(API_ENDPOINTS.DOCTOR_PROFILE.HOSPITALS, data)
-	return res.data
-}
-
 // ── Slot overrides ────────────────────────────────────────────────────────────
 
 export interface SlotOverridePayload {
@@ -140,7 +135,7 @@ export interface SlotOverrideBatchPayload {
 		is_blocked: boolean
 	}>
 	reason?: string
-	appointment_mode?:string
+	appointment_mode?: string
 }
 
 export interface SlotOverrideResponse {
@@ -205,14 +200,21 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 		})
 	}
 
-	// Build hospitals
+	// Build hospitals — include all appointment-rules fields
 	const hospitals: DoctorProfile['hospitals'] = Array.isArray(data?.hospitals)
 		? data.hospitals.map((h: DoctorProfileApiHospital) => ({
-				id: h.hospital.id,
+				id: h.hospital?.id ?? h.id,
 				name: h.hospital?.name ?? '',
 				location: h.hospital?.address ?? '',
 				fullAddress: h.hospital?.address ?? '',
 				isPrimary: h.is_primary ?? false,
+				video_consultation_fee: h.hospital?.video_consultation_fee ?? '',
+				clinic_consultation_fee: h.hospital?.clinic_consultation_fee ?? '',
+				phone_number: h.hospital?.contact_number ?? '',
+				free_followup_validity_days: h.appointment_rules?.free_followup_validity_days ?? h.free_followup_validity_days ?? 7,
+				reschedule_allowed_until_hours: h.appointment_rules?.reschedule_allowed_until_hours ?? h.reschedule_allowed_until_hours ?? 2,
+				allow_pay_later: h.appointment_rules?.allow_pay_later ?? h.allow_pay_later ?? false,
+				availability: h.availability,
 			}))
 		: []
 
@@ -233,7 +235,7 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 			location: pd?.location ?? '',
 			instagram: pd?.instagram ?? '',
 			facebook: pd?.facebook ?? '',
-			twitter: pd?.twitter ??'',
+			twitter: pd?.twitter ?? '',
 			avatar: pd?.avatar_s3_key ?? '',
 			experience: String(prof?.experience_years ?? 0),
 			languages: pd?.languages ?? [],
@@ -292,4 +294,79 @@ export const getFavouriteDoctors = async (): Promise<FavouritesResponse> => {
 export const toggleFavouriteDoctor = async (publicId: string): Promise<ToggleFavouriteResponse> => {
 	const res = await ApiService.post<ToggleFavouriteResponse>(API_ENDPOINTS.DOCTORS_FAVOURITES.TOGGLE(publicId), {})
 	return res.data
+}
+
+// -- Hospitals ---------------------------------------------------------
+
+export interface CreateHospitalPayload {
+	name: string
+	phone_number?: string
+	full_address?: string
+	video_consultation_fee?: string
+	offline_consultation_fee?: string
+	is_primary?: boolean
+}
+
+export interface CreateHospitalResponse {
+	message: string
+	data: {
+		hospital_id: string
+		public_id : string
+	}
+}
+
+export interface UpdateHospitalPayload {
+	hospital_id: string
+	// Hospital table fields
+	name?: string
+	full_address?: string
+	phone_number?: string
+	// DoctorHospital link fields
+	is_primary?: boolean
+	video_consultation_fee?: string
+	offline_consultation_fee?: string
+	available_days?: string[]
+	working_hours?: string
+	free_followup_validity_days?: number
+	reschedule_allowed_until_hours?: number
+	allow_pay_later?: boolean
+}
+
+export interface AvailabilitySlot {
+	start_time: string
+	end_time: string
+	slot_duration: number
+	buffer_time: number
+}
+
+export interface UpdateAvailabilityPayload {
+	hospital_id: string
+	day_of_week: number
+	appointment_mode: string
+	slots: AvailabilitySlot[]
+	is_active?: boolean
+	
+}
+
+export interface BulkAvailabilityPayload {
+	hospital_id: string
+	availability: Record<number, Record<string, unknown>>
+}
+
+
+export const createHospital = async (data: CreateHospitalPayload): Promise<CreateHospitalResponse> => {
+	const res = await ApiService.post<CreateHospitalResponse>(API_ENDPOINTS.DOCTOR_PROFILE.HOSPITALS, data)
+	return res.data
+}
+
+export const updateHospital = async (payload: UpdateHospitalPayload) => {
+	return ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.UPDATE_HOSPITAL, payload)
+}
+
+export const updateAvailability = async (payload: UpdateAvailabilityPayload) => {
+	return ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.UPDATE_AVAILABILITY, payload)
+}
+
+export const updateWeeklyAvailability = async (payload: BulkAvailabilityPayload) => {
+	return ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.UPDATE_AVAILABILITY, payload)
 }

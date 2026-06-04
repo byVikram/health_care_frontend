@@ -1,8 +1,8 @@
-import { Card, CardContent, FormControlLabel, Switch, Typography } from '@mui/material'
-import AppSelect from '../../../components/common/Select/AppSelect'
+import { Box, Typography, Divider } from '@mui/material'
+import { customCardStyle } from '../../../styles/commonStyles'
+import AppSwitch from '../../../components/common/Switch/AppSwitch'
 
 export interface PharmacyFilterState {
-	city: string
 	homeDelivery: boolean
 	is24x7: boolean
 	emergencyMeds: boolean
@@ -13,75 +13,69 @@ interface Props {
 	onChange: (newFilters: PharmacyFilterState) => void
 }
 
-const CITY_OPTIONS = [
-	{ label: 'All Cities', value: '' },
-	{ label: 'Mumbai', value: 'Mumbai' },
-	{ label: 'Delhi', value: 'Delhi' },
-	{ label: 'Bangalore', value: 'Bangalore' },
-	{ label: 'Chennai', value: 'Chennai' },
-	{ label: 'Kolkata', value: 'Kolkata' },
-	{ label: 'Hyderabad', value: 'Hyderabad' },
-	{ label: 'Pune', value: 'Pune' },
-	{ label: 'Ahmedabad', value: 'Ahmedabad' },
-	{ label: 'Jaipur', value: 'Jaipur' },
-	{ label: 'Surat', value: 'Surat' },
-]
-
 export default function PharmacyFilters({ filters, onChange }: Props) {
-	const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		onChange({ ...filters, city: e.target.value })
-	}
-
-	const handleToggle = (key: keyof Omit<PharmacyFilterState, 'city'>) => (e: React.ChangeEvent<HTMLInputElement>) => {
-		onChange({ ...filters, [key]: e.target.checked })
-	}
-
 	return (
-		<Card sx={{ borderRadius: 3, border: '1px solid #EAECF0' }}>
-			<CardContent>
-				<Typography variant="subtitle1" fontWeight={600} mb={2}>
-					Filters
+		<Box
+			sx={{
+				...customCardStyle,
+				display: 'flex',
+				flexDirection: 'column',
+				gap: 3,
+				maxHeight: 'calc(100vh - 48px)',
+				overflowY: 'auto',
+				'&::-webkit-scrollbar': {
+					width: '6px',
+				},
+				'&::-webkit-scrollbar-thumb': {
+					backgroundColor: 'rgba(0,0,0,0.1)',
+					borderRadius: '4px',
+				},
+				'&::-webkit-scrollbar-thumb:hover': {
+					backgroundColor: 'rgba(0,0,0,0.2)',
+				},
+			}}
+		>
+			<Typography variant="h5" sx={{ fontWeight: 700 }}>
+				Filters
+			</Typography>
+
+			<Divider />
+
+			{/* Services & Status */}
+			<Box>
+				<Typography variant="body2" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>
+					Services & Status
 				</Typography>
-
-				<AppSelect
-    label="City"
-    value={filters.city}
-    onChange={handleCityChange}
-    options={CITY_OPTIONS}
-    sx={{ mb: 2 }}
-/>
-
-				<FormControlLabel
-					control={
-						<Switch
+				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.2 }}>
+					<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+						<Typography sx={{ color: 'text.secondary', fontSize: '13px', fontWeight: 500 }}>
+							Home Delivery
+						</Typography>
+						<AppSwitch
 							checked={filters.homeDelivery}
-							onChange={handleToggle('homeDelivery')}
-							color="primary"
+							onChange={(e) => onChange({ ...filters, homeDelivery: e.target.checked })}
 						/>
-					}
-					label="Home Delivery Available"
-					sx={{ mb: 1, display: 'flex', justifyContent: 'space-between', ml: 0 }}
-					labelPlacement="start"
-				/>
-				<FormControlLabel
-					control={<Switch checked={filters.is24x7} onChange={handleToggle('is24x7')} color="primary" />}
-					label="Open 24×7"
-					sx={{ mb: 1, display: 'flex', justifyContent: 'space-between', ml: 0 }}
-					labelPlacement="start"
-				/>
-				<FormControlLabel
-					control={
-						<Switch
+					</Box>
+					<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+						<Typography sx={{ color: 'text.secondary', fontSize: '13px', fontWeight: 500 }}>
+							Open 24×7
+						</Typography>
+						<AppSwitch
+							checked={filters.is24x7}
+							onChange={(e) => onChange({ ...filters, is24x7: e.target.checked })}
+						/>
+					</Box>
+					<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+						<Typography sx={{ color: 'text.secondary', fontSize: '13px', fontWeight: 500 }}>
+							Emergency Medicines
+						</Typography>
+						<AppSwitch
 							checked={filters.emergencyMeds}
-							onChange={handleToggle('emergencyMeds')}
-							color="primary"
+							onChange={(e) => onChange({ ...filters, emergencyMeds: e.target.checked })}
 						/>
-					}
-					label="Emergency Medicines"
-					sx={{ display: 'flex', justifyContent: 'space-between', ml: 0 }}
-					labelPlacement="start"
-				/>
-			</CardContent>
-		</Card>
+					</Box>
+				</Box>
+			</Box>
+		</Box>
 	)
 }

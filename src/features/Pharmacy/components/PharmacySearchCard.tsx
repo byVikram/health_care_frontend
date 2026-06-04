@@ -70,7 +70,8 @@ export default function PharmacySearchCard({ pharmacy }: PharmacySearchCardProps
 				},
 			}}
 		>
-			<Box sx={{ position: 'relative', height: 160, flexShrink: 0 }}>
+			{/* Compact image height */}
+			<Box sx={{ position: 'relative', height: 120, flexShrink: 0 }}>
 				<Avatar
 					src={getPharmacyImage(id)}
 					alt={name}
@@ -84,64 +85,72 @@ export default function PharmacySearchCard({ pharmacy }: PharmacySearchCardProps
 				/>
 			</Box>
 
-			<Box sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
-				<Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.2 }}>
+			{/* Reduced inner padding */}
+			<Box sx={{ p: 1.5, flex: 1, display: 'flex', flexDirection: 'column' }}>
+				<Typography
+					variant="subtitle1"
+					sx={{ fontWeight: 700, color: 'text.primary', mb: 0.2, fontSize: '0.95rem' }}
+				>
 					{name}
 				</Typography>
 
-				<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-					<LocationOnIcon sx={{ fontSize: 14, color: 'primary.main', flexShrink: 0 }} />
-					<Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '13px' }}>
+				{/* Smaller spacing for address + timing */}
+				<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
+					<LocationOnIcon sx={{ fontSize: 12, color: 'primary.main', flexShrink: 0 }} />
+					<Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '12px' }}>
 						{address}, {city}
 					</Typography>
 				</Box>
 
-				<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
-					<AccessTimeIcon sx={{ fontSize: 14, color: 'primary.main', flexShrink: 0 }} />
-					<Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '13px' }}>
+				<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+					<AccessTimeIcon sx={{ fontSize: 12, color: 'primary.main', flexShrink: 0 }} />
+					<Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '12px' }}>
 						{is_24_x_7 ? 'Open 24×7' : `${operating_hours.open} – ${operating_hours.close}`}
 					</Typography>
 				</Box>
 
+				{/* Tighter chip group */}
 				<Box
 					sx={{
 						display: 'flex',
 						flexWrap: 'wrap',
-						gap: 1,
-						mb: 2,
-						minHeight: 32,
+						gap: 0.75,
+						mb: 1.5,
+						minHeight: 28,
 					}}
 				>
 					{home_delivery_available && (
 						<Chip
-							icon={<LocalShippingIcon sx={{ fontSize: 16 }} />}
+							icon={<LocalShippingIcon sx={{ fontSize: 14 }} />}
 							label="Home Delivery"
 							size="small"
-							sx={{ bgcolor: '#e8f5f5', color: '#2B6F71' }}
+							sx={{ bgcolor: '#e8f5f5', color: '#2B6F71', height: 24, fontSize: '0.7rem' }}
 						/>
 					)}
 					{emergency_medicine_available && (
 						<Chip
-							icon={<EmergencyIcon sx={{ fontSize: 16 }} />}
+							icon={<EmergencyIcon sx={{ fontSize: 14 }} />}
 							label="Emergency Meds"
 							size="small"
-							sx={{ bgcolor: '#ffebee', color: '#c62828' }}
+							sx={{ bgcolor: '#ffebee', color: '#c62828', height: 24, fontSize: '0.7rem' }}
 						/>
 					)}
 				</Box>
 
 				<Box sx={{ flex: 1 }} />
 
+				{/* Compact button */}
 				<AppButton
 					label="Place Order"
 					fullWidth
 					startIcon={<ShoppingCartIcon />}
 					onClick={handlePlaceOrder}
 					sx={{
-						borderRadius: '10px',
-						py: 0.8,
+						borderRadius: '8px',
+						py: 0.5,
 						bgcolor: '#2B6F71',
 						'&:hover': { bgcolor: '#1f5557' },
+						fontSize: '0.8rem',
 					}}
 				/>
 			</Box>

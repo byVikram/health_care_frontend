@@ -236,13 +236,6 @@ const stats = [
 	{ label: 'Emergency Patients', value: '01', color: '#DE3B40' },
 ]
 
-const quickServices = [
-	{ title: 'Appointment', image: AppointmentsIcon },
-	{ title: 'Pharmacy', image: PharmacyIcon },
-	{ title: 'Laboratory', image: LabIcon },
-	{ title: 'Radiology', image: RadiologyIcon },
-	{ title: 'Pharamedicals', image: null },
-]
 
 const othersPopupItems = [
 	{ title: 'Ancillary', image: AncilaryIcon },
@@ -258,10 +251,37 @@ export default function PortalPage() {
 	const { role, user } = useAuth()
 	const navigate = useNavigate()
 
-	const handleAppointmentIconClick = () => {
-		const view = role === USER_ROLES.DOCTOR ? USER_ROLES.DOCTOR : USER_ROLES.PATIENT
-		navigate(`${ROUTES.APPOINTMENTS}?view=${view}`)
+	const handleServiceIconClick = (title: string) => {
+		if (title === 'Appointment') {
+			navigate(ROUTES.APPOINTMENTS)
+		} else if (title === 'Orders') {
+			navigate(ROUTES.PHARMACY.ORDERS)
+		}
 	}
+
+	const getQuickServices = () => {
+		const baseServices = [
+			{ title: 'Appointment', image: AppointmentsIcon },
+			{ title: 'Pharmacy', image: PharmacyIcon },
+			{ title: 'Laboratory', image: LabIcon },
+			{ title: 'Radiology', image: RadiologyIcon },
+			{ title: 'Paramedicals', image: null },
+		]
+
+		if (role === USER_ROLES.PHARMACY) {
+			return [
+				{ title: 'Orders', image: AppointmentsIcon },
+				{ title: 'Pharmacy', image: PharmacyIcon },
+				{ title: 'Laboratory', image: LabIcon },
+				{ title: 'Radiology', image: RadiologyIcon },
+				{ title: 'Paramedicals', image: null },
+			]
+		}
+
+		return baseServices
+	}
+
+	const quickServices = getQuickServices()
 
 	const [selectedDate, setSelectedDate] = useState(0)
 	const [activeHospitalId, setActiveHospitalId] = useState<string | null>(() =>
@@ -486,7 +506,7 @@ export default function PortalPage() {
 							{/* Quick service icons */}
 							<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 								{quickServices.map((s) =>
-									s.title === 'Pharamedicals' ? (
+									s.title === 'Paramedicals' ? (
 										<Box
 											key={s.title}
 											ref={othersRef}
@@ -532,7 +552,7 @@ export default function PortalPage() {
 													textAlign: 'center',
 												}}
 											>
-												Pharamedicals
+												Paramedicals
 											</Typography>
 
 											<Popper
@@ -616,7 +636,7 @@ export default function PortalPage() {
 									) : (
 										<Box
 											key={s.title}
-											onClick={s.title === 'Appointment' ? handleAppointmentIconClick : undefined}
+											onClick={() => handleServiceIconClick(s.title)}
 											sx={{
 												display: 'flex',
 												flexDirection: 'column',

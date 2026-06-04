@@ -22,12 +22,9 @@ export interface PharmacyProfilePersonal {
 	contactVerified: boolean
 	email: string
 	emailVerified: boolean
-	gender: string
-	dateOfBirth: string
-	location: string
+	alternateMobile: string
+	whatsappNumber: string
 	avatar: string
-	instagram: string
-	facebook: string
 }
 
 export type { PharmacyProfileProfessional, PharmacyProfileServices }
@@ -54,9 +51,9 @@ const PHARMACY_NAV_ITEMS = [
 
 function calcCompletion(pharmacy: PharmacyProfile): number {
 	const personalFields = Object.entries(pharmacy.personal)
-		.filter(([key]) => !['contactVerified', 'emailVerified', 'avatar', 'instagram', 'facebook'].includes(key))
-		.map(([, val]) => val as string)
-	const professionalFields = Object.values(pharmacy.professional) as string[]
+		.filter(([key]) => !['contactVerified', 'emailVerified', 'avatar'].includes(key))
+		.map(([, val]) => String(val ?? ''))
+	const professionalFields = Object.values(pharmacy.professional).map((v) => String(v ?? ''))
 	const serviceFields = [
 		String(pharmacy.services.is_24_x_7),
 		pharmacy.services.open_days.length > 0 ? 'filled' : '',
@@ -78,31 +75,24 @@ const EMPTY_PHARMACY: PharmacyProfile = {
 		contactVerified: false,
 		email: '',
 		emailVerified: false,
-		gender: '',
-		dateOfBirth: '',
-		location: '',
+		alternateMobile: '',
+		whatsappNumber: '',
 		avatar: '',
-		instagram: '',
-		facebook: '',
 	},
 	professional: {
-		specializationId: '',
-		specializationLabel: '',
-		degree: '',
-		college: '',
-		yearOfPassing: '',
-		qualificationProof: '',
-		registrationNumber: '',
-		statePharmacyCouncil: '',
-		licenseExpiryDate: '',
-		registrationProof: '',
-		currentWorkplace: '',
-		yearsOfExperience: '',
-		pharmacyType: '',
-		previousOrganization: '',
-		certificationName: '',
-		certificationProof: '',
-		about: '',
+		pharmacyName: '',
+		logo: '',
+		drugLicenseNumber: '',
+		drugLicenseProof: '',
+		gstNumber: '',
+		gstCertificateProof: '',
+		address: '',
+		city: '',
+		state: '',
+		pincode: '',
+		landmark: '',
+		latitude: '',
+		longitude: '',
 	},
 	services: {
 		is_24_x_7: false,

@@ -29,6 +29,21 @@ export interface DoctorProfileProfessional {
 	about: string
 }
 
+export type AppointmentType = 'clinic' | 'video'
+
+export type TimeSlot = { start: string; end: string }
+
+export type SectionSlots = {
+	morning: TimeSlot[]
+	afternoon: TimeSlot[]
+	evening: TimeSlot[]
+}
+
+export type WorkingHoursState = {
+	sections: SectionSlots
+	slotDuration: number
+}
+
 export interface DoctorHospital {
 	id: string
 	name: string
@@ -38,6 +53,10 @@ export interface DoctorHospital {
 	phone_number?: string
 	video_consultation_fee?: string
 	clinic_consultation_fee?: string
+	free_followup_validity_days?: number
+	reschedule_allowed_until_hours?: number
+	allow_pay_later?: boolean
+	availability?: Record<number, Record<AppointmentType, WorkingHoursState>>
 }
 
 export interface DoctorAvailability {

@@ -137,9 +137,9 @@ export interface PharmacyDetailsUpdatePayload {
 	open_days?: string[]
 	payment_methods?: string[]
 	home_delivery_available?: boolean
-	delivery_radius_km?: number
-	estimated_delivery_time_mins?: number
-	min_order_amount?: number
+	delivery_radius_km?: number | null
+	estimated_delivery_time_mins?: number | null
+	min_order_amount?: number | null
 	is_24_x_7?: boolean
 	emergency_medicine_available?: boolean
 }
@@ -252,31 +252,24 @@ export const mapPharmacyDetailsApi = (data: PharmacyDetailsApiData): PharmacyPro
 			contactVerified: !!p?.mobile_number,
 			email: p?.email ?? '',
 			emailVerified: !!p?.email,
-			gender: '',
-			dateOfBirth: '',
-			location: [ph?.city, ph?.state].filter(Boolean).join(', '),
+			alternateMobile: p?.alternate_mobile ?? '',
+			whatsappNumber: p?.whatsapp_number ?? '',
 			avatar: p?.avatar_s3_key ?? '',
-			instagram: '',
-			facebook: '',
 		},
 		professional: {
-			specializationId: '',
-			specializationLabel: '',
-			degree: '',
-			college: '',
-			yearOfPassing: '',
-			qualificationProof: ph?.drug_license_s3_key ?? '',
-			registrationNumber: ph?.drug_license_number ?? '',
-			statePharmacyCouncil: '',
-			licenseExpiryDate: '',
-			registrationProof: ph?.drug_license_s3_key ?? '',
-			currentWorkplace: ph?.name ?? '',
-			yearsOfExperience: '',
-			pharmacyType: '',
-			previousOrganization: '',
-			certificationName: '',
-			certificationProof: '',
-			about: '',
+			pharmacyName: ph?.name ?? '',
+			logo: ph?.logo_s3_key ?? '',
+			drugLicenseNumber: ph?.drug_license_number ?? '',
+			drugLicenseProof: ph?.drug_license_s3_key ?? '',
+			gstNumber: ph?.gst_number ?? '',
+			gstCertificateProof: ph?.gst_certificate_s3_key ?? '',
+			address: ph?.address ?? '',
+			city: ph?.city ?? '',
+			state: ph?.state ?? '',
+			pincode: ph?.pincode ?? '',
+			landmark: ph?.landmark ?? '',
+			latitude: ph?.latitude != null ? String(ph.latitude) : '',
+			longitude: ph?.longitude != null ? String(ph.longitude) : '',
 		},
 		services: {
 			is_24_x_7: sv?.is_24_x_7 ?? false,
