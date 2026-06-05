@@ -33,13 +33,11 @@ import {
 	MedicalServices,
 	LocationOn,
 
-
-
 	// UploadFile,
 } from '@mui/icons-material'
 import AppButton from '../../components/common/Button/AppButton'
 import ConfirmModal from '../../components/common/Modal/ConfirmModal'
-import { createAppointment } from '../doctor/doctorService'
+import { createAppointment, updatePreIntake } from '../doctor/doctorService'
 import AppInput from '../../components/common/Input/AppInput'
 
 /* ─── types ─────────────────────────────────────────────────── */
@@ -78,35 +76,17 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
 	{
 		id: 'googlepay',
 		label: 'Google Pay',
-		icon: (
-			<Box
-				component="img"
-				src={googlePayImg}
-				sx={{ width: 48, height: 28, objectFit: 'contain' }}
-			/>
-		),
+		icon: <Box component="img" src={googlePayImg} sx={{ width: 48, height: 28, objectFit: 'contain' }} />,
 	},
 	{
 		id: 'paytm',
 		label: 'Paytm',
-		icon: (
-			<Box
-				component="img"
-				src={paytmImg}
-				sx={{ width: 48, height: 28, objectFit: 'contain' }}
-			/>
-		),
+		icon: <Box component="img" src={paytmImg} sx={{ width: 48, height: 28, objectFit: 'contain' }} />,
 	},
 	{
 		id: 'amazonpay',
 		label: 'Amazon Pay',
-		icon: (
-			<Box
-				component="img"
-				src={amazonPayImg}
-				sx={{ width: 48, height: 28, objectFit: 'contain' }}
-			/>
-		),
+		icon: <Box component="img" src={amazonPayImg} sx={{ width: 48, height: 28, objectFit: 'contain' }} />,
 	},
 	{
 		id: 'card',
@@ -155,6 +135,7 @@ export default function PaymentPage() {
 	const [symptoms, setSymptoms] = useState('')
 	const [duration, setDuration] = useState('')
 	const [severity, setSeverity] = useState<'mild' | 'moderate' | 'severe' | ''>('')
+	const [appointmentId, setAppointmentId] = useState('')
 	// const [reportFile, setReportFile] = useState<File | null>(null)
 	const [errorMsg, setErrorMsg] = useState<string | null>(null)
 	const patientId = localStorage.getItem('patient_id')
@@ -174,14 +155,18 @@ export default function PaymentPage() {
 		setBooking(true)
 		setErrorMsg(null)
 		try {
-			await createAppointment({
+			const response = await createAppointment({
 				doctor_id: doctorId,
 				hospital_id: hospitalId || undefined,
 				appointment_mode: appointmentMode,
 				appointment_date: appointmentDate,
 				start_time: startTime,
-				patient_id: patientId || undefined, 
+				patient_id: patientId || undefined,
 			})
+
+			setAppointmentId((response.data as { id: string }).id)
+
+			setSuccessOpen(true)
 			setSuccessOpen(true)
 		} catch {
 			setErrorMsg('Failed to book appointment. Please try again.')
@@ -477,7 +462,11 @@ export default function PaymentPage() {
 					{/* WhatsApp notification */}
 					<Box sx={{ px: 2.5, py: 1.75, display: 'flex', alignItems: 'flex-start', gap: 1 }}>
 						<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1 }}>
-							<Box component="img" src={whatsappImg} sx={{ width: 22, height: 22, objectFit: 'contain', flexShrink: 0 }} />
+							<Box
+								component="img"
+								src={whatsappImg}
+								sx={{ width: 22, height: 22, objectFit: 'contain', flexShrink: 0 }}
+							/>
 							<Box>
 								<Typography variant="body2" fontWeight={600} color="text.primary">
 									Get notifications on whatsapp
@@ -592,7 +581,7 @@ export default function PaymentPage() {
 						<Typography fontWeight={700} fontSize={16} color="#fff">
 							Share Symptoms Before Your Appointment
 						</Typography>
-						<Typography variant = "body2" fontSize={12} color="rgba(255,255,255,0.8)" mt={0.5}>
+						<Typography variant="body2" fontSize={12} color="rgba(255,255,255,0.8)" mt={0.5}>
 							Help your doctor understand your condition better by adding symptoms or concerns before the
 							consultation.
 						</Typography>
@@ -602,7 +591,7 @@ export default function PaymentPage() {
 					<Box sx={{ px: 3, py: 2.5, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
 						{/* Symptoms textarea */}
 						<Box>
-							<Typography variant = "body2" fontSize={13} fontWeight={600} color="text.primary" mb={0.8}>
+							<Typography variant="body2" fontSize={13} fontWeight={600} color="text.primary" mb={0.8}>
 								Symptoms / Reason for Visit
 							</Typography>
 
@@ -744,12 +733,20 @@ export default function PaymentPage() {
 								label="Submit Details"
 								fullWidth
 								disabled={!symptoms.trim() && !severity}
-								onClick={() => {
-									// Save symptoms to sessionStorage keyed by doctor+date+time
-									const key = 'symptoms_' + doctorId + '_' + appointmentDate + '_' + startTime
-									sessionStorage.setItem(key, JSON.stringify({ symptoms, duration, severity }))
-									setSymptomsOpen(false)
-									navigate('/doctors/' + doctorId)
+								onClick={async () => {
+									try {
+										await updatePreIntake(appointmentId, {
+											symptoms,
+											duration,
+											severity: severity || undefined,
+										})
+
+										setSymptomsOpen(false)
+										navigate('/doctors/' + doctorId)
+									} catch (error) {
+										console.error(error)
+										setErrorMsg('Failed to save symptoms')
+									}
 								}}
 							/>
 						</Box>

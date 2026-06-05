@@ -211,8 +211,10 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 				video_consultation_fee: h.hospital?.video_consultation_fee ?? '',
 				clinic_consultation_fee: h.hospital?.clinic_consultation_fee ?? '',
 				phone_number: h.hospital?.contact_number ?? '',
-				free_followup_validity_days: h.appointment_rules?.free_followup_validity_days ?? h.free_followup_validity_days ?? 7,
-				reschedule_allowed_until_hours: h.appointment_rules?.reschedule_allowed_until_hours ?? h.reschedule_allowed_until_hours ?? 2,
+				free_followup_validity_days:
+					h.appointment_rules?.free_followup_validity_days ?? h.free_followup_validity_days ?? 7,
+				reschedule_allowed_until_hours:
+					h.appointment_rules?.reschedule_allowed_until_hours ?? h.reschedule_allowed_until_hours ?? 2,
 				allow_pay_later: h.appointment_rules?.allow_pay_later ?? h.allow_pay_later ?? false,
 				availability: h.availability,
 			}))
@@ -311,7 +313,7 @@ export interface CreateHospitalResponse {
 	message: string
 	data: {
 		hospital_id: string
-		public_id : string
+		public_id: string
 	}
 }
 
@@ -345,14 +347,12 @@ export interface UpdateAvailabilityPayload {
 	appointment_mode: string
 	slots: AvailabilitySlot[]
 	is_active?: boolean
-	
 }
 
 export interface BulkAvailabilityPayload {
 	hospital_id: string
 	availability: Record<number, Record<string, unknown>>
 }
-
 
 export const createHospital = async (data: CreateHospitalPayload): Promise<CreateHospitalResponse> => {
 	const res = await ApiService.post<CreateHospitalResponse>(API_ENDPOINTS.DOCTOR_PROFILE.HOSPITALS, data)
@@ -369,4 +369,18 @@ export const updateAvailability = async (payload: UpdateAvailabilityPayload) => 
 
 export const updateWeeklyAvailability = async (payload: BulkAvailabilityPayload) => {
 	return ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.UPDATE_AVAILABILITY, payload)
+}
+
+// ----pre-intake --------------------------------------------------------------
+
+export interface PreIntakePayload {
+	symptoms?: string
+	duration?: string
+	severity?: 'mild' | 'moderate' | 'severe'
+}
+
+export const updatePreIntake = async (appointmentId: string, payload: PreIntakePayload) => {
+	const res = await ApiService.patch(API_ENDPOINTS.APPOINTMENTS.PRE_INTAKE(appointmentId), payload)
+
+	return res.data
 }

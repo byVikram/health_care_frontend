@@ -1,4 +1,4 @@
-// src/features/doctor/profile/components/DoctorHospitalsTab.tsx
+﻿// src/features/doctor/profile/components/DoctorHospitalsTab.tsx
 import { useState } from 'react'
 import { Box, Typography, IconButton, Radio, Switch, Menu, MenuItem as MuiMenuItem } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
@@ -947,7 +947,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 
 				{/* Apply All + Save */}
 				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1.5, mt: 3 }}>
-					<AppButton variant="contained" onClick={handleApplyToAll} label="Apply All" />
+					<AppButton variant="contained" onClick={handleApplyToAll} label="Apply To All" />
 					<AppButton variant="contained" onClick={handleSave} loading={isSaving} label="Save" />
 				</Box>
 			</Box>

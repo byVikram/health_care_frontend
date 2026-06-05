@@ -1,8 +1,16 @@
 // import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 import { useState, useEffect } from 'react'
-import { Box, Typography, 
+import {
+	Box,
+	Typography,
 	// InputAdornment,
-	 Divider, Chip, Popover, Dialog, DialogContent, Tooltip } from '@mui/material'
+	Divider,
+	Chip,
+	Popover,
+	Dialog,
+	DialogContent,
+	Tooltip,
+} from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
@@ -546,29 +554,10 @@ export function DoctorAppointments({
 
 											{/* Symptoms info tooltip */}
 											{(() => {
-												const key =
-													'symptoms_' +
-													apt.doctor?.id +
-													'_' +
-													apt.appointment_date +
-													'_' +
-													(apt.start_time ? apt.start_time.slice(0, 5) : '')
-												const raw = sessionStorage.getItem(key)
-												let info: { symptoms?: string; duration?: string; severity?: string } =
-													{}
-												let hasSymptoms = false
-												if (raw) {
-													try {
-														info = JSON.parse(raw)
-														hasSymptoms = !!(
-															info.symptoms ||
-															info.duration ||
-															info.severity
-														)
-													} catch {
-														/* ignore */
-													}
-												}
+												const info = apt.pre_intake || {}
+
+												const hasSymptoms = !!(info.symptoms || info.duration || info.severity)
+
 												const severityColors: Record<string, string> = {
 													mild: '#4caf50',
 													moderate: '#f59e0b',
