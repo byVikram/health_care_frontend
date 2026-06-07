@@ -43,6 +43,11 @@ export interface Appointment {
 	symptoms?: string | null
 	duration?: string | null
 	severity?: 'mild' | 'moderate' | 'severe' | null
+	pre_intake?: {
+		symptoms?: string
+		duration?: string
+		severity?: string
+	} | null
 }
 
 export interface AppointmentsResponse {
@@ -56,6 +61,6 @@ export interface AppointmentsResponse {
 }
 
 export interface AppointmentParams {
-  appointment_date?: string;
-  appSearch?: string;  
+	appointment_date?: string
+	appSearch?: string
 }
