@@ -10,6 +10,7 @@ import { useAuth } from '../../hooks/useAuth'
 import drImage from '../../assets/Banner/banner.png'
 import adImage from '../../assets/blog-and-community/ad-image.png'
 import AnswerQuestionsSection from '../dashboard/AnswerQuestionsSection'
+import PatientHealthQuestionsSection from '../patient/components/PatientHealthQuestionsSection'
 import videoFile from '../../assets/blog-and-community/video.mp4'
 // import { LookupHospital } from '../../hooks/useAuth'
 
@@ -816,7 +817,7 @@ export default function PortalPage() {
 					</Grid>
 				</Grid>
 
-				<AnswerQuestionsSection />
+				{role === USER_ROLES.PATIENT ? <PatientHealthQuestionsSection /> : <AnswerQuestionsSection />}
 			</Container>
 		</Box>
 	)

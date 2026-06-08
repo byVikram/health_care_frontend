@@ -28,6 +28,7 @@ interface AppointmentRow extends Record<string, unknown> {
 	doctorAvatar: string
 	hospitalName: string | null
 	hospitalAddress: string | null
+	fees: number | null
 }
 
 interface AppointmentMeta {
@@ -50,6 +51,7 @@ interface AppointmentsResponse {
 		doctor: { id: string; name: string; avatar_s3_key?: string | null }
 		patient: { id: string; name: string; avatar_s3_key: string | null; gender: string | null; age: number | null }
 		hospital: { id: string; name: string; address: string } | null
+		fees?: number | null
 	}[]
 	meta: { total: number; page: number; limit: number; pages: number }
 }
@@ -111,6 +113,7 @@ export default function AppointmentList() {
 					doctorAvatar: appt.doctor.avatar_s3_key ?? '',
 					hospitalName: appt.hospital?.name ?? null,
 					hospitalAddress: appt.hospital?.address ?? null,
+					fees: appt.fees ?? null,
 				}))
 
 				setRows(mapped)
@@ -130,6 +133,13 @@ export default function AppointmentList() {
 	}, [page, search, size,  patientId])
 
 	// ── Name column — shown once, based on viewAs ───────────────────────────
+	// Format HH:MM:SS or HH:MM -> H:MM
+	const formatTime = (t: string | null): string => {
+		if (!t) return ''
+		const [h, m] = t.split(':')
+		return parseInt(h, 10) + ':' + m
+	}
+
 	const patientNameColumn: ColDef = {
 		id: 'patientName',
 		label: 'Patient name',
@@ -185,8 +195,8 @@ export default function AppointmentList() {
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mt: 0.3 }}>
 						<AccessTimeIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
 						<Typography fontSize={11} color="text.secondary">
-							{row.startTime}
-							{row.endTime ? ` - ${row.endTime}` : ''}
+							{formatTime(row.startTime)}
+							{row.endTime ? ' - ' + formatTime(row.endTime) : ''}
 						</Typography>
 					</Box>
 				</Box>
@@ -207,8 +217,25 @@ export default function AppointmentList() {
 			label: 'Hospital',
 			width: '180px',
 			format: (_value, row) => (
+				<Box>
+					<Typography fontSize={13} color="text.primary" fontWeight={500}>
+						{row.hospitalName ?? '\u2014'}
+					</Typography>
+					{row.hospitalAddress && (
+						<Typography fontSize={11} color="text.secondary" lineHeight={1.3} mt={0.3}>
+							{row.hospitalAddress}
+						</Typography>
+					)}
+				</Box>
+			),
+		},
+		{
+			id: 'fees',
+			label: 'Fees',
+			width: '100px',
+			format: (_value, row) => (
 				<Typography fontSize={13} color="text.primary" fontWeight={500}>
-					{row.hospitalName ?? '\u2014'}
+					{row.fees != null ? '\u20B9' + row.fees : '\u2014'}
 				</Typography>
 			),
 		},

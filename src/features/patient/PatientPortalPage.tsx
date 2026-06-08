@@ -11,7 +11,7 @@ import videoImage from '../../assets/blog-and-community/video-image.png'
 import adImage from '../../assets/blog-and-community/ad-image.png'
 import groupImage from '../../assets/blog-and-community/community-1.svg'
 import blogImage from '../../assets/blog-and-community/blog-1.svg'
-import HealthQuestionsSection from '../dashboard/HealthQuestionsSection'
+import PatientHealthQuestionsSection from './components/PatientHealthQuestionsSection'
 
 import AppointmentsIcon from '../../assets/quick-services/appointments.svg'
 import PharmacyIcon from '../../assets/quick-services/pharmacy.svg'
@@ -476,8 +476,9 @@ export default function PatientPortalPage() {
 				</Grid>
 
 				{/* Health Expert Answers Section */}
-				<HealthQuestionsSection />
+				<PatientHealthQuestionsSection />
 			</Container>
 		</Box>
 	)
 }
+
