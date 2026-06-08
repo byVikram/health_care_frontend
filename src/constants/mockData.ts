@@ -149,3 +149,209 @@ export const SPECIALITIES = [
 	{ id: 'kidney', label: 'Kidney', iconKey: 'kidney' },
 	{ id: 'skin', label: 'Skin', iconKey: 'skin' },
 ]
+
+
+// ─── Patient Health Questions ─────────────────────────────────────────────────
+
+export interface DoctorAnswer {
+	id: number
+	doctorName: string
+	specialty: string
+	hospital: string
+	avatar: string
+	timeAgo: string
+	answer: string
+	likes: number
+}
+
+export interface PatientQuestion {
+	id: number
+	gender: string
+	age: string
+	location: string
+	timeAgo: string
+	tag: string
+	question: string
+	patientAvatar: string
+	shortDescription: string
+	fullDescription: string
+	patientLabel: string
+	patientLocation: string
+	history: string
+	answers: DoctorAnswer[]
+}
+
+export const MOCK_PATIENT_QUESTIONS: PatientQuestion[] = [
+	{
+		id: 1,
+		gender: 'Female',
+		age: '30 Years',
+		location: 'Bengaluru',
+		timeAgo: '1D AGO',
+		tag: 'Oncology Inquiry',
+		patientAvatar: 'https://i.pravatar.cc/40?img=47',
+		question: 'Chance of esophageal cancer?',
+		shortDescription:
+			"I've been having persistent acid reflux and difficulty swallowing for about 3 weeks now. My grandfather had esophageal cancer and I'm very concerned...",
+		fullDescription:
+			"I've been having persistent acid reflux and difficulty swallowing for about 3 weeks now. My grandfather had esophageal cancer and I'm very concerned about my risk factors. I don't smoke, but I do have a history of GERD. The swallowing issue feels like food is getting stuck in the lower part of my throat. I haven't noticed any significant weight loss yet. What are the next steps for diagnosis?",
+		patientLabel: '30 Year Old Female',
+		patientLocation: 'Bengaluru, India',
+		history: 'Family Hx, GERD',
+		answers: [
+			{
+				id: 1,
+				doctorName: 'Dr. Sarah Chen',
+				specialty: 'Gastroenterologist',
+				hospital: 'Apollo Hospitals',
+				avatar: 'https://i.pravatar.cc/40?img=12',
+				timeAgo: '4h ago',
+				answer:
+					"While persistent dysphagia (difficulty swallowing) combined with a family history is something to take seriously, at age 30, the probability remains low. However, given the GERD history, you should schedule an Endoscopy (EGD) to rule out Barrett's Esophagus or strictures.",
+				likes: 12,
+			},
+			{
+				id: 2,
+				doctorName: 'Dr. James Wilson',
+				specialty: 'Oncologist',
+				hospital: 'Memorial Care',
+				avatar: 'https://i.pravatar.cc/40?img=52',
+				timeAgo: '8h ago',
+				answer:
+					'I agree with Dr. Chen. The absence of weight loss is a positive sign. You may also want to monitor for any nocturnal cough or hoarseness. Start with a consultation with a GI specialist immediately to manage the reflux more aggressively.',
+				likes: 8,
+			},
+		],
+	},
+	{
+		id: 2,
+		gender: 'Male',
+		age: '45 Years',
+		location: 'Mumbai',
+		timeAgo: '2D AGO',
+		tag: 'Respiratory',
+		patientAvatar: 'https://i.pravatar.cc/40?img=11',
+		question: 'Persistent cough after viral infection',
+		shortDescription:
+			"It's been over 4 weeks since my cold ended but I still have a dry hacking cough especially at night...",
+		fullDescription:
+			"It's been over 4 weeks since my cold ended but I still have a dry hacking cough especially at night. I am a non-smoker and have no fever. The cough is non-productive. Could this be post-viral cough or something more serious like whooping cough or asthma?",
+		patientLabel: '45 Year Old Male',
+		patientLocation: 'Mumbai, India',
+		history: 'None reported',
+		answers: [
+			{
+				id: 1,
+				doctorName: 'Dr. Priya Nair',
+				specialty: 'Pulmonologist',
+				hospital: 'Fortis Hospital',
+				avatar: 'https://i.pravatar.cc/40?img=44',
+				timeAgo: '1d ago',
+				answer:
+					'Post-viral cough is very common and can persist for 6-8 weeks after a respiratory infection. It is likely caused by post-nasal drip or airway hyper-reactivity. A short course of antihistamines and avoiding cold air may help. If it persists beyond 8 weeks, a chest X-ray and spirometry would be warranted.',
+				likes: 15,
+			},
+		],
+	},
+	{
+		id: 3,
+		gender: 'Female',
+		age: '52 Years',
+		location: 'Bengaluru',
+		timeAgo: '3D AGO',
+		tag: 'Endocrinology',
+		patientAvatar: 'https://i.pravatar.cc/40?img=49',
+		question: 'Managing Type 2 Diabetes during travel',
+		shortDescription:
+			'I am planning a 12-hour international flight. How should I adjust my insulin timing with the time zone...',
+		fullDescription:
+			'I am planning a 12-hour international flight from India to the USA with a time zone difference of +10 hours. I am on basal-bolus insulin therapy. How should I adjust my insulin timing with the time zone change? I am worried about hypoglycemia during the flight.',
+		patientLabel: '52 Year Old Female',
+		patientLocation: 'Bengaluru, India',
+		history: 'Type 2 Diabetes, Hypertension',
+		answers: [
+			{
+				id: 1,
+				doctorName: 'Dr. Anil Kumar',
+				specialty: 'Endocrinologist',
+				hospital: 'Manipal Hospitals',
+				avatar: 'https://i.pravatar.cc/40?img=60',
+				timeAgo: '2d ago',
+				answer:
+					'For long eastward flights, you generally need less basal insulin. Keep fast-acting glucose snacks handy. Check glucose every 3-4 hours during the flight. Consult your diabetologist before travel so we can give you a personalized insulin adjustment plan based on your current regimen.',
+				likes: 20,
+			},
+		],
+	},
+	{
+		id: 4,
+		gender: 'Female',
+		age: '5 Years',
+		location: 'Delhi',
+		timeAgo: '5D AGO',
+		tag: 'Dermatology',
+		patientAvatar: 'https://i.pravatar.cc/40?img=48',
+		question: "Rash on child's arm",
+		shortDescription:
+			"My 5-year-old has developed a bumpy red rash on her inner elbow. It's very itchy. Could this be eczema...",
+		fullDescription:
+			"My 5-year-old has developed a bumpy red rash on her inner elbow. It's very itchy. She does not have a fever. We recently switched laundry detergent. Could this be eczema or contact dermatitis? Should I apply a steroid cream?",
+		patientLabel: '5 Year Old Female',
+		patientLocation: 'Delhi, India',
+		history: 'No known allergies',
+		answers: [
+			{
+				id: 1,
+				doctorName: 'Dr. Meena Sharma',
+				specialty: 'Dermatologist',
+				hospital: 'AIIMS Delhi',
+				avatar: 'https://i.pravatar.cc/40?img=35',
+				timeAgo: '4d ago',
+				answer:
+					'The presentation sounds like contact dermatitis triggered by the new detergent. Switch back to the old detergent immediately and wash all clothing again. A mild hydrocortisone 0.5% cream can be applied twice daily for a few days. Do not use stronger steroids without a prescription for a child this young.',
+				likes: 18,
+			},
+		],
+	},
+	{
+		id: 5,
+		gender: 'Male',
+		age: '38 Years',
+		location: 'Chennai',
+		timeAgo: '6D AGO',
+		tag: 'Cardiology',
+		patientAvatar: 'https://i.pravatar.cc/40?img=15',
+		question: 'Chest pain after mild exercise',
+		shortDescription:
+			'I have been experiencing mild chest tightness after climbing stairs or walking briskly for about 2 weeks...',
+		fullDescription:
+			'I have been experiencing mild chest tightness after climbing stairs or walking briskly for about 2 weeks now. The discomfort lasts about 2-3 minutes and goes away with rest. I am 38 years old, slightly overweight, and my father had a heart attack at 55. I do not smoke but I do drink occasionally. Should I be worried about angina or something more serious?',
+		patientLabel: '38 Year Old Male',
+		patientLocation: 'Chennai, India',
+		history: 'Family Hx, Overweight',
+		answers: [
+			{
+				id: 1,
+				doctorName: 'Dr. Ramesh Iyer',
+				specialty: 'Cardiologist',
+				hospital: 'Fortis Malar',
+				avatar: 'https://i.pravatar.cc/40?img=33',
+				timeAgo: '5d ago',
+				answer:
+					'The symptoms you describe are classic for stable angina and must not be ignored given your family history. Please get an ECG, stress test, and lipid profile done immediately. Avoid strenuous activity until evaluated. With early intervention, this is very manageable.',
+				likes: 22,
+			},
+			{
+				id: 2,
+				doctorName: 'Dr. Anitha Rao',
+				specialty: 'General Physician',
+				hospital: 'Apollo Chennai',
+				avatar: 'https://i.pravatar.cc/40?img=41',
+				timeAgo: '5d ago',
+				answer:
+					'I agree this needs urgent evaluation. In the meantime, avoid alcohol entirely and keep a diary of when episodes occur. Your BMI and family history both elevate your risk. Do not delay the cardiology referral.',
+				likes: 10,
+			},
+		],
+	},
+]
