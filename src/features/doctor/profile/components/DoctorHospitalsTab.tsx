@@ -1,6 +1,6 @@
-﻿// src/features/doctor/profile/components/DoctorHospitalsTab.tsx
+// src/features/doctor/profile/components/DoctorHospitalsTab.tsx
 import { useState } from 'react'
-import { Box, Typography, IconButton, Radio, Switch, Menu, MenuItem as MuiMenuItem } from '@mui/material'
+import { Box, Typography, IconButton, Radio, Menu, MenuItem as MuiMenuItem } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
@@ -9,8 +9,15 @@ import CloseIcon from '@mui/icons-material/Close'
 import { toast } from 'react-toastify'
 import AppButton from '../../../../components/common/Button/AppButton'
 import AppInput from '../../../../components/common/Input/AppInput'
+import AppSwitch from '../../../../components/common/Switch/AppSwitch'
 import { customCardStyle } from '../../../../styles/commonStyles'
- import type { DoctorHospital, AppointmentType, TimeSlot, SectionSlots, WorkingHoursState } from '../../../../types/doctor-profile'
+import type {
+	DoctorHospital,
+	AppointmentType,
+	TimeSlot,
+	SectionSlots,
+	WorkingHoursState,
+} from '../../../../types/doctor-profile'
 import { createHospital, updateHospital, updateWeeklyAvailability } from '../../doctorService'
 import { TextField, MenuItem } from '@mui/material'
 
@@ -133,20 +140,22 @@ const makeDefaultWorkingHours = (): Record<AppointmentType, WorkingHoursState> =
 	},
 })
 
-const getInitialWeeklyAvailability = (h?: DoctorHospital): Record<number, Record<AppointmentType, WorkingHoursState>> => {
+const getInitialWeeklyAvailability = (
+	h?: DoctorHospital
+): Record<number, Record<AppointmentType, WorkingHoursState>> => {
 	const initial: Record<number, Record<AppointmentType, WorkingHoursState>> = {}
 	for (let day = 0; day < 7; day++) {
 		initial[day] = {
 			clinic: {
 				sections: {
 					morning: h?.availability?.[day]?.clinic?.sections?.morning?.length
-						? h.availability[day].clinic.sections.morning.map(s => ({ ...s }))
+						? h.availability[day].clinic.sections.morning.map((s) => ({ ...s }))
 						: [{ start: '08:00', end: '10:00' }],
 					afternoon: h?.availability?.[day]?.clinic?.sections?.afternoon?.length
-						? h.availability[day].clinic.sections.afternoon.map(s => ({ ...s }))
+						? h.availability[day].clinic.sections.afternoon.map((s) => ({ ...s }))
 						: [{ start: '12:00', end: '14:00' }],
 					evening: h?.availability?.[day]?.clinic?.sections?.evening?.length
-						? h.availability[day].clinic.sections.evening.map(s => ({ ...s }))
+						? h.availability[day].clinic.sections.evening.map((s) => ({ ...s }))
 						: [{ start: '17:00', end: '19:00' }],
 				},
 				slotDuration: h?.availability?.[day]?.clinic?.slotDuration ?? 15,
@@ -154,13 +163,13 @@ const getInitialWeeklyAvailability = (h?: DoctorHospital): Record<number, Record
 			video: {
 				sections: {
 					morning: h?.availability?.[day]?.video?.sections?.morning?.length
-						? h.availability[day].video.sections.morning.map(s => ({ ...s }))
+						? h.availability[day].video.sections.morning.map((s) => ({ ...s }))
 						: [{ start: '08:00', end: '10:00' }],
 					afternoon: h?.availability?.[day]?.video?.sections?.afternoon?.length
-						? h.availability[day].video.sections.afternoon.map(s => ({ ...s }))
+						? h.availability[day].video.sections.afternoon.map((s) => ({ ...s }))
 						: [{ start: '12:00', end: '14:00' }],
 					evening: h?.availability?.[day]?.video?.sections?.evening?.length
-						? h.availability[day].video.sections.evening.map(s => ({ ...s }))
+						? h.availability[day].video.sections.evening.map((s) => ({ ...s }))
 						: [{ start: '17:00', end: '19:00' }],
 				},
 				slotDuration: h?.availability?.[day]?.video?.slotDuration ?? 15,
@@ -190,9 +199,8 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		setMenuHospitalId(null)
 	}
 
-	const [weeklyAvailability, setWeeklyAvailability] = useState<Record<number, Record<AppointmentType, WorkingHoursState>>>(
-		getInitialWeeklyAvailability()
-	)
+	const [weeklyAvailability, setWeeklyAvailability] =
+		useState<Record<number, Record<AppointmentType, WorkingHoursState>>>(getInitialWeeklyAvailability())
 
 	const [selectedDate, setSelectedDate] = useState<Date>(new Date())
 	const [weekStart] = useState(() => {
@@ -213,7 +221,8 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 	const [allowPayLater, setAllowPayLater] = useState(false)
 
 	const selectedDay = selectedDate.getDay()
-	const selectedWorkingHours = weeklyAvailability[selectedDay]?.[selectedAppointmentType] || makeDefaultWorkingHours()[selectedAppointmentType]
+	const selectedWorkingHours =
+		weeklyAvailability[selectedDay]?.[selectedAppointmentType] || makeDefaultWorkingHours()[selectedAppointmentType]
 
 	// ── Reset all form state to defaults ────────────────────────────────────────
 
@@ -408,15 +417,20 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		onChange(hospitals.map((h) => ({ ...h, isPrimary: h.id === id })))
 	}
 
-
 	// ── Save hospital details only (name, address, fees, rules) ─────────────
 	const handleSave = async () => {
 		const trimmedName = form.name.trim()
 		const trimmedAddress = form.fullAddress.trim()
 		const isPrimary = hospitals.length === 0
 
-		if (!trimmedName) { toast.error('Hospital name is required'); return }
-		if (!trimmedAddress) { toast.error('Full address is required'); return }
+		if (!trimmedName) {
+			toast.error('Hospital name is required')
+			return
+		}
+		if (!trimmedAddress) {
+			toast.error('Full address is required')
+			return
+		}
 
 		setIsSaving(true)
 		try {
@@ -519,52 +533,66 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 						{editingHospitalId ? 'Edit Hospital Details' : 'Add new Hospital Details'}
 					</Typography>
 				</Box>
-
 				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-					<AppInput
-						label="Enter hospital name"
-						value={form.name}
-						placeholder="e.g. Arogya Clinic"
-						onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-					/>
-					<AppInput
-						label="Phone number"
-						value={form.phone_number}
-						placeholder="e.g. +91 98765 43210"
-						onChange={(e) => setForm((prev) => ({ ...prev, phone_number: e.target.value }))}
-					/>
+					{/* Row 1: Hospital Name + Phone Number */}
+					<Box sx={{ display: 'flex', gap: 2.5 }}>
+						<Box sx={{ flex: 1 }}>
+							<AppInput
+								label="Enter hospital name"
+								value={form.name}
+								placeholder="e.g. Arogya Clinic"
+								onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+							/>
+						</Box>
+						<Box sx={{ flex: 1 }}>
+							<AppInput
+								label="Phone number"
+								value={form.phone_number}
+								placeholder="+91 00000 00000"
+								onChange={(e) => setForm((prev) => ({ ...prev, phone_number: e.target.value }))}
+							/>
+						</Box>
+					</Box>
+					{/* Row 2: Full Address (full width) */}
 					<AppInput
 						label="Enter Full address"
 						value={form.fullAddress}
-						placeholder="Enter complete address"
+						placeholder="Enter complete hospital address..."
 						multiline
 						rows={3}
 						onChange={(e) => setForm((prev) => ({ ...prev, fullAddress: e.target.value }))}
 					/>
-					<AppInput
-						label="Video consultation fee"
-						value={form.video_consultation_fee}
-						placeholder="e.g. 500"
-						onChange={(e) =>
-							setForm((prev) => ({ ...prev, video_consultation_fee: e.target.value }))
-						}
-					/>
-					<AppInput
-						label="Clinic consultation fee"
-						value={form.offline_consultation_fee}
-						onChange={(e) =>
-							setForm((prev) => ({
-								...prev,
-								offline_consultation_fee: e.target.value,
-							}))
-						}
-					/>
+					{/* Row 3: Video Fee + Clinic Fee */}
+					<Box sx={{ display: 'flex', gap: 2.5 }}>
+						<Box sx={{ flex: 1 }}>
+							<AppInput
+								label="Video consultation fee"
+								value={form.video_consultation_fee}
+								placeholder="e.g. 500"
+								onChange={(e) =>
+									setForm((prev) => ({ ...prev, video_consultation_fee: e.target.value }))
+								}
+							/>
+						</Box>
+						<Box sx={{ flex: 1 }}>
+							<AppInput
+								label="Clinic consultation fee"
+								value={form.offline_consultation_fee}
+								onChange={(e) =>
+									setForm((prev) => ({
+										...prev,
+										offline_consultation_fee: e.target.value,
+									}))
+								}
+							/>
+						</Box>
+					</Box>
 
 					{/* Working Hours */}
 					<Box sx={{ mt: 0.5 }}>
-					<Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-						<Typography sx={{ fontWeight: 700, fontSize: '18px' }}>Working Hours</Typography>
-					</Box>
+						<Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+							<Typography sx={{ fontWeight: 700, fontSize: '18px' }}>Working Hours</Typography>
+						</Box>
 
 						{/* Date strip + Clinic/Video toggle */}
 						<Box sx={{ mb: 3 }}>
@@ -896,7 +924,11 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 						</Typography>
 
 						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-							<Switch
+							<AppSwitch 
+								checked={allowPayLater} 
+								onChange={(e) => setAllowPayLater(e.target.checked)} 
+							/>
+							{/*<Switch
 								checked={allowPayLater}
 								onChange={(e) => setAllowPayLater(e.target.checked)}
 								sx={{
@@ -930,8 +962,8 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 										transition: 'background-color 300ms',
 									},
 								}}
-							/>
-							<Typography
+							/> */}
+						<Typography
 								sx={{
 									fontSize: '14px',
 									fontWeight: 500,
@@ -939,11 +971,11 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 								}}
 							>
 								{allowPayLater ? 'Enabled' : 'Disabled'}
-							</Typography>
+							</Typography> 
+
 						</Box>
 					</Box>
 				</Box>
-
 
 				{/* Apply All + Save */}
 				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1.5, mt: 3 }}>

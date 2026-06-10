@@ -1,5 +1,5 @@
 // src/features/doctor/profile/DoctorProfilePage.tsx
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Box, Container, Grid, CircularProgress, Typography } from '@mui/material'
 import AppProfileSidebar from '../../../components/common/ProfileSidebar/AppProfileSidebar'
@@ -8,6 +8,7 @@ import WorkOutlineIcon from '@mui/icons-material/WorkOutline'
 import LocalHospitalOutlinedIcon from '@mui/icons-material/LocalHospitalOutlined'
 import EventAvailableOutlinedIcon from '@mui/icons-material/EventAvailableOutlined'
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
+import MedicalServicesOutlinedIcon from '@mui/icons-material/MedicalServicesOutlined'
 import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined'
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
 import DoctorPersonalTab from './components/DoctorPersonalTab'
@@ -16,8 +17,14 @@ import DoctorHospitalsTab from './components/DoctorHospitalsTab'
 import DoctorAvailabilityTab from './components/DoctorAvailabilityTab'
 import DoctorSettingTab from './components/DoctorSettingTab'
 import DoctorFavouritesTab from './components/DoctorFavouritesTab'
+import DoctorAdditionalDetailTab from './components/DoctorAdditionalDetailTab'
 import SessionsTab from '../../../components/common/SessionsTab/SessionsTab'
-import { DoctorProfile, DoctorProfilePersonal, DoctorProfileProfessional } from '../../../types/doctor-profile'
+import {
+	DoctorProfile,
+	DoctorProfilePersonal,
+	DoctorProfileProfessional,
+	DoctorAdditionalDetail,
+} from '../../../types/doctor-profile'
 import { customCardStyle } from '../../../styles/commonStyles'
 import { getDoctorProfile, mapDoctorProfileApi } from '../doctorService'
 import { useAuth, setAuth } from '../../../hooks/useAuth'
@@ -28,6 +35,7 @@ const DOCTOR_NAV_ITEMS = [
 	{ id: 'professional', label: 'Professional details', icon: <WorkOutlineIcon fontSize="small" /> },
 	{ id: 'hospitals', label: 'My hospitals', icon: <LocalHospitalOutlinedIcon fontSize="small" /> },
 	{ id: 'availability', label: 'Availability', icon: <EventAvailableOutlinedIcon fontSize="small" /> },
+	{ id: 'additional', label: 'Additional Details', icon: <MedicalServicesOutlinedIcon fontSize="small" /> },
 	{ id: 'favourites', label: 'Favourite doctors', icon: <FavoriteBorderIcon fontSize="small" /> },
 	{ id: 'sessions', label: 'Active Sessions', icon: <DesktopWindowsOutlinedIcon fontSize="small" /> },
 	{ id: 'settings', label: 'Settings', icon: <SettingsOutlinedIcon fontSize="small" /> },
@@ -58,8 +66,9 @@ export default function DoctorProfilePage() {
 
 	const { role, user, accessToken, refreshToken, lookupData } = useAuth()
 
-	// ── Fetch on mount ──────────────────────────────────────────────────────────
-	useEffect(() => {
+	// ── Fetch profile ───────────────────────────────────────────────────────────
+	const fetchProfile = useCallback(() => {
+		setLoading(true)
 		getDoctorProfile()
 			.then((res) => {
 				if (res.success) {
@@ -70,6 +79,32 @@ export default function DoctorProfilePage() {
 			})
 			.catch(() => setError('Failed to load profile'))
 			.finally(() => setLoading(false))
+	}, [])
+
+	// useEffect(() => {
+	// 	fetchProfile()
+	// }, [fetchProfile])
+
+	useEffect(() => {
+		const loadProfile = async () => {
+			setLoading(true)
+
+			try {
+				const res = await getDoctorProfile()
+
+				if (res.success) {
+					setDoctor(mapDoctorProfileApi(res.data))
+				} else {
+					setError(res.message)
+				}
+			} catch {
+				setError('Failed to load profile')
+			} finally {
+				setLoading(false)
+			}
+		}
+
+		loadProfile()
 	}, [])
 
 	const completionPercent = useMemo(() => (doctor ? calcCompletion(doctor) : 0), [doctor])
@@ -104,6 +139,9 @@ export default function DoctorProfilePage() {
 	const handleAvailabilityChange = (availability: DoctorProfile['availability']) =>
 		setDoctor((prev) => (prev ? { ...prev, availability } : prev))
 
+	const handleAdditionalDetailChange = (updated: Partial<DoctorAdditionalDetail>) =>
+		setDoctor((prev) => (prev ? { ...prev, additionalDetail: { ...prev.additionalDetail, ...updated } } : prev))
+
 	if (loading) {
 		return (
 			<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
@@ -125,9 +163,21 @@ export default function DoctorProfilePage() {
 	const renderTab = () => {
 		switch (activeTab) {
 			case 'personal':
-				return <DoctorPersonalTab data={doctor.personal} onChange={handlePersonalChange} />
+				return (
+					<DoctorPersonalTab
+						data={doctor.personal}
+						onChange={handlePersonalChange}
+						onSaveSuccess={fetchProfile}
+					/>
+				)
 			case 'professional':
-				return <DoctorProfessionalTab data={doctor.professional} onChange={handleProfessionalChange} />
+				return (
+					<DoctorProfessionalTab
+						data={doctor.professional}
+						onChange={handleProfessionalChange}
+						onSaveSuccess={fetchProfile}
+					/>
+				)
 			case 'hospitals':
 				return <DoctorHospitalsTab hospitals={doctor.hospitals} onChange={handleHospitalsChange} />
 			case 'availability':
@@ -136,6 +186,14 @@ export default function DoctorProfilePage() {
 						hospitals={doctor.hospitals}
 						availability={doctor.availability}
 						onChange={handleAvailabilityChange}
+					/>
+				)
+			case 'additional':
+				return (
+					<DoctorAdditionalDetailTab
+						data={doctor.additionalDetail ?? { treatments: [], areas_of_expertise: [] }}
+						onChange={handleAdditionalDetailChange}
+						handleSave={async () => {}}
 					/>
 				)
 			case 'favourites':

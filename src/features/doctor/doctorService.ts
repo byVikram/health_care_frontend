@@ -159,6 +159,11 @@ export const getDoctorProfile = async (): Promise<DoctorProfileApiResponse> => {
 	return res.data
 }
 
+export const updatePersonalDetails = async (data: Record<string, unknown>) => {
+	const res = await ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.PERSONAL_DETAILS, data)
+	return res.data
+}
+
 export const updateProfessionalDetails = async (data: Record<string, unknown>) => {
 	const res = await ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.PROFESSIONAL_DETAILS, data)
 	return res.data
@@ -255,6 +260,10 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 		},
 		hospitals,
 		availability,
+		additionalDetail: {
+			treatments: [],
+			areas_of_expertise: [],
+		},
 	}
 }
 

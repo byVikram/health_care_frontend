@@ -4,12 +4,11 @@ import ProfileFormActions from '../../../../components/common/ProfileFormActions
 import { Box, Typography, Grid, InputAdornment } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import AppInput from '../../../../components/common/Input/AppInput'
-
 import AppSelect from '../../../../components/common/Select/AppSelect'
 import { DoctorProfilePersonal } from '../../../../types/doctor-profile'
 import { customCardStyle } from '../../../../styles/commonStyles'
 import AppDatePicker from '../../../../components/common/DatePicker/AppDatePicker'
-import { updateProfessionalDetails } from '../../doctorService'
+import { updatePersonalDetails } from '../../doctorService'
 import 'react-toastify/dist/ReactToastify.css'
 import { toast } from 'react-toastify'
 import AppMultiSelect from '../../../../components/common/Select/AppMultiSelect'
@@ -17,6 +16,7 @@ import AppMultiSelect from '../../../../components/common/Select/AppMultiSelect'
 interface DoctorPersonalTabProps {
 	data: DoctorProfilePersonal
 	onChange: (updated: Partial<DoctorProfilePersonal>) => void
+	onSaveSuccess?: () => void
 }
 
 const GENDER_OPTIONS = [
@@ -39,7 +39,7 @@ const verifiedAdornment = (
 	</InputAdornment>
 )
 
-export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabProps) {
+export default function DoctorPersonalTab({ data, onChange, onSaveSuccess }: DoctorPersonalTabProps) {
 	const [isDirty, setIsDirty] = useState(false)
 	const [saved, setSaved] = useState(data)
 
@@ -49,26 +49,24 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 
 	const handleSave = async () => {
 		try {
-			const payload = {
+			const payload: Record<string, unknown> = {
 				name: data.name,
 				location: data.location,
 				gender: data.gender,
-				date_of_birth: data.dateOfBirth,
 				languages: data.languages,
 				email: data.email,
-				instagram: data.instagram,
-				facebook: data.facebook,
-				twitter: data.twitter,
 			}
+			if (data.dateOfBirth) payload.date_of_birth = data.dateOfBirth
+			if (data.instagram) payload.instagram = data.instagram
+			if (data.facebook) payload.facebook = data.facebook
+			if (data.twitter) payload.twitter = data.twitter
 
-			const res = await updateProfessionalDetails(payload)
+			await updatePersonalDetails(payload)
 
-			if (res) {
-				toast.success('Changes saved successfully!')
-			}
-
+			toast.success('Personal details saved successfully!')
 			setSaved(data)
 			setIsDirty(false)
+			onSaveSuccess?.()
 		} catch (error) {
 			toast.error('Something went wrong. Please try again.')
 			console.error(error)
