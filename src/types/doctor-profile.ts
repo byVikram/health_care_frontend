@@ -76,4 +76,11 @@ export interface DoctorProfile {
 	professional: DoctorProfileProfessional
 	hospitals: DoctorHospital[]
 	availability: DoctorAvailability
+	additionalDetail: DoctorAdditionalDetail
+}
+
+
+export interface DoctorAdditionalDetail {
+	treatments: string[]
+	areas_of_expertise: string[]
 }

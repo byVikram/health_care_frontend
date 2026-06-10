@@ -30,7 +30,7 @@ export interface AppointmentHospital {
 export interface Appointment {
 	id: string
 	public_id: string
-	appointment_mode: 'clinic_visit' | 'video_call'
+	appointment_mode: 'clinic visit' | 'video call'
 	appointment_date: string
 	start_time: string
 	end_time: string

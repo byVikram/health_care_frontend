@@ -8,11 +8,14 @@ import AppInput from '../../../../components/common/Input/AppInput'
 import AppSelect from '../../../../components/common/Select/AppSelect'
 import { DoctorProfileProfessional } from '../../../../types/doctor-profile'
 import { customCardStyle } from '../../../../styles/commonStyles'
-import { getSpecialities } from '../../doctorService'
+import { getSpecialities, updateProfessionalDetails } from '../../doctorService'
+import { toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 interface DoctorProfessionalTabProps {
 	data: DoctorProfileProfessional
 	onChange: (updated: Partial<DoctorProfileProfessional>) => void
+	onSaveSuccess?: () => void
 }
 
 const DEGREE_OPTIONS = ['MBBS', 'MD', 'MS', 'BDS', 'MDS', 'BAMS', 'BHMS', 'BPT', 'DNB'].map((d) => ({
@@ -54,16 +57,10 @@ function UploadBox({
 
 	return (
 		<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-			{/* Text section takes remaining space */}
 			<Box sx={{ flex: 1 }}>
 				<Typography
 					variant="caption"
-					sx={{
-						color: 'text.secondary',
-						fontSize: '12px',
-						fontWeight: 500,
-						display: 'block',
-					}}
+					sx={{ color: 'text.secondary', fontSize: '12px', fontWeight: 500, display: 'block' }}
 				>
 					{label}
 					{required && (
@@ -72,23 +69,15 @@ function UploadBox({
 						</Box>
 					)}
 				</Typography>
-
 				{description && (
 					<Typography
 						variant="caption"
-						sx={{
-							color: 'text.secondary',
-							fontSize: '11.5px',
-							display: 'block',
-							lineHeight: 1.5,
-						}}
+						sx={{ color: 'text.secondary', fontSize: '11.5px', display: 'block', lineHeight: 1.5 }}
 					>
 						{description}
 					</Typography>
 				)}
 			</Box>
-
-			{/* Upload box takes only required width */}
 			<Box
 				onClick={() => ref.current?.click()}
 				sx={{
@@ -104,10 +93,7 @@ function UploadBox({
 					justifyContent: 'center',
 					cursor: 'pointer',
 					bgcolor: 'rgba(43,111,113,0.03)',
-					'&:hover': {
-						borderColor: 'primary.main',
-						bgcolor: 'rgba(43,111,113,0.06)',
-					},
+					'&:hover': { borderColor: 'primary.main', bgcolor: 'rgba(43,111,113,0.06)' },
 					transition: 'all 0.15s',
 				}}
 			>
@@ -115,7 +101,6 @@ function UploadBox({
 				<Typography variant="caption" sx={{ color: 'primary.main', fontSize: '11px', fontWeight: 600 }}>
 					Upload
 				</Typography>
-
 				<input
 					ref={ref}
 					type="file"
@@ -139,58 +124,60 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 	)
 }
 
-export default function DoctorProfessionalTab({ data, onChange }: DoctorProfessionalTabProps) {
+export default function DoctorProfessionalTab({ data, onChange, onSaveSuccess }: DoctorProfessionalTabProps) {
 	const [isDirty, setIsDirty] = useState(false)
 	const [showSuccess, setShowSuccess] = useState(false)
 	const [saved, setSaved] = useState(data)
-
 	const [specialities, setSpecialities] = useState<SpecialityValue[]>([])
 
 	useEffect(() => {
 		setIsDirty(JSON.stringify(data) !== JSON.stringify(saved))
 	}, [data, saved])
 
-	const handleSave = () => {
-		setSaved(data)
-		setIsDirty(false)
-		setShowSuccess(true)
-	}
-	const selectedLabel = data.specialization_label
-	// SPECIALIZATION_OPTIONS.find((o) => o.value === data.specialization)?.label ?? data.specialization
-
 	useEffect(() => {
-		// setSpecialityLoading(true)
-
 		const fetchSpecialities = async () => {
 			try {
 				const res = await getSpecialities()
-
 				const formattedRoles = res.data.map((role: SpecialityId) => ({
-					value: role.id, // or role.id if you prefer
+					value: role.id,
 					label: role.label,
 				}))
-
 				setSpecialities(formattedRoles)
 			} catch (err) {
 				console.log(err)
-			} finally {
-				// setSpecialityLoading(false)
 			}
 		}
-
 		fetchSpecialities()
-
-		// return () => {
-		// 	active = false
-		// }
 	}, [])
 
+	const handleSave = async () => {
+		try {
+			const payload: Record<string, unknown> = {}
+			if (data.degree) payload.degree = data.degree
+			if (data.college) payload.college = data.college
+			if (data.yearOfPassing) payload.year_of_passing = data.yearOfPassing
+			if (data.registrationNumber) payload.registration_number = data.registrationNumber
+			if (data.about) payload.about = data.about
+			if (data.qualificationProof) payload.qualification_proof_s3_key = data.qualificationProof
+			if (data.registrationProof) payload.registration_proof_s3_key = data.registrationProof
+
+			await updateProfessionalDetails(payload)
+
+			toast.success('Professional details saved successfully!')
+			setSaved(data)
+			setIsDirty(false)
+			setShowSuccess(true)
+			onSaveSuccess?.()
+		} catch (error) {
+			toast.error('Something went wrong. Please try again.')
+			console.error(error)
+		}
+	}
+
+	const selectedLabel = data.specialization_label
+
 	return (
-		<Box
-			sx={{
-				...customCardStyle,
-			}}
-		>
+		<Box sx={{ ...customCardStyle }}>
 			<Typography variant="h4" sx={{ fontWeight: 700, mb: 3, color: 'text.primary' }}>
 				Professional Details
 			</Typography>
@@ -218,10 +205,8 @@ export default function DoctorProfessionalTab({ data, onChange }: DoctorProfessi
 							label="Select Degree *"
 							value={data.degree || ''}
 							options={DEGREE_OPTIONS}
-							// placeholder="Select your degree"
 							onChange={(e) => onChange({ degree: e.target.value as string })}
 						/>
-
 						<Grid container spacing={2}>
 							<Grid size={{ xs: 12, sm: 6 }}>
 								<AppSelect
@@ -241,7 +226,6 @@ export default function DoctorProfessionalTab({ data, onChange }: DoctorProfessi
 								/>
 							</Grid>
 						</Grid>
-
 						<UploadBox
 							label="Upload image or PDF of Qualification proofs"
 							required
@@ -274,7 +258,6 @@ export default function DoctorProfessionalTab({ data, onChange }: DoctorProfessi
 								</Typography>
 							</Box>
 						)}
-
 						<Grid container spacing={2} alignItems="flex-end">
 							<Grid size={{ xs: 12, sm: 8 }}>
 								<AppInput
@@ -285,21 +268,15 @@ export default function DoctorProfessionalTab({ data, onChange }: DoctorProfessi
 								/>
 							</Grid>
 							<Grid size={{ xs: 12, sm: 4 }}>
-								<UploadBox
-									label=""
-
-									onChange={(file) => onChange({ registrationProof: file.name })}
-								/>
+								<UploadBox label="" onChange={(file) => onChange({ registrationProof: file.name })} />
 							</Grid>
 						</Grid>
-
 						<AppInput
 							label="About / Bio"
 							value={data.about}
 							placeholder="Write a short bio about yourself"
 							onChange={(e) => onChange({ about: e.target.value })}
 						/>
-
 						<Grid size={{ xs: 12 }} mt={2} display={'flex'} justifyContent={'flex-end'}></Grid>
 					</Box>
 				</Box>

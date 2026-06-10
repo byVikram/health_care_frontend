@@ -1,5 +1,5 @@
-import React, {  useEffect, useState } from 'react'
-import { Box, Typography, Avatar, InputAdornment,  Card } from '@mui/material'
+import React, { useEffect, useState } from 'react'
+import { Box, Typography, Avatar, InputAdornment, Card } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import AppTable from './components/AppTable'
@@ -69,8 +69,7 @@ export default function AppointmentList() {
 	const { role } = useAuth()
 	const queryView = searchParams.get('view')
 	const viewAs: 'doctor' | 'patient' =
-		queryView === 'doctor' || queryView === 'patient' ? 
-		queryView : role === 'patient' ? 'patient' : 'doctor'
+		queryView === 'doctor' || queryView === 'patient' ? queryView : role === 'patient' ? 'patient' : 'doctor'
 
 	const [search, setSearch] = useState('')
 	const [page, setPage] = useState(1)
@@ -98,7 +97,7 @@ export default function AppointmentList() {
 
 				if (search) params.search = search
 
-			const res = await ApiService.getWithParams<AppointmentsResponse>(API_ENDPOINTS.APPOINTMENTS.GET, params)
+				const res = await ApiService.getWithParams<AppointmentsResponse>(API_ENDPOINTS.APPOINTMENTS.GET, params)
 
 				const mapped: AppointmentRow[] = res.data.data.map((appt) => ({
 					id: appt.id,
@@ -130,7 +129,7 @@ export default function AppointmentList() {
 		}
 
 		fetchAppointments()
-	}, [page, search, size,  patientId])
+	}, [page, search, size, patientId])
 
 	// ── Name column — shown once, based on viewAs ───────────────────────────
 	// Format HH:MM:SS or HH:MM -> H:MM
@@ -208,7 +207,7 @@ export default function AppointmentList() {
 			width: '120px',
 			format: (_value, row) => (
 				<Typography fontSize={13} color="text.primary" fontWeight={500} sx={{ textTransform: 'capitalize' }}>
-					{row.appointmentMode}
+					{row.appointmentMode?.replaceAll('_', ' ').replace(/\b\w/g, (char) => char.toUpperCase())}
 				</Typography>
 			),
 		},
