@@ -3,6 +3,7 @@ import { Box, Typography, Grid } from '@mui/material'
 import AppButton from '../../components/common/Button/AppButton'
 import ConsultCard from '../../components/common/Card/ConsultCard'
 import { useNavigate } from 'react-router-dom'
+import { ROUTES } from '../../constants/routes'
 
 import dentistImage from '../../assets/specialties/dentist.png'
 import gynoCologistImage from '../../assets/specialties/gynocologist.png'
@@ -69,6 +70,7 @@ export default function ConsultSection() {
 						label="View All"
 						borderRadius="30px"
 						sx={{ mt: { xs: 2, md: 0 } }}
+						onClick={() => navigate(ROUTES.SPECIALITIES)}
 					/>
 				</Grid>
 			</Grid>

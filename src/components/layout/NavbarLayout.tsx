@@ -1,11 +1,29 @@
 ﻿// src/components/layout/NavbarLayout.tsx
 import React, { useState, useRef, useEffect, ReactNode, cloneElement } from 'react'
 import {
-	Box, Paper, MenuItem, Divider, Typography, Stack, IconButton, Avatar,
-	Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField,
+	Box,
+	Paper,
+	MenuItem,
+	Divider,
+	Typography,
+	Stack,
+	IconButton,
+	Avatar,
+	Dialog,
+	DialogTitle,
+	DialogContent,
+	DialogActions,
+	Button,
+	TextField,
 } from '@mui/material'
-import { SwapHoriz as SwapIcon, Check as CheckIcon, PersonAdd as PersonAddIcon, Close as CloseIcon } from '@mui/icons-material'
+import {
+	SwapHoriz as SwapIcon,
+	Check as CheckIcon,
+	PersonAdd as PersonAddIcon,
+	Close as CloseIcon,
+} from '@mui/icons-material'
 import DoctorNavBar from '../common/Navbar/DoctorNavBar'
+import AppNavBar from '../common/Navbar/AppNavBar'
 import { clearAuth, useAuth } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { USER_ROLES } from '../../constants/constants'
@@ -32,7 +50,7 @@ function isDividerMenuItem(item: ProfileMenuItem): item is { divider: true } {
 const PATIENT_PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
 	{ label: 'Add User', path: '#add-user', special: 'add-user' },
 	{ divider: true },
-	{ label: 'My Appointments', path: '#' },
+	{ label: 'My Appointments', path: '/portal/appointments' },
 	{ label: 'My Tests', path: '#' },
 	{ label: 'My Medicine Orders', path: '#' },
 	{ label: 'My Medical Records', path: '#' },
@@ -91,13 +109,7 @@ function AddUserModal({ open, onClose }: { open: boolean; onClose: () => void })
 	}
 
 	return (
-		<Dialog
-			open={open}
-			onClose={handleClose}
-			maxWidth="xs"
-			fullWidth
-			PaperProps={{ sx: { borderRadius: '12px' } }}
-		>
+		<Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '12px' } }}>
 			<DialogTitle
 				sx={{
 					display: 'flex',
@@ -115,7 +127,11 @@ function AddUserModal({ open, onClose }: { open: boolean; onClose: () => void })
 				<IconButton
 					onClick={handleClose}
 					size="small"
-					sx={{ color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' }, '&:focus': { outline: 'none' } }}
+					sx={{
+						color: 'text.secondary',
+						'&:hover': { bgcolor: 'action.hover' },
+						'&:focus': { outline: 'none' },
+					}}
 				>
 					<CloseIcon fontSize="small" />
 				</IconButton>
@@ -126,7 +142,10 @@ function AddUserModal({ open, onClose }: { open: boolean; onClose: () => void })
 					label="Name"
 					placeholder="Enter full name"
 					value={name}
-					onChange={(e) => { setName(e.target.value); setNameError(false) }}
+					onChange={(e) => {
+						setName(e.target.value)
+						setNameError(false)
+					}}
 					error={nameError}
 					helperText={nameError ? 'Name is required' : ''}
 					fullWidth
@@ -137,7 +156,10 @@ function AddUserModal({ open, onClose }: { open: boolean; onClose: () => void })
 					label="Role"
 					placeholder="Enter role"
 					value={role}
-					onChange={(e) => { setRole(e.target.value); setRoleError(false) }}
+					onChange={(e) => {
+						setRole(e.target.value)
+						setRoleError(false)
+					}}
 					error={roleError}
 					helperText={roleError ? 'Role is required' : ''}
 					fullWidth
@@ -193,7 +215,6 @@ function AddUserModal({ open, onClose }: { open: boolean; onClose: () => void })
 		</Dialog>
 	)
 }
-
 
 // ---- Account Switcher Dropdown ----
 function AccountSwitcher({
@@ -432,7 +453,11 @@ function ProfileDropdown({
 							alignItems: 'center',
 							gap: 1,
 							'&:hover': {
-								bgcolor: item.danger ? 'error.lighter' : isAddUser ? 'rgba(43,111,113,0.06)' : 'action.hover',
+								bgcolor: item.danger
+									? 'error.lighter'
+									: isAddUser
+										? 'rgba(43,111,113,0.06)'
+										: 'action.hover',
 								color: item.danger ? 'error.dark' : 'primary.main',
 							},
 						}}
@@ -520,7 +545,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 				position: 'relative',
 			}}
 		>
-			<Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200 }}>
+			{/* <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200 }}>
 				<DoctorNavBar
 					onProfileClick={() => {
 						setAccountSwitcherOpen(false)
@@ -529,6 +554,26 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 					onHospitalChange={handleHospitalChange}
 					avatarSrc={role === 'patient' ? (profileAccount.avatar || undefined) : (user?.avatar || undefined)}
 				/>
+			</Box> */}
+			<Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200 }}>
+				{role === USER_ROLES.PATIENT ? (
+					<AppNavBar
+						onProfileClick={() => {
+							setAccountSwitcherOpen(false)
+							setDropdownOpen((prev) => !prev)
+						}}
+						avatarSrc={profileAccount.avatar || undefined}
+					/>
+				) : (
+					<DoctorNavBar
+						onProfileClick={() => {
+							setAccountSwitcherOpen(false)
+							setDropdownOpen((prev) => !prev)
+						}}
+						onHospitalChange={handleHospitalChange}
+						avatarSrc={user?.avatar || undefined}
+					/>
+				)}
 			</Box>
 
 			{dropdownOpen && (

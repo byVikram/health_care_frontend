@@ -6,9 +6,16 @@ interface ConsultCardProps {
 	title: string
 	description: string
 	onConsult?: () => void
+	objectPosition?: string
 }
 
-export default function ConsultCard({ image, title, description, onConsult }: ConsultCardProps) {
+export default function ConsultCard({
+	image,
+	title,
+	description,
+	onConsult,
+	objectPosition = 'center center',
+}: ConsultCardProps) {
 	return (
 		<Box
 			sx={{
@@ -33,16 +40,19 @@ export default function ConsultCard({ image, title, description, onConsult }: Co
 					overflow: 'hidden',
 					transition: 'transform 0.2s ease, box-shadow 0.2s ease',
 					bgcolor: '#f0f4f8',
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
 				}}
 			>
 				<Box
 					component="img"
 					src={image}
 					alt={title}
-					// sx={{ width: '60%', height: '60%', objectFit: 'contain' }}
+					sx={{
+						width: '100%',
+						height: '100%',
+						objectFit: 'cover',
+						objectPosition,
+						display: 'block',
+					}}
 				/>
 			</Box>
 
@@ -61,19 +71,6 @@ export default function ConsultCard({ image, title, description, onConsult }: Co
 			>
 				{description}
 			</Typography>
-
-			{/* Consult Now */}
-			{/* <Typography
-				variant="body2"
-				sx={{
-					color: 'neutral.main',
-					fontWeight: 500,
-					cursor: 'pointer',
-					'&:hover': { textDecoration: 'underline' },
-				}}
-			>
-				Consult Now
-			</Typography> */}
 		</Box>
 	)
 }

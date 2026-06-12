@@ -26,6 +26,8 @@ export const ROUTES = {
 		PROFILE: '/radiology/profile',
 	},
 
+	SPECIALITIES: '/specialities',
+
 	TEST: '/test',
 	TEST_REGISTER: '/test-register',
 
