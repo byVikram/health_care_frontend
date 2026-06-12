@@ -5,6 +5,12 @@ export interface DoctorProfileApiSpeciality {
 	label: string
 }
 
+export interface SocialMediaHandles {
+    instagram?: string
+    facebook?: string
+    twitter?: string
+}
+
 export interface DoctorProfileApiHospital {
 	id: string
 	is_primary: boolean
@@ -50,9 +56,7 @@ export interface DoctorProfileApiData {
 		date_of_birth: string
 		location: string
 		languages: string[]
-		instagram?: string | null
-		facebook?: string | null
-		twitter?: string | null
+		social_media_handles?: SocialMediaHandles
 	}
 	professional_details: {
 		experience_years: number

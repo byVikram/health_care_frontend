@@ -25,6 +25,7 @@ import IcuIcon from '../../assets/quick-services/icu.svg'
 import EmergencyIcon from '../../assets/quick-services/emergency.svg'
 
 import { PatientAppointments } from '../patient/PatientAppointments'
+import PatientPortalPage from '../patient/PatientPortalPage'
 import { USER_ROLES } from '../../constants/constants'
 import UpcomingEventsSection from '../dashboard/UpcomingEventsSection'
 import CommunityBlogsSection from '../dashboard/CommunityBlogsSection'
@@ -424,6 +425,10 @@ export default function PortalPage() {
 	}, [selectedDate, weekDays, debouncedQuery, activeHospitalId, role])
 
 	// ----------------------------- Render -----------------------------
+
+	if (role === USER_ROLES.PATIENT) {
+		return <PatientPortalPage />
+	}
 	return (
 		<Box sx={{ bgcolor: '#f5f7fa' }}>
 			<Container maxWidth="lg" sx={{ py: 3 }}>

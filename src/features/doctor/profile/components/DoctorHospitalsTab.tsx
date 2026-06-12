@@ -1,15 +1,38 @@
 // src/features/doctor/profile/components/DoctorHospitalsTab.tsx
 import { useState } from 'react'
-import { Box, Typography, IconButton, Radio, Menu, MenuItem as MuiMenuItem } from '@mui/material'
-import AddIcon from '@mui/icons-material/Add'
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
-import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
-import CloseIcon from '@mui/icons-material/Close'
+import {
+	Box,
+	Typography,
+	IconButton,
+	Radio,
+	Menu,
+	MenuItem as MuiMenuItem,
+	Grid,
+} from '@mui/material'
+import {
+	Add as AddIcon,
+	MoreVert as MoreVertIcon,
+	ArrowBackIosNew as ArrowBackIosNewIcon,
+	HomeOutlined as HomeOutlinedIcon,
+	LocationOnOutlined as LocationOnOutlinedIcon,
+	PhoneOutlined as PhoneOutlinedIcon,
+	Check as CheckIcon,
+	ArrowForward as ArrowForwardIcon,
+	DeleteOutline as DeleteOutlineIcon,
+	WbSunnyOutlined as MorningIcon,
+	LightModeOutlined as AfternoonIcon,
+	NightsStayOutlined as EveningIcon,
+	VideocamOutlined as VideocamOutlinedIcon,
+	CalendarMonthOutlined as CalendarIcon,
+	// AccessTimeOutlined as TimeIcon,
+	PaymentOutlined as PaymentIcon,
+	GavelOutlined as RuleIcon,
+} from '@mui/icons-material'
 import { toast } from 'react-toastify'
 import AppButton from '../../../../components/common/Button/AppButton'
 import AppInput from '../../../../components/common/Input/AppInput'
 import AppSwitch from '../../../../components/common/Switch/AppSwitch'
+import AppSelect from '../../../../components/common/Select/AppSelect'
 import { customCardStyle } from '../../../../styles/commonStyles'
 import type {
 	DoctorHospital,
@@ -19,7 +42,6 @@ import type {
 	WorkingHoursState,
 } from '../../../../types/doctor-profile'
 import { createHospital, updateHospital, updateWeeklyAvailability } from '../../doctorService'
-import { TextField, MenuItem } from '@mui/material'
 
 interface DoctorHospitalsTabProps {
 	hospitals: DoctorHospital[]
@@ -55,7 +77,6 @@ const getHospitalAddressText = (hospital: DoctorHospital) => {
 	return fullAddress || location
 }
 
-// Generate time options for a given hour range with a custom step in minutes
 const makeTimeOptions = (startHour: number, endHour: number, stepMins: number = 30) => {
 	const options: { value: string; label: string }[] = []
 	const totalStartMins = startHour * 60
@@ -72,7 +93,6 @@ const makeTimeOptions = (startHour: number, endHour: number, stepMins: number = 
 	return options
 }
 
-// Snap a HH:MM time string to the nearest multiple of stepMins
 const snapToStep = (time: string, stepMins: number): string => {
 	const [h, m] = time.split(':').map(Number)
 	const totalMins = h * 60 + m
@@ -85,6 +105,7 @@ const snapToStep = (time: string, stepMins: number): string => {
 const durationOptions = [10, 15, 20, 25, 30]
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
 const getWeekDates = (start: Date) => {
 	return Array.from({ length: 7 }, (_, i) => {
@@ -98,6 +119,7 @@ const SECTION_META = [
 	{
 		key: 'morning' as const,
 		label: 'Morning',
+		icon: <MorningIcon sx={{ fontSize: 16, color: '#FFB020' }} />,
 		startHour: 8,
 		endHour: 12,
 		defaultStart: '08:00',
@@ -106,6 +128,7 @@ const SECTION_META = [
 	{
 		key: 'afternoon' as const,
 		label: 'Afternoon',
+		icon: <AfternoonIcon sx={{ fontSize: 16, color: '#10B981' }} />,
 		startHour: 12,
 		endHour: 17,
 		defaultStart: '12:00',
@@ -114,6 +137,7 @@ const SECTION_META = [
 	{
 		key: 'evening' as const,
 		label: 'Evening',
+		icon: <EveningIcon sx={{ fontSize: 16, color: '#6366F1' }} />,
 		startHour: 17,
 		endHour: 21,
 		defaultStart: '17:00',
@@ -224,16 +248,16 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 	const selectedWorkingHours =
 		weeklyAvailability[selectedDay]?.[selectedAppointmentType] || makeDefaultWorkingHours()[selectedAppointmentType]
 
-	// ── Reset all form state to defaults ────────────────────────────────────────
-
-	// Copy current selected day's working hours (for current appointment type) to all 7 days
-	const handleApplyToAll = () => {
+	const handleApplyAvailability = (mode: 'weekdays' | 'all') => {
 		const day = selectedDate.getDay()
 		const dayAvail = weeklyAvailability[day]
 		if (!dayAvail) return
+
+		const targetDays = mode === 'weekdays' ? [1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5, 6]
+
 		setWeeklyAvailability((prev) => {
 			const updated = { ...prev }
-			for (let d = 0; d < 7; d++) {
+			for (const d of targetDays) {
 				if (d === day) continue
 				updated[d] = {
 					clinic: {
@@ -256,7 +280,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 			}
 			return updated
 		})
-		toast.success('Applied to all days')
+		toast.success(`Applied availability to ${mode === 'weekdays' ? 'all weekdays' : 'all days'}`)
 	}
 
 	const resetFormState = () => {
@@ -269,19 +293,11 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		setWeeklyAvailability(getInitialWeeklyAvailability())
 	}
 
-	// ── Edit: populate form fields from existing hospital data and open the form ─
-	// NOTE: We do NOT call getDoctorAvailability here.
-	// That endpoint (/api/doctors/availability) is the patient-facing slot query — it
-	// requires a doctor_id and returns individual bookable slots for a calendar date.
-	// It is NOT a schedule-definition endpoint and returns a DB error when called
-	// without a doctor_id from the doctor's own profile context.
-	// The doctor sets/updates their working-hours schedule fresh each time they edit.
 	const handleEdit = (hospitalId: string) => {
 		handleCloseMenu()
 		const h = hospitals.find((h) => h.id === hospitalId)
 		if (!h) return
 
-		// Pre-fill all text fields from the hospital object in memory
 		setForm({
 			name: h.name,
 			fullAddress: h.fullAddress,
@@ -290,7 +306,6 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 			offline_consultation_fee: h.clinic_consultation_fee ?? '',
 		})
 
-		// Pre-fill appointment rule dropdowns
 		setFollowUpDays(h.free_followup_validity_days ?? 7)
 		setRescheduleCutoff(h.reschedule_allowed_until_hours ?? 2)
 		setAllowPayLater(h.allow_pay_later ?? false)
@@ -301,7 +316,6 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		setShowForm(true)
 	}
 
-	// Add a new slot to a section (max 3). New slot starts at previous slot's end time.
 	const addSlot = (sectionKey: keyof SectionSlots) => {
 		setWeeklyAvailability((prev) => {
 			const day = selectedDate.getDay()
@@ -334,7 +348,6 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		})
 	}
 
-	// Remove a slot by index (only slots 1+ can be removed, not index 0)
 	const removeSlot = (sectionKey: keyof SectionSlots, slotIndex: number) => {
 		setWeeklyAvailability((prev) => {
 			const day = selectedDate.getDay()
@@ -358,7 +371,6 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		})
 	}
 
-	// Update start or end time of a specific slot
 	const updateSlotTime = (
 		sectionKey: keyof SectionSlots,
 		slotIndex: number,
@@ -390,7 +402,6 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 			const day = selectedDate.getDay()
 			const currentDayAvail = prev[day] || getInitialWeeklyAvailability()[day]
 			const current = currentDayAvail[selectedAppointmentType]
-			// Snap all existing slot times to the new step so selected values stay valid
 			const snappedSections = Object.fromEntries(
 				Object.entries(current.sections).map(([sKey, slots]) => [
 					sKey,
@@ -417,7 +428,6 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		onChange(hospitals.map((h) => ({ ...h, isPrimary: h.id === id })))
 	}
 
-	// ── Save hospital details only (name, address, fees, rules) ─────────────
 	const handleSave = async () => {
 		const trimmedName = form.name.trim()
 		const trimmedAddress = form.fullAddress.trim()
@@ -435,7 +445,6 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		setIsSaving(true)
 		try {
 			if (editingHospitalId) {
-				// Edit: PATCH /hospitals + PATCH /availability in parallel
 				await Promise.all([
 					updateHospital({
 						hospital_id: editingHospitalId,
@@ -456,24 +465,23 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 				const updatedHospitals = hospitals.map((h) =>
 					h.id === editingHospitalId
 						? {
-								...h,
-								name: trimmedName,
-								fullAddress: trimmedAddress,
-								location: trimmedAddress,
-								phone_number: form.phone_number.trim(),
-								video_consultation_fee: form.video_consultation_fee.trim(),
-								clinic_consultation_fee: form.offline_consultation_fee.trim(),
-								free_followup_validity_days: followUpDays,
-								reschedule_allowed_until_hours: rescheduleCutoff,
-								allow_pay_later: allowPayLater,
-								availability: weeklyAvailability,
-							}
+							...h,
+							name: trimmedName,
+							fullAddress: trimmedAddress,
+							location: trimmedAddress,
+							phone_number: form.phone_number.trim(),
+							video_consultation_fee: form.video_consultation_fee.trim(),
+							clinic_consultation_fee: form.offline_consultation_fee.trim(),
+							free_followup_validity_days: followUpDays,
+							reschedule_allowed_until_hours: rescheduleCutoff,
+							allow_pay_later: allowPayLater,
+							availability: weeklyAvailability,
+						}
 						: h
 				)
 				onChange(updatedHospitals)
 				toast.success('Hospital updated successfully')
 			} else {
-				// Create: POST /hospitals to get ID, then PATCH /availability
 				const response = await createHospital({
 					name: trimmedName,
 					phone_number: form.phone_number.trim(),
@@ -517,54 +525,125 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 
 	if (showForm) {
 		return (
-			<Box sx={{ ...customCardStyle }}>
-				<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-					<IconButton
-						size="small"
+			<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+				{/* Header Back Bar */}
+				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+					<Box
 						onClick={() => {
 							setShowForm(false)
 							resetFormState()
 						}}
-						sx={{ color: 'text.secondary', '&:focus': { outline: 'none' } }}
+						sx={{
+							display: 'inline-flex',
+							alignItems: 'center',
+							gap: 0.8,
+							cursor: 'pointer',
+							color: 'text.secondary',
+							transition: 'color 0.2s',
+							'&:hover': { color: '#2B6F71' },
+						}}
 					>
-						<ArrowBackIosNewIcon sx={{ fontSize: 15 }} />
-					</IconButton>
-					<Typography variant="h6" sx={{ fontWeight: 700, fontSize: '16px' }}>
-						{editingHospitalId ? 'Edit Hospital Details' : 'Add new Hospital Details'}
+						<ArrowBackIosNewIcon sx={{ fontSize: 12 }} />
+						<Typography variant="caption" sx={{ fontWeight: 700 }}>
+							Back to clinic list
+						</Typography>
+					</Box>
+					<Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '11px' }}>
+						* fields are required
 					</Typography>
 				</Box>
-				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-					{/* Row 1: Hospital Name + Phone Number */}
-					<Box sx={{ display: 'flex', gap: 2.5 }}>
-						<Box sx={{ flex: 1 }}>
+
+				<Box>
+					<Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary', mb: 0.2, fontSize: '18px' }}>
+						{editingHospitalId ? 'Edit Hospital Details' : 'Add new Hospital Details'}
+					</Typography>
+					<Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+						Define location details, availability scheduling, consultation fees, and patient booking rules.
+					</Typography>
+				</Box>
+
+				{/* 1. General Details Form Section */}
+				<Box sx={{ ...customCardStyle, borderRadius: '12px', border: '1px solid #E2E8F0', p: 2.5 }}>
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+						<Box
+							sx={{
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'center',
+								width: 28,
+								height: 28,
+								borderRadius: '6px',
+								bgcolor: 'rgba(43, 111, 113, 0.08)',
+								color: '#2B6F71',
+							}}
+						>
+							<HomeOutlinedIcon sx={{ fontSize: 16 }} />
+						</Box>
+						<Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1A4345' }}>
+							Clinic Details & Contact
+						</Typography>
+					</Box>
+
+					<Grid container spacing={2}>
+						{/* Row 1: Hospital Name + Phone Number */}
+						<Grid size={{ xs: 12, sm: 6 }}>
 							<AppInput
 								label="Enter hospital name"
 								value={form.name}
 								placeholder="e.g. Arogya Clinic"
 								onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+								size="small"
 							/>
-						</Box>
-						<Box sx={{ flex: 1 }}>
+						</Grid>
+						<Grid size={{ xs: 12, sm: 6 }}>
 							<AppInput
 								label="Phone number"
 								value={form.phone_number}
 								placeholder="+91 00000 00000"
 								onChange={(e) => setForm((prev) => ({ ...prev, phone_number: e.target.value }))}
+								size="small"
 							/>
+						</Grid>
+						{/* Row 2: Full Address */}
+						<Grid size={{ xs: 12 }}>
+							<AppInput
+								label="Enter Full address"
+								value={form.fullAddress}
+								placeholder="Enter complete hospital address..."
+								multiline
+								rows={2}
+								onChange={(e) => setForm((prev) => ({ ...prev, fullAddress: e.target.value }))}
+								size="small"
+							/>
+						</Grid>
+					</Grid>
+				</Box>
+
+				{/* 2. Fees & Rules Section */}
+				<Box sx={{ ...customCardStyle, borderRadius: '12px', border: '1px solid #E2E8F0', p: 2.5 }}>
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+						<Box
+							sx={{
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'center',
+								width: 28,
+								height: 28,
+								borderRadius: '6px',
+								bgcolor: 'rgba(43, 111, 113, 0.08)',
+								color: '#2B6F71',
+							}}
+						>
+							<RuleIcon sx={{ fontSize: 16 }} />
 						</Box>
+						<Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1A4345' }}>
+							Pricing & Booking Preferences
+						</Typography>
 					</Box>
-					{/* Row 2: Full Address (full width) */}
-					<AppInput
-						label="Enter Full address"
-						value={form.fullAddress}
-						placeholder="Enter complete hospital address..."
-						multiline
-						rows={3}
-						onChange={(e) => setForm((prev) => ({ ...prev, fullAddress: e.target.value }))}
-					/>
-					{/* Row 3: Video Fee + Clinic Fee */}
-					<Box sx={{ display: 'flex', gap: 2.5 }}>
-						<Box sx={{ flex: 1 }}>
+
+					<Grid container spacing={2}>
+						{/* Row 3: Video Fee + Clinic Fee */}
+						<Grid size={{ xs: 12, sm: 6 }}>
 							<AppInput
 								label="Video consultation fee"
 								value={form.video_consultation_fee}
@@ -572,426 +651,528 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 								onChange={(e) =>
 									setForm((prev) => ({ ...prev, video_consultation_fee: e.target.value }))
 								}
+								size="small"
 							/>
-						</Box>
-						<Box sx={{ flex: 1 }}>
+						</Grid>
+						<Grid size={{ xs: 12, sm: 6 }}>
 							<AppInput
 								label="Clinic consultation fee"
 								value={form.offline_consultation_fee}
+								placeholder="e.g. 500"
 								onChange={(e) =>
 									setForm((prev) => ({
 										...prev,
 										offline_consultation_fee: e.target.value,
 									}))
 								}
+								size="small"
 							/>
-						</Box>
-					</Box>
+						</Grid>
 
-					{/* Working Hours */}
-					<Box sx={{ mt: 0.5 }}>
-						<Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-							<Typography sx={{ fontWeight: 700, fontSize: '18px' }}>Working Hours</Typography>
-						</Box>
+						<Grid size={{ xs: 12, sm: 6 }}>
+							<Typography sx={{ fontSize: '12px', fontWeight: 600, color: 'text.secondary', mb: 0.5 }}>
+								Free Follow-up Validity
+							</Typography>
+							<AppSelect
+								value={followUpDays}
+								onChange={(e) => setFollowUpDays(Number(e.target.value))}
+								size="small"
+								options={[
+									{ value: 0, label: 'No Follow-up' },
+									{ value: 3, label: '3 Days' },
+									{ value: 5, label: '5 Days' },
+									{ value: 7, label: '7 Days' },
+									{ value: 10, label: '10 Days' },
+									{ value: 15, label: '15 Days' },
+								]}
+							/>
+						</Grid>
 
-						{/* Date strip + Clinic/Video toggle */}
-						<Box sx={{ mb: 3 }}>
-							{/* Days */}
+						<Grid size={{ xs: 12, sm: 6 }}>
+							<Typography sx={{ fontSize: '12px', fontWeight: 600, color: 'text.secondary', mb: 0.5 }}>
+								Reschedule Allowed Until
+							</Typography>
+							<AppSelect
+								value={rescheduleCutoff}
+								onChange={(e) => setRescheduleCutoff(Number(e.target.value))}
+								size="small"
+								options={[
+									{ value: 1, label: '1 Hour' },
+									{ value: 2, label: '2 Hours' },
+									{ value: 3, label: '3 Hours' },
+									{ value: 4, label: '4 Hours' },
+									{ value: 6, label: '6 Hours' },
+									{ value: 12, label: '12 Hours' },
+									{ value: 24, label: '1 Day' },
+								]}
+							/>
+						</Grid>
+
+						{/* Pay Later Toggle Container */}
+						<Grid size={{ xs: 12 }}>
 							<Box
 								sx={{
 									display: 'flex',
+									alignItems: 'center',
 									justifyContent: 'space-between',
-									gap: 0.9,
-									width: '100%',
-									mb: 3,
+									p: 1.5,
+									borderRadius: '10px',
+									border: '1px solid',
+									borderColor: allowPayLater ? 'rgba(43, 111, 113, 0.2)' : '#E2E8F0',
+									bgcolor: allowPayLater ? 'rgba(43, 111, 113, 0.02)' : 'transparent',
+									transition: 'all 0.2s',
 								}}
 							>
-								{weekDates.map((date) => {
-									const isSelected = isSameDay(date, selectedDate)
-
-									return (
-										<Box
-											key={date.toISOString()}
-											onClick={() => setSelectedDate(date)}
-											sx={{
-												flex: 1,
-												maxWidth: '58px',
-												minHeight: '58px',
-												py: 0.8,
-												borderRadius: '12px',
-												border: '1px solid',
-												borderColor: isSelected ? '#0c7c7c' : '#D7D7D7',
-												bgcolor: isSelected ? '#0c7c7c' : '#fff',
-												display: 'flex',
-												alignItems: 'center',
-												justifyContent: 'center',
-												cursor: 'pointer',
-												transition: 'all 0.2s ease',
-												'&:hover': {
-													borderColor: '#0c7c7c',
-													bgcolor: isSelected ? '#0c7c7c' : '#F7FAFA',
-												},
-											}}
-										>
-											<Typography
-												sx={{
-													fontSize: '16px',
-													fontWeight: 500,
-													color: isSelected ? '#fff' : '#5F6B76',
-												}}
-											>
-												{DAYS[date.getDay()]}
-											</Typography>
-										</Box>
-									)
-								})}
-							</Box>
-
-							{/* Appointment Type */}
-							<Box>
-								<Typography
-									sx={{
-										fontSize: '14px',
-										fontWeight: 500,
-										color: '#5F6B76',
-										mb: 1.2,
-									}}
-								>
-									Type of Appointment
-								</Typography>
-
-								<Box
-									sx={{
-										display: 'inline-flex',
-										alignItems: 'center',
-										bgcolor: '#0c7c7c',
-										borderRadius: '999px',
-										p: '3px',
-										gap: '3px',
-									}}
-								>
-									<Box
-										onClick={() => setSelectedAppointmentType('clinic')}
-										sx={{
-											px: 2.3,
-											py: 0.5,
-											borderRadius: '999px',
-											cursor: 'pointer',
-											bgcolor: selectedAppointmentType === 'clinic' ? '#fff' : 'transparent',
-											transition: 'all 0.2s',
-										}}
-									>
-										<Typography
-											sx={{
-												fontSize: '13px',
-												fontWeight: 600,
-												color: selectedAppointmentType === 'clinic' ? '#111' : '#fff',
-											}}
-										>
-											Clinic Visit
+								<Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+									<PaymentIcon sx={{ color: allowPayLater ? '#2B6F71' : 'text.disabled', fontSize: 18, mt: 0.2 }} />
+									<Box>
+										<Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '13px' }}>
+											Allow Pay Later
 										</Typography>
-									</Box>
-
-									<Box
-										onClick={() => setSelectedAppointmentType('video')}
-										sx={{
-											px: 2.3,
-											py: 0.7,
-											borderRadius: '999px',
-											cursor: 'pointer',
-											bgcolor: selectedAppointmentType === 'video' ? '#fff' : 'transparent',
-											transition: 'all 0.2s',
-										}}
-									>
-										<Typography
-											sx={{
-												fontSize: '13px',
-												fontWeight: 600,
-												color: selectedAppointmentType === 'video' ? '#111' : '#fff',
-											}}
-										>
-											Video Call
+										<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '11px', display: 'block' }}>
+											Enable this to let patients book appointments without paying upfront online, collecting fees directly at the clinic.
 										</Typography>
 									</Box>
 								</Box>
+								<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+									<AppSwitch
+										checked={allowPayLater}
+										onChange={(e) => setAllowPayLater(e.target.checked)}
+									/>
+									<Typography
+										variant="caption"
+										sx={{
+											fontWeight: 700,
+											color: allowPayLater ? '#2B6F71' : '#64748B',
+											fontSize: '11px',
+											minWidth: 42
+										}}
+									>
+										{allowPayLater ? 'Enabled' : 'Disabled'}
+									</Typography>
+								</Box>
+							</Box>
+						</Grid>
+					</Grid>
+				</Box>
+
+				{/* 3. Availability Schedule Section */}
+				<Box sx={{ ...customCardStyle, borderRadius: '12px', border: '1px solid #E2E8F0', p: 2.5 }}>
+					<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
+						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+							<Box
+								sx={{
+									display: 'flex',
+									alignItems: 'center',
+									justifyContent: 'center',
+									width: 28,
+									height: 28,
+									borderRadius: '6px',
+									bgcolor: 'rgba(43, 111, 113, 0.08)',
+									color: '#2B6F71',
+								}}
+							>
+								<CalendarIcon sx={{ fontSize: 16 }} />
+							</Box>
+							<Box>
+								<Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1A4345' }}>
+									Working Hours Scheduler
+								</Typography>
 							</Box>
 						</Box>
 
-						<Box key={selectedAppointmentType}>
-							{SECTION_META.map((section) => {
-								const slots = selectedWorkingHours.sections[section.key]
-								const canAdd = slots.length < 3
+						{/* Segmented Controller for Appointment Type */}
+						<Box
+							sx={{
+								display: 'inline-flex',
+								bgcolor: '#F1F5F9',
+								borderRadius: '8px',
+								p: '3px',
+								gap: '3px',
+								border: '1px solid #E2E8F0',
+							}}
+						>
+							<Box
+								onClick={() => setSelectedAppointmentType('clinic')}
+								sx={{
+									display: 'flex',
+									alignItems: 'center',
+									gap: 0.6,
+									px: 1.5,
+									py: 0.5,
+									borderRadius: '6px',
+									cursor: 'pointer',
+									bgcolor: selectedAppointmentType === 'clinic' ? '#fff' : 'transparent',
+									color: selectedAppointmentType === 'clinic' ? '#2B6F71' : '#64748B',
+									boxShadow: selectedAppointmentType === 'clinic' ? '0 1px 4px rgba(0,0,0,0.05)' : 'none',
+									transition: 'all 0.2s',
+									'&:hover': {
+										color: selectedAppointmentType === 'clinic' ? '#2B6F71' : '#1A4345',
+									}
+								}}
+							>
+								<HomeOutlinedIcon sx={{ fontSize: 14 }} />
+								<Typography sx={{ fontSize: '11px', fontWeight: 700 }}>
+									Clinic Visit
+								</Typography>
+							</Box>
+
+							<Box
+								onClick={() => setSelectedAppointmentType('video')}
+								sx={{
+									display: 'flex',
+									alignItems: 'center',
+									gap: 0.6,
+									px: 1.5,
+									py: 0.5,
+									borderRadius: '6px',
+									cursor: 'pointer',
+									bgcolor: selectedAppointmentType === 'video' ? '#fff' : 'transparent',
+									color: selectedAppointmentType === 'video' ? '#2B6F71' : '#64748B',
+									boxShadow: selectedAppointmentType === 'video' ? '0 1px 4px rgba(0,0,0,0.05)' : 'none',
+									transition: 'all 0.2s',
+									'&:hover': {
+										color: selectedAppointmentType === 'video' ? '#2B6F71' : '#1A4345',
+									}
+								}}
+							>
+								<VideocamOutlinedIcon sx={{ fontSize: 14 }} />
+								<Typography sx={{ fontSize: '11px', fontWeight: 700 }}>
+									Video Call
+								</Typography>
+							</Box>
+						</Box>
+					</Box>
+
+					{/* Date strip widget */}
+					<Box sx={{ mb: 2.5 }}>
+						<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, flexWrap: 'wrap', gap: 1 }}>
+							<Typography sx={{ fontSize: '12px', fontWeight: 600, color: 'text.secondary' }}>
+								Select Weekday to Edit Availability
+							</Typography>
+							<Box sx={{ display: 'flex', gap: 1.5 }}>
+								<AppButton
+									variant="text"
+									onClick={() => handleApplyAvailability('weekdays')}
+									label="Copy to Weekdays (Mon-Fri)"
+									size="small"
+									sx={{
+										textTransform: 'none',
+										p: 0,
+										minWidth: 0,
+										color: '#2B6F71',
+										fontWeight: 700,
+										fontSize: '11px',
+										'&:hover': { background: 'none', color: '#1D4D4F', textDecoration: 'underline' }
+									}}
+								/>
+								<AppButton
+									variant="text"
+									onClick={() => handleApplyAvailability('all')}
+									label="Copy to All Days"
+									size="small"
+									sx={{
+										textTransform: 'none',
+										p: 0,
+										minWidth: 0,
+										color: '#2B6F71',
+										fontWeight: 700,
+										fontSize: '11px',
+										'&:hover': { background: 'none', color: '#1D4D4F', textDecoration: 'underline' }
+									}}
+								/>
+							</Box>
+						</Box>
+						<Box
+							sx={{
+								display: 'flex',
+								justifyContent: 'space-between',
+								gap: 0.6,
+								width: '100%',
+							}}
+						>
+							{weekDates.map((date) => {
+								const isSelected = isSameDay(date, selectedDate)
+								const dayVal = date.getDay()
 
 								return (
-									<Box key={section.label} sx={{ mb: 2 }}>
-										<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>
-											{section.label}
+									<Box
+										key={date.toISOString()}
+										onClick={() => setSelectedDate(date)}
+										sx={{
+											flex: 1,
+											minWidth: 36,
+											maxWidth: 56,
+											py: 0.8,
+											borderRadius: '8px',
+											border: '1px solid',
+											borderColor: isSelected ? '#2B6F71' : '#E2E8F0',
+											bgcolor: isSelected ? '#2B6F71' : '#fff',
+											color: isSelected ? '#fff' : 'text.primary',
+											display: 'flex',
+											flexDirection: 'column',
+											alignItems: 'center',
+											justifyContent: 'center',
+											cursor: 'pointer',
+											transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+											transform: isSelected ? 'translateY(-1px)' : 'none',
+											'&:hover': {
+												borderColor: '#2B6F71',
+												bgcolor: isSelected ? '#2B6F71' : 'rgba(43, 111, 113, 0.04)',
+											},
+										}}
+									>
+										<Typography sx={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', opacity: isSelected ? 0.8 : 0.5, mb: 0.2 }}>
+											{DAYS[dayVal]}
 										</Typography>
-
-										{/* Slots grid + add button */}
-										<Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-											<Box
-												sx={{
-													display: 'grid',
-													gridTemplateColumns: 'repeat(2, max-content)',
-													columnGap: 2,
-													rowGap: 2,
-												}}
-											>
-												{slots.map((slot, slotIdx) => {
-													const stepMins = selectedWorkingHours.slotDuration
-													const allOptions = makeTimeOptions(
-														section.startHour,
-														section.endHour,
-														stepMins
-													)
-													const startOptions =
-														slotIdx === 0
-															? allOptions
-															: allOptions.filter(
-																	(o) => o.value >= slots[slotIdx - 1].end
-																)
-													const endOptions = allOptions.filter((o) => o.value > slot.start)
-
-													return (
-														<Box
-															key={slotIdx}
-															sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-														>
-															<TextField
-																select
-																label="Start Time"
-																value={slot.start}
-																onChange={(e) =>
-																	updateSlotTime(
-																		section.key,
-																		slotIdx,
-																		'start',
-																		e.target.value
-																	)
-																}
-																size="small"
-																sx={{ width: 150 }}
-															>
-																{startOptions.map((o) => (
-																	<MenuItem key={o.value} value={o.value}>
-																		{o.label}
-																	</MenuItem>
-																))}
-															</TextField>
-
-															<TextField
-																select
-																label="End Time"
-																value={slot.end}
-																onChange={(e) =>
-																	updateSlotTime(
-																		section.key,
-																		slotIdx,
-																		'end',
-																		e.target.value
-																	)
-																}
-																size="small"
-																sx={{ width: 150 }}
-															>
-																{endOptions.map((o) => (
-																	<MenuItem key={o.value} value={o.value}>
-																		{o.label}
-																	</MenuItem>
-																))}
-															</TextField>
-
-															{/* × button — always rendered, hidden on slot 0 to keep widths consistent */}
-															<IconButton
-																size="small"
-																onClick={() => removeSlot(section.key, slotIdx)}
-																sx={{
-																	visibility: slotIdx > 0 ? 'visible' : 'hidden',
-																	color: 'text.secondary',
-																	'&:hover': { color: 'error.main' },
-																	'&:focus': { outline: 'none' },
-																}}
-															>
-																<CloseIcon sx={{ fontSize: 16 }} />
-															</IconButton>
-														</Box>
-													)
-												})}
-											</Box>
-
-											{/* + button — outside the grid so it never shifts slot positions */}
-											{canAdd && (
-												<IconButton
-													size="small"
-													onClick={() => addSlot(section.key)}
-													sx={{
-														mt: 0.4,
-														color: 'primary.main',
-														border: '1px solid',
-														borderColor: 'primary.main',
-														borderRadius: '6px',
-														p: 0.4,
-														'&:hover': { bgcolor: 'rgba(43,111,113,0.08)' },
-														'&:focus': { outline: 'none' },
-													}}
-												>
-													<AddIcon sx={{ fontSize: 18 }} />
-												</IconButton>
-											)}
-										</Box>
+										<Typography sx={{ fontSize: '13px', fontWeight: 800 }}>
+											{DAY_LABELS[dayVal]}
+										</Typography>
 									</Box>
 								)
 							})}
+						</Box>
+					</Box>
 
-							{/* Slot Duration */}
-							<Box>
-								<Typography sx={{ fontSize: '13px', color: 'text.secondary', mb: 1 }}>
-									Slot Duration
-								</Typography>
-								<TextField
-									select
-									label="Duration"
+					{/* Time slots and configurator list */}
+					<Box key={selectedAppointmentType} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+						{SECTION_META.map((section) => {
+							const slots = selectedWorkingHours.sections[section.key]
+							const canAdd = slots.length < 3
+
+							return (
+								<Box key={section.key} sx={{ borderBottom: '1px solid #F1F5F9', pb: 1.5, '&:last-of-type': { border: 0, pb: 0 } }}>
+									<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+										{section.icon}
+										<Typography variant="caption" sx={{ fontWeight: 800, color: '#1A4345', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+											{section.label}
+										</Typography>
+										<Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '11px' }}>
+											({section.startHour}:00 AM - {section.endHour > 12 ? section.endHour - 12 : section.endHour}:00 {section.endHour >= 12 ? 'PM' : 'AM'})
+										</Typography>
+									</Box>
+
+									<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+										{slots.map((slot, slotIdx) => {
+											const stepMins = selectedWorkingHours.slotDuration
+											const allOptions = makeTimeOptions(section.startHour, section.endHour, stepMins)
+											const startOptions =
+												slotIdx === 0
+													? allOptions
+													: allOptions.filter((o) => o.value >= slots[slotIdx - 1].end)
+											const endOptions = allOptions.filter((o) => o.value > slot.start)
+
+											return (
+												<Box
+													key={slotIdx}
+													sx={{
+														display: 'inline-flex',
+														alignItems: 'center',
+														flexWrap: 'wrap',
+														gap: 1,
+													}}
+												>
+													{/* Time Capsule Container */}
+													<Box
+														sx={{
+															display: 'flex',
+															alignItems: 'center',
+															bgcolor: '#F8FAFC',
+															border: '1px solid #E2E8F0',
+															borderRadius: '8px',
+															p: '4px 10px',
+															gap: 1,
+															transition: 'all 0.15s',
+															'&:hover, &:focus-within': {
+																borderColor: '#2B6F71',
+																bgcolor: '#fff',
+															}
+														}}
+													>
+														{/* Start Select */}
+														<AppSelect
+															value={slot.start}
+															onChange={(e) =>
+																updateSlotTime(section.key, slotIdx, 'start', e.target.value)
+															}
+															size="small"
+															options={startOptions}
+															sx={{
+																width: 90,
+																'& .MuiOutlinedInput-root': { bgcolor: 'transparent', borderRadius: 0 },
+																'& .MuiOutlinedInput-root fieldset': { border: 0 },
+																'& .MuiOutlinedInput-root.Mui-focused fieldset': { border: 0 },
+																'& .MuiOutlinedInput-root:hover fieldset': { border: 0 },
+																'& .MuiSelect-select': { py: 0.2, px: 0, fontWeight: 600, fontSize: '12.5px' }
+															}}
+														/>
+
+														<ArrowForwardIcon sx={{ fontSize: 12, color: 'text.disabled' }} />
+
+														{/* End Select */}
+														<AppSelect
+															value={slot.end}
+															onChange={(e) =>
+																updateSlotTime(section.key, slotIdx, 'end', e.target.value)
+															}
+															size="small"
+															options={endOptions}
+															sx={{
+																width: 90,
+																'& .MuiOutlinedInput-root': { bgcolor: 'transparent', borderRadius: 0 },
+																'& .MuiOutlinedInput-root fieldset': { border: 0 },
+																'& .MuiOutlinedInput-root.Mui-focused fieldset': { border: 0 },
+																'& .MuiOutlinedInput-root:hover fieldset': { border: 0 },
+																'& .MuiSelect-select': { py: 0.2, px: 0, fontWeight: 600, fontSize: '12.5px' }
+															}}
+														/>
+													</Box>
+
+													{/* Delete action button */}
+													{slotIdx > 0 && (
+														<IconButton
+															size="small"
+															onClick={() => removeSlot(section.key, slotIdx)}
+															sx={{
+																color: 'text.secondary',
+																bgcolor: '#F1F5F9',
+																p: 0.6,
+																borderRadius: '6px',
+																transition: 'all 0.15s',
+																'&:hover': {
+																	color: 'error.main',
+																	bgcolor: '#FEE2E2',
+																},
+															}}
+														>
+															<DeleteOutlineIcon sx={{ fontSize: 16 }} />
+														</IconButton>
+													)}
+												</Box>
+											)
+										})}
+
+										{/* Add Slot Trigger */}
+										{canAdd && (
+											<Box
+												onClick={() => addSlot(section.key)}
+												sx={{
+													display: 'inline-flex',
+													alignItems: 'center',
+													justifyContent: 'center',
+													gap: 0.5,
+													border: '1px dashed #2B6F71',
+													borderRadius: '8px',
+													px: 1.5,
+													py: 0.5,
+													cursor: 'pointer',
+													color: '#2B6F71',
+													transition: 'all 0.15s',
+													alignSelf: 'flex-start',
+													'&:hover': {
+														bgcolor: 'rgba(43, 111, 113, 0.04)',
+													}
+												}}
+											>
+												<AddIcon sx={{ fontSize: 14 }} />
+												<Typography sx={{ fontSize: '11px', fontWeight: 700 }}>
+													Add Slot Block
+												</Typography>
+											</Box>
+										)}
+									</Box>
+								</Box>
+							)
+						})}
+
+						{/* Slot Session Duration */}
+						<Box>
+							<Typography sx={{ fontSize: '11px', fontWeight: 700, color: 'text.secondary', mb: 0.2 }}>
+								Slot Duration
+							</Typography>
+							<Box sx={{ flex: 1 }}>
+								<AppSelect
 									value={selectedWorkingHours.slotDuration}
 									onChange={(e) => updateSlotDuration(Number(e.target.value))}
 									size="small"
-									sx={{ width: 150 }}
-								>
-									{durationOptions.map((d) => (
-										<MenuItem key={d} value={d}>
-											{d} mins
-										</MenuItem>
-									))}
-								</TextField>
+									options={durationOptions.map((d) => ({ value: d, label: `${d} Minutes` }))}
+									sx={{
+										width: 120,
+										'& .MuiSelect-select': { py: 0.4 }
+									}}
+								/>
 							</Box>
 						</Box>
-					</Box>
-				</Box>
 
-				{/* Appointment Rules */}
-				<Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-					<Typography sx={{ fontWeight: 700, fontSize: '18px' }}>Appointment Rules</Typography>
-
-					{/* Free Follow-up Days */}
-					<Box>
-						<Typography sx={{ fontSize: '14px', color: 'text.secondary', mb: 1 }}>
-							Free Follow-up Validity
-						</Typography>
-
-						<TextField
-							select
-							value={followUpDays}
-							onChange={(e) => setFollowUpDays(Number(e.target.value))}
-							size="small"
-							sx={{ width: 180 }}
-						>
-							<MenuItem value={0}>No Follow-up</MenuItem>
-							<MenuItem value={3}>3 Days</MenuItem>
-							<MenuItem value={5}>5 Days</MenuItem>
-							<MenuItem value={7}>7 Days</MenuItem>
-							<MenuItem value={10}>10 Days</MenuItem>
-							<MenuItem value={15}>15 Days</MenuItem>
-						</TextField>
-					</Box>
-
-					{/* Reschedule Cutoff */}
-					<Box>
-						<Typography sx={{ fontSize: '14px', color: 'text.secondary', mb: 1 }}>
-							Reschedule Allowed Until
-						</Typography>
-
-						<TextField
-							select
-							value={rescheduleCutoff}
-							onChange={(e) => setRescheduleCutoff(Number(e.target.value))}
-							size="small"
-							sx={{ width: 180 }}
-						>
-							<MenuItem value={1}>1 Hour </MenuItem>
-							<MenuItem value={2}>2 Hours </MenuItem>
-							<MenuItem value={3}>3 Hours </MenuItem>
-							<MenuItem value={4}>4 Hours </MenuItem>
-							<MenuItem value={6}>6 Hours </MenuItem>
-							<MenuItem value={12}>12 Hours </MenuItem>
-							<MenuItem value={24}>1 Day </MenuItem>
-						</TextField>
-					</Box>
-
-					{/* Pay Later */}
-					<Box>
-						<Typography sx={{ fontSize: '14px', color: 'text.secondary', mb: 1 }}>
-							Allow Pay Later
-						</Typography>
-
-						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-							<AppSwitch 
-								checked={allowPayLater} 
-								onChange={(e) => setAllowPayLater(e.target.checked)} 
+						<Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
+							<AppButton
+								variant="outlined"
+								onClick={() => {
+									setShowForm(false)
+									resetFormState()
+								}}
+								label="Cancel"
+							// size="small"
+							// sx={{ color: 'text.secondary', fontWeight: 600, '&:hover': { color: 'text.primary' } }}
 							/>
-							{/*<Switch
-								checked={allowPayLater}
-								onChange={(e) => setAllowPayLater(e.target.checked)}
-								sx={{
-									width: 56,
-									height: 30,
-									padding: 0,
-									'& .MuiSwitch-switchBase': {
-										padding: 0,
-										margin: '3px',
-										transitionDuration: '300ms',
-										'&.Mui-checked': {
-											transform: 'translateX(26px)',
-											color: '#fff',
-											'& + .MuiSwitch-track': {
-												backgroundColor: '#2B6F71',
-												opacity: 1,
-												border: 0,
-											},
-										},
-									},
-									'& .MuiSwitch-thumb': {
-										boxSizing: 'border-box',
-										width: 24,
-										height: 24,
-										boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-									},
-									'& .MuiSwitch-track': {
-										borderRadius: 15,
-										backgroundColor: '#E2E8F0',
-										opacity: 1,
-										transition: 'background-color 300ms',
-									},
-								}}
-							/> */}
-						<Typography
-								sx={{
-									fontSize: '14px',
-									fontWeight: 500,
-									color: allowPayLater ? '#2B6F71' : '#667085',
-								}}
-							>
-								{allowPayLater ? 'Enabled' : 'Disabled'}
-							</Typography> 
 
+							<AppButton
+								variant="contained"
+								onClick={handleSave}
+								loading={isSaving}
+								label="Save"
+							// size="small"
+							// sx={{
+							// 	bgcolor: '#2B6F71',
+							// 	fontWeight: 700,
+							// 	px: 2,
+							// 	'&:hover': {
+							// 		bgcolor: '#1D4D4F',
+							// 	}
+							// }}
+							/>
 						</Box>
 					</Box>
-				</Box>
-
-				{/* Apply All + Save */}
-				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1.5, mt: 3 }}>
-					<AppButton variant="contained" onClick={handleApplyToAll} label="Apply To All" />
-					<AppButton variant="contained" onClick={handleSave} loading={isSaving} label="Save" />
 				</Box>
 			</Box>
 		)
 	}
 
 	return (
-		<Box sx={{ ...customCardStyle }}>
-			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-				<Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
-					My Hospital
-				</Typography>
+		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+			{/* Hospital Tab Top Toolbar */}
+			<Box
+				sx={{
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'space-between',
+					flexWrap: 'wrap',
+					gap: 1.5,
+				}}
+			>
+				<Box>
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.2 }}>
+						<Typography variant="h5" sx={{ fontWeight: 800, color: 'text.primary', letterSpacing: '-0.02em', fontSize: '20px' }}>
+							My Hospital
+						</Typography>
+						<Box
+							sx={{
+								px: 1,
+								py: 0.2,
+								bgcolor: 'rgba(43, 111, 113, 0.08)',
+								color: '#2B6F71',
+								borderRadius: '12px',
+								fontSize: '11px',
+								fontWeight: 700,
+							}}
+						>
+							{hospitals.length} Clinics
+						</Box>
+					</Box>
+					<Typography variant="caption" sx={{ color: 'text.secondary' }}>
+						Manage locations, consulting fees, working sessions, and booking specifications.
+					</Typography>
+				</Box>
 				<AppButton
 					variant="contained"
 					startIcon={<AddIcon />}
@@ -1000,114 +1181,229 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 						setShowForm(true)
 					}}
 					label="Add new hospital"
+					size="small"
+					sx={{
+						bgcolor: '#2B6F71',
+						fontWeight: 700,
+						'&:hover': {
+							bgcolor: '#1D4D4F',
+						}
+					}}
 				/>
 			</Box>
 
+			{/* Empty State Redesign */}
 			{hospitals.length === 0 ? (
-				<Box sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>
-					<HomeOutlinedIcon sx={{ fontSize: 48, mb: 1, opacity: 0.3 }} />
-					<Typography variant="body2">No hospitals added yet</Typography>
+				<Box
+					sx={{
+						...customCardStyle,
+						py: 6,
+						px: 3,
+						textAlign: 'center',
+						borderRadius: '12px',
+						border: '1px dashed #CBD5E1',
+						bgcolor: 'rgba(248, 250, 252, 0.5)',
+						display: 'flex',
+						flexDirection: 'column',
+						alignItems: 'center',
+						justifyContent: 'center',
+						gap: 1.5,
+					}}
+				>
+					<Box
+						sx={{
+							width: 48,
+							height: 48,
+							borderRadius: '50%',
+							bgcolor: 'rgba(43, 111, 113, 0.05)',
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'center',
+							color: '#2B6F71',
+							mb: 0.5,
+						}}
+					>
+						<HomeOutlinedIcon sx={{ fontSize: 24 }} />
+					</Box>
+					<Box>
+						<Typography variant="body1" sx={{ fontWeight: 800, color: '#1A4345', mb: 0.2 }}>
+							No Clinics Registered
+						</Typography>
+						<Typography variant="caption" sx={{ color: 'text.secondary', maxWidth: 320, mx: 'auto', display: 'block', lineHeight: 1.5 }}>
+							You haven't added any clinics or hospitals to your profile yet. Add a location to start receiving patient appointments.
+						</Typography>
+					</Box>
+					<AppButton
+						variant="outlined"
+						startIcon={<AddIcon />}
+						onClick={() => {
+							resetFormState()
+							setShowForm(true)
+						}}
+						label="Register first location"
+						size="small"
+						sx={{
+							borderColor: '#2B6F71',
+							color: '#2B6F71',
+							fontWeight: 700,
+							mt: 0.5,
+							'&:hover': {
+								borderColor: '#1D4D4F',
+								bgcolor: 'rgba(43, 111, 113, 0.04)',
+							}
+						}}
+					/>
 				</Box>
 			) : (
-				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-					{hospitals.map((hospital, index) => (
-						<Box key={hospital.id}>
-							<Typography
-								variant="caption"
+				/* Hospital Cards Loop */
+				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+					{hospitals.map((hospital) => {
+						const addressText = getHospitalAddressText(hospital)
+
+						return (
+							<Box
+								key={hospital.id}
 								sx={{
-									color: 'primary.main',
-									fontWeight: 600,
-									fontSize: '13px',
-									mb: 1,
-									display: 'block',
+									display: 'flex',
+									flexDirection: { xs: 'column', md: 'row' },
+									alignItems: { xs: 'stretch', md: 'center' },
+									gap: 1.5,
+									border: '1px solid',
+									borderColor: hospital.isPrimary ? '#2B6F71' : '#E2E8F0',
+									borderLeft: '4px solid',
+									borderLeftColor: hospital.isPrimary ? '#2B6F71' : '#94A3B8',
+									borderRadius: '12px',
+									p: 2,
+									bgcolor: hospital.isPrimary ? 'rgba(43, 111, 113, 0.01)' : 'background.paper',
+									boxShadow: '0 2px 8px rgba(0,0,0,0.01)',
+									transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+									position: 'relative',
+									'&:hover': {
+										transform: 'translateY(-1px)',
+										boxShadow: '0 4px 16px rgba(43, 111, 113, 0.06)',
+										borderColor: '#2B6F71',
+									}
 								}}
 							>
-								Address {index + 1}
-							</Typography>
-
-							<Box sx={{ display: 'flex', gap: 1 }}>
-								<Box
-									sx={{
-										flex: 1,
-										border: '1px solid',
-										borderColor: hospital.isPrimary ? 'primary.main' : 'divider',
-										borderRadius: '10px',
-										p: 2,
-										borderLeft: '4px solid',
-										borderLeftColor: hospital.isPrimary ? 'primary.main' : 'divider',
-									}}
-								>
-									<Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-										<HomeOutlinedIcon
-											sx={{ fontSize: 18, color: 'primary.main', mt: 0.2, flexShrink: 0 }}
-										/>
-										<Box sx={{ flex: 1 }}>
-											<Typography
-												variant="body2"
-												sx={{ fontWeight: 600, color: 'text.primary', mb: 0.4 }}
-											>
+								{/* Left Side: Hospital Details Info Group */}
+								<Box sx={{ display: 'flex', gap: 2, flex: 1, alignItems: 'flex-start' }}>
+									<Box
+										sx={{
+											width: 36,
+											height: 36,
+											borderRadius: '8px',
+											bgcolor: hospital.isPrimary ? 'rgba(43, 111, 113, 0.08)' : '#F1F5F9',
+											color: hospital.isPrimary ? '#2B6F71' : '#64748B',
+											display: 'flex',
+											alignItems: 'center',
+											justifyContent: 'center',
+											flexShrink: 0,
+										}}
+									>
+										<HomeOutlinedIcon sx={{ fontSize: 18 }} />
+									</Box>
+									<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.2, flex: 1 }}>
+										<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+											<Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '14px' }}>
 												{hospital.name}
 											</Typography>
-											<Typography
-												variant="caption"
-												sx={{ color: 'text.secondary', fontSize: '12px', lineHeight: 1.5 }}
-											>
-												{getHospitalAddressText(hospital)}
+											{hospital.isPrimary && (
+												<Box
+													sx={{
+														display: 'flex',
+														alignItems: 'center',
+														gap: 0.3,
+														px: 0.8,
+														py: 0.1,
+														bgcolor: '#E6F4F1',
+														color: '#2B6F71',
+														borderRadius: '8px',
+														fontSize: '10px',
+														fontWeight: 800,
+													}}
+												>
+													<CheckIcon sx={{ fontSize: 8, fontWeight: 900 }} />
+													Primary
+												</Box>
+											)}
+										</Box>
+										<Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5, color: 'text.secondary', mt: 0.2 }}>
+											<LocationOnOutlinedIcon sx={{ fontSize: 14, color: '#64748B', mt: 0.1 }} />
+											<Typography variant="caption" sx={{ fontSize: '11.5px', lineHeight: 1.3, color: '#475569' }}>
+												{addressText}
 											</Typography>
 										</Box>
+										{hospital.phone_number && (
+											<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.secondary' }}>
+												<PhoneOutlinedIcon sx={{ fontSize: 13, color: '#64748B' }} />
+												<Typography variant="caption" sx={{ fontSize: '11.5px', color: '#475569', fontWeight: 500 }}>
+													{hospital.phone_number}
+												</Typography>
+											</Box>
+										)}
 									</Box>
 								</Box>
 
-								<Box
-									sx={{
-										border: '1px solid',
-										borderColor: 'divider',
-										borderRadius: '10px',
-										px: 2,
-										display: 'flex',
-										alignItems: 'center',
-										gap: 0.5,
-										cursor: 'pointer',
-										minWidth: 140,
-										justifyContent: 'center',
-										'&:hover': { borderColor: 'primary.main', bgcolor: 'rgba(43,111,113,0.03)' },
-										transition: 'all 0.15s',
-									}}
-									onClick={() => handleSetPrimary(hospital.id)}
-								>
-									<Typography
-										variant="caption"
-										sx={{ color: 'primary.main', fontWeight: 500, fontSize: '13px' }}
-									>
-										Set as Primary
-									</Typography>
-									<Radio
-										checked={hospital.isPrimary}
-										size="small"
-										sx={{ p: 0, color: 'primary.main', '&.Mui-checked': { color: 'primary.main' } }}
-									/>
-								</Box>
+								{/* Right Side: Options & Status Actions */}
+								<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifyContent: 'flex-end', mt: { xs: 1, md: 0 } }}>
+									{/* Set Primary Button Widget */}
+									{!hospital.isPrimary ? (
+										<Box
+											onClick={() => handleSetPrimary(hospital.id)}
+											sx={{
+												display: 'inline-flex',
+												alignItems: 'center',
+												gap: 0.8,
+												px: 1.2,
+												py: 0.6,
+												cursor: 'pointer',
+												transition: 'all 0.2s',
+												'&:hover': {
+													borderColor: '#2B6F71',
+													bgcolor: 'rgba(43, 111, 113, 0.02)',
+												}
+											}}
+										>
+											<Typography sx={{ fontSize: '11px', fontWeight: 700, color: 'text.secondary' }}>
+												Set as Primary
+											</Typography>
+											<Radio
+												checked={hospital.isPrimary}
+												size="small"
+												sx={{
+													p: 0,
+													color: 'text.disabled',
+													'&.Mui-checked': { color: '#2B6F71' }
+												}}
+											/>
+										</Box>
+									) : (
+										/* Blank placeholder on desktop so cards keep width symmetry */
+										<Box sx={{ display: { xs: 'none', md: 'block' }, width: 110 }} />
+									)}
 
-								<Box
-									sx={{
-										border: '1px solid',
-										borderColor: 'divider',
-										borderRadius: '10px',
-										width: 44,
-										display: 'flex',
-										alignItems: 'center',
-										justifyContent: 'center',
-										cursor: 'pointer',
-										'&:hover': { borderColor: 'primary.main' },
-										transition: 'all 0.15s',
-									}}
-									onClick={(e) => handleOpenMenu(e, hospital.id)}
-								>
-									<MoreHorizIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+									{/* Options Vertical Ellipsis Button */}
+									<IconButton
+										onClick={(e) => handleOpenMenu(e, hospital.id)}
+										sx={{
+											border: '1px solid #E2E8F0',
+											borderRadius: '8px',
+											p: 0.6,
+											color: 'text.secondary',
+											transition: 'all 0.2s',
+											'&:hover': {
+												borderColor: '#2B6F71',
+												color: '#2B6F71',
+												bgcolor: 'rgba(43, 111, 113, 0.04)',
+											}
+										}}
+									>
+										<MoreVertIcon sx={{ fontSize: 16 }} />
+									</IconButton>
 								</Box>
 							</Box>
-						</Box>
-					))}
+						)
+					})}
 				</Box>
 			)}
 
@@ -1122,22 +1418,38 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 					elevation: 2,
 					sx: {
 						mt: 0.5,
-						minWidth: 140,
-						borderRadius: '10px',
-						border: '1px solid',
-						borderColor: 'divider',
+						minWidth: 130,
+						borderRadius: '8px',
+						border: '1px solid #E2E8F0',
+						boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+						p: 0.3,
 					},
 				}}
 			>
 				<MuiMenuItem
 					onClick={() => menuHospitalId && handleEdit(menuHospitalId)}
-					sx={{ fontSize: '14px', py: 1, px: 2, gap: 1 }}
+					sx={{
+						fontSize: '12.5px',
+						fontWeight: 600,
+						py: 0.8,
+						px: 1.5,
+						borderRadius: '6px',
+						'&:hover': { bgcolor: 'rgba(43, 111, 113, 0.05)', color: '#2B6F71' },
+					}}
 				>
 					Edit
 				</MuiMenuItem>
 				<MuiMenuItem
 					onClick={handleCloseMenu}
-					sx={{ fontSize: '14px', py: 1, px: 2, gap: 1, color: 'error.main' }}
+					sx={{
+						fontSize: '12.5px',
+						fontWeight: 600,
+						py: 0.8,
+						px: 1.5,
+						borderRadius: '6px',
+						color: 'error.main',
+						'&:hover': { bgcolor: '#FEE2E2' },
+					}}
 				>
 					Deactivate
 				</MuiMenuItem>

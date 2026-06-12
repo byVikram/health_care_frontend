@@ -43,6 +43,11 @@ export interface DoctorDetailData {
 		year_of_passing: string
 		about: string
 		registration_number: string
+		social_media_handles?: {
+			instagram?: string | null
+			facebook?: string | null
+			twitter?: string | null
+		}
 	}
 	specialities: string[]
 	hospitals: DoctorDetailHospital[]

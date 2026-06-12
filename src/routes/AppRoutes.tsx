@@ -24,6 +24,8 @@ import OrderList from '../features/Pharmacy/OrderList'
 import OrderDetailPage from '../features/Pharmacy/OrderDetailPage'
 import PharmacySearchPage from '../features/Pharmacy/components/PharmacySearchPage'
 import RadiologyProfilePage from '../features/radiology/profile/RadiologyProfilePage'
+import AllSpecialitiesPage from '../features/dashboard/AllSpecialitiesPage'
+
 function ProtectedLayout() {
 	return (
 		<MainLayout>
@@ -76,8 +78,8 @@ export default function AppRoutes() {
 					<Route path={ROUTES.DOCTORS.SEARCH} element={<DoctorSearchPage />} />
 					<Route path={ROUTES.PAYMENT} element={<PaymentPage />} />
 					<Route path={ROUTES.TEST} element={<TestPage />} />
-
 					<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
+					<Route path={ROUTES.SPECIALITIES} element={<AllSpecialitiesPage />} />
 				</Route>
 			</Route>
 

@@ -55,11 +55,12 @@ export default function DoctorPersonalTab({ data, onChange, onSaveSuccess }: Doc
 				gender: data.gender,
 				languages: data.languages,
 				email: data.email,
+				social_media_handles: {
+					instagram: data.instagram,
+					facebook: data.facebook,
+					twitter: data.twitter,
+				},
 			}
-			if (data.dateOfBirth) payload.date_of_birth = data.dateOfBirth
-			if (data.instagram) payload.instagram = data.instagram
-			if (data.facebook) payload.facebook = data.facebook
-			if (data.twitter) payload.twitter = data.twitter
 
 			await updatePersonalDetails(payload)
 
