@@ -7,7 +7,7 @@ export interface DoctorProfilePersonal {
 	email: string
 	emailVerified: boolean
 	gender: string
-	avatar : string
+	avatar: string
 	dateOfBirth: string
 	location: string
 	instagram: string
@@ -17,13 +17,23 @@ export interface DoctorProfilePersonal {
 	languages: string[]
 }
 
+export interface DoctorDegree {
+	id?: number
+	degree: string
+	specialization?: string
+	college: string
+	yearOfPassing: string
+	qualificationProof?: string
+}
+
 export interface DoctorProfileProfessional {
 	specialization_id: string
 	specialization_label: string
-	degree: string
-	college: string
-	yearOfPassing: string
-	qualificationProof: string
+	degree?: string
+	college?: string
+	yearOfPassing?: string
+	qualificationProof?: string
+	degrees: DoctorDegree[]
 	registrationNumber: string
 	registrationProof: string
 	about: string
@@ -78,7 +88,6 @@ export interface DoctorProfile {
 	availability: DoctorAvailability
 	additionalDetail: DoctorAdditionalDetail
 }
-
 
 export interface DoctorAdditionalDetail {
 	treatments: string[]

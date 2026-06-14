@@ -1,12 +1,13 @@
 // src/features/doctor/profile/components/DoctorProfessionalTab.tsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import ProfileFormActions from '../../../../components/common/ProfileFormActions/ProfileFormActions'
-import { useRef } from 'react'
-import { Box, Typography, Grid, Divider } from '@mui/material'
+import { Box, Typography, Grid, Divider, Button, IconButton } from '@mui/material'
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import AddIcon from '@mui/icons-material/Add'
 import AppInput from '../../../../components/common/Input/AppInput'
 import AppSelect from '../../../../components/common/Select/AppSelect'
-import { DoctorProfileProfessional } from '../../../../types/doctor-profile'
+import { DoctorProfileProfessional, DoctorDegree } from '../../../../types/doctor-profile'
 import { customCardStyle } from '../../../../styles/commonStyles'
 import { getSpecialities, updateProfessionalDetails } from '../../doctorService'
 import { toast } from 'react-toastify'
@@ -150,16 +151,71 @@ export default function DoctorProfessionalTab({ data, onChange, onSaveSuccess }:
 		fetchSpecialities()
 	}, [])
 
+	const handleDegreeFieldChange = (index: number, updatedField: Partial<DoctorDegree>) => {
+		const currentDegrees = [...(data.degrees || [])]
+		currentDegrees[index] = { ...currentDegrees[index], ...updatedField }
+		onChange({ degrees: currentDegrees })
+	}
+
+	const handleAddDegree = () => {
+		const newDegree: DoctorDegree = {
+			degree: '',
+			specialization: '',
+			college: '',
+			yearOfPassing: '',
+			qualificationProof: '',
+		}
+		onChange({ degrees: [...(data.degrees || []), newDegree] })
+	}
+
+	const handleRemoveDegree = (index: number) => {
+		const currentDegrees = (data.degrees || []).filter((_, idx) => idx !== index)
+		onChange({ degrees: currentDegrees })
+	}
+
 	const handleSave = async () => {
+		// Validation
+		const degrees = data.degrees || []
+		if (degrees.length === 0) {
+			toast.error('Please add at least one educational qualification.')
+			return
+		}
+
+		for (let i = 0; i < degrees.length; i++) {
+			const deg = degrees[i]
+			if (!deg.degree) {
+				toast.error(`Please select a degree for qualification #${i + 1}`)
+				return
+			}
+			if (!deg.college) {
+				toast.error(`Please select or enter college for qualification #${i + 1}`)
+				return
+			}
+			if (!deg.yearOfPassing) {
+				toast.error(`Please enter the passing year for qualification #${i + 1}`)
+				return
+			}
+		}
+
+		if (!data.registrationNumber) {
+			toast.error('Registration number is required.')
+			return
+		}
+
 		try {
-			const payload: Record<string, unknown> = {}
-			if (data.degree) payload.degree = data.degree
-			if (data.college) payload.college = data.college
-			if (data.yearOfPassing) payload.year_of_passing = data.yearOfPassing
-			if (data.registrationNumber) payload.registration_number = data.registrationNumber
-			if (data.about) payload.about = data.about
-			if (data.qualificationProof) payload.qualification_proof_s3_key = data.qualificationProof
-			if (data.registrationProof) payload.registration_proof_s3_key = data.registrationProof
+			const payload: Record<string, unknown> = {
+				experience_years: data.experience || undefined,
+				registration_number: data.registrationNumber,
+				about: data.about,
+				registration_proof_s3_key: data.registrationProof || null,
+				degrees: degrees.map((d) => ({
+					degree: d.degree,
+					specialization: d.specialization || null,
+					college: d.college,
+					year_of_passing: d.yearOfPassing,
+					qualification_proof_s3_key: d.qualificationProof || null,
+				})),
+			}
 
 			await updateProfessionalDetails(payload)
 
@@ -175,6 +231,7 @@ export default function DoctorProfessionalTab({ data, onChange, onSaveSuccess }:
 	}
 
 	const selectedLabel = data.specialization_label
+	const degrees = data.degrees || []
 
 	return (
 		<Box sx={{ ...customCardStyle }}>
@@ -197,42 +254,150 @@ export default function DoctorProfessionalTab({ data, onChange, onSaveSuccess }:
 
 				<Divider />
 
-				{/* Educational qualification */}
+				{/* Educational qualifications list */}
 				<Box>
-					<SectionTitle>Educational qualification and proof</SectionTitle>
-					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-						<AppSelect
-							label="Select Degree *"
-							value={data.degree || ''}
-							options={DEGREE_OPTIONS}
-							onChange={(e) => onChange({ degree: e.target.value as string })}
-						/>
-						<Grid container spacing={2}>
-							<Grid size={{ xs: 12, sm: 6 }}>
-								<AppSelect
-									label="Select College/University *"
-									value={data.college || ''}
-									options={COLLEGE_OPTIONS}
-									placeholder="Select college or university"
-									onChange={(e) => onChange({ college: e.target.value as string })}
-								/>
-							</Grid>
-							<Grid size={{ xs: 12, sm: 6 }}>
-								<AppInput
-									label="Select Year *"
-									value={data.yearOfPassing}
-									placeholder="Enter year of passing"
-									onChange={(e) => onChange({ yearOfPassing: e.target.value })}
-								/>
-							</Grid>
-						</Grid>
-						<UploadBox
-							label="Upload image or PDF of Qualification proofs"
-							required
-							description="Non allied practitioners should submit council registration proof with mentioned degree name. Allied practitioners should submit mark sheets / passing certificates from UGC approved university."
-							onChange={(file) => onChange({ qualificationProof: file.name })}
-						/>
+					<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+						<SectionTitle>Educational qualifications and proofs</SectionTitle>
+						<Button
+							variant="outlined"
+							color="primary"
+							startIcon={<AddIcon />}
+							onClick={handleAddDegree}
+							sx={{ textTransform: 'none', borderRadius: '8px', fontWeight: 600 }}
+						>
+							Add Qualification
+						</Button>
 					</Box>
+
+					{degrees.length === 0 ? (
+						<Box
+							sx={{
+								border: '1px dashed',
+								borderColor: 'divider',
+								borderRadius: '8px',
+								p: 3,
+								textAlign: 'center',
+								bgcolor: 'background.paper',
+							}}
+						>
+							<Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+								No qualifications added yet.
+							</Typography>
+							<Button variant="text" startIcon={<AddIcon />} onClick={handleAddDegree}>
+								Add your first degree
+							</Button>
+						</Box>
+					) : (
+						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+							{degrees.map((deg, index) => (
+								<Box
+									key={index}
+									sx={{
+										border: '1px solid',
+										borderColor: 'divider',
+										borderRadius: '12px',
+										p: 3,
+										position: 'relative',
+										bgcolor: 'background.paper',
+										boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+									}}
+								>
+									<Box
+										sx={{
+											display: 'flex',
+											justifyContent: 'space-between',
+											alignItems: 'center',
+											mb: 2,
+										}}
+									>
+										<Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+											Qualification #{index + 1}
+										</Typography>
+										{degrees.length > 1 && (
+											<IconButton
+												size="small"
+												color="error"
+												onClick={() => handleRemoveDegree(index)}
+												sx={{
+													border: '1px solid',
+													borderColor: 'error.light',
+													'&:hover': { bgcolor: 'error.lighter' },
+												}}
+											>
+												<DeleteOutlineIcon fontSize="small" />
+											</IconButton>
+										)}
+									</Box>
+
+									<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+										<Grid container spacing={2}>
+											<Grid size={{ xs: 12, sm: 6 }}>
+												<AppSelect
+													label="Select Degree *"
+													value={deg.degree || ''}
+													options={DEGREE_OPTIONS}
+													onChange={(e) =>
+														handleDegreeFieldChange(index, {
+															degree: e.target.value as string,
+														})
+													}
+												/>
+											</Grid>
+											<Grid size={{ xs: 12, sm: 6 }}>
+												<AppInput
+													label="Specialization / Field (Optional)"
+													value={deg.specialization || ''}
+													placeholder="e.g. Cardiology, Pediatrics"
+													onChange={(e) =>
+														handleDegreeFieldChange(index, {
+															specialization: e.target.value,
+														})
+													}
+												/>
+											</Grid>
+										</Grid>
+
+										<Grid container spacing={2}>
+											<Grid size={{ xs: 12, sm: 8 }}>
+												<AppSelect
+													label="Select College/University *"
+													value={deg.college || ''}
+													options={COLLEGE_OPTIONS}
+													placeholder="Select college or university"
+													onChange={(e) =>
+														handleDegreeFieldChange(index, {
+															college: e.target.value as string,
+														})
+													}
+												/>
+											</Grid>
+											<Grid size={{ xs: 12, sm: 4 }}>
+												<AppInput
+													label="Year of Passing *"
+													value={deg.yearOfPassing || ''}
+													placeholder="YYYY"
+													onChange={(e) =>
+														handleDegreeFieldChange(index, {
+															yearOfPassing: e.target.value,
+														})
+													}
+												/>
+											</Grid>
+										</Grid>
+
+										<UploadBox
+											label="Upload image or PDF of Qualification proofs *"
+											required
+											description="Submit council registration proof or passing certificate."
+											onChange={(file) =>
+												handleDegreeFieldChange(index, { qualificationProof: file.name })
+											}
+										/>
+									</Box>
+								</Box>
+							))}
+						</Box>
+					)}
 				</Box>
 
 				<Divider />
@@ -277,7 +442,6 @@ export default function DoctorProfessionalTab({ data, onChange, onSaveSuccess }:
 							placeholder="Write a short bio about yourself"
 							onChange={(e) => onChange({ about: e.target.value })}
 						/>
-						<Grid size={{ xs: 12 }} mt={2} display={'flex'} justifyContent={'flex-end'}></Grid>
 					</Box>
 				</Box>
 			</Box>

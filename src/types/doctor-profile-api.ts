@@ -6,9 +6,9 @@ export interface DoctorProfileApiSpeciality {
 }
 
 export interface SocialMediaHandles {
-    instagram?: string
-    facebook?: string
-    twitter?: string
+	instagram?: string
+	facebook?: string
+	twitter?: string
 }
 
 export interface DoctorProfileApiHospital {
@@ -46,6 +46,15 @@ export interface DoctorProfileApiAvailability {
 	hospital_name: string
 }
 
+export interface DoctorDegreeApi {
+	id?: number
+	degree: string
+	specialization?: string
+	college: string
+	year_of_passing: string
+	qualification_proof_s3_key?: string | null
+}
+
 export interface DoctorProfileApiData {
 	personal_details: {
 		name: string
@@ -60,12 +69,13 @@ export interface DoctorProfileApiData {
 	}
 	professional_details: {
 		experience_years: number
-		degree: string
-		college: string
-		year_of_passing: string
-		qualification_proof_s3_key: string | null
+		degree?: string
+		college?: string
+		year_of_passing?: string
+		qualification_proof_s3_key?: string | null
+		degrees: DoctorDegreeApi[]
 		registration_number: string
-		registration_proof_s3_key: string | null
+		registration_proof_s3_key?: string | null
 		about: string
 		specialities: DoctorProfileApiSpeciality[]
 	}

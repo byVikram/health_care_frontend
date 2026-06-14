@@ -31,81 +31,114 @@ import oncologistImage from '../../assets/specialties/oncologist.png'
 import rheumatologistImage from '../../assets/specialties/rheumatologist.png'
 import endocrinologistImage from '../../assets/specialties/endocrinologist.png'
 
-// ── Visual config: keyword in API label -> local image + crop anchor ────────────
-interface VisualConfig {
+// ── Unified Speciality Visual & Content Configuration ──────────────────────────
+interface SpecialityConfig {
 	image: string
-	objectPosition: string
+	objectPosition?: string
+	description: string
 }
 
-const VISUAL_MAP: [string, VisualConfig][] = [
-	['dentist', { image: dentistImage, objectPosition: 'center top' }],
-	['gynecolog', { image: gynoCologistImage, objectPosition: 'center top' }],
-	['dietitian', { image: nutritionImage, objectPosition: 'center center' }],
-	['nutrition', { image: nutritionImage, objectPosition: 'center center' }],
-	['physiotherap', { image: physiotherapistImage, objectPosition: 'center top' }],
-	['cardiolog', { image: cardiologistImage, objectPosition: 'center top' }],
-	['dermatolog', { image: dermatologistImage, objectPosition: 'center top' }],
-	['pediatric', { image: pediatricianImage, objectPosition: 'center top' }],
-	['orthoped', { image: orthopedicsImage, objectPosition: 'center top' }],
-	['neurolog', { image: neurologistImage, objectPosition: 'center top' }],
-	['ophthalm', { image: opthalmologistImage, objectPosition: 'center top' }],
-	['ear, nose', { image: entImage, objectPosition: 'center top' }],
-	['ent', { image: entImage, objectPosition: 'center top' }],
-	['psychiatr', { image: psychiatristImage, objectPosition: 'center top' }],
-	['urolog', { image: urologistImage, objectPosition: 'center top' }],
-	['gastroenter', { image: gastroenterologistImage, objectPosition: 'center top' }],
-	['pulmonolog', { image: pulmonologistImage, objectPosition: 'center top' }],
-	['endocrinolog', { image: endocrinologistImage, objectPosition: 'center top' }],
-	['oncolog', { image: oncologistImage, objectPosition: 'center top' }],
-	['nephrolog', { image: nephrologistImage, objectPosition: 'center 30%' }],
-	['rheumatolog', { image: rheumatologistImage, objectPosition: 'center 30%' }],
-]
-
-const FALLBACK: VisualConfig = {
-	image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=300&fit=crop&auto=format',
-	objectPosition: 'center top',
+const SPECIALITY_CONFIGS: Record<string, SpecialityConfig> = {
+	heart: {
+		image: cardiologistImage,
+		description: 'Heart and blood vessel specialist care',
+	},
+	skin: {
+		image: dermatologistImage,
+		description: 'Skin, hair, nails and cosmetic treatments',
+	},
+	bone: {
+		image: orthopedicsImage,
+		description: 'Bone, joint, spine and musculoskeletal care',
+	},
+	brain: {
+		image: neurologistImage,
+		description: 'Brain, nerves, spine and neurological disorders',
+	},
+	stethoscope: {
+		image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=300&fit=crop&auto=format',
+		description: 'General health checkup and primary care',
+	},
+	dentistry: {
+		image: dentistImage,
+		description: 'Dental care, oral hygiene and teeth treatment',
+	},
+	gynecology: {
+		image: gynoCologistImage,
+		description: "Women's health, pregnancy and fertility care",
+	},
+	nutrition: {
+		image: nutritionImage,
+		objectPosition: 'center center',
+		description: 'Diet planning, healthy eating and nutrition guidance',
+	},
+	physiotherapy: {
+		image: physiotherapistImage,
+		description: 'Pain relief, movement rehab and physical therapy',
+	},
+	pediatrics: {
+		image: pediatricianImage,
+		description: 'Child health, growth and immunization care',
+	},
+	ophthalmology: {
+		image: opthalmologistImage,
+		description: 'Eye care, vision and eye disease treatment',
+	},
+	ent: {
+		image: entImage,
+		description: 'Ear, nose, throat and hearing care',
+	},
+	psychiatry: {
+		image: psychiatristImage,
+		description: 'Mental health, stress, anxiety and emotional well-being',
+	},
+	urology: {
+		image: urologistImage,
+		description: "Urinary tract, kidney and men's health care",
+	},
+	gastroenterology: {
+		image: gastroenterologistImage,
+		description: 'Digestive system, stomach, liver and gut health',
+	},
+	pulmonology: {
+		image: pulmonologistImage,
+		description: 'Lung and respiratory disorders treatment',
+	},
+	endocrinology: {
+		image: endocrinologistImage,
+		description: 'Hormone disorders, diabetes and thyroid care',
+	},
+	oncology: {
+		image: oncologistImage,
+		description: 'Cancer care, treatment and support',
+	},
+	nephrology: {
+		image: nephrologistImage,
+		objectPosition: 'center 30%',
+		description: 'Kidney care, dialysis and renal diseases',
+	},
+	rheumatology: {
+		image: rheumatologistImage,
+		objectPosition: 'center 30%',
+		description: 'Arthritis, joint pain and autoimmune disorders',
+	},
 }
 
-function resolveVisual(label: string): VisualConfig {
-	const lower = label.toLowerCase()
-	for (const [kw, cfg] of VISUAL_MAP) {
-		if (lower.includes(kw)) return cfg
+function resolveSpecialityDetails(iconKey: string, label: string) {
+	const cfg = SPECIALITY_CONFIGS[iconKey]
+	if (cfg) {
+		return {
+			image: cfg.image,
+			objectPosition: cfg.objectPosition ?? 'center top',
+			description: cfg.description,
+		}
 	}
-	return FALLBACK
-}
-
-// ── Description map ─────────────────────────────────────────────────────────────
-const DESC_MAP: [string, string][] = [
-	['dentist', 'Dental care, oral hygiene and teeth treatment'],
-	['gynecolog', "Women's health, pregnancy and fertility care"],
-	['dietitian', 'Diet planning, healthy eating and nutrition guidance'],
-	['nutrition', 'Diet planning, healthy eating and nutrition guidance'],
-	['physiotherap', 'Pain relief, movement rehab and physical therapy'],
-	['general phys', 'General health checkup and primary care'],
-	['cardiolog', 'Heart and blood vessel specialist care'],
-	['dermatolog', 'Skin, hair, nails and cosmetic treatments'],
-	['pediatric', 'Child health, growth and immunization care'],
-	['orthoped', 'Bone, joint, spine and musculoskeletal care'],
-	['neurolog', 'Brain, nerves, spine and neurological disorders'],
-	['ophthalm', 'Eye care, vision and eye disease treatment'],
-	['ear, nose', 'Ear, nose, throat and hearing care'],
-	['ent', 'Ear, nose, throat and hearing care'],
-	['psychiatr', 'Mental health, stress, anxiety and emotional well-being'],
-	['urolog', "Urinary tract, kidney and men's health care"],
-	['gastroenter', 'Digestive system, stomach, liver and gut health'],
-	['pulmonolog', 'Lung and respiratory disorders treatment'],
-	['endocrinolog', 'Hormone disorders, diabetes and thyroid care'],
-	['oncolog', 'Cancer care, treatment and support'],
-	['nephrolog', 'Kidney care, dialysis and renal diseases'],
-	['rheumatolog', 'Arthritis, joint pain and autoimmune disorders'],
-]
-
-function resolveDescription(label: string): string {
-	const lower = label.toLowerCase()
-	for (const [kw, desc] of DESC_MAP) {
-		if (lower.includes(kw)) return desc
+	// Fallback
+	return {
+		image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=300&fit=crop&auto=format',
+		objectPosition: 'center top',
+		description: `Specialised care for ${label.toLowerCase()}`,
 	}
-	return `Specialised care for ${label.toLowerCase()}`
 }
 
 // ── Enriched type ───────────────────────────────────────────────────────────────
@@ -116,8 +149,13 @@ interface EnrichedSpeciality extends SpecialityItem {
 }
 
 function enrich(s: SpecialityItem): EnrichedSpeciality {
-	const v = resolveVisual(s.label)
-	return { ...s, image: v.image, objectPosition: v.objectPosition, description: resolveDescription(s.label) }
+	const details = resolveSpecialityDetails(s.icon_key, s.label)
+	return {
+		...s,
+		image: details.image,
+		objectPosition: details.objectPosition,
+		description: details.description,
+	}
 }
 
 // ── Card skeleton ───────────────────────────────────────────────────────────────
@@ -141,7 +179,6 @@ export default function AllSpecialitiesPage() {
 	const [specialities, setSpecialities] = useState<EnrichedSpeciality[]>([])
 	const [apiLoading, setApiLoading] = useState(true)
 	const [apiError, setApiError] = useState<string | null>(null)
-
 	const [search, setSearch] = useState('')
 
 	// Fetch from API on mount
@@ -175,7 +212,7 @@ export default function AllSpecialitiesPage() {
 	)
 
 	return (
-		<Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
+		<Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', overflow: 'hidden', bgcolor: 'background.default' }}>
 			{/* Sticky header */}
 			<Box
 				sx={{
@@ -220,6 +257,7 @@ export default function AllSpecialitiesPage() {
 							}}
 							sx={{
 								minWidth: 220,
+								maxWidth: 400,
 								'& .MuiOutlinedInput-root': {
 									borderRadius: '30px',
 								},
