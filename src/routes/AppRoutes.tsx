@@ -24,6 +24,8 @@ import OrderList from '../features/Pharmacy/OrderList'
 import OrderDetailPage from '../features/Pharmacy/OrderDetailPage'
 import PharmacySearchPage from '../features/Pharmacy/components/PharmacySearchPage'
 import RadiologyProfilePage from '../features/radiology/profile/RadiologyProfilePage'
+import BookingsList from '../features/radiology/bookings/BookingsList'
+import BookingDetailPage from '../features/radiology/bookings/BookingDetailPage'
 import AllSpecialitiesPage from '../features/dashboard/AllSpecialitiesPage'
 
 function ProtectedLayout() {
@@ -100,6 +102,8 @@ export default function AppRoutes() {
 
 				<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
 				<Route path={ROUTES.RADIOLOGY.PROFILE} element={<RadiologyProfilePage />} />
+				<Route path={ROUTES.RADIOLOGY.BOOKINGS} element={<BookingsList />} />
+				<Route path={ROUTES.RADIOLOGY.BOOKING_DETAIL} element={<BookingDetailPage />} />
 			</Route>
 
 			{/* <Route path={ROUTES.LABORATORY.PROFILE} element={<LaboratoryProfilePage />} /> */}

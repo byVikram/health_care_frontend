@@ -7,6 +7,7 @@ import ProfileFormActions from '../../../../components/common/ProfileFormActions
 import { customCardStyle } from '../../../../styles/commonStyles'
 import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import { updateMyRadiologyProfile } from '../../radiologyService'
 
 // ─── Type ─────────────────────────────────────────────────────────────────────
 
@@ -45,8 +46,18 @@ export default function RadiologyPersonalTab({ data, onChange }: RadiologyPerson
 
 	const handleSave = async () => {
 		try {
-			// No API yet — save to localStorage
-			localStorage.setItem('radiology_personal_tab', JSON.stringify(data))
+			const payload: Record<string, string | null> = {}
+			if (data.name !== saved.name) payload.owner_name = data.name
+			if (data.alternateMobile !== saved.alternateMobile) payload.alternate_mobile = data.alternateMobile || null
+			if (data.whatsappNumber !== saved.whatsappNumber) payload.whatsapp_number = data.whatsappNumber || null
+			if (data.avatar !== saved.avatar) payload.logo_s3_key = data.avatar || null
+
+			if (Object.keys(payload).length === 0) {
+				toast.info('No changes to save.')
+				return
+			}
+
+			await updateMyRadiologyProfile(payload)
 			setSaved(data)
 			toast.success('Changes saved successfully!')
 		} catch {

@@ -24,6 +24,8 @@ export const ROUTES = {
 
 	RADIOLOGY: {
 		PROFILE: '/radiology/profile',
+		BOOKINGS: '/radiology/bookings',
+		BOOKING_DETAIL: '/radiology/bookings/:bookingId',
 	},
 
 	SPECIALITIES: '/specialities',

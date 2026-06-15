@@ -1,6 +1,6 @@
 // src/features/radiology/profile/RadiologyProfilePage.tsx
-import { useState, useMemo } from 'react'
-import { Box, Container, Grid, Typography } from '@mui/material'
+import { useState, useMemo, useEffect } from 'react'
+import { Box, Container, Grid, Typography, CircularProgress } from '@mui/material'
 import AppProfileSidebar from '../../../components/common/ProfileSidebar/AppProfileSidebar'
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline'
 import WorkOutlineIcon from '@mui/icons-material/WorkOutline'
@@ -8,9 +8,11 @@ import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
 import MiscellaneousServicesOutlinedIcon from '@mui/icons-material/MiscellaneousServicesOutlined'
 import RadiologyPersonalTab, { RadiologyProfilePersonal } from './components/PersonalTab'
 import RadiologyProfessionalTab from './components/ProfessionalTab'
-import {RadiologyProfileProfessional,EMPTY_RADIOLOGY_PROFESSIONAL} from '../../../types/radiology-profile'
+import { RadiologyProfileProfessional, EMPTY_RADIOLOGY_PROFESSIONAL } from '../../../types/radiology-profile'
 import RadiologySettingTab from './components/SettingsTab'
+import RadiologyServiceTab from './components/RadiologyServiceTab'
 import { customCardStyle } from '../../../styles/commonStyles'
+import { getMyRadiologyProfile, mapRadiologyDetailsApi } from '../radiologyService'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -43,47 +45,50 @@ function calcCompletion(profile: RadiologyProfile): number {
 	return Math.round((filled / allFields.length) * 100)
 }
 
-// ─── localStorage helpers ─────────────────────────────────────────────────────
-
-function readPersonal(): RadiologyProfilePersonal {
-	const EMPTY: RadiologyProfilePersonal = {
-		name: '',
-		contactNumber: '',
-		contactVerified: false,
-		email: '',
-		emailVerified: false,
-		alternateMobile: '',
-		whatsappNumber: '',
-		avatar: '',
-	}
-	try {
-		const stored = localStorage.getItem('radiology_personal_tab')
-		return stored ? (JSON.parse(stored) as RadiologyProfilePersonal) : EMPTY
-	} catch {
-		return EMPTY
-	}
+const EMPTY_PERSONAL: RadiologyProfilePersonal = {
+	name: '',
+	contactNumber: '',
+	contactVerified: false,
+	email: '',
+	emailVerified: false,
+	alternateMobile: '',
+	whatsappNumber: '',
+	avatar: '',
 }
 
-function readProfessional(): RadiologyProfileProfessional {
-	try {
-		const stored = localStorage.getItem('radiology_professional_tab')
-		return stored ? (JSON.parse(stored) as RadiologyProfileProfessional) : EMPTY_RADIOLOGY_PROFESSIONAL
-	} catch {
-		return EMPTY_RADIOLOGY_PROFESSIONAL
-	}
+const EMPTY_RADIOLOGY: RadiologyProfile = {
+	id: '',
+	personal: EMPTY_PERSONAL,
+	professional: EMPTY_RADIOLOGY_PROFESSIONAL,
 }
 
 // ─── Page component ───────────────────────────────────────────────────────────
 
 export default function RadiologyProfilePage() {
 	const [activeTab, setActiveTab] = useState<string>('personal')
+	const [profile, setProfile] = useState<RadiologyProfile>(EMPTY_RADIOLOGY)
+	const [loading, setLoading] = useState(true)
+	const [error, setError] = useState<string | null>(null)
 
-	// Lazy initialisers: read localStorage once on mount, no useEffect needed
-	const [profile, setProfile] = useState<RadiologyProfile>(() => ({
-		id: '',
-		personal: readPersonal(),
-		professional: readProfessional(),
-	}))
+	useEffect(() => {
+		const fetchProfile = async () => {
+			try {
+				setLoading(true)
+				const res = await getMyRadiologyProfile()
+				if (res.success && res.data) {
+					setProfile(mapRadiologyDetailsApi(res.data))
+				}
+			} catch (err: unknown) {
+				const status = (err as { response?: { status?: number } })?.response?.status
+				if (status !== 404) {
+					setError(`Failed to load radiology profile. (${status ?? 'unknown'})`)
+				}
+			} finally {
+				setLoading(false)
+			}
+		}
+		fetchProfile()
+	}, [])
 
 	const completionPercent = useMemo(() => calcCompletion(profile), [profile])
 
@@ -98,6 +103,24 @@ export default function RadiologyProfilePage() {
 		setProfile((prev) => ({ ...prev, personal: { ...prev.personal, avatar: localPreviewUrl } }))
 	}
 
+	if (loading) {
+		return (
+			<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+				<CircularProgress sx={{ color: 'primary.main' }} />
+			</Box>
+		)
+	}
+
+	if (error) {
+		return (
+			<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+				<Typography variant="body1" sx={{ color: 'error.main' }}>
+					{error}
+				</Typography>
+			</Box>
+		)
+	}
+
 	const renderTab = () => {
 		switch (activeTab) {
 			case 'personal':
@@ -105,11 +128,7 @@ export default function RadiologyProfilePage() {
 			case 'professional':
 				return <RadiologyProfessionalTab data={profile.professional} onChange={handleProfessionalChange} />
 			case 'services':
-				return (
-					<Box sx={{ ...customCardStyle, p: 4, color: 'text.secondary', textAlign: 'center' }}>
-						<Typography>Service details — coming soon</Typography>
-					</Box>
-				)
+				return <RadiologyServiceTab />
 			case 'settings':
 				return <RadiologySettingTab />
 			default:
