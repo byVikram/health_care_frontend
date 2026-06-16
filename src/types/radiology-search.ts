@@ -1,7 +1,7 @@
 // src/types/radiology-search.ts
 
 export interface RadiologySearchResultItem {
-	radiology_id: string
+	id: string
 	name: string
 	address: string
 	city: string
@@ -11,4 +11,5 @@ export interface RadiologySearchResultItem {
 	pricing_model: 'fixed' | 'starting_from' | 'quote_required'
 	base_price: number | null
 	price_details: string | null
+	logo_s3_key: string | null
 }
