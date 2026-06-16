@@ -2,6 +2,7 @@
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { RadiologyProfile } from './profile/RadiologyProfilePage'
+import { RadiologySearchResultItem } from '../../types/radiology-search'
 
 export interface RadiologyDetailsApiPersonal {
 	id: number
@@ -304,6 +305,43 @@ export const uploadRadiologyReport = async (
 ): Promise<ReportResponse> => {
 	const res = await ApiService.post<ReportResponse>(
 		API_ENDPOINTS.RADIOLOGY_PROFILE.UPLOAD_REPORT(bookingId),
+		payload
+	)
+	return res.data
+}
+
+export interface RadiologySearchResponse {
+	success: boolean
+	message: string
+	data: RadiologySearchResultItem[]
+}
+
+export const searchRadiologyCenters = async (params: {
+	scan_type_id?: number
+	city?: string
+}): Promise<RadiologySearchResponse> => {
+	const res = await ApiService.getWithParams<RadiologySearchResponse>(
+		API_ENDPOINTS.RADIOLOGY_PROFILE.SEARCH,
+		params
+	)
+	return res.data
+}
+
+export interface RadiologyBookingCreatePayload {
+	radiology_id: string
+	scan_ids: number[]
+	booking_date: string
+	booking_time: string
+	treatment_id?: string
+	external_prescription_s3_key?: string
+	notes?: string
+}
+
+export const createRadiologyBooking = async (
+	payload: RadiologyBookingCreatePayload
+): Promise<BookingResponse> => {
+	const res = await ApiService.post<BookingResponse>(
+		API_ENDPOINTS.RADIOLOGY_PROFILE.BOOKINGS,
 		payload
 	)
 	return res.data

@@ -6,6 +6,8 @@ import PersonOutlineIcon from '@mui/icons-material/PersonOutline'
 import WorkOutlineIcon from '@mui/icons-material/WorkOutline'
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined'
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
+import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined'
+import SessionsTab from '../../../components/common/SessionsTab/SessionsTab'
 import LabPersonalTab from './components/LabPersonalTab'
 import LabProfessionalTab from './components/LabProfessionalTab'
 import LabSettingsTab from './components/LabSettingsTab'
@@ -18,6 +20,7 @@ const LAB_NAV_ITEMS = [
 	{ id: 'personal', label: 'Personal details', icon: <PersonOutlineIcon fontSize="small" /> },
 	{ id: 'professional', label: 'Professional details', icon: <WorkOutlineIcon fontSize="small" /> },
 	{ id: 'services', label: 'Services', icon: <ScienceOutlinedIcon fontSize="small" /> },
+	{ id: 'sessions', label: 'Active Sessions', icon: <DesktopWindowsOutlinedIcon fontSize="small" /> },
 	{ id: 'settings', label: 'Settings', icon: <SettingsOutlinedIcon fontSize="small" /> },
 ]
 
@@ -110,6 +113,8 @@ export default function LaboratoryProfilePage() {
 						Coming soon...
 					</Box>
 				)
+			case 'sessions':
+				return <SessionsTab />
 			case 'settings':
 				return <LabSettingsTab />
 			default:

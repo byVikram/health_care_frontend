@@ -27,6 +27,7 @@ import RadiologyProfilePage from '../features/radiology/profile/RadiologyProfile
 import BookingsList from '../features/radiology/bookings/BookingsList'
 import BookingDetailPage from '../features/radiology/bookings/BookingDetailPage'
 import AllSpecialitiesPage from '../features/dashboard/AllSpecialitiesPage'
+import RadiologySearchPage from '../features/radiology/search/RadiologySearchPage'
 
 function ProtectedLayout() {
 	return (
@@ -84,6 +85,7 @@ export default function AppRoutes() {
 					<Route path={ROUTES.TEST} element={<TestPage />} />
 					<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
 					<Route path={ROUTES.SPECIALITIES} element={<AllSpecialitiesPage />} />
+					<Route path={ROUTES.RADIOLOGY.SEARCH} element={<RadiologySearchPage />} />
 				</Route>
 			</Route>
 

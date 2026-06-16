@@ -1,5 +1,7 @@
 // src/features/dashboard/QuickServicesSection.tsx
 import { Box, Typography, Grid } from '@mui/material'
+import { useNavigate } from 'react-router-dom'
+import { ROUTES } from '../../constants/routes'
 import PharmacyIcon from '../../assets/quick-services/pharmacy.svg'
 import RadiologyIcon from '../../assets/quick-services/radiology.svg'
 import AncilaryIcon from '../../assets/quick-services/ancilary.svg'
@@ -53,6 +55,16 @@ const quickServices = [
 ]
 
 export default function QuickServicesSection() {
+	const navigate = useNavigate()
+
+	const handleServiceClick = (title: string) => {
+		if (title === 'Radiology') {
+			navigate(ROUTES.RADIOLOGY.SEARCH)
+		} else if (title === 'Pharmacy') {
+			navigate(ROUTES.PHARMACY.SEARCH)
+		}
+	}
+
 	return (
 		<Box sx={{ py: 2 }}>
 			{/* Heading */}
@@ -65,6 +77,7 @@ export default function QuickServicesSection() {
 				{quickServices.map((service) => (
 					<Grid size={{ xs: 3, sm: 3, md: 3 }} key={service.id}>
 						<Box
+							onClick={() => handleServiceClick(service.title)}
 							sx={{
 								display: 'flex',
 								flexDirection: 'column',

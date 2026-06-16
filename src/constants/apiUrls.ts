@@ -95,5 +95,6 @@ export const API_ENDPOINTS = {
 		SUBMIT_QUOTE: (id: string) => `${BASE_URL}/api/radiology/bookings/${id}/quote`,
 		VERIFY_PRESCRIPTION: (id: string) => `${BASE_URL}/api/radiology/bookings/${id}/verify`,
 		UPLOAD_REPORT: (id: string) => `${BASE_URL}/api/radiology/bookings/${id}/report`,
+		SEARCH: `${BASE_URL}/api/radiology/search`,
 	},
 }

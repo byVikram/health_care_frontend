@@ -6,6 +6,8 @@ import PersonOutlineIcon from '@mui/icons-material/PersonOutline'
 import WorkOutlineIcon from '@mui/icons-material/WorkOutline'
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
 import MiscellaneousServicesOutlinedIcon from '@mui/icons-material/MiscellaneousServicesOutlined'
+import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined'
+import SessionsTab from '../../../components/common/SessionsTab/SessionsTab'
 import RadiologyPersonalTab, { RadiologyProfilePersonal } from './components/PersonalTab'
 import RadiologyProfessionalTab from './components/ProfessionalTab'
 import { RadiologyProfileProfessional, EMPTY_RADIOLOGY_PROFESSIONAL } from '../../../types/radiology-profile'
@@ -28,6 +30,7 @@ const RADIOLOGY_NAV_ITEMS = [
 	{ id: 'personal', label: 'Personal details', icon: <PersonOutlineIcon fontSize="small" /> },
 	{ id: 'professional', label: 'Professional details', icon: <WorkOutlineIcon fontSize="small" /> },
 	{ id: 'services', label: 'Service details', icon: <MiscellaneousServicesOutlinedIcon fontSize="small" /> },
+	{ id: 'sessions', label: 'Active Sessions', icon: <DesktopWindowsOutlinedIcon fontSize="small" /> },
 	{ id: 'settings', label: 'Settings', icon: <SettingsOutlinedIcon fontSize="small" /> },
 ]
 
@@ -129,6 +132,8 @@ export default function RadiologyProfilePage() {
 				return <RadiologyProfessionalTab data={profile.professional} onChange={handleProfessionalChange} />
 			case 'services':
 				return <RadiologyServiceTab />
+			case 'sessions':
+				return <SessionsTab />
 			case 'settings':
 				return <RadiologySettingTab />
 			default:

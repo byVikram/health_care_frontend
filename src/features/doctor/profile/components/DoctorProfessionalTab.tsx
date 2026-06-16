@@ -204,10 +204,11 @@ export default function DoctorProfessionalTab({ data, onChange, onSaveSuccess }:
 
 		try {
 			const payload: Record<string, unknown> = {
-				experience_years: data.experience || undefined,
+				// experience_years: data.experience || undefined,
 				registration_number: data.registrationNumber,
 				about: data.about,
 				registration_proof_s3_key: data.registrationProof || null,
+				specialities: [data.specialization_id],
 				degrees: degrees.map((d) => ({
 					degree: d.degree,
 					specialization: d.specialization || null,
@@ -243,12 +244,26 @@ export default function DoctorProfessionalTab({ data, onChange, onSaveSuccess }:
 				{/* Specialization */}
 				<Box>
 					<SectionTitle>Select specialization</SectionTitle>
-					<AppSelect
+					{/* <AppSelect
 						label=""
 						value={data.specialization_id || ''}
 						options={specialities}
 						placeholder="Select your specialization"
 						onChange={(e) => onChange({ specialization_id: e.target.value as string })}
+					/> */}
+					<AppSelect
+						label=""
+						value={data.specialization_id || ''}
+						options={specialities}
+						placeholder="Select your specialization"
+						onChange={(e) => {
+							const selected = specialities.find((s) => s.value === e.target.value)
+
+							onChange({
+								specialization_id: selected?.value || '',
+								specialization_label: selected?.label || '',
+							})
+						}}
 					/>
 				</Box>
 
@@ -319,9 +334,10 @@ export default function DoctorProfessionalTab({ data, onChange, onSaveSuccess }:
 												color="error"
 												onClick={() => handleRemoveDegree(index)}
 												sx={{
-													border: '1px solid',
-													borderColor: 'error.light',
-													'&:hover': { bgcolor: 'error.lighter' },
+													p: 0,
+													'&:hover': {
+														backgroundColor: 'transparent',
+													},
 												}}
 											>
 												<DeleteOutlineIcon fontSize="small" />
