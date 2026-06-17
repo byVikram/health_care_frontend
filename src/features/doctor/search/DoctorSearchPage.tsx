@@ -30,7 +30,7 @@ export default function DoctorSearchPage() {
 	const [sortBy, setSortBy]           = useState(searchParams.get('sort') || 'rating')
 	const [filters, setFilters] = useState<FilterState>(() => ({
 		speciality:       searchParams.get('speciality_id') || '',
-		consultationType: (searchParams.get('consultation_type') as FilterState['consultationType']) || 'all',
+		consultationType: (searchParams.get('consultation_type') as FilterState['consultationType']) || 'clinic',
 		minRating:        Number(searchParams.get('min_rating')) || 0,
 		maxPrice:         Number(searchParams.get('max_price')) || 1000,
 	}))

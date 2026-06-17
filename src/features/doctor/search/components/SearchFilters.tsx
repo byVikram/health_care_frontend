@@ -28,9 +28,9 @@ export default function SearchFilters({ filters, onChange }: SearchFiltersProps)
 	}, [filters.maxPrice])
 
 	const consultationTypes = [
-		{ id: 'all', label: 'All' },
 		{ id: 'clinic', label: 'Clinic Visit' },
 		{ id: 'video', label: 'Video Call' },
+		{ id: 'all', label: 'All' },
 	]
 
 	const ratingOptions = [4.5, 4.0, 3.5, 3.0]

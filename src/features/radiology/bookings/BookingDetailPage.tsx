@@ -14,13 +14,13 @@ import {
 	IconButton,
 	Snackbar,
 	Stack,
-	Tooltip,
+	// Tooltip,
 	Typography,
 } from '@mui/material'
 import {
 	ArrowBack,
 	CheckCircle,
-	Cancel,
+	// Cancel,
 	CloudUpload,
 	FilePresent,
 	Payments,

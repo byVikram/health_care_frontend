@@ -1,7 +1,9 @@
 // src/features/dashboard/QuickServicesSection.tsx
+import { useState } from 'react'
 import { Box, Typography, Grid } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routes'
+import ScanTypeSelectorModal from './ScanTypeSelectorModal'
 import PharmacyIcon from '../../assets/quick-services/pharmacy.svg'
 import RadiologyIcon from '../../assets/quick-services/radiology.svg'
 import AncilaryIcon from '../../assets/quick-services/ancilary.svg'
@@ -56,10 +58,11 @@ const quickServices = [
 
 export default function QuickServicesSection() {
 	const navigate = useNavigate()
+	const [scanPickerOpen, setScanPickerOpen] = useState(false)
 
 	const handleServiceClick = (title: string) => {
 		if (title === 'Radiology') {
-			navigate(ROUTES.RADIOLOGY.SEARCH)
+			setScanPickerOpen(true)
 		} else if (title === 'Pharmacy') {
 			navigate(ROUTES.PHARMACY.SEARCH)
 		}
@@ -112,6 +115,12 @@ export default function QuickServicesSection() {
 					</Grid>
 				))}
 			</Grid>
+
+			{/* Scan type picker popup, opened when the Radiology quick service icon is clicked */}
+			<ScanTypeSelectorModal
+				open={scanPickerOpen}
+				onClose={() => setScanPickerOpen(false)}
+			/>
 		</Box>
 	)
 }

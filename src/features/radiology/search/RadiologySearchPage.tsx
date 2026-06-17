@@ -11,6 +11,8 @@ import AppInput from '../../../components/common/Input/AppInput'
 import AppSkeleton from '../../../components/common/Skeleton/AppSkeleton'
 import { customCardStyle } from '../../../styles/commonStyles'
 import { searchRadiologyCenters } from '../radiologyService'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import ScanTypeSelectorModal from '../../dashboard/ScanTypeSelectorModal'
 import { RadiologySearchResultItem } from '../../../types/radiology-search'
 
 const SORT_OPTIONS = [
@@ -39,6 +41,7 @@ export default function RadiologySearchPage() {
 	const [debouncedMaxPrice, setDebouncedMaxPrice] = useState(Number(searchParams.get('max_price')) || 10000)
 
 	const [cityQuery, setCityQuery] = useState(searchParams.get('city') || '')
+	const [scanPickerOpen, setScanPickerOpen] = useState(false)
 
 	// ── Data state ─────────────────────────────────────────────────────────
 	const [rawResults, setRawResults] = useState<RadiologySearchResultItem[]>([])
@@ -53,6 +56,16 @@ export default function RadiologySearchPage() {
 	const [total, setTotal] = useState(0)
 	const [loadingMore, setLoadingMore] = useState(false)
 	const [hasMore, setHasMore] = useState(false)
+
+	// ── Re-sync filters when URL changes (e.g. modal navigates with new scan_type_id) ──
+	useEffect(() => {
+		const urlScanTypeId = searchParams.get('scan_type_id') || ''
+		setFilters((prev) => {
+			if (prev.scanTypeId === urlScanTypeId) return prev
+			return { ...prev, scanTypeId: urlScanTypeId }
+		})
+		setPage(1)
+	}, [searchParams])
 
 	// ── Debounce: update searchQuery after DEBOUNCE_MS of no typing ────────
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -250,6 +263,29 @@ export default function RadiologySearchPage() {
 
 	return (
 		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
+			{/* Back to scan type picker - only shown when arriving via the scan type popup */}
+			{filters.scanTypeId && (
+				<Box sx={{ bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider' }}>
+					<Container maxWidth="lg" sx={{ py: 1.5 }}>
+						<Box
+							onClick={() => setScanPickerOpen(true)}
+							sx={{
+								display: 'flex',
+								alignItems: 'center',
+								gap: 1,
+								cursor: 'pointer',
+								color: 'primary.main',
+								fontWeight: 600,
+								fontSize: '14px',
+								width: 'fit-content',
+							}}
+						>
+							<ArrowBackIcon sx={{ fontSize: 18 }} />
+							Change scan type
+						</Box>
+					</Container>
+				</Box>
+			)}
 			{/* Search & Location bar */}
 			<Box sx={{ bgcolor: 'background.paper', py: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
 				<Container maxWidth="lg">
@@ -427,6 +463,12 @@ export default function RadiologySearchPage() {
 					</Grid>
 				</Grid>
 			</Container>
+
+			{/* Scan type picker re-entry: allows returning to the scan picker popup */}
+			<ScanTypeSelectorModal
+				open={scanPickerOpen}
+				onClose={() => setScanPickerOpen(false)}
+			/>
 		</Box>
 	)
 }
