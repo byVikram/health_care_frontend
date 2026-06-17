@@ -3,6 +3,7 @@ import { useState } from 'react'
 import {
 	Box,
 	Typography,
+	Avatar,
 	Dialog,
 	DialogTitle,
 	DialogContent,
@@ -12,18 +13,50 @@ import {
 	IconButton,
 	Snackbar,
 	Alert,
-	Chip
+	// Chip,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
-import ScienceIcon from '@mui/icons-material/Science'
-import LocalActivityIcon from '@mui/icons-material/LocalActivity'
-import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee'
+// import ScienceIcon from '@mui/icons-material/Science'
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
 import AppButton from '../../../../components/common/Button/AppButton'
 import { RadiologySearchResultItem } from '../../../../types/radiology-search'
 import { createRadiologyBooking } from '../../radiologyService'
 import { formatINR } from '../../../../utils/Utils'
 import { useNavigate } from 'react-router-dom'
+
+// ── Local asset map keyed by logo_s3_key value stored in DB ──────────────────
+import apexImg from '../../../../assets/Radiology/Apex.png'
+import eliteImg from '../../../../assets/Radiology/Elite.png'
+import focusImg from '../../../../assets/Radiology/Focus Scanning.png'
+import metroImg from '../../../../assets/Radiology/Metro Diagnostics.png'
+import primeImg from '../../../../assets/Radiology/prime.png'
+
+const LOGO_KEY_MAP: Record<string, string> = {
+	'radiology/apex.png': apexImg,
+	'radiology/elite.png': eliteImg,
+	'radiology/focus_scanning.png': focusImg,
+	'radiology/metro_diagnostics.png': metroImg,
+	'radiology/prime.png': primeImg,
+}
+
+// Fallback: match by centre name if logo_s3_key is not yet set in DB
+const LOGO_NAME_MAP: Record<string, string> = {
+	'apex diagnostic laboratory': apexImg,
+	'elite mri & ct center': eliteImg,
+	'focus scan & imaging': focusImg,
+	'metro diagnostics': metroImg,
+	'prime diagnostics': primeImg,
+}
+
+function resolveLogoSrc(item: RadiologySearchResultItem): string {
+	if (item.logo_s3_key) {
+		const byKey = LOGO_KEY_MAP[item.logo_s3_key.toLowerCase()]
+		if (byKey) return byKey
+	}
+	// Fallback to name-based lookup
+	return LOGO_NAME_MAP[item.name.toLowerCase()] ?? ''
+}
 
 interface RadiologySearchCardProps {
 	item: RadiologySearchResultItem
@@ -37,12 +70,13 @@ export default function RadiologySearchCard({ item }: RadiologySearchCardProps) 
 	const [notes, setNotes] = useState('')
 	const [submitting, setSubmitting] = useState(false)
 
-	// Notification states
 	const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
 		open: false,
 		message: '',
 		severity: 'success',
 	})
+
+	const logoSrc = resolveLogoSrc(item)
 
 	const handleOpen = (e: React.MouseEvent) => {
 		e.stopPropagation()
@@ -58,18 +92,14 @@ export default function RadiologySearchCard({ item }: RadiologySearchCardProps) 
 
 	const handleSubmit = async () => {
 		if (!bookingDate || !bookingTime) {
-			setToast({
-				open: true,
-				message: 'Please fill in both date and time',
-				severity: 'error',
-			})
+			setToast({ open: true, message: 'Please fill in both date and time', severity: 'error' })
 			return
 		}
 
 		try {
 			setSubmitting(true)
 			const res = await createRadiologyBooking({
-				radiology_id: item.radiology_id,
+				radiology_id: item.id,
 				scan_ids: [item.scan_id],
 				booking_date: bookingDate,
 				booking_time: bookingTime,
@@ -77,16 +107,9 @@ export default function RadiologySearchCard({ item }: RadiologySearchCardProps) 
 			})
 
 			if (res.success) {
-				setToast({
-					open: true,
-					message: 'Booking request submitted successfully!',
-					severity: 'success',
-				})
+				setToast({ open: true, message: 'Booking request submitted successfully!', severity: 'success' })
 				handleClose()
-				// Redirect to booking list
-				setTimeout(() => {
-					navigate('/radiology/bookings')
-				}, 1000)
+				setTimeout(() => navigate('/radiology/bookings'), 1000)
 			} else {
 				throw new Error(res.message || 'Failed to book')
 			}
@@ -103,16 +126,9 @@ export default function RadiologySearchCard({ item }: RadiologySearchCardProps) 
 	}
 
 	const getPricingLabel = () => {
-		switch (item.pricing_model) {
-			case 'fixed':
-				return 'Fixed'
-			case 'starting_from':
-				return 'Starts from'
-			case 'quote_required':
-				return 'Quote Required'
-			default:
-				return item.pricing_model
-		}
+		if (item.pricing_model === 'starting_from') return 'Starts from'
+		if (item.pricing_model === 'fixed') return 'Fixed'
+		return item.pricing_model
 	}
 
 	return (
@@ -121,7 +137,7 @@ export default function RadiologySearchCard({ item }: RadiologySearchCardProps) 
 				bgcolor: 'background.paper',
 				border: '1px solid',
 				borderColor: 'divider',
-				borderRadius: '12px',
+				borderRadius: '8px',
 				overflow: 'hidden',
 				transition: 'box-shadow 0.2s, transform 0.2s',
 				display: 'flex',
@@ -134,78 +150,79 @@ export default function RadiologySearchCard({ item }: RadiologySearchCardProps) 
 				},
 			}}
 		>
-			<Box sx={{ p: 2.5 }}>
-				{/* Badge / Scan Category Icon */}
-				<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-					<Chip
-						icon={<ScienceIcon sx={{ fontSize: '16px !important' }} />}
-						label={item.scan_name}
-						size="small"
-						sx={{
-							bgcolor: 'rgba(43,111,113,0.08)',
-							color: 'primary.main',
-							fontWeight: 600,
-							px: 0.5,
-						}}
-					/>
-					<Chip
-						label={getPricingLabel()}
-						size="small"
-						variant="outlined"
-						color={item.pricing_model === 'quote_required' ? 'warning' : 'primary'}
-						sx={{ fontWeight: 600, height: 20, fontSize: '11px' }}
-					/>
-				</Box>
+			{/* Image area — same compact height as DoctorSearchCard */}
+			<Box sx={{ position: 'relative', height: 160, bgcolor: 'grey.100' }}>
+				<Avatar
+					src={logoSrc}
+					alt={item.name}
+					variant="square"
+					sx={{
+						width: '100%',
+						height: '100%',
+						'& img': { objectFit: 'cover', objectPosition: 'center', height: '100%' },
+					}}
+				>
+					<LocalHospitalIcon sx={{ fontSize: 56, color: 'primary.main', opacity: 0.3 }} />
+				</Avatar>
+			</Box>
 
-				{/* Title / Facility Name */}
-				<Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary', mb: 1, lineHeight: 1.3 }}>
+			{/* Info area — compact like DoctorSearchCard */}
+			<Box sx={{ p: 2 }}> 
+				{/* Scan type chip */}
+				{/* <Chip
+					icon={<ScienceIcon sx={{ fontSize: '14px !important' }} />}
+					label={item.scan_name}
+					size="small"
+					sx={{
+						bgcolor: 'rgba(43,111,113,0.08)',
+						color: 'primary.main',
+						fontWeight: 600,
+						mb: 0.8,
+						px: 0.5,
+						height: 22,
+						fontSize: '11px',
+					}}  */}
+			
+
+				{/* Facility Name */}
+				<Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.2, lineHeight: 1.25, fontSize: '1rem' }}>
 					{item.name}
 				</Typography>
 
-				{/* Address Row */}
-				<Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5, mb: 2 }}>
-					<LocationOnIcon sx={{ fontSize: 16, color: 'text.secondary', mt: 0.3 }} />
-					<Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '13px' }}>
+				{/* Address */}
+				<Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.4, mb: 1.5 }}>
+					<LocationOnIcon sx={{ fontSize: 13, color: 'primary.main', mt: 0.3 }} />
+					<Typography variant="caption" sx={{ color: 'text.secondary', lineHeight: 1.4 }}>
 						{item.address}, {item.city}, {item.state}
 					</Typography>
 				</Box>
 
-				{/* Pricing Section */}
-				<Box
-					sx={{
-						display: 'flex',
-						alignItems: 'baseline',
-						bgcolor: 'grey.50',
-						p: 1.5,
-						borderRadius: '8px',
-						gap: 0.5,
-					}}
-				>
+				{/* Pricing */}
+				<Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 2 }}>
 					{item.pricing_model !== 'quote_required' && item.base_price !== null ? (
 						<>
-							<Typography variant="h5" sx={{ fontWeight: 800, color: 'primary.main', display: 'flex', alignItems: 'center' }}>
-								<CurrencyRupeeIcon sx={{ fontSize: 20 }} />
-								{item.base_price}
+							<Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main', fontSize: '1.1rem' }}>
+								{formatINR(item.base_price)}
 							</Typography>
-							<Typography variant="caption" sx={{ color: 'text.secondary' }}>
-								{item.pricing_model === 'starting_from' ? 'onwards' : ''}
-							</Typography>
+							{item.pricing_model === 'starting_from' && (
+								<Typography variant="caption" sx={{ color: 'text.secondary' }}>
+									{getPricingLabel()}
+								</Typography>
+							)}
 						</>
 					) : (
 						<Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-							Pricing provided via quote request
+							Contact for pricing
 						</Typography>
 					)}
 				</Box>
-			</Box>
 
-			{/* Book Now Button */}
-			<Box sx={{ p: 2, pt: 0 }}>
+				{/* Book button */}
 				<AppButton
 					label="Book Scan"
 					fullWidth
 					onClick={handleOpen}
-					sx={{ borderRadius: '8px', py: 1, fontWeight: 600 }}
+					sx={{ borderRadius: '10px', py: 0.8, fontWeight: 600 }}
 				/>
 			</Box>
 
@@ -236,7 +253,6 @@ export default function RadiologySearchCard({ item }: RadiologySearchCardProps) 
 							InputLabelProps={{ shrink: true }}
 							inputProps={{ min: new Date().toISOString().split('T')[0] }}
 						/>
-
 						<TextField
 							label="Preferred Time"
 							type="time"
@@ -246,7 +262,6 @@ export default function RadiologySearchCard({ item }: RadiologySearchCardProps) 
 							onChange={(e) => setBookingTime(e.target.value)}
 							InputLabelProps={{ shrink: true }}
 						/>
-
 						<TextField
 							label="Additional Notes / Symptoms"
 							multiline
@@ -267,19 +282,14 @@ export default function RadiologySearchCard({ item }: RadiologySearchCardProps) 
 						onClick={handleSubmit}
 						variant="contained"
 						disabled={submitting}
-						sx={{
-							bgcolor: 'primary.main',
-							color: '#fff',
-							fontWeight: 600,
-							'&:hover': { bgcolor: 'primary.dark' },
-						}}
+						sx={{ bgcolor: 'primary.main', color: '#fff', fontWeight: 600, '&:hover': { bgcolor: 'primary.dark' } }}
 					>
 						{submitting ? 'Booking...' : 'Confirm Booking'}
 					</Button>
 				</DialogActions>
 			</Dialog>
 
-			{/* Feedback message */}
+			{/* Toast */}
 			<Snackbar
 				open={toast.open}
 				autoHideDuration={4000}

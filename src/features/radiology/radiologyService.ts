@@ -1,4 +1,4 @@
-// src/features/radiology/radiologyService.ts
+﻿// src/features/radiology/radiologyService.ts
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { RadiologyProfile } from './profile/RadiologyProfilePage'
@@ -310,21 +310,44 @@ export const uploadRadiologyReport = async (
 	return res.data
 }
 
+// export interface RadiologySearchResponse {
+// 	success: boolean
+// 	message: string
+// 	data: RadiologySearchResultItem[]
+// }
+
 export interface RadiologySearchResponse {
 	success: boolean
 	message: string
 	data: RadiologySearchResultItem[]
+	meta: {
+		total: number
+		page: number
+		limit: number
+		pages: number
+	}
 }
 
+// export const searchRadiologyCenters = async (params: {
+// 	scan_type_id?: number
+// 	city?: string
+
+
 export const searchRadiologyCenters = async (params: {
+	
 	scan_type_id?: number
 	city?: string
+	search?: string
+	page?: number
+	limit?: number
+	max_price?: number
 }): Promise<RadiologySearchResponse> => {
 	const res = await ApiService.getWithParams<RadiologySearchResponse>(
 		API_ENDPOINTS.RADIOLOGY_PROFILE.SEARCH,
 		params
 	)
-	return res.data
+
+    return res.data
 }
 
 export interface RadiologyBookingCreatePayload {

@@ -44,6 +44,7 @@ const ApiService = {
 
 	getWithParams<T = unknown>(url: string, params: Record<string, unknown>): Promise<AxiosResponse<T>> {
 		return axiosInstance.get<T>(url, { params })
+
 	},
 
 	post<T = unknown>(url: string, body: unknown): Promise<AxiosResponse<T>> {

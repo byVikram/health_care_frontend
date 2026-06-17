@@ -1,5 +1,5 @@
-// src/features/radiology/search/RadiologySearchPage.tsx
-import { useState, useEffect, useMemo, useCallback } from 'react'
+﻿// src/features/radiology/search/RadiologySearchPage.tsx
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Box, Container, Typography, Grid, Chip, Card } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
@@ -20,17 +20,23 @@ const SORT_OPTIONS = [
 	{ value: 'price_desc', label: 'Price: High to Low' },
 ]
 
+const PAGE_SIZE = 12
+// const LIMIT = 12
+const DEBOUNCE_MS = 400
+
 export default function RadiologySearchPage() {
 	const [searchParams, setSearchParams] = useSearchParams()
 
 	// ── URL-persisted state ────────────────────────────────────────────────
+	const [inputValue, setInputValue] = useState(searchParams.get('search') || '')
 	const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
 	const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'name_asc')
-	
+
 	const [filters, setFilters] = useState<RadiologyFilterState>(() => ({
 		scanTypeId: searchParams.get('scan_type_id') || '',
 		maxPrice: Number(searchParams.get('max_price')) || 10000,
 	}))
+	const [debouncedMaxPrice, setDebouncedMaxPrice] = useState(Number(searchParams.get('max_price')) || 10000)
 
 	const [cityQuery, setCityQuery] = useState(searchParams.get('city') || '')
 
@@ -39,6 +45,142 @@ export default function RadiologySearchPage() {
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
+	// ── Lazy load (client-side pagination of processed results) ────────────
+	// const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+	// const [loadingMore, setLoadingMore] = useState(false)
+
+	const [page, setPage] = useState(1)
+	const [total, setTotal] = useState(0)
+	const [loadingMore, setLoadingMore] = useState(false)
+	const [hasMore, setHasMore] = useState(false)
+
+	// ── Debounce: update searchQuery after DEBOUNCE_MS of no typing ────────
+	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const handleSearchChange = (value: string) => {
+		setInputValue(value)
+		if (debounceRef.current) clearTimeout(debounceRef.current)
+		debounceRef.current = setTimeout(() => {
+			setSearchQuery(value)
+			setPage(1)
+		}, DEBOUNCE_MS)
+	}
+
+	useEffect(() => {
+		return () => {
+			if (debounceRef.current) clearTimeout(debounceRef.current)
+		}
+	}, [])
+
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			setDebouncedMaxPrice(filters.maxPrice)
+		}, DEBOUNCE_MS)
+
+		return () => clearTimeout(timer)
+	}, [filters.maxPrice])
+
+	// ── IntersectionObserver for lazy load ────────────────────────────────
+	// const stateRef = useRef({ loading: true, loadingMore: false })
+	// stateRef.current = { loading, loadingMore }
+	const stateRef = useRef({
+		hasMore: false,
+		loading: true,
+		loadingMore: false,
+	})
+
+	stateRef.current = {
+		hasMore,
+		loading,
+		loadingMore,
+	}
+	const observerInstanceRef = useRef<IntersectionObserver | null>(null)
+
+	const sentinelRef = useCallback((node: HTMLDivElement | null) => {
+		if (observerInstanceRef.current) {
+			observerInstanceRef.current.disconnect()
+			observerInstanceRef.current = null
+		}
+
+		if (!node) return
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (!entries[0].isIntersecting) return
+
+				const { hasMore, loading, loadingMore } = stateRef.current
+
+				if (hasMore && !loading && !loadingMore) {
+					setPage((prev) => prev + 1)
+				}
+			},
+			{ threshold: 0.1 }
+		)
+
+		observer.observe(node)
+		observerInstanceRef.current = observer
+	}, [])
+
+	// Turn off loadingMore once visibleCount increase is reflected
+	// useEffect(() => {
+	// 	if (loadingMore) {
+	// 		const id = setTimeout(() => setLoadingMore(false), 300)
+	// 		return () => clearTimeout(id)
+	// 	}
+	// }, [visibleCount, loadingMore])
+
+	useEffect(() => {
+		let active = true
+
+		const fetchCenters = async () => {
+			if (page === 1) {
+				setLoading(true)
+				setRawResults([])
+			} else {
+				setLoadingMore(true)
+			}
+
+			try {
+				const res = await searchRadiologyCenters({
+					page,
+					limit: PAGE_SIZE,
+					search: searchQuery.trim() || undefined,
+					scan_type_id: filters.scanTypeId ? Number(filters.scanTypeId) : undefined,
+					city: cityQuery.trim() || undefined,
+					 max_price: debouncedMaxPrice,
+				})
+
+				if (!active) return
+
+				const meta = res.meta
+
+				setRawResults((prev) => (page === 1 ? res.data : [...prev, ...res.data]))
+
+				setTotal(meta.total)
+
+				setHasMore(meta.page < meta.pages)
+
+				setError(null)
+			} catch (err) {
+				console.error(err)
+
+				if (!active) return
+
+				setError('Failed to load scan centers')
+				setHasMore(false)
+			} finally {
+				if (active) {
+					setLoading(false)
+					setLoadingMore(false)
+				}
+			}
+		}
+
+		void fetchCenters()
+
+		return () => {
+			active = false
+		}
+	}, [page, searchQuery, cityQuery, filters.scanTypeId, debouncedMaxPrice])
 	// ── Sync URL params ────────────────────────────────────────────────────
 	useEffect(() => {
 		const next = new URLSearchParams()
@@ -50,45 +192,15 @@ export default function RadiologySearchPage() {
 		setSearchParams(next, { replace: true })
 	}, [filters, searchQuery, cityQuery, sortBy, setSearchParams])
 
-	// ── Fetch radiology centers ────────────────────────────────────────────
+	// Reset visible count when filters/search/sort change
 	useEffect(() => {
-		let active = true
-		const fetchCenters = async () => {
-			setLoading(true)
-			setError(null)
-			try {
-				const res = await searchRadiologyCenters({
-					scan_type_id: filters.scanTypeId ? Number(filters.scanTypeId) : undefined,
-					city: cityQuery.trim() || undefined,
-				})
-				if (!active) return
-
-				if (res.success && res.data) {
-					setRawResults(res.data)
-				} else {
-					throw new Error(res.message || 'Failed to fetch scan centers')
-				}
-			} catch (err) {
-				console.error(err)
-				if (!active) return
-				setError('Failed to load scan centers')
-			} finally {
-				if (active) {
-					setLoading(false)
-				}
-			}
-		}
-		void fetchCenters()
-		return () => {
-			active = false
-		}
-	}, [filters.scanTypeId, cityQuery])
+		setPage(1)
+	}, [searchQuery, cityQuery, filters.scanTypeId,  debouncedMaxPrice, sortBy])
 
 	// ── Filter and Sort client-side ────────────────────────────────────────
 	const processedResults = useMemo(() => {
 		let items = [...rawResults]
 
-		// 1. Client-side Search Query Filter (on facility name, address, or scan type)
 		const query = searchQuery.trim().toLowerCase()
 		if (query) {
 			items = items.filter(
@@ -99,51 +211,40 @@ export default function RadiologySearchPage() {
 			)
 		}
 
-		// 2. Client-side Max Price Filter
 		items = items.filter((item) => {
-			if (item.pricing_model === 'quote_required' || item.base_price === null) {
-				return true // Always show quote required centers
-			}
+			if (item.pricing_model === 'quote_required' || item.base_price === null) return true
 			return item.base_price <= filters.maxPrice
 		})
 
-		// 3. Client-side Sorting
 		items.sort((a, b) => {
-			if (sortBy === 'name_asc') {
-				return a.name.localeCompare(b.name)
-			}
-			if (sortBy === 'name_desc') {
-				return b.name.localeCompare(a.name)
-			}
-			if (sortBy === 'price_asc') {
-				const priceA = a.base_price ?? Infinity
-				const priceB = b.base_price ?? Infinity
-				return priceA - priceB
-			}
-			if (sortBy === 'price_desc') {
-				const priceA = a.base_price ?? -Infinity
-				const priceB = b.base_price ?? -Infinity
-				return priceB - priceA
-			}
+			if (sortBy === 'name_asc') return a.name.localeCompare(b.name)
+			if (sortBy === 'name_desc') return b.name.localeCompare(a.name)
+			if (sortBy === 'price_asc') return (a.base_price ?? Infinity) - (b.base_price ?? Infinity)
+			if (sortBy === 'price_desc') return (b.base_price ?? -Infinity) - (a.base_price ?? -Infinity)
 			return 0
 		})
 
 		return items
 	}, [rawResults, searchQuery, filters.maxPrice, sortBy])
 
+	// Slice for lazy-load display
+	const displayedResults = processedResults
+
 	const handleClearFilters = useCallback(() => {
-		setFilters({
-			scanTypeId: '',
-			maxPrice: 10000,
-		})
+		setFilters({ scanTypeId: '', maxPrice: 10000 })
+		setInputValue('')
 		setSearchQuery('')
 		setCityQuery('')
+		setPage(1)
 	}, [])
 
-	// Determine active scan type label if a type is filtered
 	const activeScanTypeLabel = useMemo(() => {
 		if (!filters.scanTypeId || rawResults.length === 0) return ''
-		const match = rawResults.find((r) => String(r.scan_id) === filters.scanTypeId || r.scan_name.toLowerCase().includes(filters.scanTypeId.toLowerCase()))
+		const match = rawResults.find(
+			(r) =>
+				String(r.id) === filters.scanTypeId ||
+				r.scan_name.toLowerCase().includes(filters.scanTypeId.toLowerCase())
+		)
 		return match ? match.scan_name : 'Selected Scan'
 	}, [filters.scanTypeId, rawResults])
 
@@ -157,12 +258,16 @@ export default function RadiologySearchPage() {
 							<AppInput
 								fullWidth
 								placeholder="Search by diagnostic center or scan name..."
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
+								value={inputValue}
+								onChange={(e) => handleSearchChange(e.target.value)}
 								size="small"
 								startIcon={<SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />}
 								enableVoiceSearch
-								onVoiceResult={(text) => setSearchQuery(text)}
+								onVoiceResult={(text) => {
+									setInputValue(text)
+									setSearchQuery(text)
+									setPage(1)
+								}}
 								sx={{
 									bgcolor: 'background.paper',
 									borderRadius: '10px',
@@ -217,14 +322,18 @@ export default function RadiologySearchPage() {
 						>
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
 								<Typography variant="h5" sx={{ fontWeight: 700 }}>
-									{processedResults.length} Scan Centers Found
+									{total} Scan Centers Found
 								</Typography>
 								{filters.scanTypeId && activeScanTypeLabel && (
 									<Chip
 										label={activeScanTypeLabel}
 										size="small"
 										onDelete={() => setFilters((prev) => ({ ...prev, scanTypeId: '' }))}
-										sx={{ bgcolor: 'rgba(43,111,113,0.08)', color: 'primary.main', fontWeight: 600 }}
+										sx={{
+											bgcolor: 'rgba(43,111,113,0.08)',
+											color: 'primary.main',
+											fontWeight: 600,
+										}}
 									/>
 								)}
 								{cityQuery.trim() && (
@@ -232,7 +341,11 @@ export default function RadiologySearchPage() {
 										label={`City: ${cityQuery}`}
 										size="small"
 										onDelete={() => setCityQuery('')}
-										sx={{ bgcolor: 'rgba(43,111,113,0.08)', color: 'primary.main', fontWeight: 600 }}
+										sx={{
+											bgcolor: 'rgba(43,111,113,0.08)',
+											color: 'primary.main',
+											fontWeight: 600,
+										}}
 									/>
 								)}
 							</Box>
@@ -254,11 +367,14 @@ export default function RadiologySearchPage() {
 							<Grid container spacing={3}>
 								{Array.from({ length: 6 }).map((_, i) => (
 									<Grid size={{ xs: 12, sm: 6, lg: 4 }} key={i}>
-										<Card sx={{ p: 2, borderRadius: '12px' }}>
-											<AppSkeleton height={32} width="60%" sx={{ mb: 1 }} />
-											<AppSkeleton height={20} width="80%" sx={{ mb: 2 }} />
-											<AppSkeleton height={40} width="100%" sx={{ mb: 2 }} />
-											<AppSkeleton height={36} width="100%" />
+										<Card sx={{ borderRadius: '12px', overflow: 'hidden' }}>
+											<AppSkeleton height={160} width="100%" />
+											<Box p={2}>
+												<AppSkeleton height={20} width="60%" sx={{ mb: 1 }} />
+												<AppSkeleton height={20} width="80%" sx={{ mb: 2 }} />
+												<AppSkeleton height={40} width="100%" sx={{ mb: 2 }} />
+												<AppSkeleton height={36} width="100%" />
+											</Box>
 										</Card>
 									</Grid>
 								))}
@@ -267,14 +383,37 @@ export default function RadiologySearchPage() {
 							<Box sx={{ py: 6, textAlign: 'center' }}>
 								<Typography sx={{ color: 'error.main' }}>{error}</Typography>
 							</Box>
-						) : processedResults.length > 0 ? (
-							<Grid container spacing={3}>
-								{processedResults.map((item) => (
-									<Grid size={{ xs: 12, sm: 6, lg: 4 }} key={`${item.radiology_id}-${item.scan_id}`}>
-										<RadiologySearchCard item={item} />
+						) : displayedResults.length > 0 ? (
+							<>
+								<Grid container spacing={3}>
+									{displayedResults.map((item) => (
+										<Grid size={{ xs: 12, sm: 6, lg: 4 }} key={`${item.id}-${item.scan_id}`}>
+											<RadiologySearchCard item={item} />
+										</Grid>
+									))}
+								</Grid>
+
+								{/* Sentinel for IntersectionObserver */}
+								{hasMore && <Box ref={sentinelRef} sx={{ height: 40, mt: 2 }} />}
+
+								{/* Loading more skeletons */}
+								{loadingMore && (
+									<Grid container spacing={3} sx={{ mt: 0 }}>
+										{Array.from({ length: 3 }).map((_, i) => (
+											<Grid size={{ xs: 12, sm: 6, lg: 4 }} key={i}>
+												<Card sx={{ borderRadius: '12px', overflow: 'hidden' }}>
+													<AppSkeleton height={160} width="100%" />
+													<Box p={2}>
+														<AppSkeleton height={20} width="60%" sx={{ mb: 1 }} />
+														<AppSkeleton height={20} width="80%" sx={{ mb: 2 }} />
+														<AppSkeleton height={36} width="100%" />
+													</Box>
+												</Card>
+											</Grid>
+										))}
 									</Grid>
-								))}
-							</Grid>
+								)}
+							</>
 						) : (
 							<Box sx={{ textAlign: 'center', py: 10, ...customCardStyle, borderRadius: '12px' }}>
 								<Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
