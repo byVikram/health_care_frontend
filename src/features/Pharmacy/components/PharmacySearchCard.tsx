@@ -26,9 +26,11 @@ const getPharmacyImage = (id: string) => {
 
 interface PharmacySearchCardProps {
 	pharmacy: PharmacyItem
+	/** Called when the user clicks Place Order. Parent owns the PlaceOrderPage drawer state. */
+	onPlaceOrder?: (pharmacy: PharmacyItem) => void
 }
 
-export default function PharmacySearchCard({ pharmacy }: PharmacySearchCardProps) {
+export default function PharmacySearchCard({ pharmacy, onPlaceOrder }: PharmacySearchCardProps) {
 	// const navigate = useNavigate()
 	const {
 		id,
@@ -43,7 +45,7 @@ export default function PharmacySearchCard({ pharmacy }: PharmacySearchCardProps
 
 	const handlePlaceOrder = (e: React.MouseEvent) => {
 		e.stopPropagation()
-		// navigate(`/order/new?pharmacyId=${id}`)
+		onPlaceOrder?.(pharmacy)
 	}
 
 	const handleCardClick = () => {

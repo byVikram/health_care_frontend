@@ -1,16 +1,7 @@
 ﻿// src/features/dashboard/ScanTypeSelectorModal.tsx
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-	Dialog,
-	DialogTitle,
-	DialogContent,
-	Box,
-	Typography,
-	IconButton,
-	CircularProgress,
-	Alert,
-} from '@mui/material'
+import { Dialog, DialogTitle, DialogContent, Box, Typography, IconButton, Alert } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { ROUTES } from '../../constants/routes'
 import { getScanTypes, ScanType } from '../radiology/radiologyService'
@@ -19,6 +10,7 @@ import mriIcon from '../../assets/Radiology/mri.png'
 import ctIcon from '../../assets/Radiology/ct-scan.png'
 import xrayIcon from '../../assets/Radiology/xray.png'
 import ultrasoundIcon from '../../assets/Radiology/ultrasound.png'
+import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 
 interface ScanTypeSelectorModalProps {
 	open: boolean
@@ -28,19 +20,22 @@ interface ScanTypeSelectorModalProps {
 interface ScanVisualConfig {
 	groupKey: string
 	keywords: string[]
-	label: string
+	label: string     
 	icon: string
 }
 
 const SCAN_VISUAL_CONFIGS: ScanVisualConfig[] = [
-	{ groupKey: 'mri',        keywords: ['mri'],                         label: 'MRI Scan',   icon: mriIcon },
-	{ groupKey: 'ct',         keywords: ['ct'],                          label: 'CT Scan',    icon: ctIcon },
-	{ groupKey: 'xray',       keywords: ['x-ray', 'xray'],               label: 'X-Ray',      icon: xrayIcon },
-	{ groupKey: 'ultrasound', keywords: ['ultrasound', 'sono'],          label: 'Ultrasound', icon: ultrasoundIcon },
+	{ groupKey: 'mri', keywords: ['mri'], label: 'MRI Scan', icon: mriIcon },
+	{ groupKey: 'ct', keywords: ['ct'], label: 'CT Scan', icon: ctIcon },
+	{ groupKey: 'xray', keywords: ['x-ray', 'xray'], label: 'X-Ray', icon: xrayIcon },
+	{ groupKey: 'ultrasound', keywords: ['ultrasound', 'sono'], label: 'Ultrasound', icon: ultrasoundIcon },
 ]
 
 const DEFAULT_VISUAL: ScanVisualConfig = {
-	groupKey: 'other', keywords: [], label: 'Other Scan', icon: mriIcon,
+	groupKey: 'other',
+	keywords: [],
+	label: 'Other Scan',
+	icon: mriIcon,
 }
 
 function resolveScanVisual(scanName: string): ScanVisualConfig {
@@ -176,7 +171,9 @@ export default function ScanTypeSelectorModal({ open, onClose }: ScanTypeSelecto
 			}
 		}
 		void fetchTypes()
-		return () => { active = false }
+		return () => {
+			active = false
+		}
 	}, [open])
 
 	const handleAllScans = () => {
@@ -188,9 +185,7 @@ export default function ScanTypeSelectorModal({ open, onClose }: ScanTypeSelecto
 		const rep = group.scanTypes[0]
 		if (!rep) return
 		onClose()
-		navigate(
-			`${ROUTES.RADIOLOGY.SEARCH}?scan_type_id=${rep.id}&scan_type_name=${encodeURIComponent(group.label)}`
-		)
+		navigate(`${ROUTES.RADIOLOGY.SEARCH}?scan_type_id=${rep.id}&scan_type_name=${encodeURIComponent(group.label)}`)
 	}
 
 	const groupedScanTypes = groupScanTypes(scanTypes)
@@ -208,7 +203,7 @@ export default function ScanTypeSelectorModal({ open, onClose }: ScanTypeSelecto
 			{ key: 'all', icon: allScansIcon, label: 'All Scans', onClick: handleAllScans },
 		]
 
-		const rows: typeof cards[] = []
+		const rows: (typeof cards)[] = []
 		for (let i = 0; i < cards.length; i += 3) {
 			rows.push(cards.slice(i, i + 3))
 		}
@@ -254,9 +249,59 @@ export default function ScanTypeSelectorModal({ open, onClose }: ScanTypeSelecto
 			</DialogTitle>
 
 			<DialogContent sx={{ px: 3, pb: 3, overflowY: 'auto', '&.MuiDialogContent-root': { pt: 3 } }}>
-				{loading ? (
+				{/* {loading ? (
 					<Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
 						<CircularProgress sx={{ color: 'primary.main' }} />
+					</Box>
+				) : error ? ( */}
+				{loading ? (
+					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+						{[3, 2].map((count, rowIndex) => (
+							<Box
+								key={rowIndex}
+								sx={{
+									display: 'flex',
+									gap: 2,
+									justifyContent: count === 3 ? 'flex-start' : 'center',
+								}}
+							>
+								{Array.from({ length: count }).map((_, index) => (
+									<Box
+										key={index}
+										sx={{
+											width: CARD_WIDTH,
+											aspectRatio: '1 / 1',
+											borderRadius: '16px',
+											border: '1.5px solid',
+											borderColor: 'divider',
+											pt: 2.5,
+											pb: 2,
+											px: 1,
+											display: 'flex',
+											flexDirection: 'column',
+											alignItems: 'center',
+											justifyContent: 'center',
+											gap: 1.5,
+										}}
+									>
+										<Box
+											sx={{
+												flex: 1,
+												width: '100%',
+												display: 'flex',
+												alignItems: 'center',
+												justifyContent: 'center',
+												minHeight: 0,
+											}}
+										>
+											<AppSkeleton variant="rounded" width="72%" height="72%" />
+										</Box>
+
+										<AppSkeleton variant="text" width="60%" height={24} />
+									</Box>
+								))}
+							</Box>
+						))}
 					</Box>
 				) : error ? (
 					<Alert severity="error" sx={{ borderRadius: '10px' }}>

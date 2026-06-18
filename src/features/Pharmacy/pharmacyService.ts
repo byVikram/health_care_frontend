@@ -2,6 +2,7 @@
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { PharmacyProfile } from '../Pharmacy/profile/PharmacyProfilePage'
+import type { TreatmentRecord } from '../../types/pharmacyOrder'
 
 // ── Types: Pharmacy list ──────────────────────────────────────────────────────
 
@@ -236,6 +237,21 @@ export interface PharmacyOrdersListResponse {
 	data: PharmacyOrder[]
 }
 
+interface PatientReportRecord {
+	id: string
+	report_type: string
+	report_date?: string | null
+	file_s3_key?: string | null
+	notes?: string | null
+	created_at?: string | null
+	updated_at?: string | null
+}
+
+interface PatientReportsResponse {
+	success: boolean
+	data: PatientReportRecord[]
+}
+
 // ── Mapper: API response → local PharmacyProfile shape ───────────────────────
 
 export const mapPharmacyDetailsApi = (data: PharmacyDetailsApiData): PharmacyProfile => {
@@ -371,4 +387,29 @@ export const sendPharmacyOrderReminder = async (
 		payload
 	)
 	return res.data
+}
+
+// ── Patient prescription history (consumed by PlaceOrderPage) ────────────────
+export type { TreatmentRecord } from '../../types/pharmacyOrder'
+
+/** GET /api/patients/:id/reports - reports available for a pharmacy order */
+export const getPatientTreatmentHistory = async (patientId: string): Promise<TreatmentRecord[]> => {
+	const res = await ApiService.get<PatientReportsResponse>(API_ENDPOINTS.PATIENT.REPORTS(patientId))
+	const reports = res.data.data ?? []
+
+	return reports
+		.filter((report): report is PatientReportRecord & { file_s3_key: string } => !!report.file_s3_key)
+		.sort((a, b) => {
+			const aDate = a.report_date || a.created_at || a.updated_at || ''
+			const bDate = b.report_date || b.created_at || b.updated_at || ''
+			return new Date(bDate).getTime() - new Date(aDate).getTime()
+		})
+		.map((report) => ({
+			id: report.id,
+			created_at: report.report_date || report.created_at || report.updated_at || new Date().toISOString(),
+			report_type: report.report_type,
+			notes: report.notes ?? null,
+			prescription_s3_key: report.file_s3_key,
+			source: 'patient_report',
+		}))
 }
