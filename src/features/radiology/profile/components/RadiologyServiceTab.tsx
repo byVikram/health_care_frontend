@@ -1,13 +1,6 @@
 // src/features/radiology/profile/components/RadiologyServiceTab.tsx
 import { useEffect, useState } from 'react'
-import {
-	Box,
-	Typography,
-	Divider,
-	Grid,
-	FormControlLabel,
-	CircularProgress,
-} from '@mui/material'
+import { Box, Typography, Divider, Grid, FormControlLabel, CircularProgress } from '@mui/material'
 import AppInput from '../../../../components/common/Input/AppInput'
 import AppSelect from '../../../../components/common/Select/AppSelect'
 import AppSwitch from '../../../../components/common/Switch/AppSwitch'
@@ -15,14 +8,7 @@ import ProfileFormActions from '../../../../components/common/ProfileFormActions
 import { customCardStyle } from '../../../../styles/commonStyles'
 import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-import {
-	getScanTypes,
-	getMyScans,
-	updateMyScans,
-	ScanType,
-	RadiologyScan,
-	ScanSetupItem,
-} from '../../radiologyService'
+import { getScanTypes, getMyScans, updateMyScans, ScanType, RadiologyScan, ScanSetupItem } from '../../radiologyService'
 
 const PRICING_MODELS = [
 	{ value: 'fixed', label: 'Fixed Price' },
@@ -33,17 +19,23 @@ const PRICING_MODELS = [
 export default function RadiologyServiceTab() {
 	const [loading, setLoading] = useState(true)
 	const [scanTypes, setScanTypes] = useState<ScanType[]>([])
-	const [myScans, setMyScans] = useState<RadiologyScan[]>([])
+	// const [myScans, setMyScans] = useState<RadiologyScan[]>([])
+	const [, setMyScans] = useState<RadiologyScan[]>([])
 	const [isDirty, setIsDirty] = useState(false)
 	const [showSuccess, setShowSuccess] = useState(false)
 
 	// State for managing local edits
-	const [catalogDraft, setCatalogDraft] = useState<Record<number, {
-		is_available: boolean
-		pricing_model: 'fixed' | 'starting_from' | 'quote_required'
-		base_price: string
-		price_details: string
-	}>>({})
+	const [catalogDraft, setCatalogDraft] = useState<
+		Record<
+			number,
+			{
+				is_available: boolean
+				pricing_model: 'fixed' | 'starting_from' | 'quote_required'
+				base_price: string
+				price_details: string
+			}
+		>
+	>({})
 
 	useEffect(() => {
 		const loadData = async () => {
@@ -138,7 +130,7 @@ export default function RadiologyServiceTab() {
 		try {
 			// Construct setup items
 			const scansPayload: ScanSetupItem[] = []
-			
+
 			// Only send active/offered scans to backend setup endpoint
 			scanTypes.forEach((t) => {
 				const draft = catalogDraft[t.id]
@@ -201,7 +193,10 @@ export default function RadiologyServiceTab() {
 										{t.name}
 									</Typography>
 									{t.description && (
-										<Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
+										<Typography
+											variant="caption"
+											sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
+										>
 											{t.description}
 										</Typography>
 									)}
@@ -221,7 +216,14 @@ export default function RadiologyServiceTab() {
 							</Grid>
 
 							{draft.is_available && (
-								<Box sx={{ mt: 2.5, pl: { sm: 2 }, borderLeft: '3px solid', borderColor: 'primary.main' }}>
+								<Box
+									sx={{
+										mt: 2.5,
+										pl: { sm: 2 },
+										borderLeft: '3px solid',
+										borderColor: 'primary.main',
+									}}
+								>
 									<Grid container spacing={2}>
 										<Grid size={{ xs: 12, sm: 4 }}>
 											<AppSelect
@@ -229,7 +231,13 @@ export default function RadiologyServiceTab() {
 												value={draft.pricing_model}
 												options={PRICING_MODELS}
 												placeholder="Select pricing model"
-												onChange={(e) => handlePricingModelChange(t.id, e.target.value as any)}
+												// onChange={(e) => handlePricingModelChange(t.id, e.target.value as any)}
+												onChange={(e) =>
+													handlePricingModelChange(
+														t.id,
+														e.target.value as 'fixed' | 'starting_from' | 'quote_required'
+													)
+												}
 											/>
 										</Grid>
 

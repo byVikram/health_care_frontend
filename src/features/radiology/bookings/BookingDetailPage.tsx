@@ -179,8 +179,17 @@ export default function BookingDetailPage() {
 			// If completed, fetch or render reports if they are returned inside booking.
 			// Let's check if there is a report attached. Since report model is linked via reports list,
 			// let's grab the first report if available.
-			if (data.status === 'completed' && (data as any).reports?.length) {
-				setReportDetails((data as any).reports[0])
+
+			
+			// if (data.status === 'completed' && (data as any).reports?.length) {
+			// 	setReportDetails((data as any).reports[0])
+			// }
+			const bookingWithReports = data as RadiologyBooking & {
+				reports?: RadiologyReport[]
+			}
+
+			if (data.status === 'completed' && bookingWithReports.reports?.length) {
+				setReportDetails(bookingWithReports.reports[0])
 			}
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Failed to load booking details.')
@@ -304,11 +313,13 @@ export default function BookingDetailPage() {
 		return {
 			name: booking?.patient_name || 'Patient',
 			id: booking?.patient_id || '-',
-			date: booking ? new Date(booking.booking_date).toLocaleDateString('en-GB', {
-				day: '2-digit',
-				month: 'short',
-				year: 'numeric',
-			}) : '—',
+			date: booking
+				? new Date(booking.booking_date).toLocaleDateString('en-GB', {
+						day: '2-digit',
+						month: 'short',
+						year: 'numeric',
+					})
+				: '—',
 			time: booking?.booking_time || '—',
 			notes: booking?.notes || 'No notes provided by patient.',
 			prescriptionUrl: booking?.external_prescription_s3_key
@@ -321,7 +332,12 @@ export default function BookingDetailPage() {
 		if (!booking) return []
 		const statusLower = booking.status.toLowerCase()
 		return [
-			{ key: 'created', label: 'Booking Created', isCompleted: true, icon: <AssignmentTurnedIn fontSize="small" /> },
+			{
+				key: 'created',
+				label: 'Booking Created',
+				isCompleted: true,
+				icon: <AssignmentTurnedIn fontSize="small" />,
+			},
 			{
 				key: 'verified',
 				label: 'Prescription Verified',
@@ -337,10 +353,16 @@ export default function BookingDetailPage() {
 			{
 				key: 'payment',
 				label: 'Payment Completed',
-				isCompleted: booking.payment_status === 'paid' || statusLower === 'confirmed' || statusLower === 'completed',
+				isCompleted:
+					booking.payment_status === 'paid' || statusLower === 'confirmed' || statusLower === 'completed',
 				icon: <CheckCircle fontSize="small" />,
 			},
-			{ key: 'report', label: 'Report Uploaded', isCompleted: statusLower === 'completed', icon: <Description fontSize="small" /> },
+			{
+				key: 'report',
+				label: 'Report Uploaded',
+				isCompleted: statusLower === 'completed',
+				icon: <Description fontSize="small" />,
+			},
 		]
 	}, [booking])
 
@@ -371,7 +393,10 @@ export default function BookingDetailPage() {
 			{/* Top bar */}
 			<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
 				<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-					<IconButton onClick={() => navigate('/radiology/bookings')} sx={{ bgcolor: 'white', border: '1px solid #E2E8F0' }}>
+					<IconButton
+						onClick={() => navigate('/radiology/bookings')}
+						sx={{ bgcolor: 'white', border: '1px solid #E2E8F0' }}
+					>
 						<ArrowBack />
 					</IconButton>
 					<Box>
@@ -431,7 +456,15 @@ export default function BookingDetailPage() {
 									</Grid>
 								</Box>
 							</Box>
-							<Box sx={{ mt: 2, p: 1.5, bgcolor: '#F8FCFC', borderRadius: 1.5, border: '1px solid #E2E8F0' }}>
+							<Box
+								sx={{
+									mt: 2,
+									p: 1.5,
+									bgcolor: '#F8FCFC',
+									borderRadius: 1.5,
+									border: '1px solid #E2E8F0',
+								}}
+							>
 								<Typography variant="caption" color="text.secondary" fontWeight={600}>
 									Patient Notes:
 								</Typography>
@@ -473,9 +506,18 @@ export default function BookingDetailPage() {
 									</Card>
 								</Grid>
 								<Grid size={{ xs: 12, sm: 6 }}>
-									<Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+									<Box
+										sx={{
+											height: '100%',
+											display: 'flex',
+											flexDirection: 'column',
+											justifyContent: 'center',
+										}}
+									>
 										<Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-											Please review the attached prescription file uploaded by the patient. Ensure all requested scans are medically referred before finalizing quotes or uploads.
+											Please review the attached prescription file uploaded by the patient. Ensure
+											all requested scans are medically referred before finalizing quotes or
+											uploads.
 										</Typography>
 										<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
 											<Typography variant="body2" fontWeight={600}>
@@ -488,7 +530,11 @@ export default function BookingDetailPage() {
 											/>
 										</Box>
 										{booking.prescription_verified && (
-											<Typography variant="caption" color="success.main" sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+											<Typography
+												variant="caption"
+												color="success.main"
+												sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}
+											>
 												<CheckCircle fontSize="inherit" /> Verified by diagnostic center staff.
 											</Typography>
 										)}
@@ -501,7 +547,8 @@ export default function BookingDetailPage() {
 						{booking.status === 'pending_quote' ? (
 							<SectionCard title="Pricing Quotation Entry">
 								<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-									Submit the quoted price for each scan. You can also specify custom names (e.g. specialized scan types) if appropriate.
+									Submit the quoted price for each scan. You can also specify custom names (e.g.
+									specialized scan types) if appropriate.
 								</Typography>
 
 								<Stack spacing={2} sx={{ mb: 3 }}>
@@ -515,7 +562,12 @@ export default function BookingDetailPage() {
 												border: '1px solid #E2E8F0',
 											}}
 										>
-											<Typography variant="subtitle2" fontWeight={700} color="primary.dark" sx={{ mb: 1.5 }}>
+											<Typography
+												variant="subtitle2"
+												fontWeight={700}
+												color="primary.dark"
+												sx={{ mb: 1.5 }}
+											>
 												Scan #{idx + 1}: {item.scanName}
 											</Typography>
 											<Grid container spacing={2}>
@@ -523,7 +575,9 @@ export default function BookingDetailPage() {
 													<AppInput
 														label="Custom/Specific Scan Name"
 														value={item.custom_scan_name}
-														onChange={(e) => handleCustomNameChange(item.booking_item_id, e.target.value)}
+														onChange={(e) =>
+															handleCustomNameChange(item.booking_item_id, e.target.value)
+														}
 														placeholder="Defaults to standard name"
 														size="small"
 													/>
@@ -533,7 +587,9 @@ export default function BookingDetailPage() {
 														label="Quoted Price (INR)"
 														type="number"
 														value={item.quoted_price || ''}
-														onChange={(e) => handleQuotePriceChange(item.booking_item_id, e.target.value)}
+														onChange={(e) =>
+															handleQuotePriceChange(item.booking_item_id, e.target.value)
+														}
 														placeholder="Price in ₹"
 														size="small"
 													/>
@@ -554,7 +610,9 @@ export default function BookingDetailPage() {
 
 								<Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
 									<AppButton
-										label={submittingQuote ? 'Submitting Quote...' : 'Submit Quote & Send to Patient'}
+										label={
+											submittingQuote ? 'Submitting Quote...' : 'Submit Quote & Send to Patient'
+										}
 										onClick={handleSubmitQuote}
 										disabled={submittingQuote}
 										sx={{ bgcolor: '#00796B', '&:hover': { bgcolor: '#00695C' } }}
@@ -593,7 +651,9 @@ export default function BookingDetailPage() {
 											),
 										},
 									]}
-									rows={booking.booking_items as Array<RadiologyBookingItem & Record<string, unknown>>}
+									rows={
+										booking.booking_items as Array<RadiologyBookingItem & Record<string, unknown>>
+									}
 									emptyMessage="No scans in booking"
 								/>
 								<Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, gap: 4 }}>
@@ -601,7 +661,10 @@ export default function BookingDetailPage() {
 										Payment Status: <strong>{booking.payment_status.toUpperCase()}</strong>
 									</Typography>
 									<Typography variant="subtitle1" fontWeight={700} color="primary.dark">
-										Total Price: {booking.total_price !== null ? formatINR(booking.total_price) : 'Quote Required'}
+										Total Price:{' '}
+										{booking.total_price !== null
+											? formatINR(booking.total_price)
+											: 'Quote Required'}
 									</Typography>
 								</Box>
 							</SectionCard>
@@ -670,12 +733,14 @@ export default function BookingDetailPage() {
 						</SectionCard>
 
 						{/* Report Upload/Detail section */}
-						{(booking.status.toLowerCase() === 'confirmed' || booking.status.toLowerCase() === 'completed') && (
+						{(booking.status.toLowerCase() === 'confirmed' ||
+							booking.status.toLowerCase() === 'completed') && (
 							<SectionCard title="Diagnostic Scan Report">
 								{booking.status.toLowerCase() === 'confirmed' ? (
 									<Stack spacing={2}>
 										<Typography variant="body2" color="text.secondary">
-											Upload the PDF scan findings, optionally add DICOM medical imaging keys, and enter the summary findings to complete the booking.
+											Upload the PDF scan findings, optionally add DICOM medical imaging keys, and
+											enter the summary findings to complete the booking.
 										</Typography>
 
 										<AppInput
@@ -706,8 +771,18 @@ export default function BookingDetailPage() {
 										/>
 
 										<AppButton
-											label={submittingReport ? 'Uploading Report...' : 'Upload Report & Complete Booking'}
-											startIcon={submittingReport ? <CircularProgress size={18} sx={{ color: 'white' }} /> : <CloudUpload />}
+											label={
+												submittingReport
+													? 'Uploading Report...'
+													: 'Upload Report & Complete Booking'
+											}
+											startIcon={
+												submittingReport ? (
+													<CircularProgress size={18} sx={{ color: 'white' }} />
+												) : (
+													<CloudUpload />
+												)
+											}
 											onClick={handleSubmitReport}
 											disabled={submittingReport}
 											sx={{ bgcolor: '#00796B', '&:hover': { bgcolor: '#00695C' } }}
@@ -715,7 +790,14 @@ export default function BookingDetailPage() {
 									</Stack>
 								) : (
 									<Stack spacing={2}>
-										<Box sx={{ p: 1.5, bgcolor: '#F0FDF4', borderRadius: 1.5, border: '1px solid #DCFCE7' }}>
+										<Box
+											sx={{
+												p: 1.5,
+												bgcolor: '#F0FDF4',
+												borderRadius: 1.5,
+												border: '1px solid #DCFCE7',
+											}}
+										>
 											<Typography variant="body2" color="#166534" fontWeight={600}>
 												Report successfully uploaded and delivered.
 											</Typography>
@@ -723,7 +805,15 @@ export default function BookingDetailPage() {
 
 										<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
 											<FilePresent color="action" />
-											<Typography variant="body2" sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+											<Typography
+												variant="body2"
+												sx={{
+													flex: 1,
+													overflow: 'hidden',
+													textOverflow: 'ellipsis',
+													whiteSpace: 'nowrap',
+												}}
+											>
 												{reportDetails?.report_pdf_s3_key || 'report_file.pdf'}
 											</Typography>
 											<AppButton
@@ -737,27 +827,46 @@ export default function BookingDetailPage() {
 											/>
 										</Box>
 
-										{reportDetails?.dicom_images_s3_keys && reportDetails.dicom_images_s3_keys.length > 0 && (
-											<Box>
-												<Typography variant="caption" color="text.secondary" fontWeight={600}>
-													DICOM Images ({reportDetails.dicom_images_s3_keys.length})
-												</Typography>
-												<Stack spacing={0.5} sx={{ mt: 0.5 }}>
-													{reportDetails.dicom_images_s3_keys.map((k, idx) => (
-														<Typography key={idx} variant="caption" noWrap color="primary.main">
-															{k}
-														</Typography>
-													))}
-												</Stack>
-											</Box>
-										)}
+										{reportDetails?.dicom_images_s3_keys &&
+											reportDetails.dicom_images_s3_keys.length > 0 && (
+												<Box>
+													<Typography
+														variant="caption"
+														color="text.secondary"
+														fontWeight={600}
+													>
+														DICOM Images ({reportDetails.dicom_images_s3_keys.length})
+													</Typography>
+													<Stack spacing={0.5} sx={{ mt: 0.5 }}>
+														{reportDetails.dicom_images_s3_keys.map((k, idx) => (
+															<Typography
+																key={idx}
+																variant="caption"
+																noWrap
+																color="primary.main"
+															>
+																{k}
+															</Typography>
+														))}
+													</Stack>
+												</Box>
+											)}
 
 										{reportDetails?.summary_findings && (
 											<Box>
 												<Typography variant="caption" color="text.secondary" fontWeight={600}>
 													Summary Findings:
 												</Typography>
-												<Typography variant="body2" sx={{ mt: 0.5, p: 1.25, bgcolor: 'background.paper', borderRadius: 1, border: '1px solid #E2E8F0' }}>
+												<Typography
+													variant="body2"
+													sx={{
+														mt: 0.5,
+														p: 1.25,
+														bgcolor: 'background.paper',
+														borderRadius: 1,
+														border: '1px solid #E2E8F0',
+													}}
+												>
 													{reportDetails.summary_findings}
 												</Typography>
 											</Box>

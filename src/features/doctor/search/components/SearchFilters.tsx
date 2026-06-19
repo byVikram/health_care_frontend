@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react'
 import { formatINR } from '../../../../utils/Utils'
 import { Box, Typography, Slider, Divider } from '@mui/material'
 import { customCardStyle } from '../../../../styles/commonStyles'
-import StarIcon from '@mui/icons-material/Star'
 
 export interface FilterState {
 	speciality: string
@@ -19,7 +18,7 @@ interface SearchFiltersProps {
 
 export default function SearchFilters({ filters, onChange }: SearchFiltersProps) {
 	// Local slider value — updates smoothly on every drag pixel
-	// but only propagates to parent (and triggers a fetch) on mouse-up
+	// but only propagates to parent (and triggers a fetch) on mouse-u
 	const [localMaxPrice, setLocalMaxPrice] = useState(filters.maxPrice)
 
 	// Keep local value in sync if parent resets filters (e.g. on search clear)
@@ -33,7 +32,7 @@ export default function SearchFilters({ filters, onChange }: SearchFiltersProps)
 		{ id: 'all', label: 'All' },
 	]
 
-	const ratingOptions = [4.5, 4.0, 3.5, 3.0]
+	// const ratingOptions = [4.5, 4.0, 3.5, 3.0]
 
 	return (
 		<Box

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { Box, Typography } from '@mui/material'
 import { toast } from 'react-toastify'
 import AppButton from '../../../../components/common/Button/AppButton'
@@ -93,7 +93,31 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 		}
 	}
 
-	const fetchAvailability = async () => {
+	// const fetchAvailability = async () => {
+	// 	if (!selectedHospitalId || !selectedDate) return
+
+	// 	try {
+	// 		setSlotsLoading(true)
+
+	// 		const res = await getDoctorAvailability({
+	// 			hospital_id: selectedHospitalId,
+	// 			date: formatDateForApi(selectedDate),
+	// 		})
+
+	// 		const byMode = normalizeAvailabilityByMode(res)
+
+	// 		setAvailableSlotGroups(byMode[selectedAppointmentType] ?? [])
+	// 		setPendingOverrides([])
+	// 		setUnselectedSlotsByDate({})
+	// 	} catch (err) {
+	// 		console.log(err)
+	// 		setAvailableSlotGroups([])
+	// 	} finally {
+	// 		setSlotsLoading(false)
+	// 	}
+	// }
+
+	const fetchAvailability = useCallback(async () => {
 		if (!selectedHospitalId || !selectedDate) return
 
 		try {
@@ -115,11 +139,15 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 		} finally {
 			setSlotsLoading(false)
 		}
-	}
+	}, [selectedHospitalId, selectedDate, selectedAppointmentType])
 
 	useEffect(() => {
 		fetchAvailability()
-	}, [selectedHospitalId, selectedDate, selectedAppointmentType])
+	}, [fetchAvailability])
+
+	// useEffect(() => {
+	// 	fetchAvailability()
+	// }, [selectedHospitalId, selectedDate, selectedAppointmentType])
 
 	const dayKey = getDayKey(selectedDate)
 	const selectedDateKey = formatDateForApi(selectedDate)

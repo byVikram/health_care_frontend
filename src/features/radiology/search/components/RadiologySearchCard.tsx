@@ -1,29 +1,10 @@
 // src/features/radiology/search/components/RadiologySearchCard.tsx
-import { useState } from 'react'
-import {
-	Box,
-	Typography,
-	Avatar,
-	Dialog,
-	DialogTitle,
-	DialogContent,
-	DialogActions,
-	TextField,
-	Button,
-	IconButton,
-	Snackbar,
-	Alert,
-	// Chip,
-} from '@mui/material'
-import CloseIcon from '@mui/icons-material/Close'
+import { Box, Typography, Avatar } from '@mui/material'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
-// import ScienceIcon from '@mui/icons-material/Science'
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
 import AppButton from '../../../../components/common/Button/AppButton'
 import { RadiologySearchResultItem } from '../../../../types/radiology-search'
-import { createRadiologyBooking } from '../../radiologyService'
 import { formatINR } from '../../../../utils/Utils'
-import { useNavigate } from 'react-router-dom'
 
 // ── Local asset map keyed by logo_s3_key value stored in DB ──────────────────
 import apexImg from '../../../../assets/Radiology/Apex.png'
@@ -60,69 +41,16 @@ function resolveLogoSrc(item: RadiologySearchResultItem): string {
 
 interface RadiologySearchCardProps {
 	item: RadiologySearchResultItem
+	/** Called when the user clicks Book Scan. Parent owns the RadiologyBookingPage drawer state. */
+	onBookScan?: (item: RadiologySearchResultItem) => void
 }
 
-export default function RadiologySearchCard({ item }: RadiologySearchCardProps) {
-	const navigate = useNavigate()
-	const [openModal, setOpenModal] = useState(false)
-	const [bookingDate, setBookingDate] = useState('')
-	const [bookingTime, setBookingTime] = useState('')
-	const [notes, setNotes] = useState('')
-	const [submitting, setSubmitting] = useState(false)
-
-	const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
-		open: false,
-		message: '',
-		severity: 'success',
-	})
-
+export default function RadiologySearchCard({ item, onBookScan }: RadiologySearchCardProps) {
 	const logoSrc = resolveLogoSrc(item)
 
-	const handleOpen = (e: React.MouseEvent) => {
+	const handleBookScan = (e: React.MouseEvent) => {
 		e.stopPropagation()
-		setOpenModal(true)
-	}
-
-	const handleClose = () => {
-		setOpenModal(false)
-		setBookingDate('')
-		setBookingTime('')
-		setNotes('')
-	}
-
-	const handleSubmit = async () => {
-		if (!bookingDate || !bookingTime) {
-			setToast({ open: true, message: 'Please fill in both date and time', severity: 'error' })
-			return
-		}
-
-		try {
-			setSubmitting(true)
-			const res = await createRadiologyBooking({
-				radiology_id: item.id,
-				scan_ids: [item.scan_id],
-				booking_date: bookingDate,
-				booking_time: bookingTime,
-				notes: notes || undefined,
-			})
-
-			if (res.success) {
-				setToast({ open: true, message: 'Booking request submitted successfully!', severity: 'success' })
-				handleClose()
-				setTimeout(() => navigate('/radiology/bookings'), 1000)
-			} else {
-				throw new Error(res.message || 'Failed to book')
-			}
-		} catch (err: unknown) {
-			console.error(err)
-			setToast({
-				open: true,
-				message: (err as Error)?.message || 'Something went wrong. Please try again.',
-				severity: 'error',
-			})
-		} finally {
-			setSubmitting(false)
-		}
+		onBookScan?.(item)
 	}
 
 	const getPricingLabel = () => {
@@ -167,23 +95,7 @@ export default function RadiologySearchCard({ item }: RadiologySearchCardProps) 
 			</Box>
 
 			{/* Info area — compact like DoctorSearchCard */}
-			<Box sx={{ p: 2 }}> 
-				{/* Scan type chip */}
-				{/* <Chip
-					icon={<ScienceIcon sx={{ fontSize: '14px !important' }} />}
-					label={item.scan_name}
-					size="small"
-					sx={{
-						bgcolor: 'rgba(43,111,113,0.08)',
-						color: 'primary.main',
-						fontWeight: 600,
-						mb: 0.8,
-						px: 0.5,
-						height: 22,
-						fontSize: '11px',
-					}}  */}
-			
-
+			<Box sx={{ p: 2 }}>
 				{/* Facility Name */}
 				<Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.2, lineHeight: 1.25, fontSize: '1rem' }}>
 					{item.name}
@@ -217,89 +129,14 @@ export default function RadiologySearchCard({ item }: RadiologySearchCardProps) 
 					)}
 				</Box>
 
-				{/* Book button */}
+				{/* Book button — opens the AppDrawer-based booking flow owned by the parent search page */}
 				<AppButton
 					label="Book Scan"
 					fullWidth
-					onClick={handleOpen}
+					onClick={handleBookScan}
 					sx={{ borderRadius: '10px', py: 0.8, fontWeight: 600 }}
 				/>
 			</Box>
-
-			{/* Booking Modal */}
-			<Dialog open={openModal} onClose={handleClose} maxWidth="sm" fullWidth>
-				<DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pr: 2 }}>
-					<Typography variant="h6" sx={{ fontWeight: 700 }}>
-						Book {item.scan_name}
-					</Typography>
-					<IconButton onClick={handleClose} size="small">
-						<CloseIcon />
-					</IconButton>
-				</DialogTitle>
-
-				<DialogContent dividers>
-					<Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-						Schedule your scan appointment at <strong>{item.name}</strong>. The diagnostic center will review your request and confirm or provide a quote.
-					</Typography>
-
-					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-						<TextField
-							label="Preferred Date"
-							type="date"
-							fullWidth
-							required
-							value={bookingDate}
-							onChange={(e) => setBookingDate(e.target.value)}
-							InputLabelProps={{ shrink: true }}
-							inputProps={{ min: new Date().toISOString().split('T')[0] }}
-						/>
-						<TextField
-							label="Preferred Time"
-							type="time"
-							fullWidth
-							required
-							value={bookingTime}
-							onChange={(e) => setBookingTime(e.target.value)}
-							InputLabelProps={{ shrink: true }}
-						/>
-						<TextField
-							label="Additional Notes / Symptoms"
-							multiline
-							rows={3}
-							fullWidth
-							value={notes}
-							onChange={(e) => setNotes(e.target.value)}
-							placeholder="Mention any specific instructions or requirements..."
-						/>
-					</Box>
-				</DialogContent>
-
-				<DialogActions sx={{ p: 2.5 }}>
-					<Button onClick={handleClose} variant="text" sx={{ color: 'text.secondary' }}>
-						Cancel
-					</Button>
-					<Button
-						onClick={handleSubmit}
-						variant="contained"
-						disabled={submitting}
-						sx={{ bgcolor: 'primary.main', color: '#fff', fontWeight: 600, '&:hover': { bgcolor: 'primary.dark' } }}
-					>
-						{submitting ? 'Booking...' : 'Confirm Booking'}
-					</Button>
-				</DialogActions>
-			</Dialog>
-
-			{/* Toast */}
-			<Snackbar
-				open={toast.open}
-				autoHideDuration={4000}
-				onClose={() => setToast((prev) => ({ ...prev, open: false }))}
-				anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-			>
-				<Alert severity={toast.severity} sx={{ width: '100%' }}>
-					{toast.message}
-				</Alert>
-			</Snackbar>
 		</Box>
 	)
 }

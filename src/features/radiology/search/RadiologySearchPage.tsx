@@ -14,6 +14,7 @@ import { searchRadiologyCenters } from '../radiologyService'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ScanTypeSelectorModal from '../../dashboard/ScanTypeSelectorModal'
 import { RadiologySearchResultItem } from '../../../types/radiology-search'
+import RadiologyBookingPage from '../bookings/RadiologyBookingPage'
 
 const SORT_OPTIONS = [
 	{ value: 'name_asc', label: 'Name: A to Z' },
@@ -56,6 +57,17 @@ export default function RadiologySearchPage() {
 	const [total, setTotal] = useState(0)
 	const [loadingMore, setLoadingMore] = useState(false)
 	const [hasMore, setHasMore] = useState(false)
+
+	// ── Book Scan drawer state -- one RadiologyBookingPage instance, fed by the
+	//    (center, scan) pair the user clicked "Book Scan" on. Mirrors how
+	//    PharmacySearchPage lifts PlaceOrderPage's open/selected state up from the card. ──
+	const [bookingOpen, setBookingOpen] = useState(false)
+	const [selectedItem, setSelectedItem] = useState<RadiologySearchResultItem | null>(null)
+
+	const handleOpenBooking = (item: RadiologySearchResultItem) => {
+		setSelectedItem(item)
+		setBookingOpen(true)
+	}
 
 	// ── Re-sync filters when URL changes (e.g. modal navigates with new scan_type_id) ──
 	useEffect(() => {
@@ -262,6 +274,7 @@ export default function RadiologySearchPage() {
 	}, [filters.scanTypeId, rawResults])
 
 	return (
+		<>
 		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
 			{/* Back to scan type picker - only shown when arriving via the scan type popup */}
 			{filters.scanTypeId && (
@@ -424,7 +437,7 @@ export default function RadiologySearchPage() {
 								<Grid container spacing={3}>
 									{displayedResults.map((item) => (
 										<Grid size={{ xs: 12, sm: 6, lg: 4 }} key={`${item.id}-${item.scan_id}`}>
-											<RadiologySearchCard item={item} />
+											<RadiologySearchCard item={item} onBookScan={handleOpenBooking} />
 										</Grid>
 									))}
 								</Grid>
@@ -470,5 +483,19 @@ export default function RadiologySearchPage() {
 				onClose={() => setScanPickerOpen(false)}
 			/>
 		</Box>
+
+		{/* Book Scan drawer — single instance lifted up from RadiologySearchCard, replacing
+		    the old per-card Dialog popup. */}
+		{selectedItem && (
+			<RadiologyBookingPage
+				open={bookingOpen}
+				onClose={() => setBookingOpen(false)}
+				radiologyId={selectedItem.id}
+				centerName={selectedItem.name}
+				centerAddress={`${selectedItem.address}, ${selectedItem.city}, ${selectedItem.state}`}
+				preselectedScanId={selectedItem.scan_id}
+			/>
+		)}
+		</>
 	)
 }

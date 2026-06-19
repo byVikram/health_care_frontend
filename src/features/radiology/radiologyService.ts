@@ -1,4 +1,4 @@
-﻿// src/features/radiology/radiologyService.ts
+// src/features/radiology/radiologyService.ts
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { RadiologyProfile } from './profile/RadiologyProfilePage'
@@ -183,6 +183,19 @@ export const getMyScans = async (): Promise<MyScansResponse> => {
 /** PATCH /api/radiology/scans — update/configure this clinic's scan catalog */
 export const updateMyScans = async (payload: { scans: ScanSetupItem[] }): Promise<MyScansResponse> => {
 	const res = await ApiService.patch<MyScansResponse>(API_ENDPOINTS.RADIOLOGY_PROFILE.SCANS, payload)
+	return res.data
+}
+
+/**
+ * GET /api/radiology/scans?radiology_id=:id — fetch the bookable scan catalog for a specific
+ * (public-facing) radiology center. Used by the patient-facing booking drawer (RadiologyBookingPage)
+ * so a patient can pick from every scan offered at that center, not just the one they clicked
+ * "Book Scan" on. Mirrors mobile's RadiologyService.fetchRadiologyScans.
+ */
+export const fetchRadiologyScansForCenter = async (radiologyId: string): Promise<MyScansResponse> => {
+	const res = await ApiService.getWithParams<MyScansResponse>(API_ENDPOINTS.RADIOLOGY_PROFILE.SCANS, {
+		radiology_id: radiologyId,
+	})
 	return res.data
 }
 
