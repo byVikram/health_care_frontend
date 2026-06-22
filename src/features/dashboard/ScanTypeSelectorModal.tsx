@@ -1,8 +1,6 @@
-﻿// src/features/dashboard/ScanTypeSelectorModal.tsx
+// src/features/dashboard/ScanTypeSelectorModal.tsx
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Dialog, DialogTitle, DialogContent, Box, Typography, IconButton, Alert } from '@mui/material'
-import CloseIcon from '@mui/icons-material/Close'
 import { ROUTES } from '../../constants/routes'
 import { getScanTypes, ScanType } from '../radiology/radiologyService'
 import allScansIcon from '../../assets/Radiology/allscans.png'
@@ -10,7 +8,7 @@ import mriIcon from '../../assets/Radiology/mri.png'
 import ctIcon from '../../assets/Radiology/ct-scan.png'
 import xrayIcon from '../../assets/Radiology/xray.png'
 import ultrasoundIcon from '../../assets/Radiology/ultrasound.png'
-import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
+import CardGridSelectorModal, { SelectorCardItem } from './CardGridSelectorModal'
 
 interface ScanTypeSelectorModalProps {
 	open: boolean
@@ -69,81 +67,6 @@ function groupScanTypes(scanTypes: ScanType[]): GroupedScanType[] {
 	return Array.from(groups.values())
 }
 
-// Card width matches 3-per-row grid (dialog maxWidth="sm" = 600px, padding 3 = 24px each side, gap 2 = 16px)
-// ~(600 - 48 - 32) / 3 ≈ 173px — we use calc so it's fluid
-const CARD_WIDTH = 'calc((100% - 32px) / 3)'
-
-interface ScanCardProps {
-	icon: string
-	label: string
-	onClick: () => void
-}
-
-function ScanCard({ icon, label, onClick }: ScanCardProps) {
-	return (
-		<Box
-			onClick={onClick}
-			sx={{
-				width: CARD_WIDTH,
-				display: 'flex',
-				flexDirection: 'column',
-				alignItems: 'center',
-				justifyContent: 'center',
-				gap: 1.5,
-				pt: 2.5,
-				pb: 2,
-				px: 1,
-				borderRadius: '16px',
-				cursor: 'pointer',
-				border: '1.5px solid',
-				borderColor: 'divider',
-				aspectRatio: '1 / 1',
-				transition: 'all 0.18s',
-				'&:hover': {
-					borderColor: 'primary.main',
-					bgcolor: 'rgba(43,111,113,0.06)',
-					transform: 'translateY(-2px)',
-					boxShadow: '0 4px 16px rgba(43,111,113,0.12)',
-				},
-			}}
-		>
-			<Box
-				sx={{
-					flex: 1,
-					width: '100%',
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					minHeight: 0,
-				}}
-			>
-				<img
-					src={icon}
-					alt={label}
-					style={{
-						width: '72%',
-						height: '72%',
-						objectFit: 'contain',
-						display: 'block',
-					}}
-				/>
-			</Box>
-			<Typography
-				variant="body2"
-				sx={{
-					fontWeight: 600,
-					fontSize: '13px',
-					textAlign: 'center',
-					lineHeight: 1.3,
-					flexShrink: 0,
-				}}
-			>
-				{label}
-			</Typography>
-		</Box>
-	)
-}
-
 export default function ScanTypeSelectorModal({ open, onClose }: ScanTypeSelectorModalProps) {
 	const navigate = useNavigate()
 
@@ -190,149 +113,25 @@ export default function ScanTypeSelectorModal({ open, onClose }: ScanTypeSelecto
 
 	const groupedScanTypes = groupScanTypes(scanTypes)
 
-	// Build rows of 3; last row is centered via justify-content
-	const buildRows = () => {
-		// modality cards first, All Scans last
-		const cards: Array<{ key: string; icon: string; label: string; onClick: () => void }> = [
-			...groupedScanTypes.map((g) => ({
-				key: g.groupKey,
-				icon: g.icon,
-				label: g.label,
-				onClick: () => handleSelect(g),
-			})),
-			{ key: 'all', icon: allScansIcon, label: 'All Scans', onClick: handleAllScans },
-		]
-
-		const rows: (typeof cards)[] = []
-		for (let i = 0; i < cards.length; i += 3) {
-			rows.push(cards.slice(i, i + 3))
-		}
-		return rows
-	}
-
-	const rows = buildRows()
+	// modality cards first, All Scans last
+	const cards: SelectorCardItem[] = [
+		...groupedScanTypes.map((g) => ({
+			key: g.groupKey,
+			icon: g.icon,
+			label: g.label,
+			onClick: () => handleSelect(g),
+		})),
+		{ key: 'all', icon: allScansIcon, label: 'All Scans', onClick: handleAllScans },
+	]
 
 	return (
-		<Dialog
+		<CardGridSelectorModal
 			open={open}
 			onClose={onClose}
-			maxWidth="sm"
-			fullWidth
-			slotProps={{
-				paper: {
-					sx: {
-						borderRadius: '20px',
-						overflow: 'hidden',
-						maxHeight: '85vh',
-					},
-				},
-			}}
-		>
-			{/* Header */}
-			<DialogTitle
-				sx={{
-					bgcolor: 'primary.main',
-					color: '#fff',
-					display: 'flex',
-					alignItems: 'center',
-					gap: 1,
-					py: 1.5,
-					px: 2,
-				}}
-			>
-				<IconButton size="small" onClick={onClose} sx={{ color: '#fff', mr: 0.5 }}>
-					<CloseIcon fontSize="small" />
-				</IconButton>
-				<Typography variant="h6" fontWeight={600} fontSize={16}>
-					What type of scan are you looking for?
-				</Typography>
-			</DialogTitle>
-
-			<DialogContent sx={{ px: 3, pb: 3, overflowY: 'auto', '&.MuiDialogContent-root': { pt: 3 } }}>
-				{/* {loading ? (
-					<Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-						<CircularProgress sx={{ color: 'primary.main' }} />
-					</Box>
-				) : error ? ( */}
-				{loading ? (
-					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-						{[3, 2].map((count, rowIndex) => (
-							<Box
-								key={rowIndex}
-								sx={{
-									display: 'flex',
-									gap: 2,
-									justifyContent: count === 3 ? 'flex-start' : 'center',
-								}}
-							>
-								{Array.from({ length: count }).map((_, index) => (
-									<Box
-										key={index}
-										sx={{
-											width: CARD_WIDTH,
-											aspectRatio: '1 / 1',
-											borderRadius: '16px',
-											border: '1.5px solid',
-											borderColor: 'divider',
-											pt: 2.5,
-											pb: 2,
-											px: 1,
-											display: 'flex',
-											flexDirection: 'column',
-											alignItems: 'center',
-											justifyContent: 'center',
-											gap: 1.5,
-										}}
-									>
-										<Box
-											sx={{
-												flex: 1,
-												width: '100%',
-												display: 'flex',
-												alignItems: 'center',
-												justifyContent: 'center',
-												minHeight: 0,
-											}}
-										>
-											<AppSkeleton variant="rounded" width="72%" height="72%" />
-										</Box>
-
-										<AppSkeleton variant="text" width="60%" height={24} />
-									</Box>
-								))}
-							</Box>
-						))}
-					</Box>
-				) : error ? (
-					<Alert severity="error" sx={{ borderRadius: '10px' }}>
-						{error}
-					</Alert>
-				) : (
-					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-						{rows.map((row, rowIdx) => (
-							<Box
-								key={rowIdx}
-								sx={{
-									display: 'flex',
-									flexDirection: 'row',
-									gap: 2,
-									// full rows: stretch; partial last row: center
-									justifyContent: row.length === 3 ? 'flex-start' : 'center',
-								}}
-							>
-								{row.map((card) => (
-									<ScanCard
-										key={card.key}
-										icon={card.icon}
-										label={card.label}
-										onClick={card.onClick}
-									/>
-								))}
-							</Box>
-						))}
-					</Box>
-				)}
-			</DialogContent>
-		</Dialog>
+			title="What type of scan are you looking for?"
+			cards={cards}
+			loading={loading}
+			error={error}
+		/>
 	)
 }

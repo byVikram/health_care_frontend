@@ -834,7 +834,11 @@ export default function PortalPage() {
 					</Grid>
 				</Grid>
 
-				{role === USER_ROLES.PATIENT ? <PatientHealthQuestionsSection /> : <AnswerQuestionsSection />}
+				{role === USER_ROLES.PATIENT || role === USER_ROLES.DOCTOR || role === USER_ROLES.RADIOLOGY ? (
+					<PatientHealthQuestionsSection />
+				) : (
+					<AnswerQuestionsSection />
+				)}
 			</Container>
 		</Box>
 	)
