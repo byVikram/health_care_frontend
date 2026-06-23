@@ -18,6 +18,7 @@ import { getPharmacies } from '../../Pharmacy/pharmacyService'
 import { PharmacyItem } from '../../../types/pharmacy'
 import AppSkeleton from '../../../components/common/Skeleton/AppSkeleton'
 import AppInput from '../../../components/common/Input/AppInput'
+import PlaceOrderPage from '../orders/PlaceOrderPage'
 
 const LIMIT = 12
 
@@ -132,7 +133,17 @@ export default function PharmacySearchPage() {
 		setPage(1)
 	}
 
+	// Place Order drawer state -- one PlaceOrderPage instance, fed by the pharmacy the user clicked.
+	const [placeOrderOpen, setPlaceOrderOpen] = useState(false)
+	const [selectedPharmacy, setSelectedPharmacy] = useState<PharmacyItem | null>(null)
+
+	const handleOpenPlaceOrder = (pharmacy: PharmacyItem) => {
+		setSelectedPharmacy(pharmacy)
+		setPlaceOrderOpen(true)
+	}
+
 	return (
+		<>
 		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
 			<Box sx={{ bgcolor: 'background.paper', py: 3 }}>
 				<Container maxWidth="lg">
@@ -220,7 +231,7 @@ export default function PharmacySearchPage() {
 								<Grid container spacing={3}>
 									{visiblePharmacies.map((pharmacy) => (
 										<Grid size={{ xs: 12, sm: 6, lg: 4 }} key={pharmacy.id}>
-											<PharmacySearchCard pharmacy={pharmacy} />
+											<PharmacySearchCard pharmacy={pharmacy} onPlaceOrder={handleOpenPlaceOrder} />
 										</Grid>
 									))}
 								</Grid>
@@ -259,5 +270,16 @@ export default function PharmacySearchPage() {
 				</Grid>
 			</Container>
 		</Box>
+
+		{/* Place Order drawer — single instance lifted up from PharmacySearchCard */}
+		{selectedPharmacy && (
+			<PlaceOrderPage
+				open={placeOrderOpen}
+				onClose={() => setPlaceOrderOpen(false)}
+				pharmacyId={selectedPharmacy.id}
+				pharmacyName={selectedPharmacy.name}
+			/>
+		)}
+	</>
 	)
 }

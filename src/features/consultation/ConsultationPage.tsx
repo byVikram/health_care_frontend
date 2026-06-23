@@ -161,8 +161,10 @@ const mapDoctorProfileToConsultationDoctor = (
 	}
 }
 
+// const getDrawerAppointmentType = (appointmentMode?: Appointment['appointment_mode']) =>
+// 	appointmentMode === 'video_call' ? 'video' : 'clinic'
 const getDrawerAppointmentType = (appointmentMode?: Appointment['appointment_mode']) =>
-	appointmentMode === 'video_call' ? 'video' : 'clinic'
+	appointmentMode === 'video call' ? 'video' : 'clinic'
 
 export default function ConsultationPage() {
 	const [activeTab, setActiveTab] = useState(0)

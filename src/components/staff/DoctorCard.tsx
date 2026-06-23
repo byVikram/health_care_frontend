@@ -1,5 +1,5 @@
 // components/doctor/DoctorCard.tsx
-import { Box, Typography, Avatar, Rating, Button } from "@mui/material";
+import { Box, Typography, Avatar, Rating } from "@mui/material";
 import AppButton from "../common/Button/AppButton";
 
 interface DoctorCardProps {

@@ -11,7 +11,7 @@ import {
 	DoctorProfileApiHospital,
 	DoctorProfileApiAvailability,
 } from '../../types/doctor-profile-api'
-import { DoctorProfile, DoctorDegree } from '../../types/doctor-profile'
+import { DoctorProfile} from '../../types/doctor-profile'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 
 export interface AppointmentParams {

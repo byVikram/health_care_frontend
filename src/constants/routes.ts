@@ -29,6 +29,18 @@ export const ROUTES = {
 		SEARCH: '/radiology/search',
 	},
 
+	ANCILLARY: {
+		SEARCH: '/ancillary/search',
+	},
+
+	ALLIED: {
+		SEARCH: '/allied/search',
+	},
+
+	THERAPEUTIC: {
+		SEARCH: '/therapeutic/search',
+	},
+
 	SPECIALITIES: '/specialities',
 
 	TEST: '/test',

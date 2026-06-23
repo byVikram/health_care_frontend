@@ -1,9 +1,9 @@
 // src/features/radiology/search/components/RadiologySearchFilters.tsx
 import { useState, useEffect } from 'react'
-import { Box, Typography, Slider, Divider, Button, CircularProgress } from '@mui/material'
+import { useSearchParams } from 'react-router-dom'
+import { Box, Typography, Slider, Divider, Button } from '@mui/material'
 import { customCardStyle } from '../../../../styles/commonStyles'
 import { formatINR } from '../../../../utils/Utils'
-import { getScanTypes, ScanType } from '../../radiologyService'
 
 export interface RadiologyFilterState {
 	scanTypeId: string
@@ -16,32 +16,51 @@ interface RadiologySearchFiltersProps {
 	onClear: () => void
 }
 
-export default function RadiologySearchFilters({ filters, onChange, onClear }: RadiologySearchFiltersProps) {
-	const [scanTypes, setScanTypes] = useState<ScanType[]>([])
-	const [loading, setLoading] = useState(true)
-	const [localMaxPrice, setLocalMaxPrice] = useState(filters.maxPrice)
+// ── Body-part config (UI-only, not wired to backend) ─────────────────────────
+const BODY_PARTS_BY_MODALITY: Record<string, string[]> = {
+	mri:        ['Brain', 'Spine', 'Knee', 'Shoulder', 'Neck', 'Hip', 'Wrist', 'Pelvis', 'Abdomen', 'Others'],
+	ct:         ['Brain', 'Spine', 'Abdomen', 'Chest', 'Pelvis', 'Neck', 'Others'],
+	xray:       ['Chest', 'Wrist', 'Knee', 'Leg', 'Shoulder', 'Hip', 'Others'],
+	ultrasound: ['Abdomen', 'Pelvis', 'Neck', 'Shoulder', 'Others'],
+}
+const ALL_BODY_PARTS = ['Brain', 'Spine', 'Knee', 'Shoulder', 'Pelvis', 'Leg', 'Wrist', 'Hip', 'Neck', 'Abdomen', 'Chest', 'Others']
 
-	// Sync local price slider with parent prop if it changes externally (like clear all)
+function modalityFromScanName(name: string): string {
+	const lower = name.toLowerCase()
+	if (lower.includes('mri'))                                  return 'mri'
+	if (lower.includes('ct'))                                   return 'ct'
+	if (lower.includes('x-ray') || lower.includes('xray'))     return 'xray'
+	if (lower.includes('ultrasound') || lower.includes('sono')) return 'ultrasound'
+	return 'other'
+}
+
+export default function RadiologySearchFilters({ filters, onChange, onClear }: RadiologySearchFiltersProps) {
+	const [searchParams] = useSearchParams()
+	const [localMaxPrice, setLocalMaxPrice] = useState(filters.maxPrice)
+	const [selectedBodyPart, setSelectedBodyPart] = useState<string>('')
+
+	// Sync price slider when parent clears
 	useEffect(() => {
 		setLocalMaxPrice(filters.maxPrice)
 	}, [filters.maxPrice])
 
-	// Fetch scan types on mount
+	// Reset body part when scan type changes (URL-driven)
+	const scanTypeName = searchParams.get('scan_type_name') || ''
 	useEffect(() => {
-		const fetchTypes = async () => {
-			try {
-				const res = await getScanTypes()
-				if (res.success && res.data) {
-					setScanTypes(res.data)
-				}
-			} catch (err) {
-				console.error('Failed to load scan types', err)
-			} finally {
-				setLoading(false)
-			}
-		}
-		void fetchTypes()
-	}, [])
+		setSelectedBodyPart('')
+	}, [scanTypeName])
+
+	// Derive body parts from the scan_type_name URL param set by the modal
+	const bodyParts = (() => {
+		if (!scanTypeName) return ALL_BODY_PARTS
+		const key = modalityFromScanName(scanTypeName)
+		return BODY_PARTS_BY_MODALITY[key] ?? ALL_BODY_PARTS
+	})()
+
+	const handleClear = () => {
+		setSelectedBodyPart('')
+		onClear()
+	}
 
 	return (
 		<Box
@@ -52,9 +71,7 @@ export default function RadiologySearchFilters({ filters, onChange, onClear }: R
 				gap: 3,
 				maxHeight: 'calc(100vh - 48px)',
 				overflowY: 'auto',
-				'&::-webkit-scrollbar': {
-					width: '6px',
-				},
+				'&::-webkit-scrollbar': { width: '6px' },
 				'&::-webkit-scrollbar-thumb': {
 					backgroundColor: 'rgba(0,0,0,0.1)',
 					borderRadius: '4px',
@@ -64,71 +81,58 @@ export default function RadiologySearchFilters({ filters, onChange, onClear }: R
 				},
 			}}
 		>
+			{/* Header */}
 			<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 				<Typography variant="h6" sx={{ fontWeight: 700 }}>
 					Filters
 				</Typography>
-				<Button size="small" onClick={onClear} sx={{ textTransform: 'none', color: 'primary.main', fontWeight: 600 }}>
+				<Button
+					size="small"
+					onClick={handleClear}
+					sx={{ textTransform: 'none', color: 'primary.main', fontWeight: 600 }}
+				>
 					Clear All
 				</Button>
 			</Box>
 
 			<Divider />
 
-			{/* Scan Types */}
+			{/* Body Part (UI-only) */}
 			<Box>
 				<Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, color: 'text.primary' }}>
-					Scan Type
+					Body Part
 				</Typography>
-				{loading ? (
-					<Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-						<CircularProgress size={24} sx={{ color: 'primary.main' }} />
-					</Box>
-				) : (
-					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8 }}>
-						<Box
-							onClick={() => onChange({ ...filters, scanTypeId: '' })}
-							sx={{
-								px: 1.5,
-								py: 0.8,
-								borderRadius: '8px',
-								cursor: 'pointer',
-								bgcolor: filters.scanTypeId === '' ? 'primary.main' : 'transparent',
-								color: filters.scanTypeId === '' ? '#fff' : 'text.secondary',
-								fontSize: '13px',
-								fontWeight: filters.scanTypeId === '' ? 600 : 400,
-								transition: 'all 0.15s',
-								'&:hover': {
-									bgcolor: filters.scanTypeId === '' ? 'primary.main' : 'rgba(43,111,113,0.06)',
-								},
-							}}
-						>
-							All Scans
-						</Box>
-						{scanTypes.map((type) => (
+				<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
+					{bodyParts.map((part) => {
+						const active = selectedBodyPart === part
+						return (
 							<Box
-								key={type.id}
-								onClick={() => onChange({ ...filters, scanTypeId: String(type.id) })}
+								key={part}
+								onClick={() => setSelectedBodyPart(active ? '' : part)}
 								sx={{
 									px: 1.5,
-									py: 0.8,
-									borderRadius: '8px',
+									py: 0.5,
+									borderRadius: '20px',
+									border: '1px solid',
+									borderColor: active ? 'primary.main' : 'divider',
+									bgcolor: active ? 'primary.main' : 'transparent',
+									color: active ? '#fff' : 'text.secondary',
+									fontSize: '12px',
+									fontWeight: active ? 600 : 400,
 									cursor: 'pointer',
-									bgcolor: filters.scanTypeId === String(type.id) ? 'primary.main' : 'transparent',
-									color: filters.scanTypeId === String(type.id) ? '#fff' : 'text.secondary',
-									fontSize: '13px',
-									fontWeight: filters.scanTypeId === String(type.id) ? 600 : 400,
 									transition: 'all 0.15s',
+									userSelect: 'none',
 									'&:hover': {
-										bgcolor: filters.scanTypeId === String(type.id) ? 'primary.main' : 'rgba(43,111,113,0.06)',
+										borderColor: 'primary.main',
+										color: active ? '#fff' : 'primary.main',
 									},
 								}}
 							>
-								{type.name}
+								{part}
 							</Box>
-						))}
-					</Box>
-				)}
+						)
+					})}
+				</Box>
 			</Box>
 
 			<Divider />
@@ -153,8 +157,8 @@ export default function RadiologySearchFilters({ filters, onChange, onClear }: R
 					sx={{ color: 'primary.main' }}
 				/>
 				<Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-					<Typography variant="caption" sx={{ color: 'text.secondary' }}>{`\u20B9500`}</Typography>
-					<Typography variant="caption" sx={{ color: 'text.secondary' }}>{`\u20B910,000`}</Typography>
+					<Typography variant="caption" sx={{ color: 'text.secondary' }}>{'₹500'}</Typography>
+					<Typography variant="caption" sx={{ color: 'text.secondary' }}>{'₹10,000'}</Typography>
 				</Box>
 			</Box>
 		</Box>

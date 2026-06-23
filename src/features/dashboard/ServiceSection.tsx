@@ -6,6 +6,7 @@ import VideoConsultation from '../../assets/Services/doctor-video-consultation.p
 import LabTests from '../../assets/Services/lab-service.png'
 import Surgeries from '../../assets/Services/serguries.png'
 import { useNavigate } from 'react-router-dom'
+import { ROUTES } from '../../constants/routes'
 
 interface ServicesType {
 	id: number
@@ -17,6 +18,20 @@ interface ServicesType {
 
 export default function ServicesSection() {
 	const navigate = useNavigate()
+
+	const handleServiceClick = (service: ServicesType) => {
+		if (service.id === 1) {
+			navigate(ROUTES.SPECIALITIES)
+			return
+		}
+
+		if (service.id === 2) {
+			navigate(`${ROUTES.SPECIALITIES}?consultation_type=video`)
+			return
+		}
+
+		navigate(ROUTES.DOCTORS.SEARCH)
+	}
 
 	const services: ServicesType[] = [
 		{
@@ -52,7 +67,7 @@ export default function ServicesSection() {
 						title={service.title}
 						description={service.description}
 						bgColor={service.bgColor}
-						onClick={() => navigate('/doctors/search')}
+						onClick={() => handleServiceClick(service)}
 					/>
 				</Grid>
 			))}

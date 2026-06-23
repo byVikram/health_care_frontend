@@ -98,7 +98,8 @@ export default function SidebarLayout({ children, activeMenuId }: SidebarLayoutP
 
 	const menuItems = isDoctor ? DOCTOR_MENU_ITEMS : PATIENT_MENU_ITEMS
 	const defaultId = activeMenuId ?? menuItems[0]?.id ?? ''
-	const [activeId, setActiveId] = useState(defaultId)
+	// const [activeId, setActiveId] = useState(defaultId)
+	const [activeId] = useState(defaultId)
 
 	const sidebarUser = {
 		name: user?.name ?? (isDoctor ? 'Dr. Ashika Rao' : 'Nitin'),

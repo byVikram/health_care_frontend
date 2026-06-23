@@ -47,6 +47,7 @@ function UploadBox({
 		setImageError(false)
 	}, [fileName])
 
+
 	const showPreview = isImagePreview && fileName && !imageError
 
 	return (

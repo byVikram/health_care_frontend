@@ -5,10 +5,10 @@ import { Box, Typography, Avatar, CircularProgress, Chip, MenuItem, Pagination }
 import SearchIcon from '@mui/icons-material/Search'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import { useNavigate } from 'react-router-dom'
-import AppInput from '../../components/common/Input/AppInput'
-import AppTable from '../../components/common/Table/AppTable'
-import { getPharmacyOrders, PharmacyOrder } from '../Pharmacy/pharmacyService'
-import { formatINR } from '../../utils/Utils'
+import AppInput from '../../../components/common/Input/AppInput'
+import AppTable from '../../../components/common/Table/AppTable'
+import { getPharmacyOrders, PharmacyOrder } from '../../Pharmacy/pharmacyService'
+import { formatINR } from '../../../utils/Utils'
 interface OrderRow extends Record<string, unknown> {
 	id: string
 	totalCost: number

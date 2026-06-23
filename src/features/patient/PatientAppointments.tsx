@@ -292,7 +292,7 @@ export function PatientAppointments() {
 						{appointments.map((appt) => {
 							const status = statusOf(appt)
 							const style = getStatusStyle(status)
-							const isVirtual = appt.appointment_mode === 'video_call'
+							const isVirtual  = appt.appointment_mode === 'video call'
 							const canJoin = isVirtual && status === 'confirmed'
 							const canAct = status !== 'cancelled' && status !== 'completed'
 

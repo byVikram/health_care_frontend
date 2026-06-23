@@ -1,9 +1,9 @@
 // src/features/dashboard/AllSpecialitiesPage.tsx
-import { Box, Container, Typography, Grid, Skeleton, InputAdornment, Alert } from '@mui/material'
+import { Box, Container, Typography, Grid, Skeleton, Alert } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
 import AppButton from '../../components/common/Button/AppButton'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import ConsultCard from '../../components/common/Card/ConsultCard'
 import { getSpecialities } from '../doctor/doctorService'
@@ -175,6 +175,8 @@ const BATCH = 12
 
 export default function AllSpecialitiesPage() {
 	const navigate = useNavigate()
+	const [searchParams] = useSearchParams()
+	const consultationType = searchParams.get('consultation_type')
 
 	const [specialities, setSpecialities] = useState<EnrichedSpeciality[]>([])
 	const [apiLoading, setApiLoading] = useState(true)
@@ -211,6 +213,19 @@ export default function AllSpecialitiesPage() {
 			s.description.toLowerCase().includes(search.toLowerCase())
 	)
 
+	const handleConsult = (speciality: EnrichedSpeciality) => {
+		const next = new URLSearchParams({
+			speciality_id: speciality.id,
+			speciality_label: speciality.label,
+		})
+
+		if (consultationType === 'video') {
+			next.set('consultation_type', consultationType)
+		}
+
+		navigate(`/doctors/search?${next.toString()}`)
+	}
+
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', overflow: 'hidden', bgcolor: 'background.default' }}>
 			{/* Sticky header */}
@@ -245,21 +260,21 @@ export default function AllSpecialitiesPage() {
 							</Typography>
 						</Box>
 						<AppInput
+							fullWidth
 							placeholder="Search speciality..."
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
-							InputProps={{
-								startAdornment: (
-									<InputAdornment position="start">
-										<SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-									</InputAdornment>
-								),
-							}}
+							size="small"
+							startIcon={<SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />}
+							enableVoiceSearch
+							onVoiceResult={(text) => setSearch(text)}
 							sx={{
 								minWidth: 220,
 								maxWidth: 400,
+								bgcolor: 'background.paper',
+								borderRadius: '10px',
 								'& .MuiOutlinedInput-root': {
-									borderRadius: '30px',
+									borderRadius: '10px',
 								},
 							}}
 						/>
@@ -314,11 +329,7 @@ export default function AllSpecialitiesPage() {
 										image={s.image}
 										title={s.label}
 										description={s.description}
-										onConsult={() =>
-											navigate(
-												`/doctors/search?speciality_id=${s.id}&speciality_label=${encodeURIComponent(s.label)}`
-											)
-										}
+										onConsult={() => handleConsult(s)}
 										objectPosition={s.objectPosition}
 									/>
 								</Grid>

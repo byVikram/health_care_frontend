@@ -256,6 +256,8 @@ export default function PortalPage() {
 	const handleServiceIconClick = (title: string) => {
 		if (title === 'Appointment') {
 			navigate(ROUTES.APPOINTMENTS)
+		} else if (title === 'Bookings') {
+			navigate(ROUTES.RADIOLOGY.BOOKINGS)
 		} else if (title === 'Orders') {
 			navigate(ROUTES.PHARMACY.ORDERS)
 		}
@@ -273,6 +275,16 @@ export default function PortalPage() {
 		if (role === USER_ROLES.PHARMACY) {
 			return [
 				{ title: 'Orders', image: AppointmentsIcon },
+				{ title: 'Pharmacy', image: PharmacyIcon },
+				{ title: 'Laboratory', image: LabIcon },
+				{ title: 'Radiology', image: RadiologyIcon },
+				{ title: 'Paramedicals', image: null },
+			]
+		}
+
+		if (role === USER_ROLES.RADIOLOGY) {
+			return [
+				{ title: 'Bookings', image: AppointmentsIcon },
 				{ title: 'Pharmacy', image: PharmacyIcon },
 				{ title: 'Laboratory', image: LabIcon },
 				{ title: 'Radiology', image: RadiologyIcon },
@@ -822,7 +834,11 @@ export default function PortalPage() {
 					</Grid>
 				</Grid>
 
-				{role === USER_ROLES.PATIENT ? <PatientHealthQuestionsSection /> : <AnswerQuestionsSection />}
+				{role === USER_ROLES.PATIENT || role === USER_ROLES.DOCTOR || role === USER_ROLES.RADIOLOGY ? (
+					<PatientHealthQuestionsSection />
+				) : (
+					<AnswerQuestionsSection />
+				)}
 			</Container>
 		</Box>
 	)

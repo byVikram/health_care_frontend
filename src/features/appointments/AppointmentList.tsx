@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { Box, Typography, Avatar, InputAdornment, Card } from '@mui/material'
+import { Box, Typography, Avatar, InputAdornment, Card, Pagination } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
-import AppTable from './components/AppTable'
+import AppTable from '../../components/common/Table/AppTable'
 import { customCardStyle } from '../../styles/commonStyles'
 // import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 import ApiService from '../../services/apiService'
@@ -57,11 +57,10 @@ interface AppointmentsResponse {
 }
 
 type ColDef = {
-	id: keyof AppointmentRow
+	field: string
 	label: string
-	sortable?: boolean
-	width?: string
-	format?: (value: AppointmentRow[keyof AppointmentRow], row: AppointmentRow) => React.ReactNode
+	align?: 'left' | 'right' | 'center'
+	render?: (value: unknown, row: AppointmentRow) => React.ReactNode
 }
 
 export default function AppointmentList() {
@@ -73,7 +72,7 @@ export default function AppointmentList() {
 
 	const [search, setSearch] = useState('')
 	const [page, setPage] = useState(1)
-	const [size, setSize] = useState(10)
+	const size = 10
 	const [rows, setRows] = useState<AppointmentRow[]>([])
 	const [meta, setMeta] = useState<AppointmentMeta>({ total: 0, page: 1, limit: 10, pages: 0 })
 	const [loading, setLoading] = useState(true)
@@ -140,11 +139,9 @@ export default function AppointmentList() {
 	}
 
 	const patientNameColumn: ColDef = {
-		id: 'patientName',
+		field: 'patientName',
 		label: 'Patient name',
-		width: '220px',
-		sortable: true,
-		format: (_value, row) => (
+		render: (_value, row) => (
 			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5 }}>
 				<Avatar
 					src={row.patientAvatar}
@@ -161,11 +158,9 @@ export default function AppointmentList() {
 	}
 
 	const doctorNameColumn: ColDef = {
-		id: 'doctorName',
+		field: 'doctorName',
 		label: 'Doctor name',
-		width: '220px',
-		sortable: true,
-		format: (_value, row) => (
+		render: (_value, row) => (
 			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5 }}>
 				<Avatar
 					src={row.doctorAvatar}
@@ -183,10 +178,9 @@ export default function AppointmentList() {
 
 	const baseColumns: ColDef[] = [
 		{
-			id: 'appointmentDate',
+			field: 'appointmentDate',
 			label: 'Date and time',
-			width: '170px',
-			format: (_value, row) => (
+			render: (_value, row) => (
 				<Box>
 					<Typography fontSize={13} color="text.primary" fontWeight={500}>
 						{row.appointmentDate}
@@ -202,20 +196,18 @@ export default function AppointmentList() {
 			),
 		},
 		{
-			id: 'appointmentMode',
+			field: 'appointmentMode',
 			label: 'Mode',
-			width: '120px',
-			format: (_value, row) => (
+			render: (_value, row) => (
 				<Typography fontSize={13} color="text.primary" fontWeight={500} sx={{ textTransform: 'capitalize' }}>
 					{row.appointmentMode?.replaceAll('_', ' ').replace(/\b\w/g, (char) => char.toUpperCase())}
 				</Typography>
 			),
 		},
 		{
-			id: 'hospitalName',
+			field: 'hospitalName',
 			label: 'Hospital',
-			width: '180px',
-			format: (_value, row) => (
+			render: (_value, row) => (
 				<Box>
 					<Typography fontSize={13} color="text.primary" fontWeight={500}>
 						{row.hospitalName ?? '\u2014'}
@@ -229,20 +221,18 @@ export default function AppointmentList() {
 			),
 		},
 		{
-			id: 'fees',
+			field: 'fees',
 			label: 'Fees',
-			width: '100px',
-			format: (_value, row) => (
+			render: (_value, row) => (
 				<Typography fontSize={13} color="text.primary" fontWeight={500}>
 					{row.fees != null ? '\u20B9' + row.fees : '\u2014'}
 				</Typography>
 			),
 		},
 		{
-			id: 'status',
+			field: 'status',
 			label: 'Status',
-			width: '130px',
-			format: (_value, row) => (
+			render: (_value, row) => (
 				<Typography fontSize={13} fontWeight={600} sx={{ textTransform: 'capitalize' }}>
 					{row.status}
 				</Typography>
@@ -439,20 +429,20 @@ export default function AppointmentList() {
 					<AppTable<AppointmentRow>
 						key={viewAs}
 						columns={columns}
-						data={rows}
-						totalRows={meta.total}
-						defaultPage={meta.page}
-						defaultPageSize={meta.limit}
-						defaultSortBy={viewAs === 'doctor' ? 'patientName' : 'doctorName'}
-						defaultSortDirection="asc"
-						showPagination={meta.total > meta.limit}
-						rowPadding="10px 14px"
+						rows={rows}
 						emptyMessage="No appointments found"
-						onPageChange={(newPage, newSize) => {
-							setPage(newPage)
-							setSize(newSize)
-						}}
 					/>
+					{meta.pages > 1 && (
+						<Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+							<Pagination
+								page={page}
+								count={meta.pages}
+								color="primary"
+								shape="rounded"
+								onChange={(_, value) => setPage(value)}
+							/>
+						</Box>
+					)}
 				</Card>
 			)}
 		</Box>
