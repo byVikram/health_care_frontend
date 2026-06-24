@@ -29,6 +29,10 @@ export const ROUTES = {
 		SEARCH: '/radiology/search',
 	},
 
+	LABORATORY: {
+		SEARCH: '/laboratory/search',
+	},
+
 	ANCILLARY: {
 		SEARCH: '/ancillary/search',
 	},

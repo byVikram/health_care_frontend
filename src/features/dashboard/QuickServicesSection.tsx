@@ -1,4 +1,4 @@
-﻿// src/features/dashboard/QuickServicesSection.tsx
+// src/features/dashboard/QuickServicesSection.tsx
 import { useState } from 'react'
 import { Box, Typography, Grid } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
@@ -103,6 +103,8 @@ export default function QuickServicesSection() {
 			setTherapeuticPickerOpen(true)
 		} else if (title === 'Pharmacy') {
 			navigate(ROUTES.PHARMACY.SEARCH)
+		} else if (title === 'Laboratory') {
+			navigate(ROUTES.LABORATORY.SEARCH)
 		}
 	}
 
