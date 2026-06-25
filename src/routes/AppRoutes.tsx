@@ -20,9 +20,9 @@ import TestRegister from '../features/auth/test/TestRegister'
 import PortalPage from '../features/portal/PortalPage'
 import DoctorAppointmentList from '../features/appointments/AppointmentList'
 import WelcomePage from '../features/auth/WelcomePage'
-import OrderList from '../features/Pharmacy/orders/OrderList'
-import OrderDetailPage from '../features/Pharmacy/orders/OrderDeatailPage'
-import PharmacySearchPage from '../features/Pharmacy/components/PharmacySearchPage'
+import OrderList from '../features/pharmacy/orders/OrderList'
+import OrderDetailPage from '../features/pharmacy/orders/OrderDeatailPage'
+import PharmacySearchPage from '../features/pharmacy/components/PharmacySearchPage'
 import RadiologyProfilePage from '../features/radiology/profile/RadiologyProfilePage'
 import BookingsList from '../features/radiology/bookings/BookingsList'
 import BookingDetailPage from '../features/radiology/bookings/BookingDetailPage'
@@ -98,7 +98,6 @@ export default function AppRoutes() {
 				<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
 				<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
 				<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
-				<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
 				{/* <Route path={ROUTES.PHARMACY.PROFILE} element={<PharmacyProfilePage />} /> */}
 				<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
 
