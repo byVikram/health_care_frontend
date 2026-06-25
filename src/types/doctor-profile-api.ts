@@ -1,4 +1,4 @@
-import { WorkingHoursState, AppointmentType } from './doctor-profile'
+﻿import { WorkingHoursState, AppointmentType } from './doctor-profile'
 
 export interface DoctorProfileApiSpeciality {
 	id: string
@@ -33,8 +33,8 @@ export interface DoctorProfileApiHospital {
 		distance: string
 		latitude: number
 		longitude: number
-		video_consultation_fee: string
-		clinic_consultation_fee: string
+		video_consultation_fee: number
+		clinic_consultation_fee: number
 	}
 }
 

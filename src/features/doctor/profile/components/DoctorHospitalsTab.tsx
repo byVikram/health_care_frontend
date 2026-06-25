@@ -1,4 +1,4 @@
-// src/features/doctor/profile/components/DoctorHospitalsTab.tsx
+﻿// src/features/doctor/profile/components/DoctorHospitalsTab.tsx
 import { useState } from 'react'
 import {
 	Box,
