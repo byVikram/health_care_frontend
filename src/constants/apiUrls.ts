@@ -1,4 +1,4 @@
-// src/constants/apiUrls.ts
+﻿// src/constants/apiUrls.ts
 export const BASE_URL = import.meta.env.VITE_API_ENDPOINT as string
 
 export const API_ENDPOINTS = {

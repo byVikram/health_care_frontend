@@ -1,4 +1,4 @@
-// src/routes/AppRoutes.tsx
+﻿// src/routes/AppRoutes.tsx
 import { Routes, Route, Outlet } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
 import LoginPage from '../features/auth/LoginPage'
@@ -28,6 +28,7 @@ import BookingsList from '../features/radiology/bookings/BookingsList'
 import BookingDetailPage from '../features/radiology/bookings/BookingDetailPage'
 import AllSpecialitiesPage from '../features/dashboard/AllSpecialitiesPage'
 import RadiologySearchPage from '../features/radiology/search/RadiologySearchPage'
+import LaboratorySearchPage from '../features/laboratory/search/LaboratorySearchPage'
 
 function ProtectedLayout() {
 	return (
@@ -86,6 +87,8 @@ export default function AppRoutes() {
 					<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
 					<Route path={ROUTES.SPECIALITIES} element={<AllSpecialitiesPage />} />
 					<Route path={ROUTES.RADIOLOGY.SEARCH} element={<RadiologySearchPage />} />
+					<Route path={ROUTES.LABORATORY.SEARCH} element={<LaboratorySearchPage />} />
+					
 				</Route>
 			</Route>
 
@@ -109,6 +112,7 @@ export default function AppRoutes() {
 			</Route>
 
 			{/* <Route path={ROUTES.LABORATORY.PROFILE} element={<LaboratoryProfilePage />} /> */}
+
 
 			<Route path="*" element={<NotFoundPage />} />
 		</Routes>
