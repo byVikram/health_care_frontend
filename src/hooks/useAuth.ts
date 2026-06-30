@@ -143,7 +143,6 @@ export function useOnboardingFlow(): OnboardingFlow {
 
 	
 	const handleRoleSelect = (role: OnboardingUserRole) => {
-		if (role === 'RADIOLOGY') return
 		const roleId = ROLE_ID_MAP[role]
 		setSelectedRole(role)
 		setSelectedRoleId(roleId)

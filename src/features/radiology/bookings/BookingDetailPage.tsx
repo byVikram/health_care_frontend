@@ -1,13 +1,13 @@
 // src/features/radiology/bookings/BookingDetailPage.tsx
 
-import React, { ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
 	Alert,
 	Avatar,
 	Box,
 	Card,
-	CardContent,
+	// CardContent,
 	Chip,
 	CircularProgress,
 	Grid,
@@ -30,11 +30,13 @@ import {
 } from '@mui/icons-material'
 
 import AppButton from '../../../components/common/Button/AppButton'
+import SectionCard from '../../../components/common/Card/SectionCard'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppSwitch from '../../../components/common/Switch/AppSwitch'
 import AppTable from '../../../components/common/Table/AppTable'
 
 import prescriptionImage from '../../../assets/Pharmacy/Prescription.svg'
+import { buildS3Url } from '../../../utils/s3'
 import {
 	getRadiologyBookingById,
 	submitRadiologyBookingQuote,
@@ -44,8 +46,8 @@ import {
 	RadiologyBookingItem,
 	RadiologyReport,
 } from '../radiologyService'
-import { customCardStyle } from '../../../styles/commonStyles'
 import { formatINR } from '../../../utils/Utils'
+
 
 interface QuoteFormItem {
 	booking_item_id: number
@@ -53,17 +55,6 @@ interface QuoteFormItem {
 	custom_scan_name: string
 	quoted_price: number
 }
-
-const SectionCard = ({ title, children }: { title: string; children: ReactNode }) => (
-	<Card sx={{ ...customCardStyle, height: '100%' }}>
-		<CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-			<Typography variant="subtitle2" fontWeight={700} color="#1E2A2A" sx={{ mb: 1.5 }}>
-				{title}
-			</Typography>
-			{children}
-		</CardContent>
-	</Card>
-)
 
 const getStatusLabel = (status: string) => {
 	switch (status.toLowerCase()) {
@@ -132,19 +123,9 @@ export default function BookingDetailPage() {
 		severity: 'success',
 	})
 
-	const s3Base = import.meta.env.VITE_S3_BASE_URL as string | undefined
-
 	const showToast = useCallback((message: string, severity: 'success' | 'info' | 'error') => {
 		setToast({ open: true, message, severity })
 	}, [])
-
-	const buildS3Url = useCallback(
-		(key?: string | null) => {
-			if (!key || !s3Base) return ''
-			return `${s3Base.replace(/\/$/, '')}/${key.replace(/^\//, '')}`
-		},
-		[s3Base]
-	)
 
 	const fetchBookingDetails = useCallback(async () => {
 		if (!bookingId) {
@@ -326,7 +307,7 @@ export default function BookingDetailPage() {
 				? buildS3Url(booking.external_prescription_s3_key)
 				: prescriptionImage,
 		}
-	}, [booking, buildS3Url])
+	}, [booking])
 
 	const timelineSteps = useMemo(() => {
 		if (!booking) return []

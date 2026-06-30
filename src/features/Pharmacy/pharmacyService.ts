@@ -1,7 +1,7 @@
 // src/features/Pharmacy/pharmacyService.ts
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
-import { PharmacyProfile } from '../Pharmacy/profile/PharmacyProfilePage'
+import { PharmacyProfile } from './profile/PharmacyProfilePage'
 import type { TreatmentRecord } from '../../types/pharmacyOrder'
 
 // ── Types: Pharmacy list ──────────────────────────────────────────────────────
