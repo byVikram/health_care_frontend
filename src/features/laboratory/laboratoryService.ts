@@ -255,6 +255,28 @@ export const getLaboratoryTestTypes = async (): Promise<LaboratoryTestTypesRespo
 	return res.data
 }
 
+export interface LaboratoryTestSetupItem {
+	test_type_id: number
+	pricing_model: string
+	base_price: number | null
+	price_details: string | null
+	is_available: boolean
+}
+
+/** GET /api/laboratory/tests - fetch this laboratory's own test catalog configuration */
+export const getMyLaboratoryTests = async (): Promise<LaboratoryTestsResponse> => {
+	const res = await ApiService.get<LaboratoryTestsResponse>(LABORATORY_ENDPOINTS.TESTS)
+	return res.data
+}
+
+/** PATCH /api/laboratory/tests - update/configure this laboratory's test catalog */
+export const updateMyLaboratoryTests = async (
+	payload: { tests: LaboratoryTestSetupItem[] }
+): Promise<LaboratoryTestsResponse> => {
+	const res = await ApiService.patch<LaboratoryTestsResponse>(LABORATORY_ENDPOINTS.TESTS, payload)
+	return res.data
+}
+
 /** GET /api/laboratory/search */
 export const searchLaboratories = async (params: {
 	test_type_id?: number

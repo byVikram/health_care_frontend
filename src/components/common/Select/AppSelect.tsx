@@ -5,6 +5,7 @@ import { TextField, MenuItem, InputAdornment, SxProps, Theme, TextFieldProps, Ch
 interface SelectOption {
 	value: string | number
 	label: string
+	disabled?: boolean
 }
 
 interface AppSelectProps extends Omit<TextFieldProps, 'variant' | 'select'> {
@@ -138,7 +139,12 @@ const AppSelect = forwardRef<HTMLDivElement, AppSelectProps>((props, ref) => {
 				</MenuItem>
 			)}
 			{options.map((option) => (
-				<MenuItem key={option.value} value={option.value} sx={{ borderRadius: 1, mx: 0.5, my: 0.3 }}>
+				<MenuItem
+					key={option.value}
+					value={option.value}
+					disabled={option.disabled}
+					sx={{ borderRadius: 1, mx: 0.5, my: 0.3 }}
+				>
 					{multiple && (
 						<Checkbox
 							checked={selectedValues.includes(option.value as string)}
