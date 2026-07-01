@@ -1,5 +1,3 @@
-// src/features/patient/profile/components/PatientSettingTab.tsx
-
 import { useState } from 'react'
 import {
 	Box,
@@ -8,7 +6,7 @@ import {
 	Dialog,
 	DialogContent,
 	DialogActions,
-	Switch,
+	// Switch,
 	Divider,
 } from '@mui/material'
 
@@ -20,48 +18,49 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 
 import { customCardStyle } from '../../../../styles/commonStyles'
 import { useNavigate } from 'react-router-dom'
+import AppSwitch from '../../../../components/common/Switch/AppSwitch'
 
 import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
-const switchSx = {
-	width: 56,
-	height: 30,
-	padding: 0,
+// const switchSx = {
+// 	width: 56,
+// 	height: 30,
+// 	padding: 0,
 
-	'& .MuiSwitch-switchBase': {
-		padding: 0,
-		margin: '3px',
-		transitionDuration: '300ms',
+// 	'& .MuiSwitch-switchBase': {
+// 		padding: 0,
+// 		margin: '3px',
+// 		transitionDuration: '300ms',
 
-		'&.Mui-checked': {
-			transform: 'translateX(26px)',
-			color: '#fff',
+// 		'&.Mui-checked': {
+// 			transform: 'translateX(26px)',
+// 			color: '#fff',
 
-			'& + .MuiSwitch-track': {
-				backgroundColor: '#2B6F71',
-				opacity: 1,
-				border: 0,
-			},
-		},
-	},
+// 			'& + .MuiSwitch-track': {
+// 				backgroundColor: '#2B6F71',
+// 				opacity: 1,
+// 				border: 0,
+// 			},
+// 		},
+// 	},
 
-	'& .MuiSwitch-thumb': {
-		boxSizing: 'border-box',
-		width: 24,
-		height: 24,
-		boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-	},
+// 	'& .MuiSwitch-thumb': {
+// 		boxSizing: 'border-box',
+// 		width: 24,
+// 		height: 24,
+// 		boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+// 	},
 
-	'& .MuiSwitch-track': {
-		borderRadius: 15,
-		backgroundColor: '#E2E8F0',
-		opacity: 1,
-		transition: 'background-color 300ms',
-	},
-}
+// 	'& .MuiSwitch-track': {
+// 		borderRadius: 15,
+// 		backgroundColor: '#E2E8F0',
+// 		opacity: 1,
+// 		transition: 'background-color 300ms',
+// 	},
+// }
 
-export default function PatientSettingTab() {
+export default function LaboratorySettingTab() {
 	const [openDialog, setOpenDialog] = useState(false)
 
 	const navigate = useNavigate()
@@ -240,11 +239,7 @@ export default function PatientSettingTab() {
 								{row.label}
 							</Typography>
 
-							<Switch
-								checked={row.value}
-								onChange={(e) => row.setter(e.target.checked)}
-								sx={switchSx}
-							/>
+							<AppSwitch checked={row.value} onChange={(e) => row.setter(e.target.checked)} />
 						</Box>
 
 						{i < notifRows.length - 1 && <Divider />}
@@ -297,18 +292,11 @@ export default function PatientSettingTab() {
 				}}
 			>
 				<DialogContent sx={{ pb: 1 }}>
-					<Typography
-						variant="h6"
-						fontWeight={700}
-						sx={{ mb: 1 }}
-					>
+					<Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
 						Are you sure?
 					</Typography>
 
-					<Typography
-						variant="body2"
-						color="text.secondary"
-					>
+					<Typography variant="body2" color="text.secondary">
 						You want to delete your account
 					</Typography>
 				</DialogContent>

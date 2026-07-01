@@ -3,6 +3,7 @@ import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { RadiologyProfile } from './profile/RadiologyProfilePage'
 import { RadiologySearchResultItem } from '../../types/radiology-search'
+import { EMPTY_RADIOLOGY_PROFESSIONAL } from '../../types/radiology-profile'
 
 export interface RadiologyDetailsApiPersonal {
 	id: number
@@ -58,40 +59,11 @@ export interface RadiologyUpdateResponse {
 }
 
 // Maps API response -> RadiologyProfile shape used by frontend
-export const mapRadiologyDetailsApi = (data: RadiologyDetailsApiData): RadiologyProfile => {
+export const mapRadiologyDetailsApi = (
+	data: RadiologyDetailsApiData,
+	localOverrides: Partial<RadiologyProfile['professional']> = {}
+): RadiologyProfile => {
 	const det = data.details
-	
-	// Read stored professional details from localStorage to maintain mock fields
-	let professionalMock = {
-		degree: '',
-		postGraduation: '',
-		college: '',
-		yearOfPassing: '',
-		qualificationProof: '',
-		registrationNumber: '',
-		registrationCouncil: '',
-		registrationProof: '',
-		subSpecializations: [],
-		imagingModalities: [],
-		yearsOfExperience: '',
-		currentHospital: '',
-		certifications: [],
-		memberships: [],
-		certificationProof: '',
-		teleradiologyAvailable: 'no',
-		reportingHours: '',
-		timezoneCoverage: '',
-		about: '',
-	}
-	
-	try {
-		const stored = localStorage.getItem('radiology_professional_tab')
-		if (stored) {
-			professionalMock = JSON.parse(stored)
-		}
-	} catch {
-		// Ignore and use empty
-	}
 
 	return {
 		id: data.public_id ?? '',
@@ -106,11 +78,29 @@ export const mapRadiologyDetailsApi = (data: RadiologyDetailsApiData): Radiology
 			avatar: data.avatar_s3_key ?? '',
 		},
 		professional: {
-			...professionalMock,
-			// Bind backend clinic name and registration details to display if needed
-			currentHospital: det?.name ?? professionalMock.currentHospital,
-			registrationNumber: det?.license_number ?? professionalMock.registrationNumber,
+			...EMPTY_RADIOLOGY_PROFESSIONAL,
+			...localOverrides,
+			currentHospital: det?.name ?? localOverrides.currentHospital ?? '',
+			registrationNumber: det?.license_number ?? localOverrides.registrationNumber ?? '',
+		},
+	}
+}
+
+export const getStoredRadiologyProfessionalOverrides = (): Partial<RadiologyProfile['professional']> => {
+	if (typeof window === 'undefined') {
+		return {}
+	}
+
+	try {
+		const stored = window.localStorage.getItem('radiology_professional_tab')
+		if (!stored) {
+			return {}
 		}
+
+		const parsed = JSON.parse(stored) as Partial<RadiologyProfile['professional']>
+		return parsed ?? {}
+	} catch {
+		return {}
 	}
 }
 

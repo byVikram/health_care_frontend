@@ -1,4 +1,3 @@
-// src/features/patient/profile/components/PatientSettingTab.tsx
 
 import { useState } from 'react'
 import {
@@ -24,7 +23,7 @@ import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import AppSwitch from '../../../../components/common/Switch/AppSwitch'
 
-export default function PatientSettingTab() {
+export default function RadiologySettingTab() {
 	const [openDialog, setOpenDialog] = useState(false)
 
 	const navigate = useNavigate()
@@ -67,19 +66,19 @@ export default function PatientSettingTab() {
 
 	const notifRows = [
 		{
-			label: 'Get notifications for new prescription orders',
+			label: 'Get notifications for new scan booking',
 			value: notifyAppointmentReminder,
 			setter: setNotifyAppointmentReminder,
 		},
 
 		{
-			label: 'Get notified about low stock or inventory updates',
+			label: 'Get alerts for pending report uploads',
 			value: notifyDoctorUpdates,
 			setter: setNotifyDoctorUpdates,
 		},
 
 		{
-			label: 'Receive pharmacy updates and health alerts',
+			label: 'Receive radiology updates and diagnostic alert',
 			value: notifyOffers,
 			setter: setNotifyOffers,
 		},
