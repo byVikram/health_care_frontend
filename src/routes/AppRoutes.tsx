@@ -93,7 +93,7 @@ export default function AppRoutes() {
 					
 				</Route>
 
-				<Route element={<SidebarProtectedLayout />} />
+			<Route element={<SidebarProtectedLayout />} />
 
 			<Route element={<LoggedInNavbarLayout />}>
 				<Route path={ROUTES.PORTAL.HOME} element={<PortalPage />} />
@@ -106,11 +106,10 @@ export default function AppRoutes() {
 				{/* <Route path={ROUTES.PHARMACY.PROFILE} element={<PharmacyProfilePage />} /> */}
 				<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
 
-					<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
-					<Route path={ROUTES.RADIOLOGY.PROFILE} element={<RadiologyProfilePage />} />
-					<Route path={ROUTES.RADIOLOGY.BOOKINGS} element={<BookingsList />} />
-					<Route path={ROUTES.RADIOLOGY.BOOKING_DETAIL} element={<BookingDetailPage />} />
-				</Route>
+				<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
+				<Route path={ROUTES.RADIOLOGY.PROFILE} element={<RadiologyProfilePage />} />
+				<Route path={ROUTES.RADIOLOGY.BOOKINGS} element={<BookingsList />} />
+				<Route path={ROUTES.RADIOLOGY.BOOKING_DETAIL} element={<BookingDetailPage />} />
 			</Route>
 
 			{/* <Route path={ROUTES.LABORATORY.PROFILE} element={<LaboratoryProfilePage />} /> */}
