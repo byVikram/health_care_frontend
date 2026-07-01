@@ -14,7 +14,11 @@ import { RadiologyProfileProfessional, EMPTY_RADIOLOGY_PROFESSIONAL } from '../.
 import RadiologySettingTab from './components/SettingsTab'
 import RadiologyServiceTab from './components/RadiologyServiceTab'
 import { customCardStyle } from '../../../styles/commonStyles'
-import { getMyRadiologyProfile, mapRadiologyDetailsApi } from '../radiologyService'
+import {
+	getMyRadiologyProfile,
+	getStoredRadiologyProfessionalOverrides,
+	mapRadiologyDetailsApi,
+} from '../radiologyService'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -79,7 +83,7 @@ export default function RadiologyProfilePage() {
 				setLoading(true)
 				const res = await getMyRadiologyProfile()
 				if (res.success && res.data) {
-					setProfile(mapRadiologyDetailsApi(res.data))
+					setProfile(mapRadiologyDetailsApi(res.data, getStoredRadiologyProfessionalOverrides()))
 				}
 			} catch (err: unknown) {
 				const status = (err as { response?: { status?: number } })?.response?.status

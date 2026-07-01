@@ -33,6 +33,7 @@ import LoginForm from '../../../features/auth/components/LoginForm'
 import RegisterForm from '../../../features/auth/components/RegisterForm'
 import OtpForm from '../../../features/auth/components/OtpForm'
 import prescriptionImage from '../../../assets/Pharmacy/Prescription.svg'
+import { buildS3Url } from '../../../utils/s3'
 
 import {
 	createRadiologyBooking,
@@ -40,19 +41,10 @@ import {
 	RadiologyScan,
 	RadiologyBookingCreatePayload,
 } from '../radiologyService'
-import { getPatientTreatmentHistory } from '../../Pharmacy/pharmacyService'
+import { getPatientTreatmentHistory } from '../../pharmacy/pharmacyService'
 import { TreatmentRecord, SelectOption } from '../../../types/pharmacyOrder'
 import { formatINR } from '../../../utils/Utils'
-
-const S3_BASE_URL =
-	(import.meta.env.VITE_S3_BASE_URL as string | undefined) ||
-	'https://healthcare-s3-bucket.s3.amazonaws.com'
-
-const buildS3Url = (key?: string | null): string | null => {
-	if (!key) return null
-	if (key.startsWith('http://') || key.startsWith('https://')) return key
-	return `${S3_BASE_URL.replace(/\/$/, '')}/${key.replace(/^\//, '')}`
-}
+import SectionCard from '../../../components/common/Card/SectionCard'
 
 const BRAND_TEAL = '#1f5f68'
 
@@ -253,7 +245,7 @@ export default function RadiologyBookingPage({
 	const estimatedTotal = selectedScans.reduce((sum, s) => sum + (s.base_price ?? 0), 0)
 	const hasQuoteRequired = selectedScans.some((s) => s.pricing_model === 'quote_required')
 
-	const selectedPrescriptionUrl = buildS3Url(selectedTreatment?.prescription_s3_key) ?? prescriptionImage
+	const selectedPrescriptionUrl = buildS3Url(selectedTreatment?.prescription_s3_key) || prescriptionImage
 
 	// ── Submit ──
 	const handleBookScan = async () => {
@@ -683,47 +675,47 @@ export default function RadiologyBookingPage({
 // ── Small shared pieces, kept local to this file since they're not generic enough
 //    to warrant a new components/common entry on their own (mirrors PlaceOrderPage.tsx). ────
 
-function SectionCard({
-	stepNumber,
-	title,
-	children,
-}: {
-	stepNumber: number
-	title: string
-	children: React.ReactNode
-}) {
-	return (
-		<Box
-			sx={{
-				bgcolor: '#fff',
-				borderRadius: '16px',
-				border: '1px solid #EAECF0',
-				p: 2,
-				mb: 2,
-				boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-			}}
-		>
-			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1.75 }}>
-				<Box
-					sx={{
-						width: 24,
-						height: 24,
-						borderRadius: '50%',
-						bgcolor: BRAND_TEAL,
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'center',
-						flexShrink: 0,
-					}}
-				>
-					<Typography sx={{ color: '#fff', fontSize: 12, fontWeight: 700 }}>{stepNumber}</Typography>
-				</Box>
-				<Typography sx={{ fontSize: 16, fontWeight: 700, color: '#101828' }}>{title}</Typography>
-			</Box>
-			{children}
-		</Box>
-	)
-}
+// function SectionCard({
+// 	stepNumber,
+// 	title,
+// 	children,
+// }: {
+// 	stepNumber: number
+// 	title: string
+// 	children: React.ReactNode
+// }) {
+// 	return (
+// 		<Box
+// 			sx={{
+// 				bgcolor: '#fff',
+// 				borderRadius: '16px',
+// 				border: '1px solid #EAECF0',
+// 				p: 2,
+// 				mb: 2,
+// 				boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+// 			}}
+// 		>
+// 			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1.75 }}>
+// 				<Box
+// 					sx={{
+// 						width: 24,
+// 						height: 24,
+// 						borderRadius: '50%',
+// 						bgcolor: BRAND_TEAL,
+// 						display: 'flex',
+// 						alignItems: 'center',
+// 						justifyContent: 'center',
+// 						flexShrink: 0,
+// 					}}
+// 				>
+// 					<Typography sx={{ color: '#fff', fontSize: 12, fontWeight: 700 }}>{stepNumber}</Typography>
+// 				</Box>
+// 				<Typography sx={{ fontSize: 16, fontWeight: 700, color: '#101828' }}>{title}</Typography>
+// 			</Box>
+// 			{children}
+// 		</Box>
+// 	)
+// }
 
 function DetailRow({
 	label,

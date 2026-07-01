@@ -1,4 +1,4 @@
-import React, { ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+﻿import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import {
     Alert,
@@ -42,7 +42,9 @@ import AppButton from '../../../components/common/Button/AppButton'
 import AppDatePicker from '../../../components/common/DatePicker/AppDatePicker'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppTable from '../../../components/common/Table/AppTable'
+import SectionCard from '../../../components/common/Card/SectionCard'
 import prescriptionImage from '../../../assets/Pharmacy/Prescription.svg'
+import { buildS3Url } from '../../../utils/s3'
 
 import {
     getPharmacyOrderById,
@@ -172,16 +174,16 @@ const normalizeMedicines = (medicines?: Partial<MedicineRow>[]): MedicineRow[] =
     }))
 }
 
-const SectionCard = ({ title, children }: { title: string; children: ReactNode }) => (
-    <Card sx={{ ...customCardStyle, height: '100%' }}>
-        <CardContent sx={{ p: 1.75, '&:last-child': { pb: 1.75 } }}>
-            <Typography variant="subtitle2" fontWeight={700} color="#1E2A2A" sx={{ mb: 1.25 }}>
-                {title}
-            </Typography>
-            {children}
-        </CardContent>
-    </Card>
-)
+// const SectionCard = ({ title, children }: { title: string; children: ReactNode }) => (
+//     <Card sx={{ ...customCardStyle, height: '100%' }}>
+//         <CardContent sx={{ p: 1.75, '&:last-child': { pb: 1.75 } }}>
+//             <Typography variant="subtitle2" fontWeight={700} color="#1E2A2A" sx={{ mb: 1.25 }}>
+//                 {title}
+//             </Typography>
+//             {children}
+//         </CardContent>
+//     </Card>
+// )
 
 export default function PharmacyPrescriptionDashboard() {
     const { orderId } = useParams<{ orderId: string }>()
@@ -209,19 +211,9 @@ export default function PharmacyPrescriptionDashboard() {
         severity: 'success',
     })
 
-    const s3Base = import.meta.env.VITE_S3_BASE_URL as string | undefined
-
     const showToast = useCallback((message: string, severity: 'success' | 'info' | 'error') => {
         setToast({ open: true, message, severity })
     }, [])
-
-    const buildS3Url = useCallback(
-        (key?: string | null) => {
-            if (!key || !s3Base) return ''
-            return `${s3Base.replace(/\/$/, '')}/${key.replace(/^\//, '')}`
-        },
-        [s3Base]
-    )
 
     const fetchOrderDetails = useCallback(async () => {
         if (!orderId) {
@@ -282,7 +274,7 @@ export default function PharmacyPrescriptionDashboard() {
         if (singlePrescription) sources.push(singlePrescription)
 
         return sources.length ? Array.from(new Set(sources)) : [prescriptionImage, prescriptionImage]
-    }, [buildS3Url, orderData])
+    }, [orderData])
 
     const patientData = useMemo(() => {
         const patient = orderData?.patient
@@ -296,14 +288,13 @@ export default function PharmacyPrescriptionDashboard() {
             weight: patient?.weight ? `${patient.weight}` : '—',
             lastVisit: orderData?.created_at ? new Date(orderData.created_at).toLocaleDateString() : '—',
             allergies: patient?.allergies || 'NKA (No Known Allergies)',
-            imageUrl:
-                patient?.avatar_s3_key && s3Base
-                    ? `${s3Base.replace(/\/$/, '')}/${patient.avatar_s3_key.replace(/^\//, '')}`
-                    : 'https://i.pravatar.cc/80?img=12',
+            imageUrl: patient?.avatar_s3_key
+                ? buildS3Url(patient.avatar_s3_key) || 'https://i.pravatar.cc/80?img=12'
+                : 'https://i.pravatar.cc/80?img=12',
             phone: patient?.mobile || patient?.phone || '—',
             emergencyContact: patient?.emergency_contact || '—',
         }
-    }, [orderData, s3Base])
+    }, [orderData])
 
     const clinicData = useMemo(
         () => ({
