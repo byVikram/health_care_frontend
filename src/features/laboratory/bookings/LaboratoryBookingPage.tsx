@@ -1,4 +1,4 @@
-// src/features/laboratory/bookings/LaboratoryBookingPage.tsx
+﻿// src/features/laboratory/bookings/LaboratoryBookingPage.tsx
 //
 // Patient-facing "Book a Lab Test" drawer.
 // Mirrors RadiologyBookingPage.tsx exactly — same 3-step layout, same AppDrawer wrapper.
@@ -26,6 +26,10 @@ import AppSelect from '../../../components/common/Select/AppSelect'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppDatePicker from '../../../components/common/DatePicker/AppDatePicker'
 import { useAuth } from '../../../hooks/useAuth'
+import AppModal from '../../../components/common/Modal/AppModal'
+import LoginForm from '../../../features/auth/components/LoginForm'
+import RegisterForm from '../../../features/auth/components/RegisterForm'
+import OtpForm from '../../../features/auth/components/OtpForm'
 import prescriptionImage from '../../../assets/Pharmacy/Prescription.svg'
 
 import {
@@ -92,7 +96,40 @@ export default function LaboratoryBookingPage({
 	preselectedTestId,
 	onBookingPlaced,
 }: LaboratoryBookingPageProps) {
-	const { user } = useAuth()
+	const { user, accessToken } = useAuth()
+
+	// -- Auth modal state --
+	// Mirrors RadiologyBookingPage: the drawer itself never redirects to /login.
+	// Instead, protected data fetches are skipped while logged out, and this
+	// modal is shown on top of the (still open, still populated) drawer when
+	// the user needs to log in to proceed.
+	const [authModalOpen, setAuthModalOpen] = useState(false)
+	const [authModalView, setAuthModalView] = useState<'login' | 'register' | 'otp'>('login')
+	const [authContactNumber, setAuthContactNumber] = useState('')
+
+	const closeAuthModal = () => {
+		setAuthModalOpen(false)
+		setAuthModalView('login')
+		setAuthContactNumber('')
+	}
+
+	const handleAuthNext = (contactNumber: string) => {
+		setAuthContactNumber(contactNumber)
+		setAuthModalView('otp')
+	}
+
+	const handleAuthVerified = () => {
+		setAuthModalOpen(false)
+		setAuthModalView('login')
+		setAuthContactNumber('')
+	}
+
+	const authModalTitle =
+		authModalView === 'register'
+			? 'Register to book a test'
+			: authModalView === 'otp'
+				? 'Verify OTP'
+				: 'Login to book a test'
 
 	const [treatments, setTreatments] = useState<TreatmentRecord[]>([])
 	const [selectedTreatmentId, setSelectedTreatmentId] = useState<string | null>(null)
@@ -124,7 +161,9 @@ export default function LaboratoryBookingPage({
 	useEffect(() => {
 		if (!open) return
 		const fetch = async () => {
-			if (!user?.id) { setLoadingTreatments(false); return }
+			// Logged out: nothing to fetch yet. Leave the section empty rather than
+			// hitting the (auth-required) API and triggering a global 401 redirect.
+			if (!accessToken || !user?.id) { setLoadingTreatments(false); return }
 			try {
 				setLoadingTreatments(true)
 				const data = await getPatientTreatmentHistory(user.id)
@@ -137,11 +176,17 @@ export default function LaboratoryBookingPage({
 			}
 		}
 		void fetch()
-	}, [user?.id, open])
+	}, [user?.id, accessToken, open])
 
 	// Fetch tests available at this center
 	useEffect(() => {
 		if (!open || !laboratoryId) return
+		// Logged out: the test catalog endpoint requires auth, so skip the call
+		// (avoids the global 401 handler bouncing the whole tab to /login).
+		if (!accessToken) {
+			setLoadingTests(false)
+			return
+		}
 		const fetch = async () => {
 			try {
 				setLoadingTests(true)
@@ -154,7 +199,7 @@ export default function LaboratoryBookingPage({
 			}
 		}
 		void fetch()
-	}, [laboratoryId, open])
+	}, [laboratoryId, open, accessToken])
 
 	const toggleTest = (testId: number) => {
 		setSelectedTestIds((prev) =>
@@ -179,6 +224,10 @@ export default function LaboratoryBookingPage({
 		buildS3Url(selectedTreatment?.prescription_s3_key) ?? prescriptionImage
 
 	const handleBook = async () => {
+		if (!accessToken) {
+			setAuthModalOpen(true)
+			return
+		}
 		if (!selectedTreatmentId) {
 			toast.error('Please select a consultation with a diagnosis.')
 			return
@@ -221,6 +270,7 @@ export default function LaboratoryBookingPage({
 	}
 
 	return (
+		<>
 		<AppDrawer
 			open={open}
 			onClose={onClose}
@@ -269,7 +319,20 @@ export default function LaboratoryBookingPage({
 				{/* LEFT: Step 1 — Select Consultation */}
 				<Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
 					<SectionCard stepNumber={1} title="Select Doctor Consultation">
-						{loadingTreatments ? (
+						{!accessToken ? (
+							<Stack alignItems="center" justifyContent="center" sx={{ py: 3, px: 2, gap: 1.25 }}>
+								<DescriptionOutlinedIcon sx={{ fontSize: 36, color: '#90a4ae' }} />
+								<Typography sx={{ fontSize: 13, color: '#667085', textAlign: 'center', lineHeight: 1.4 }}>
+									Log in to load your consultations and book a test.
+								</Typography>
+								<Typography
+									onClick={() => setAuthModalOpen(true)}
+									sx={{ fontSize: 13, color: BRAND_TEAL, fontWeight: 700, cursor: 'pointer' }}
+								>
+									Login / Register
+								</Typography>
+							</Stack>
+						) : loadingTreatments ? (
 							<Stack alignItems="center" justifyContent="center" sx={{ py: 3, gap: 1.25 }}>
 								<CircularProgress size={20} sx={{ color: BRAND_TEAL }} />
 								<Typography sx={{ fontSize: 13, color: '#667085' }}>Fetching consultations...</Typography>
@@ -385,7 +448,20 @@ export default function LaboratoryBookingPage({
 				{/* RIGHT: Step 2 — Tests, Step 3 — Schedule */}
 				<Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
 					<SectionCard stepNumber={2} title="Select Tests">
-						{loadingTests ? (
+						{!accessToken ? (
+							<Stack alignItems="center" justifyContent="center" sx={{ py: 3, px: 2, gap: 1.25 }}>
+								<BiotechOutlinedIcon sx={{ fontSize: 36, color: '#90a4ae' }} />
+								<Typography sx={{ fontSize: 13, color: '#667085', textAlign: 'center', lineHeight: 1.4 }}>
+									Log in to see the tests available at this center.
+								</Typography>
+								<Typography
+									onClick={() => setAuthModalOpen(true)}
+									sx={{ fontSize: 13, color: BRAND_TEAL, fontWeight: 700, cursor: 'pointer' }}
+								>
+									Login / Register
+								</Typography>
+							</Stack>
+						) : loadingTests ? (
 							<Stack alignItems="center" justifyContent="center" sx={{ py: 3, gap: 1.25 }}>
 								<CircularProgress size={20} sx={{ color: BRAND_TEAL }} />
 								<Typography sx={{ fontSize: 13, color: '#667085' }}>Loading available tests...</Typography>
@@ -541,6 +617,27 @@ export default function LaboratoryBookingPage({
 				)}
 			</Dialog>
 		</AppDrawer>
+
+		<AppModal open={authModalOpen} onClose={closeAuthModal} title={authModalTitle} maxWidth="xs" fullWidth>
+			{authModalView === 'login' && (
+				<LoginForm
+					mode="modal"
+					onSubmit={handleAuthNext}
+					onSwitchToRegister={() => setAuthModalView('register')}
+				/>
+			)}
+			{authModalView === 'register' && (
+				<RegisterForm
+					mode="modal"
+					onSubmit={handleAuthNext}
+					onSwitchToLogin={() => setAuthModalView('login')}
+				/>
+			)}
+			{authModalView === 'otp' && (
+				<OtpForm mode="modal" contactNumber={authContactNumber} onVerify={handleAuthVerified} />
+			)}
+		</AppModal>
+		</>
 	)
 }
 

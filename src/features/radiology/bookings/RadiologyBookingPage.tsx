@@ -28,6 +28,10 @@ import AppSelect from '../../../components/common/Select/AppSelect'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppDatePicker from '../../../components/common/DatePicker/AppDatePicker'
 import { useAuth } from '../../../hooks/useAuth'
+import AppModal from '../../../components/common/Modal/AppModal'
+import LoginForm from '../../../features/auth/components/LoginForm'
+import RegisterForm from '../../../features/auth/components/RegisterForm'
+import OtpForm from '../../../features/auth/components/OtpForm'
 import prescriptionImage from '../../../assets/Pharmacy/Prescription.svg'
 
 import {
@@ -109,7 +113,45 @@ export default function RadiologyBookingPage({
 	preselectedScanId,
 	onBookingPlaced,
 }: RadiologyBookingPageProps) {
-	const { user } = useAuth()
+	const { user, accessToken } = useAuth()
+
+	// ── Auth modal state ──
+	// Mirrors DoctorDetailPage: the drawer itself never redirects to /login.
+	// Instead, protected data fetches are skipped while logged out, and this
+	// modal is shown on top of the (still open, still populated) drawer when
+	// the user needs to log in to proceed. All drawer state is left untouched
+	// while the modal is open/closed, so nothing entered so far is lost.
+	const [authModalOpen, setAuthModalOpen] = useState(false)
+	const [authModalView, setAuthModalView] = useState<'login' | 'register' | 'otp'>('login')
+	const [authContactNumber, setAuthContactNumber] = useState('')
+
+	const closeAuthModal = () => {
+		setAuthModalOpen(false)
+		setAuthModalView('login')
+		setAuthContactNumber('')
+	}
+
+	const handleAuthNext = (contactNumber: string) => {
+		setAuthContactNumber(contactNumber)
+		setAuthModalView('otp')
+	}
+
+	const handleAuthVerified = () => {
+		setAuthModalOpen(false)
+		setAuthModalView('login')
+		setAuthContactNumber('')
+		// Booking drawer stays open behind the modal the whole time, so the
+		// treatment/scan effects below (which now see accessToken) will
+		// refetch automatically, and any date/time/notes already picked
+		// are still in state — nothing to restore.
+	}
+
+	const authModalTitle =
+		authModalView === 'register'
+			? 'Register to book a scan'
+			: authModalView === 'otp'
+				? 'Verify OTP'
+				: 'Login to book a scan'
 
 	// STEP 1: Consultation / treatment — carries the referral diagnosis
 	const [treatments, setTreatments] = useState<TreatmentRecord[]>([])
@@ -147,7 +189,9 @@ export default function RadiologyBookingPage({
 	useEffect(() => {
 		if (!open) return
 		const fetchTreatments = async () => {
-			if (!user?.id) {
+			// Logged out: nothing to fetch yet. Leave the section empty rather than
+			// hitting the (auth-required) API and triggering a global 401 redirect.
+			if (!accessToken || !user?.id) {
 				setLoadingTreatments(false)
 				return
 			}
@@ -166,11 +210,17 @@ export default function RadiologyBookingPage({
 			}
 		}
 		fetchTreatments()
-	}, [user?.id, open])
+	}, [user?.id, accessToken, open])
 
 	// Fetch scans available at this center
 	useEffect(() => {
 		if (!open || !radiologyId) return
+		// Logged out: the scan catalog endpoint requires auth, so skip the call
+		// (avoids the global 401 handler bouncing the whole tab to /login).
+		if (!accessToken) {
+			setLoadingScans(false)
+			return
+		}
 		const fetchScans = async () => {
 			try {
 				setLoadingScans(true)
@@ -184,7 +234,7 @@ export default function RadiologyBookingPage({
 			}
 		}
 		fetchScans()
-	}, [radiologyId, open])
+	}, [radiologyId, open, accessToken])
 
 	const toggleScan = (scanId: number) => {
 		setSelectedScanIds((prev) => (prev.includes(scanId) ? prev.filter((id) => id !== scanId) : [...prev, scanId]))
@@ -207,6 +257,10 @@ export default function RadiologyBookingPage({
 
 	// ── Submit ──
 	const handleBookScan = async () => {
+		if (!accessToken) {
+			setAuthModalOpen(true)
+			return
+		}
 		if (!selectedTreatmentId) {
 			toast.error('Please select a consultation with a diagnosis.')
 			return
@@ -249,6 +303,7 @@ export default function RadiologyBookingPage({
 	}
 
 	return (
+		<>
 		<AppDrawer
 			open={open}
 			onClose={onClose}
@@ -298,7 +353,20 @@ export default function RadiologyBookingPage({
 				{/* ── LEFT COLUMN: Step 1 — Select Doctor Consultation ────────────────── */}
 				<Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
 					<SectionCard stepNumber={1} title="Select Doctor Consultation">
-						{loadingTreatments ? (
+						{!accessToken ? (
+							<Stack alignItems="center" justifyContent="center" sx={{ py: 3, px: 2, gap: 1.25 }}>
+								<DescriptionOutlinedIcon sx={{ fontSize: 36, color: '#90a4ae' }} />
+								<Typography sx={{ fontSize: 13, color: '#667085', textAlign: 'center', lineHeight: 1.4 }}>
+									Log in to load your consultations and book a scan.
+								</Typography>
+								<Typography
+									onClick={() => setAuthModalOpen(true)}
+									sx={{ fontSize: 13, color: BRAND_TEAL, fontWeight: 700, cursor: 'pointer' }}
+								>
+									Login / Register
+								</Typography>
+							</Stack>
+						) : loadingTreatments ? (
 							<Stack alignItems="center" justifyContent="center" sx={{ py: 3, gap: 1.25 }}>
 								<CircularProgress size={20} sx={{ color: BRAND_TEAL }} />
 								<Typography sx={{ fontSize: 13, color: '#667085' }}>
@@ -412,7 +480,20 @@ export default function RadiologyBookingPage({
 				{/* ── RIGHT COLUMN: Step 2 — Select Scans, Step 3 — Schedule & Notes ──── */}
 				<Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
 					<SectionCard stepNumber={2} title="Select Scans">
-						{loadingScans ? (
+						{!accessToken ? (
+							<Stack alignItems="center" justifyContent="center" sx={{ py: 3, px: 2, gap: 1.25 }}>
+								<LocalHospitalOutlinedIcon sx={{ fontSize: 36, color: '#90a4ae' }} />
+								<Typography sx={{ fontSize: 13, color: '#667085', textAlign: 'center', lineHeight: 1.4 }}>
+									Log in to see the scans available at this center.
+								</Typography>
+								<Typography
+									onClick={() => setAuthModalOpen(true)}
+									sx={{ fontSize: 13, color: BRAND_TEAL, fontWeight: 700, cursor: 'pointer' }}
+								>
+									Login / Register
+								</Typography>
+							</Stack>
+						) : loadingScans ? (
 							<Stack alignItems="center" justifyContent="center" sx={{ py: 3, gap: 1.25 }}>
 								<CircularProgress size={20} sx={{ color: BRAND_TEAL }} />
 								<Typography sx={{ fontSize: 13, color: '#667085' }}>
@@ -575,6 +656,27 @@ export default function RadiologyBookingPage({
 				)}
 			</Dialog>
 		</AppDrawer>
+
+		<AppModal open={authModalOpen} onClose={closeAuthModal} title={authModalTitle} maxWidth="xs" fullWidth>
+			{authModalView === 'login' && (
+				<LoginForm
+					mode="modal"
+					onSubmit={handleAuthNext}
+					onSwitchToRegister={() => setAuthModalView('register')}
+				/>
+			)}
+			{authModalView === 'register' && (
+				<RegisterForm
+					mode="modal"
+					onSubmit={handleAuthNext}
+					onSwitchToLogin={() => setAuthModalView('login')}
+				/>
+			)}
+			{authModalView === 'otp' && (
+				<OtpForm mode="modal" contactNumber={authContactNumber} onVerify={handleAuthVerified} />
+			)}
+		</AppModal>
+		</>
 	)
 }
 
