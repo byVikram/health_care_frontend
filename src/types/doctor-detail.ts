@@ -1,10 +1,10 @@
-// src/types/doctor-detail.ts
+﻿// src/types/doctor-detail.ts
 
 export interface DoctorDetailHospital {
 	id: string
 	is_primary: boolean
-	video_consultation_fee: string
-	offline_consultation_fee: string
+	video_consultation_fee: number
+	offline_consultation_fee: number
 	available_days: string[]
 	working_hours: string
 	hospital: {

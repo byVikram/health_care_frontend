@@ -6,12 +6,52 @@ import AppButton from '../../../../components/common/Button/AppButton'
 import { LaboratorySearchResultItem } from '../../../../types/laboratory-search'
 import { formatINR } from '../../../../utils/Utils'
 
+// ── Local asset map keyed by logo_s3_key value stored in DB ──────────────────
+import lab1Img from '../../../../assets/Laboratory/lab1.png'
+import lab2Img from '../../../../assets/Laboratory/lab2.png'
+import lab3Img from '../../../../assets/Laboratory/lab3.png'
+import lab4Img from '../../../../assets/Laboratory/lab4.png'
+import lab5Img from '../../../../assets/Laboratory/lab5.png'
+import lab6Img from '../../../../assets/Laboratory/lab6.png'
+import lab7Img from '../../../../assets/Laboratory/lab7.png'
+
+const LOGO_KEY_MAP: Record<string, string> = {
+	'laboratory/apollo.png': lab1Img,
+	'laboratory/metropolis.png': lab2Img,
+	'laboratory/lal_pathlabs.png': lab3Img,
+	'laboratory/thyrocare.png': lab4Img,
+	'laboratory/srl.png': lab5Img,
+	'laboratory/vijaya.png': lab6Img,
+	'laboratory/neuberg.png': lab7Img,
+}
+
+// Fallback: match by lab name if logo_s3_key is not yet set in DB
+const LOGO_NAME_MAP: Record<string, string> = {
+	'apollo diagnostics': lab1Img,
+	'metropolis healthcare': lab2Img,
+	'lal pathlabs': lab3Img,
+	'thyrocare technologies': lab4Img,
+	'srl diagnostics': lab5Img,
+	'vijaya diagnostic centre': lab6Img,
+	'neuberg diagnostics': lab7Img,
+}
+
+function resolveLogoSrc(item: LaboratorySearchResultItem): string {
+	if (item.logo_s3_key) {
+		const byKey = LOGO_KEY_MAP[item.logo_s3_key.toLowerCase()]
+		if (byKey) return byKey
+	}
+	// Fallback to name-based lookup
+	return LOGO_NAME_MAP[item.name.toLowerCase()] ?? ''
+}
+
 interface LaboratorySearchCardProps {
 	item: LaboratorySearchResultItem
 	onBookTest?: (item: LaboratorySearchResultItem) => void
 }
 
 export default function LaboratorySearchCard({ item, onBookTest }: LaboratorySearchCardProps) {
+	const logoSrc = resolveLogoSrc(item)
 	const handleBook = (e: React.MouseEvent) => {
 		e.stopPropagation()
 		onBookTest?.(item)
@@ -45,11 +85,13 @@ export default function LaboratorySearchCard({ item, onBookTest }: LaboratorySea
 			{/* Banner */}
 			<Box sx={{ position: 'relative', height: 160, bgcolor: 'grey.100' }}>
 				<Avatar
+					src={logoSrc}
+					alt={item.name}
 					variant="square"
 					sx={{
 						width: '100%',
 						height: '100%',
-						bgcolor: 'grey.100',
+						'& img': { objectFit: 'cover', objectPosition: 'center', height: '100%' },
 					}}
 				>
 					<BiotechIcon sx={{ fontSize: 56, color: 'primary.main', opacity: 0.35 }} />

@@ -1,4 +1,4 @@
-﻿// src/routes/AppRoutes.tsx
+// src/routes/AppRoutes.tsx
 import { Routes, Route, Outlet } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
 import LoginPage from '../features/auth/LoginPage'
@@ -29,6 +29,7 @@ import BookingDetailPage from '../features/radiology/bookings/BookingDetailPage'
 import AllSpecialitiesPage from '../features/dashboard/AllSpecialitiesPage'
 import RadiologySearchPage from '../features/radiology/search/RadiologySearchPage'
 import LaboratorySearchPage from '../features/laboratory/search/LaboratorySearchPage'
+import { useAuth } from '../hooks/useAuth'
 
 function ProtectedLayout() {
 	return (
@@ -55,7 +56,8 @@ function LoggedInNavbarLayout() {
 }
 
 export default function AppRoutes() {
-	const isAuthenticated = true
+	const { accessToken } = useAuth()
+	const isAuthenticated = !!accessToken
 
 	return (
 		<Routes>
@@ -90,7 +92,6 @@ export default function AppRoutes() {
 					<Route path={ROUTES.LABORATORY.SEARCH} element={<LaboratorySearchPage />} />
 					
 				</Route>
-			</Route>
 
 			<Route element={<SidebarProtectedLayout />} />
 
@@ -101,6 +102,7 @@ export default function AppRoutes() {
 				<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
 				<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
 				<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
+				<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
 				{/* <Route path={ROUTES.PHARMACY.PROFILE} element={<PharmacyProfilePage />} /> */}
 				<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
 

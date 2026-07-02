@@ -1,4 +1,4 @@
-// src/features/laboratory/profile/LaboratoryProfilePage.tsx
+﻿// src/features/laboratory/profile/LaboratoryProfilePage.tsx
 import { useState, useMemo } from 'react'
 import { Box, Container, Grid } from '@mui/material'
 import AppProfileSidebar from '../../../components/common/ProfileSidebar/AppProfileSidebar'
@@ -11,6 +11,7 @@ import SessionsTab from '../../../components/common/SessionsTab/SessionsTab'
 import LabPersonalTab from './components/LabPersonalTab'
 import LabProfessionalTab from './components/LabProfessionalTab'
 import LabSettingsTab from './components/LabSettingsTab'
+import LaboratoryServiceTab from './components/LaboratoryServiceTab'
 import { LaboratoryProfile, LaboratoryProfilePersonal, LaboratoryProfileProfessional } from '../../../types/laboratory-profile'
 import { customCardStyle } from '../../../styles/commonStyles'
 
@@ -108,11 +109,7 @@ export default function LaboratoryProfilePage() {
 			case 'professional':
 				return <LabProfessionalTab data={lab.professional} onChange={handleProfessionalChange} />
 			case 'services':
-				return (
-					<Box sx={{ ...customCardStyle, p: 4, color: 'text.secondary', textAlign: 'center' }}>
-						Coming soon...
-					</Box>
-				)
+				return <LaboratoryServiceTab />
 			case 'sessions':
 				return <SessionsTab />
 			case 'settings':

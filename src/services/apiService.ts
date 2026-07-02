@@ -4,7 +4,11 @@ import { clearAuth } from '../hooks/useAuth'
 import { toast } from 'react-toastify'
 
 // ── Axios instance ────────────────────────────────────────────────────────────
-const axiosInstance = axios.create()
+const API_BASE_URL = (import.meta.env.VITE_API_ENDPOINT as string | undefined)?.replace(/\/+$/, '')
+
+const axiosInstance = axios.create({
+	baseURL: API_BASE_URL || undefined,
+})
 
 // ── Request interceptor — attach Bearer token automatically ───────────────────
 axiosInstance.interceptors.request.use(

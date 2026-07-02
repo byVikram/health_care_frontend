@@ -12,6 +12,7 @@ import AppSkeleton from '../../../components/common/Skeleton/AppSkeleton'
 import { customCardStyle } from '../../../styles/commonStyles'
 import { searchLaboratories } from '../laboratoryService'
 import { LaboratorySearchResultItem } from '../../../types/laboratory-search'
+import LaboratoryBookingPage from '../bookings/LaboratoryBookingPage'
 
 const SORT_OPTIONS = [
 	{ value: 'name_asc', label: 'Name: A to Z' },
@@ -47,9 +48,16 @@ export default function LaboratorySearchPage() {
 	const [loadingMore, setLoadingMore] = useState(false)
 	const [hasMore, setHasMore] = useState(false)
 
-	// Book Test button — drawer not yet wired, do nothing for now
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	const handleOpenBooking = (_item: LaboratorySearchResultItem) => { /* TODO */ }
+	// Book Test drawer state — one LaboratoryBookingPage instance, fed by the
+	// (laboratory, test) pair the user clicked "Book Test" on. Mirrors how
+	// RadiologySearchPage lifts RadiologyBookingPage's open/selected state up from the card.
+	const [bookingOpen, setBookingOpen] = useState(false)
+	const [selectedItem, setSelectedItem] = useState<LaboratorySearchResultItem | null>(null)
+
+	const handleOpenBooking = (item: LaboratorySearchResultItem) => {
+		setSelectedItem(item)
+		setBookingOpen(true)
+	}
 
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const handleSearchChange = (value: string) => {
@@ -149,6 +157,7 @@ export default function LaboratorySearchPage() {
 	}, [])
 
 	return (
+		<>
 		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
 			<Box sx={{ bgcolor: 'background.paper', py: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
 				<Container maxWidth="lg">
@@ -278,5 +287,19 @@ export default function LaboratorySearchPage() {
 				</Grid>
 			</Container>
 		</Box>
+
+		{/* Book Test drawer — single instance lifted up from LaboratorySearchCard, replacing
+		    the old per-card popup (mirrors RadiologySearchPage). */}
+		{selectedItem && (
+			<LaboratoryBookingPage
+				open={bookingOpen}
+				onClose={() => setBookingOpen(false)}
+				laboratoryId={selectedItem.id}
+				centerName={selectedItem.name}
+				centerAddress={`${selectedItem.address}, ${selectedItem.city}, ${selectedItem.state}`}
+				preselectedTestId={selectedItem.test_id}
+			/>
+		)}
+		</>
 	)
 }

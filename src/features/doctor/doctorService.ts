@@ -1,4 +1,4 @@
-// src/features/doctor/doctorService.ts
+﻿// src/features/doctor/doctorService.ts
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { AppointmentsResponse } from '../../types/appointment'
@@ -213,8 +213,8 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 				location: h.hospital?.address ?? '',
 				fullAddress: h.hospital?.address ?? '',
 				isPrimary: h.is_primary ?? false,
-				video_consultation_fee: h.hospital?.video_consultation_fee ?? '',
-				clinic_consultation_fee: h.hospital?.clinic_consultation_fee ?? '',
+				video_consultation_fee: h.hospital?.video_consultation_fee ?? 0,
+				clinic_consultation_fee: h.hospital?.clinic_consultation_fee ?? 0,
 				phone_number: h.hospital?.contact_number ?? '',
 				free_followup_validity_days:
 					h.appointment_rules?.free_followup_validity_days ?? h.free_followup_validity_days ?? 7,

@@ -1,6 +1,6 @@
 // src/features/laboratory/laboratoryService.ts
 import ApiService from '../../services/apiService'
-import { API_ENDPOINTS, BASE_URL } from '../../constants/apiUrls'
+import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { LaboratoryProfile, LaboratoryProfilePersonal, LaboratoryProfileProfessional, LaboratoryService } from '../../types/laboratory-profile'
 import { LaboratorySearchResultItem } from '../../types/laboratory-search'
 
@@ -45,13 +45,6 @@ interface LaboratoryProfileApiResponse {
 	about?: string
 	operating_since?: string
 	services?: LaboratoryService[]
-}
-
-const LABORATORY_ENDPOINTS = {
-	TEST_TYPES: `${BASE_URL}/api/laboratory/test-types`,
-	SEARCH: `${BASE_URL}/api/laboratory/search`,
-	TESTS: `${BASE_URL}/api/laboratory/tests`,
-	BOOKINGS: `${BASE_URL}/api/laboratory/bookings`,
 }
 
 // ── Map API → local shape ────────────────────────────────────────────────
@@ -251,7 +244,29 @@ export interface LaboratoryUpdateResponse {
 
 /** GET /api/laboratory/test-types */
 export const getLaboratoryTestTypes = async (): Promise<LaboratoryTestTypesResponse> => {
-	const res = await ApiService.get<LaboratoryTestTypesResponse>(LABORATORY_ENDPOINTS.TEST_TYPES)
+	const res = await ApiService.get<LaboratoryTestTypesResponse>(API_ENDPOINTS.LABORATORY.TEST_TYPES)
+	return res.data
+}
+
+export interface LaboratoryTestSetupItem {
+	test_type_id: number
+	pricing_model: string
+	base_price: number | null
+	price_details: string | null
+	is_available: boolean
+}
+
+/** GET /api/laboratory/tests - fetch this laboratory's own test catalog configuration */
+export const getMyLaboratoryTests = async (): Promise<LaboratoryTestsResponse> => {
+	const res = await ApiService.get<LaboratoryTestsResponse>(API_ENDPOINTS.LABORATORY.TESTS)
+	return res.data
+}
+
+/** PATCH /api/laboratory/tests - update/configure this laboratory's test catalog */
+export const updateMyLaboratoryTests = async (
+	payload: { tests: LaboratoryTestSetupItem[] }
+): Promise<LaboratoryTestsResponse> => {
+	const res = await ApiService.patch<LaboratoryTestsResponse>(API_ENDPOINTS.LABORATORY.TESTS, payload)
 	return res.data
 }
 
@@ -265,7 +280,7 @@ export const searchLaboratories = async (params: {
 	max_price?: number
 }): Promise<LaboratorySearchResponse> => {
 	const res = await ApiService.getWithParams<LaboratorySearchResponse>(
-		LABORATORY_ENDPOINTS.SEARCH,
+		API_ENDPOINTS.LABORATORY.SEARCH,
 		params,
 	)
 	return res.data
@@ -277,7 +292,7 @@ export const searchLaboratories = async (params: {
  */
 export const fetchLaboratoryTestsForCenter = async (laboratoryId: string): Promise<LaboratoryTestsResponse> => {
 	const res = await ApiService.getWithParams<LaboratoryTestsResponse>(
-		LABORATORY_ENDPOINTS.TESTS,
+		API_ENDPOINTS.LABORATORY.TESTS,
 		{ laboratory_id: laboratoryId },
 	)
 	return res.data
@@ -288,7 +303,7 @@ export const createLaboratoryBooking = async (
 	payload: LaboratoryBookingCreatePayload,
 ): Promise<LaboratoryBookingResponse> => {
 	const res = await ApiService.post<LaboratoryBookingResponse>(
-		LABORATORY_ENDPOINTS.BOOKINGS,
+		API_ENDPOINTS.LABORATORY.BOOKINGS,
 		payload,
 	)
 	return res.data

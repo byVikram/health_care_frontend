@@ -1,4 +1,4 @@
-// src/types/doctor-profile.ts
+﻿// src/types/doctor-profile.ts
 
 export interface DoctorProfilePersonal {
 	name: string
@@ -61,8 +61,8 @@ export interface DoctorHospital {
 	fullAddress: string
 	isPrimary: boolean
 	phone_number?: string
-	video_consultation_fee?: string
-	clinic_consultation_fee?: string
+	video_consultation_fee?: number
+	clinic_consultation_fee?: number
 	free_followup_validity_days?: number
 	reschedule_allowed_until_hours?: number
 	allow_pay_later?: boolean
