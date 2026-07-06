@@ -112,6 +112,7 @@ export default function AppRoutes() {
 					<Route path={ROUTES.RADIOLOGY.BOOKING_DETAIL} element={<BookingDetailPage />} />
 				</Route>
 			</Route>
+		</Route>
 
 			{/* <Route path={ROUTES.LABORATORY.PROFILE} element={<LaboratoryProfilePage />} /> */}
 

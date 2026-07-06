@@ -1,5 +1,15 @@
 // src/types/appointment.ts
 
+export interface AppointmentHistoryEntry {
+	action: string          // e.g. 'created' | 'rescheduled' | 'confirmed' | 'cancelled'
+	actor_type: string      // 'doctor' | 'patient' | 'system'
+	// Backend may return a plain string OR a slot object {appointment_date, start_time, end_time}
+	old_value: unknown
+	new_value: unknown
+	reason: string | null
+	created_at: string      // ISO timestamp
+}
+
 export type AppointmentStatusValue = 'pending' | 'confirmed' | 'completed' | 'cancelled' | string
 
 export interface AppointmentStatus {
@@ -11,6 +21,8 @@ export interface AppointmentDoctor {
 	id: string
 	name: string
 	avatar_s3_key: string | undefined
+	specialty?: string
+	specialization?: string  // alternate key some backends use
 }
 
 export interface AppointmentPatient {
@@ -30,6 +42,7 @@ export interface AppointmentHospital {
 export interface Appointment {
 	id: string
 	public_id: string
+	booking_id?: string
 	appointment_mode: 'clinic visit' | 'video call'
 	appointment_date: string
 	start_time: string
@@ -48,6 +61,8 @@ export interface Appointment {
 		duration?: string
 		severity?: string
 	} | null
+	history?: AppointmentHistoryEntry[]
+	rescheduled_by?: string | null
 }
 
 export interface AppointmentsResponse {

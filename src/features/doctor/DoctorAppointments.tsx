@@ -102,6 +102,10 @@ export function DoctorAppointments({
 	const [selectedPatientId, setSelectedPatientId] = useState('')
 	// Appointment action state
 	const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({})
+	const [localTimes, setLocalTimes] = useState<Record<string, { start_time: string; end_time: string | null }>>({})
+	// Tracks who initiated the most recent reschedule for each appointment (locally, before page refresh).
+	// 'doctor' means the doctor rescheduled → patient must confirm; Confirm button is hidden for doctor.
+	const [localRescheduledBy, setLocalRescheduledBy] = useState<Record<string, string>>({})
 
 	// Reject confirmation popover state
 	const [rejectAnchorEl, setRejectAnchorEl] = useState<HTMLElement | null>(null)
@@ -130,8 +134,19 @@ export function DoctorAppointments({
 
 	// Helpers
 	const getStatusLabel = (apt: Appointment): string => {
-		if (localStatuses[apt.id]) return localStatuses[apt.id]
-		return typeof apt.status === 'string' ? apt.status : (apt.status?.label ?? 'pending')
+		// Local status override (set after an action is taken without a full page refresh)
+		const localStatus = localStatuses[apt.id]
+		const status = (localStatus ?? (typeof apt.status === 'string' ? apt.status : (apt.status?.label ?? 'pending'))).toLowerCase()
+
+		if (status === 'rescheduled') {
+			// Prefer local tracking of who rescheduled; fall back to API field.
+			const rescheduledBy = (localRescheduledBy[apt.id] ?? apt.rescheduled_by ?? '').toLowerCase()
+			if (rescheduledBy === 'doctor') return 'Waiting for Patient Confirmation'
+			if (rescheduledBy === 'patient') return 'Waiting for Your Confirmation'
+			return 'Rescheduled'
+		}
+
+		return localStatus ?? (typeof apt.status === 'string' ? apt.status : (apt.status?.label ?? 'pending'))
 	}
 
 	// Fetch slots whenever the reschedule date changes
@@ -196,7 +211,27 @@ export function DoctorAppointments({
 			)
 			if (res.data?.success) {
 				toast.success(res.data.message || 'Appointment rescheduled!')
-				setLocalStatuses((prev) => ({ ...prev, [rescheduleAppt.id]: 'rescheduled' }))
+				const currentStatus = getStatusLabel(rescheduleAppt)
+				const nextStatus = currentStatus === 'pending' ? 'pending' : 'rescheduled'
+				setLocalStatuses((prev) => ({ ...prev, [rescheduleAppt.id]: nextStatus }))
+				// Record that the DOCTOR was the initiator so the Confirm button is
+				// correctly hidden and the status label reads "Waiting for Patient Confirmation".
+				if (nextStatus === 'rescheduled') {
+					setLocalRescheduledBy((prev) => ({ ...prev, [rescheduleAppt.id]: 'doctor' }))
+				}
+				
+				const slot = rescheduleSlots
+					.flatMap((s) => s.slots)
+					.find((sl) => sl.start_time === rescheduleTime)
+				const slotEndTime = slot ? slot.end_time : null
+
+				setLocalTimes((prev) => ({
+					...prev,
+					[rescheduleAppt.id]: {
+						start_time: rescheduleTime,
+						end_time: slotEndTime,
+					},
+				}))
 				setRescheduleOpen(false)
 			} else {
 				toast.error(res.data?.message || 'Reschedule failed. Please try again.')
@@ -466,10 +501,20 @@ export function DoctorAppointments({
 							const statusLabel = getStatusLabel(apt)
 							const isCancelled = statusLabel === 'cancelled'
 							const isConfirmed = statusLabel === 'confirmed'
+							// True when the doctor is the reschedule initiator — Confirm must be hidden
+							// because the doctor should never confirm their own reschedule.
+							const rescheduledByDoctor =
+								statusLabel.toLowerCase().includes('waiting for patient') ||
+								(statusLabel === 'rescheduled' &&
+									(localRescheduledBy[apt.id] ?? apt.rescheduled_by ?? '').toLowerCase() === 'doctor')
 							const patientName = apt.patient?.name ?? 'Unknown Patient'
 
 							const visibleActions = allActionButtons.filter(
-								(btn) => !(btn.action === 'confirm' && isConfirmed)
+								(btn) =>
+									// Hide Confirm when already confirmed
+									!(btn.action === 'confirm' && isConfirmed) &&
+									// Hide Confirm when doctor rescheduled — patient must confirm, not doctor
+									!(btn.action === 'confirm' && rescheduledByDoctor)
 							)
 
 							return (
@@ -542,12 +587,16 @@ export function DoctorAppointments({
 														? '#ffeeee'
 														: isConfirmed
 															? '#e8f5e9'
-															: '#fff8e8',
+															: rescheduledByDoctor
+																? '#fff3e0'
+																: '#fff8e8',
 													color: isCancelled
 														? '#e53935'
 														: isConfirmed
 															? '#4caf50'
-															: '#f59e0b',
+															: rescheduledByDoctor
+																? '#e65100'
+																: '#f59e0b',
 													fontWeight: 600,
 												}}
 											/>
@@ -728,7 +777,7 @@ export function DoctorAppointments({
 											<Typography variant="body2">|</Typography>
 											<AccessTimeIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
 											<Typography variant="body2">
-												{formatTime12h(apt.start_time)} - {formatTime12h(apt.end_time)}
+												{formatTime12h(localTimes[apt.id]?.start_time ?? apt.start_time)} - {formatTime12h(localTimes[apt.id]?.end_time ?? apt.end_time)}
 											</Typography>
 										</Box>
 									</Box>
