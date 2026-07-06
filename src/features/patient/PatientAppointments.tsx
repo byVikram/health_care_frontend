@@ -1,4 +1,4 @@
-﻿import { Box, Typography, Chip, Stack, Paper } from '@mui/material'
+import { Box, Typography, Chip, Stack, Paper } from '@mui/material'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import VideocamIcon from '@mui/icons-material/Videocam'
@@ -198,7 +198,28 @@ export function PatientAppointments() {
 
 			if (res.data?.success) {
 				toast.success(res.data.message || 'Appointment rescheduled!')
-				setLocalStatuses((prev) => ({ ...prev, [rescheduleAppt.id]: 'rescheduled' }))
+				const currentStatus = statusOf(rescheduleAppt)
+				const nextStatus = currentStatus === 'pending' ? 'pending' : 'rescheduled'
+				setLocalStatuses((prev) => ({ ...prev, [rescheduleAppt.id]: nextStatus }))
+				
+				setAppointments((prev) =>
+					prev.map((a) =>
+						a.id === rescheduleAppt.id
+							? {
+									...a,
+									appointment_date: dateStr,
+									start_time: rescheduleTime,
+									hospital: rescheduleHospitalId
+										? {
+												id: rescheduleHospitalId,
+												name: rescheduleHospitals.find((h) => h.id === rescheduleHospitalId)?.label || a.hospital?.name || '',
+												address: a.hospital?.address || '',
+										  }
+										: a.hospital,
+							  }
+							: a
+					)
+				)
 				setRescheduleOpen(false)
 			} else {
 				toast.error(res.data?.message || 'Reschedule failed. Please try again.')

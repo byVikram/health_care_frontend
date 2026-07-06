@@ -106,21 +106,23 @@ export default function AppDrawer({
 					gap: 1.5,
 				}}
 			>
-				<AppButton
-					label={cancelLabel}
-					variant="outlined"
-					fullWidth
-					onClick={onClose}
-					sx={{
-						borderRadius: '20px',
-						color: 'text.secondary',
-						borderColor: 'divider',
-						'&:hover': {
-							bgcolor: 'action.hover',
+				{cancelLabel && (
+					<AppButton
+						label={cancelLabel}
+						variant="outlined"
+						fullWidth
+						onClick={onClose}
+						sx={{
+							borderRadius: '20px',
+							color: 'text.secondary',
 							borderColor: 'divider',
-						},
-					}}
-				/>
+							'&:hover': {
+								bgcolor: 'action.hover',
+								borderColor: 'divider',
+							},
+						}}
+					/>
+				)}
 
 				<AppButton
 					label={confirmLabel}
