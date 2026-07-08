@@ -26,6 +26,8 @@ export const API_ENDPOINTS = {
 		UPDATE_HOSPITAL: '/api/doctors/hospitals',
 		UPDATE_AVAILABILITY: '/api/doctors/availability',
 		DELETE_ACCOUNT: '/api/doctors/profile',
+		ACHIEVEMENTS: '/api/doctors/achievements',
+		ACHIEVEMENT_BY_ID: (publicId: string) => `/api/doctors/achievements/${publicId}`,
 	},
 	LABORATORY_PROFILE: {
 		DETAILS: '/api/laboratory/details',
