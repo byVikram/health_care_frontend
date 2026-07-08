@@ -1,4 +1,4 @@
-// src/components/common/DateSlotPicker/DateSlotPicker.tsx
+﻿// src/components/common/DateSlotPicker/DateSlotPicker.tsx
 import { formatINR } from '../../../utils/Utils'
 import { useState } from 'react'
 import { Box, Typography, IconButton } from '@mui/material'
@@ -232,13 +232,13 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 				<>
 					{/* Date label - only shown when non-empty */}
 					{dateLabel && (
-						<Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
+						<Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
 							{dateLabel}
 						</Typography>
 					)}
 
 					{/* Week calendar */}
-					<Box sx={{ p: 2, mb: 3 }}>
+					<Box sx={{ p: 2, pt: 0, mb: 3 }}>
 						{/* Month nav */}
 						<Box
 							sx={{

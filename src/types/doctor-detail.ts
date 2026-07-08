@@ -39,6 +39,14 @@ export interface DoctorAvailability {
 	can_toggle?: boolean
 }
 
+/** A single educational qualification returned by the public doctor detail API */
+export interface DoctorDetailDegree {
+	degree: string
+	specialization?: string | null
+	college: string
+	year_of_passing: string
+}
+
 export interface DoctorDetailData {
 	id: string
 	name: string
@@ -48,6 +56,7 @@ export interface DoctorDetailData {
 		location: string
 		experience_years: number
 		languages: string[]
+		/** Primary / legacy single-degree fields */
 		degree: string
 		college: string
 		year_of_passing: string
@@ -58,6 +67,8 @@ export interface DoctorDetailData {
 			facebook?: string | null
 			twitter?: string | null
 		}
+		/** Full degrees list — optional until the public API exposes it */
+		degrees?: DoctorDetailDegree[]
 	}
 	specialities: string[]
 	hospitals: DoctorDetailHospital[]
