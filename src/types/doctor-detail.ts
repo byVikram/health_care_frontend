@@ -1,4 +1,4 @@
-﻿// src/types/doctor-detail.ts
+// src/types/doctor-detail.ts
 
 export interface DoctorDetailHospital {
 	id: string
@@ -16,6 +16,16 @@ export interface DoctorDetailHospital {
 		latitude: number
 		longitude: number
 	}
+}
+
+export interface DoctorAchievement {
+	id: string
+	title: string
+	achievement_type: string
+	organization: string | null
+	achievement_date: string | null
+	description: string | null
+	document_s3_key: string | null
 }
 
 export interface DoctorAvailability {
@@ -51,6 +61,7 @@ export interface DoctorDetailData {
 	}
 	specialities: string[]
 	hospitals: DoctorDetailHospital[]
+	achievements: DoctorAchievement[]
 	availability: DoctorAvailability[]
 }
 

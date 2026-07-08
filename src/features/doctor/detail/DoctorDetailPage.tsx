@@ -1,4 +1,4 @@
-﻿// src/features/doctor/DoctorDetailPage.tsx
+// src/features/doctor/DoctorDetailPage.tsx
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Box, Container, Typography, Divider, Grid, Card } from '@mui/material'
@@ -20,6 +20,9 @@ import { getDoctorById, getDoctorAvailability } from '../doctorService'
 import AppSkeleton from '../../../components/common/Skeleton/AppSkeleton'
 import ConsentForm from '../../appointments/components/ConsentForm'
 import { useAuth } from '../../../hooks/useAuth'
+import AchievementCard, { AchievementCardData } from '../../../components/common/Card/AchievementCard'
+import HorizontalCardCarousel from '../../../components/common/Carousel/HorizontalCardCarousel'
+import AchievementDetailsModal from '../../../components/common/Modal/AchievementDetailsModal'
 
 type AvailabilityMode = 'clinic' | 'video'
 type ApiAvailabilityMode = 'clinic_visit' | 'video_call'
@@ -61,6 +64,8 @@ export default function DoctorDetailPage() {
 	const [selectedDate, setSelectedDate] = useState(new Date())
 	const [selectedTime, setSelectedTime] = useState('')
 	const [showFullAbout, setShowFullAbout] = useState(false)
+	const [selectedAchievement, setSelectedAchievement] = useState<AchievementCardData | null>(null)
+	const [detailsModalOpen, setDetailsModalOpen] = useState(false)
 
 
 	const [bookingSuccessModal, setBookingSuccessModal] = useState(false)
@@ -326,13 +331,25 @@ export default function DoctorDetailPage() {
 												{primaryHospital?.working_hours || 'Not available'}
 											</Typography> */}
 										</Box>
-										<Box sx={{ ...customCardStyle, p: 3, minHeight: '280px' }}>
-
-
-
-
-
-										</Box>
+										{doctorDetail.achievements && doctorDetail.achievements.length > 0 && (
+											<Box sx={{ ...customCardStyle, p: 3 }}>
+												<Typography variant="h5" sx={{ mb: 2 }}>
+													Achievements
+												</Typography>
+												<HorizontalCardCarousel gap={2} ariaLabel="doctor-achievements">
+													{doctorDetail.achievements.map((achievement) => (
+														<AchievementCard
+															key={achievement.id}
+															achievement={achievement}
+															onClick={(ach) => {
+																setSelectedAchievement(ach)
+																setDetailsModalOpen(true)
+															}}
+														/>
+													))}
+												</HorizontalCardCarousel>
+											</Box>
+										)}
 										{/* <Box sx={{ ...customCardStyle, p: 3 }}>
 											<AppointmentTypeSelector
 												types={appointmentTypes}
@@ -466,6 +483,12 @@ export default function DoctorDetailPage() {
 
 				confirmLabel="Done"
 				hideCancelButton
+			/>
+
+			<AchievementDetailsModal
+				open={detailsModalOpen}
+				onClose={() => setDetailsModalOpen(false)}
+				achievement={selectedAchievement}
 			/>
 		</Box>
 	)
