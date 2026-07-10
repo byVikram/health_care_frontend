@@ -64,5 +64,6 @@ export const ROUTES = {
 		HOME: '/portal',
 		PROFILE: '/profile',
 		CONSULTATION: '/consultation/:patientId/:appointmentId',
+		APPOINTMENT_DETAIL: '/portal/appointments/:appointmentId',
 	},
 }

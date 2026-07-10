@@ -558,7 +558,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 			<Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200 }}>
 				{role === USER_ROLES.PATIENT ? (
 					<AppNavBar
-						onProfileClick={() => {
+						onProfileClick={() => { 
 							setAccountSwitcherOpen(false)
 							setDropdownOpen((prev) => !prev)
 						}}

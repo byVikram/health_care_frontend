@@ -59,6 +59,8 @@ export const API_ENDPOINTS = {
 		VITALS_HISTORY: (id: string) => `/api/patients/${id}/vitals`,
 		REPORTS: (id: string) => `/api/patients/${id}/reports`,
 		REPORTS_CREATE: '/api/patients/reports',
+		LABORATORY_REPORTS: (id: string) => `/api/patients/${id}/laboratory-reports`,
+		RADIOLOGY_REPORTS: (id: string) => `/api/patients/${id}/radiology-reports`,
 	},
 	LOOKUP: {
 		GET: '/api/lookup',
@@ -88,6 +90,10 @@ export const API_ENDPOINTS = {
 		UPDATE_STATUS: (id: string) => `/api/pharmacy-orders/${id}/status`,
 		UPDATE_MEDICINES: (id: string) => `/api/pharmacy-orders/${id}/medicines`,
 		SEND_REMINDER: (id: string) => `/api/pharmacy-orders/${id}/remind`,
+	},
+	TREATMENTS: {
+		GET_BY_APPOINTMENT: (appointmentId: string) => `/api/treatments/appointment/${appointmentId}`,
+		PATIENT_HISTORY: (patientPublicId: string) => `/api/treatments/patient/${patientPublicId}/history`,
 	},
 	RADIOLOGY_PROFILE: {
 		DETAILS: '/api/radiology/profile',

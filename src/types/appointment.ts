@@ -21,7 +21,9 @@ export interface AppointmentDoctor {
 	id: string
 	name: string
 	avatar_s3_key: string | undefined
-	specialty?: string
+	degree?: string | null
+	speciality?: string | null // actual key returned by GET /api/appointments/{id}
+	specialty?: string // legacy/alternate key kept for backward compatibility
 	specialization?: string  // alternate key some backends use
 }
 
