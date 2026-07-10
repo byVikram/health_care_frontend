@@ -1,4 +1,4 @@
-﻿import { WorkingHoursState, AppointmentType } from './doctor-profile'
+import { WorkingHoursState, AppointmentType } from './doctor-profile'
 
 export interface DoctorProfileApiSpeciality {
 	id: string
@@ -66,6 +66,7 @@ export interface DoctorProfileApiData {
 		location: string
 		languages: string[]
 		social_media_handles?: SocialMediaHandles
+		contact_number?: string
 	}
 	professional_details: {
 		experience_years: number

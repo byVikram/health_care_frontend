@@ -23,6 +23,11 @@ export interface AppointmentDoctor {
 	avatar_s3_key: string | undefined
 	specialty?: string
 	specialization?: string  // alternate key some backends use
+	speciality?: string       // key returned by the appointment detail API
+	degree?: string | null
+	experience_years?: number | null
+	languages?: string[] | null
+	about?: string | null
 }
 
 export interface AppointmentPatient {

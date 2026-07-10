@@ -61,6 +61,8 @@ export const API_ENDPOINTS = {
 		VITALS_HISTORY: (id: string) => `/api/patients/${id}/vitals`,
 		REPORTS: (id: string) => `/api/patients/${id}/reports`,
 		REPORTS_CREATE: '/api/patients/reports',
+		FAVOURITES: '/api/patients/me/favourites',
+		TOGGLE_FAVOURITE: (doctorPublicId: string) => `/api/patients/me/favourites/${doctorPublicId}`,
 	},
 	LOOKUP: {
 		GET: '/api/lookup',

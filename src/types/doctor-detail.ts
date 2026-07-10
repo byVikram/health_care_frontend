@@ -74,6 +74,7 @@ export interface DoctorDetailData {
 	hospitals: DoctorDetailHospital[]
 	achievements: DoctorAchievement[]
 	availability: DoctorAvailability[]
+	is_favourited?: boolean
 }
 
 export interface DoctorDetailResponse {

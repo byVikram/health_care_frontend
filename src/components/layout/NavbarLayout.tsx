@@ -1,4 +1,4 @@
-﻿// src/components/layout/NavbarLayout.tsx
+// src/components/layout/NavbarLayout.tsx
 import React, { useState, useRef, useEffect, ReactNode, cloneElement } from 'react'
 import {
 	Box,
@@ -54,6 +54,7 @@ const PATIENT_PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
 	{ label: 'My Tests', path: '#' },
 	{ label: 'My Medicine Orders', path: '#' },
 	{ label: 'My Medical Records', path: '#' },
+	{ label: 'My Favourite Doctors', path: '/portal/favourites' },
 	{ label: 'My Online Consultations', path: '#' },
 	{ label: 'My Feedback', path: '#' },
 	{ divider: true },

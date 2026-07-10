@@ -233,16 +233,13 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 		specialization: prof?.specialities?.[0]?.label ?? '',
 		personal: {
 			name: pd?.name ?? '',
-			contactNumber: '',
+			contactNumber: pd?.contact_number ?? '',
 			contactVerified: false,
 			email: pd?.email ?? '',
 			emailVerified: false,
 			gender: pd?.gender ?? '',
 			dateOfBirth: pd?.date_of_birth ?? '',
 			location: pd?.location ?? '',
-			// instagram: pd?.instagram ?? '',
-			// facebook: pd?.facebook ?? '',
-			// twitter: pd?.twitter ?? '',
 			instagram: pd?.social_media_handles?.instagram ?? '',
 			facebook: pd?.social_media_handles?.facebook ?? '',
 			twitter: pd?.social_media_handles?.twitter ?? '',
@@ -317,6 +314,18 @@ export const getFavouriteDoctors = async (): Promise<FavouritesResponse> => {
 
 export const toggleFavouriteDoctor = async (publicId: string): Promise<ToggleFavouriteResponse> => {
 	const res = await ApiService.post<ToggleFavouriteResponse>(API_ENDPOINTS.DOCTORS_FAVOURITES.TOGGLE(publicId), {})
+	return res.data
+}
+
+// -- Patient Favourite doctors ---------------------------------------------------------
+
+export const getPatientFavouriteDoctors = async (): Promise<FavouritesResponse> => {
+	const res = await ApiService.get<FavouritesResponse>(API_ENDPOINTS.PATIENT.FAVOURITES)
+	return res.data
+}
+
+export const togglePatientFavouriteDoctor = async (publicId: string): Promise<ToggleFavouriteResponse> => {
+	const res = await ApiService.post<ToggleFavouriteResponse>(API_ENDPOINTS.PATIENT.TOGGLE_FAVOURITE(publicId), {})
 	return res.data
 }
 

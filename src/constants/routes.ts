@@ -63,6 +63,7 @@ export const ROUTES = {
 	PORTAL: {
 		HOME: '/portal',
 		PROFILE: '/profile',
+		FAVOURITES: '/portal/favourites',
 		CONSULTATION: '/consultation/:patientId/:appointmentId',
 	},
 }
