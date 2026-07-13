@@ -1,10 +1,10 @@
-﻿// src/services/apiService.ts
+// src/services/apiService.ts
 import axios, { AxiosResponse, AxiosRequestConfig } from 'axios'
 import { clearAuth } from '../hooks/useAuth'
 import { toast } from 'react-toastify'
 
 // ── Axios instance ────────────────────────────────────────────────────────────
-const API_BASE_URL = (import.meta.env.VITE_API_ENDPOINT as string | undefined)?.replace(/\/+$/, '')
+export const API_BASE_URL = (import.meta.env.VITE_API_ENDPOINT as string | undefined)?.replace(/\/+$/, '')
 
 const axiosInstance = axios.create({
 	baseURL: API_BASE_URL || undefined,

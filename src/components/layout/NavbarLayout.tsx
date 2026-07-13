@@ -1,4 +1,4 @@
-﻿// src/components/layout/NavbarLayout.tsx
+// src/components/layout/NavbarLayout.tsx
 import React, { useState, useRef, useEffect, ReactNode, cloneElement } from 'react'
 import {
 	Box,
@@ -30,6 +30,7 @@ import { USER_ROLES } from '../../constants/constants'
 import { useMemo } from 'react'
 import { LookupHospital, PatientProfile } from '../../hooks/useAuth'
 import { toast } from 'react-toastify'
+import ChatBot from '../ChatBot'
 
 const NAVBAR_HEIGHT = 64
 
@@ -603,6 +604,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 						activeHospital,
 					})}
 			</Box>
+			<ChatBot />
 		</Box>
 	)
 }

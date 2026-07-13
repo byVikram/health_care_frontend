@@ -101,4 +101,10 @@ export const API_ENDPOINTS = {
 		UPLOAD_REPORT: (id: string) => `/api/radiology/bookings/${id}/report`,
 		SEARCH: '/api/radiology/search',
 	},
+	CHATBOT: {
+		SESSIONS: '/api/chatbot/sessions',
+		SESSION_DETAIL: (id: string) => `/api/chatbot/sessions/${id}`,
+		SEND_MESSAGE: (id: string) => `/api/chatbot/sessions/${id}/message`,
+		LOG_FEEDBACK: (id: string) => `/api/chatbot/messages/${id}/feedback`,
+	},
 }
