@@ -31,6 +31,10 @@ import { toast } from 'react-toastify'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
 import DoctorFavouritesTab from './profile/components/DoctorFavouritesTab'
 import { getDoctorAvailability, getAvailabilityModeBlocks } from './doctorService'
+import ReferralBadge from '../referrals/ReferralBadge'
+import ReferralInfoCard from '../referrals/ReferralInfoCard'
+import ReferralNotesDialog from '../referrals/ReferralNotesDialog'
+import type { DoctorRow } from './profile/components/DoctorFavouritesTab'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
@@ -59,6 +63,10 @@ const allActionButtons = [
 	{ icon: RescheduleIcon, label: 'Reschedule', bg: '#fff8e8', color: '#f59e0b', action: 'reschedule' },
 	{ icon: ReferIcon, label: 'Refer', bg: '#e8f4f8', color: '#0c7c7c', action: 'refer' },
 ]
+
+const tooltipTriggerSx = {
+	cursor: 'pointer',
+}
 
 export function DoctorAppointments({
 	selectedDate,
@@ -99,6 +107,10 @@ export function DoctorAppointments({
 	const [otpModalOpen, setOtpModalOpen] = useState(false)
 	const [referModalOpen, setReferModalOpen] = useState(false)
 	const [selectedAppointmentId, setSelectedAppointmentId] = useState('')
+	// Referral state
+	const [selectedReferAppointmentId, setSelectedReferAppointmentId] = useState('')
+	const [referNotesOpen, setReferNotesOpen] = useState(false)
+	const [selectedReferDoctor, setSelectedReferDoctor] = useState<DoctorRow | null>(null)
 	const [selectedPatientId, setSelectedPatientId] = useState('')
 	// Appointment action state
 	const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({})
@@ -268,6 +280,8 @@ export function DoctorAppointments({
 				setRescheduleOpen(true)
 			}
 			if (action === 'refer') {
+				// Store the appointment being referred so the notes dialog can use it
+				setSelectedReferAppointmentId(appointmentId)
 				setReferModalOpen(true)
 			}
 		} catch {
@@ -577,29 +591,60 @@ export function DoctorAppointments({
 											>
 												{patientName}
 											</Typography>
-											<Chip
-												label={statusLabel}
-												size="small"
+											<Box
 												sx={{
-													fontSize: '9px',
-													height: 16,
-													bgcolor: isCancelled
-														? '#ffeeee'
-														: isConfirmed
-															? '#e8f5e9'
-															: rescheduledByDoctor
-																? '#fff3e0'
-																: '#fff8e8',
-													color: isCancelled
-														? '#e53935'
-														: isConfirmed
-															? '#4caf50'
-															: rescheduledByDoctor
-																? '#e65100'
-																: '#f59e0b',
-													fontWeight: 600,
+													display: 'inline-flex',
+													alignItems: 'center',
+													gap: 0.6,
+													flexShrink: 0,
 												}}
-											/>
+											>
+												{/* Referral badge with hover tooltip showing referral details */}
+												{apt.referral && (
+													<Tooltip
+														arrow
+														placement="bottom-start"
+														slotProps={{
+															tooltip: {
+																sx: { bgcolor: 'transparent', p: 0, boxShadow: 'none' },
+															},
+															arrow: { sx: { color: 'background.paper' } },
+														}}
+														title={<ReferralInfoCard referral={apt.referral} />}
+													>
+														<Box
+															component="span"
+															onClick={(e) => e.stopPropagation()}
+															sx={{ display: 'inline-flex', alignItems: 'center', ...tooltipTriggerSx }}
+														>
+															<ReferralBadge />
+														</Box>
+													</Tooltip>
+												)}
+												<Chip
+													label={statusLabel}
+													size="small"
+													sx={{
+														fontSize: '9px',
+														height: 16,
+														bgcolor: isCancelled
+															? '#ffeeee'
+															: isConfirmed
+																? '#e8f5e9'
+																: rescheduledByDoctor
+																	? '#fff3e0'
+																	: '#fff8e8',
+														color: isCancelled
+															? '#e53935'
+															: isConfirmed
+																? '#4caf50'
+																: rescheduledByDoctor
+																	? '#e65100'
+																	: '#f59e0b',
+														fontWeight: 600,
+													}}
+												/>
+											</Box>
 
 											{/* Symptoms info tooltip */}
 											{(() => {
@@ -760,7 +805,7 @@ export function DoctorAppointments({
 															sx={{
 																fontSize: 14,
 																color: hasSymptoms ? '#0c7c7c' : 'text.disabled',
-																cursor: 'pointer',
+																...tooltipTriggerSx,
 																'&:hover': { color: 'primary.main' },
 																verticalAlign: 'middle',
 																ml: 0.3,
@@ -989,12 +1034,29 @@ export function DoctorAppointments({
 						mode="refer"
 						title="Refer a doctor"
 						onShare={(doctor) => {
-							toast.success(`Referred to ${doctor.name}`)
-							setReferModalOpen(false)
+							// Open step 2: referral notes dialog
+							setSelectedReferDoctor(doctor)
+							setReferNotesOpen(true)
 						}}
 					/>
 				</DialogContent>
 			</Dialog>
+			
+			<ReferralNotesDialog
+				open={referNotesOpen}
+				onClose={() => {
+					setReferNotesOpen(false)
+					setSelectedReferDoctor(null)
+				}}
+				appointmentId={selectedReferAppointmentId}
+				doctor={selectedReferDoctor}
+				onSuccess={() => {
+					setReferNotesOpen(false)
+					setReferModalOpen(false)
+					setSelectedReferDoctor(null)
+					setSelectedReferAppointmentId('')
+				}}
+			/>
 
 			<Dialog open={otpModalOpen} onClose={() => setOtpModalOpen(false)} maxWidth="xs" fullWidth>
 				<DialogContent sx={{ pt: 3 }}>

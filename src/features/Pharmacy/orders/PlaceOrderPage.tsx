@@ -34,6 +34,7 @@ import AppModal from '../../../components/common/Modal/AppModal'
 import { useAuth } from '../../../hooks/useAuth'
 import prescriptionImage from '../../../assets/Pharmacy/Prescription.svg'
 import { buildS3Url } from '../../../utils/s3'
+import { formatDoctorName } from '../../../utils/Utils'
 
 import { createPharmacyOrder, getPatientTreatmentHistory } from '../pharmacyService'
 import {
@@ -242,7 +243,7 @@ export default function PlaceOrderPage({
 	const treatmentOptions: SelectOption[] = treatments.map((t) => {
 		const dateStr = formatReportDate(t.created_at)
 		const reportType = t.report_type ? `${t.report_type.replace(/_/g, ' ')} - ` : ''
-		const docStr = t.doctor_name ? ` - Dr. ${t.doctor_name}` : ''
+		const docStr = t.doctor_name ? ` - ${formatDoctorName(t.doctor_name)}` : ''
 		const hospStr = t.hospital_name ? ` (${t.hospital_name})` : ''
 		return { label: `${reportType}${dateStr}${docStr}${hospStr}`, value: t.id }
 	})
@@ -354,7 +355,7 @@ export default function PlaceOrderPage({
 										)}
 
 										{selectedTreatment.doctor_name && (
-											<DetailRow label="Consulting Doctor:" value={`Dr. ${selectedTreatment.doctor_name}`} />
+											<DetailRow label="Consulting Doctor:" value={formatDoctorName(selectedTreatment.doctor_name)} />
 										)}
 
 										{selectedTreatment.hospital_name && (

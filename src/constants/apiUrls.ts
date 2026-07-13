@@ -107,4 +107,14 @@ export const API_ENDPOINTS = {
 		UPLOAD_REPORT: (id: string) => `/api/radiology/bookings/${id}/report`,
 		SEARCH: '/api/radiology/search',
 	},
+	REFERRALS: {
+		CREATE: '/api/referrals',
+		SENT: '/api/referrals/sent',
+		RECEIVED: '/api/referrals/received',
+		DETAIL: (id: string) => `/api/referrals/${id}`,
+	},
+	NOTIFICATIONS: {
+		LIST: '/api/notifications',
+		MARK_READ: (id: string) => `/api/notifications/${id}/read`,
+	},
 }
