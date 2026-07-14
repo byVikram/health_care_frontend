@@ -234,6 +234,7 @@ export interface LaboratoryBooking {
 		age: number | null
 		gender: string | null
 		avatar_s3_key?: string | null
+		avatar?: string | null
 	}
 	clinic?: {
 		name: string
@@ -354,7 +355,8 @@ export interface LaboratoryReport {
 
 export interface LaboratoryQuotePayload {
 	items: Array<{
-		booking_item_id: number
+		booking_item_id: number | null
+		laboratory_test_id?: number | null
 		custom_test_name?: string
 		quoted_price: number
 	}>

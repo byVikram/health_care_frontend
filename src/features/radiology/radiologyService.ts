@@ -228,6 +228,7 @@ export interface RadiologyBooking {
 		age: number | null
 		gender: string | null
 		avatar_s3_key?: string | null
+		avatar?: string | null
 	}
 	clinic?: {
 		name: string
@@ -268,7 +269,8 @@ export interface BookingResponse {
 
 export interface QuotePayload {
 	items: Array<{
-		booking_item_id: number
+		booking_item_id: number | null
+		radiology_scan_id?: number | null
 		custom_scan_name?: string
 		quoted_price: number
 	}>

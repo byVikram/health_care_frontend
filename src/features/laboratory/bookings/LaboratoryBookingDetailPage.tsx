@@ -31,6 +31,7 @@ import {
 	Description,
 	AssignmentTurnedIn,
 	Verified,
+	DeleteOutline,
 } from '@mui/icons-material'
 
 import AppButton from '../../../components/common/Button/AppButton'
@@ -38,6 +39,7 @@ import SectionCard from '../../../components/common/Card/SectionCard'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppSwitch from '../../../components/common/Switch/AppSwitch'
 import AppTable from '../../../components/common/Table/AppTable'
+import AppSelect from '../../../components/common/Select/AppSelect'
 
 import prescriptionImage from '../../../assets/Pharmacy/Prescription.svg'
 import { buildS3Url } from '../../../utils/s3'
@@ -47,6 +49,7 @@ import {
 	verifyLaboratoryPrescription,
 	uploadLaboratoryReport,
 	updateLaboratoryBookingStatus,
+	fetchLaboratoryTestsForCenter,
 	LaboratoryBooking,
 	LaboratoryBookingItem,
 	LaboratoryReport,
@@ -56,10 +59,12 @@ import { useAuth } from '../../../hooks/useAuth'
 import { USER_ROLES } from '../../../constants/constants'
 
 interface QuoteFormItem {
-	booking_item_id: number
+	booking_item_id: number | null
+	laboratory_test_id: number | null
 	testName: string
 	custom_test_name: string
 	quoted_price: number
+	base_price?: number | null
 }
 
 const getStatusLabel = (status: string) => {
@@ -119,6 +124,9 @@ export default function LaboratoryBookingDetailPage() {
 	const [submittingQuote, setSubmittingQuote] = useState(false)
 	const [updatingStatus, setUpdatingStatus] = useState(false)
 
+	const [catalogTests, setCatalogTests] = useState<any[]>([])
+	const [loadingCatalog, setLoadingCatalog] = useState(false)
+
 	const [verifyingPrescription, setVerifyingPrescription] = useState(false)
 
 	const [reportPdfKey, setReportPdfKey] = useState('')
@@ -163,9 +171,11 @@ export default function LaboratoryBookingDetailPage() {
 			if (data.status === 'pending_quote') {
 				const initialItems = data.booking_items.map((item) => ({
 					booking_item_id: item.id,
-					testName: item.laboratory_test.test_type.name,
-					custom_test_name: item.custom_test_name || item.laboratory_test.test_type.name,
+					laboratory_test_id: item.laboratory_test?.id || null,
+					testName: item.laboratory_test?.test_type?.name || item.custom_test_name || 'Test',
+					custom_test_name: item.custom_test_name || item.laboratory_test?.test_type?.name || 'Test',
 					quoted_price: item.quoted_price || 0,
+					base_price: item.laboratory_test?.base_price,
 				}))
 				setQuoteItems(initialItems)
 			}
@@ -188,6 +198,57 @@ export default function LaboratoryBookingDetailPage() {
 		fetchBookingDetails()
 	}, [fetchBookingDetails])
 
+	// Fetch laboratory catalog tests
+	useEffect(() => {
+		if (
+			role === USER_ROLES.LABORATORY &&
+			booking?.status === 'pending_quote' &&
+			booking?.laboratory_public_id
+		) {
+			const load = async () => {
+				try {
+					setLoadingCatalog(true)
+					const res = await fetchLaboratoryTestsForCenter(booking.laboratory_public_id)
+					setCatalogTests(res.data || [])
+				} catch (err) {
+					console.error('Failed to load lab tests catalog:', err)
+				} finally {
+					setLoadingCatalog(false)
+				}
+			}
+			void load()
+		}
+	}, [role, booking?.status, booking?.laboratory_public_id])
+
+	const availableTestOptions = useMemo(() => {
+		const selectedIds = new Set(
+			quoteItems.map((item) => item.laboratory_test_id).filter(Boolean)
+		)
+		return catalogTests
+			.filter((test) => !selectedIds.has(test.id))
+			.map((test) => ({
+				label: `${test.test_type?.name || 'Test'} (Base: ₹${test.base_price || 0})`,
+				value: test.id,
+			}))
+	}, [catalogTests, quoteItems])
+
+	const handleAddTest = (testId: string | number) => {
+		const test = catalogTests.find((t) => t.id === Number(testId))
+		if (test) {
+			setQuoteItems((prev) => [
+				...prev,
+				{
+					booking_item_id: null,
+					laboratory_test_id: test.id,
+					testName: test.test_type?.name || 'Test',
+					custom_test_name: test.test_type?.name || 'Test',
+					quoted_price: test.base_price || 0,
+					base_price: test.base_price,
+				},
+			])
+		}
+	}
+
 	const handleVerifyPrescription = async (checked: boolean) => {
 		if (!booking || verifyingPrescription) return
 
@@ -209,21 +270,30 @@ export default function LaboratoryBookingDetailPage() {
 		}
 	}
 
-	const handleQuotePriceChange = (bookingItemId: number, value: string) => {
+	const handleDeleteTest = (index: number) => {
+		setQuoteItems((prev) => prev.filter((_, i) => i !== index))
+	}
+
+	const handleQuotePriceChange = (index: number, value: string) => {
 		const parsed = parseFloat(value) || 0
 		setQuoteItems((prev) =>
-			prev.map((item) => (item.booking_item_id === bookingItemId ? { ...item, quoted_price: parsed } : item))
+			prev.map((item, i) => (i === index ? { ...item, quoted_price: parsed } : item))
 		)
 	}
 
-	const handleCustomNameChange = (bookingItemId: number, value: string) => {
+	const handleCustomNameChange = (index: number, value: string) => {
 		setQuoteItems((prev) =>
-			prev.map((item) => (item.booking_item_id === bookingItemId ? { ...item, custom_test_name: value } : item))
+			prev.map((item, i) => (i === index ? { ...item, custom_test_name: value } : item))
 		)
 	}
 
 	const handleSubmitQuote = async () => {
 		if (!booking) return
+
+		if (quoteItems.length === 0) {
+			showToast('Please add at least one test item.', 'error')
+			return
+		}
 
 		const missingPrices = quoteItems.some((item) => item.quoted_price <= 0)
 		if (missingPrices) {
@@ -236,6 +306,7 @@ export default function LaboratoryBookingDetailPage() {
 			const payload = {
 				items: quoteItems.map((item) => ({
 					booking_item_id: item.booking_item_id,
+					laboratory_test_id: item.booking_item_id ? null : item.laboratory_test_id,
 					custom_test_name: item.custom_test_name,
 					quoted_price: item.quoted_price,
 				})),
@@ -596,29 +667,38 @@ export default function LaboratoryBookingDetailPage() {
 								<Stack spacing={2} sx={{ mb: 3 }}>
 									{quoteItems.map((item, idx) => (
 										<Box
-											key={item.booking_item_id}
+											key={idx}
 											sx={{
 												p: 2,
 												bgcolor: '#F8FCFC',
 												borderRadius: 1.5,
 												border: '1px solid #E2E8F0',
+												position: 'relative',
 											}}
 										>
-											<Typography
-												variant="subtitle2"
-												fontWeight={700}
-												color="primary.dark"
-												sx={{ mb: 1.5 }}
-											>
-												Test #{idx + 1}: {item.testName}
-											</Typography>
+											<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+												<Typography
+													variant="subtitle2"
+													fontWeight={700}
+													color="primary.dark"
+												>
+													Test #{idx + 1}: {item.testName}
+												</Typography>
+												<IconButton
+													size="small"
+													color="error"
+													onClick={() => handleDeleteTest(idx)}
+												>
+													<DeleteOutline fontSize="small" />
+												</IconButton>
+											</Box>
 											<Grid container spacing={2}>
 												<Grid size={{ xs: 12, sm: 7 }}>
 													<AppInput
 														label="Custom/Specific Test Name"
 														value={item.custom_test_name}
 														onChange={(e) =>
-															handleCustomNameChange(item.booking_item_id, e.target.value)
+															handleCustomNameChange(idx, e.target.value)
 														}
 														placeholder="Defaults to standard name"
 														size="small"
@@ -630,7 +710,7 @@ export default function LaboratoryBookingDetailPage() {
 														type="number"
 														value={item.quoted_price || ''}
 														onChange={(e) =>
-															handleQuotePriceChange(item.booking_item_id, e.target.value)
+															handleQuotePriceChange(idx, e.target.value)
 														}
 														placeholder="Price in ₹"
 														size="small"
@@ -639,6 +719,18 @@ export default function LaboratoryBookingDetailPage() {
 											</Grid>
 										</Box>
 									))}
+
+									{/* Add test dropdown */}
+									{availableTestOptions.length > 0 && (
+										<Box sx={{ mt: 1 }}>
+											<AppSelect
+												placeholder="+ Add Test Item"
+												options={availableTestOptions}
+												value=""
+												onChange={(e) => handleAddTest(e.target.value)}
+											/>
+										</Box>
+									)}
 
 									<AppInput
 										label="Quotation Notes / Terms"
@@ -650,7 +742,10 @@ export default function LaboratoryBookingDetailPage() {
 									/>
 								</Stack>
 
-								<Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+								<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+									<Typography variant="subtitle1" fontWeight={700} color="primary.dark">
+										Total: {formatINR(quoteItems.reduce((sum, item) => sum + (Number(item.quoted_price) || 0), 0))}
+									</Typography>
 									<AppButton
 										label={
 											submittingQuote ? 'Submitting Quote...' : 'Submit Quote & Send to Patient'

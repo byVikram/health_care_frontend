@@ -100,6 +100,7 @@ interface OrderData {
         id?: string
         name?: string
         avatar_s3_key?: string | null
+        avatar?: string | null
         gender?: string | null
         age?: number | null
         blood_group?: string | null
