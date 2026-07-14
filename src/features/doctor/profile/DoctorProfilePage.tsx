@@ -9,6 +9,7 @@ import LocalHospitalOutlinedIcon from '@mui/icons-material/LocalHospitalOutlined
 import EventAvailableOutlinedIcon from '@mui/icons-material/EventAvailableOutlined'
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
 import MedicalServicesOutlinedIcon from '@mui/icons-material/MedicalServicesOutlined'
+import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined'
 import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined'
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
 import DoctorPersonalTab from './components/DoctorPersonalTab'
@@ -18,6 +19,7 @@ import DoctorAvailabilityTab from './components/DoctorAvailabilityTab'
 import DoctorSettingTab from './components/DoctorSettingTab'
 import DoctorFavouritesTab from './components/DoctorFavouritesTab'
 import DoctorAdditionalDetailTab from './components/DoctorAdditionalDetailTab'
+import DoctorAchievementsTab from './components/DoctorAchievementsTab'
 import SessionsTab from '../../../components/common/SessionsTab/SessionsTab'
 import {
 	DoctorProfile,
@@ -36,6 +38,7 @@ const DOCTOR_NAV_ITEMS = [
 	{ id: 'hospitals', label: 'My hospitals', icon: <LocalHospitalOutlinedIcon fontSize="small" /> },
 	{ id: 'availability', label: 'Availability', icon: <EventAvailableOutlinedIcon fontSize="small" /> },
 	{ id: 'additional', label: 'Additional Details', icon: <MedicalServicesOutlinedIcon fontSize="small" /> },
+	{ id: 'achievements', label: 'Achievements', icon: <EmojiEventsOutlinedIcon fontSize="small" /> },
 	{ id: 'favourites', label: 'Favourite doctors', icon: <FavoriteBorderIcon fontSize="small" /> },
 	{ id: 'sessions', label: 'Active Sessions', icon: <DesktopWindowsOutlinedIcon fontSize="small" /> },
 	{ id: 'settings', label: 'Settings', icon: <SettingsOutlinedIcon fontSize="small" /> },
@@ -196,6 +199,8 @@ export default function DoctorProfilePage() {
 						handleSave={async () => {}}
 					/>
 				)
+			case 'achievements':
+				return <DoctorAchievementsTab />
 			case 'favourites':
 				return <DoctorFavouritesTab />
 			case 'sessions':

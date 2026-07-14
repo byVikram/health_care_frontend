@@ -55,6 +55,7 @@ const PATIENT_PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
 	{ label: 'My Tests', path: '#' },
 	{ label: 'My Medicine Orders', path: '#' },
 	{ label: 'My Medical Records', path: '#' },
+	{ label: 'My Favourite Doctors', path: '/portal/favourites' },
 	{ label: 'My Online Consultations', path: '#' },
 	{ label: 'My Feedback', path: '#' },
 	{ divider: true },

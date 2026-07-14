@@ -25,6 +25,11 @@ export interface AppointmentDoctor {
 	speciality?: string | null // actual key returned by GET /api/appointments/{id}
 	specialty?: string // legacy/alternate key kept for backward compatibility
 	specialization?: string  // alternate key some backends use
+	speciality?: string       // key returned by the appointment detail API
+	degree?: string | null
+	experience_years?: number | null
+	languages?: string[] | null
+	about?: string | null
 }
 
 export interface AppointmentPatient {

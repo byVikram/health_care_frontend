@@ -1,4 +1,4 @@
-﻿// src/features/doctor/doctorService.ts
+// src/features/doctor/doctorService.ts
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { AppointmentsResponse } from '../../types/appointment'
@@ -11,7 +11,7 @@ import {
 	DoctorProfileApiHospital,
 	DoctorProfileApiAvailability,
 } from '../../types/doctor-profile-api'
-import { DoctorProfile} from '../../types/doctor-profile'
+import { DoctorProfile, DoctorAchievementItem, DoctorAchievementType } from '../../types/doctor-profile'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 
 export interface AppointmentParams {
@@ -233,16 +233,13 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 		specialization: prof?.specialities?.[0]?.label ?? '',
 		personal: {
 			name: pd?.name ?? '',
-			contactNumber: '',
+			contactNumber: pd?.contact_number ?? '',
 			contactVerified: false,
 			email: pd?.email ?? '',
 			emailVerified: false,
 			gender: pd?.gender ?? '',
 			dateOfBirth: pd?.date_of_birth ?? '',
 			location: pd?.location ?? '',
-			// instagram: pd?.instagram ?? '',
-			// facebook: pd?.facebook ?? '',
-			// twitter: pd?.twitter ?? '',
 			instagram: pd?.social_media_handles?.instagram ?? '',
 			facebook: pd?.social_media_handles?.facebook ?? '',
 			twitter: pd?.social_media_handles?.twitter ?? '',
@@ -317,6 +314,18 @@ export const getFavouriteDoctors = async (): Promise<FavouritesResponse> => {
 
 export const toggleFavouriteDoctor = async (publicId: string): Promise<ToggleFavouriteResponse> => {
 	const res = await ApiService.post<ToggleFavouriteResponse>(API_ENDPOINTS.DOCTORS_FAVOURITES.TOGGLE(publicId), {})
+	return res.data
+}
+
+// -- Patient Favourite doctors ---------------------------------------------------------
+
+export const getPatientFavouriteDoctors = async (): Promise<FavouritesResponse> => {
+	const res = await ApiService.get<FavouritesResponse>(API_ENDPOINTS.PATIENT.FAVOURITES)
+	return res.data
+}
+
+export const togglePatientFavouriteDoctor = async (publicId: string): Promise<ToggleFavouriteResponse> => {
+	const res = await ApiService.post<ToggleFavouriteResponse>(API_ENDPOINTS.PATIENT.TOGGLE_FAVOURITE(publicId), {})
 	return res.data
 }
 
@@ -404,5 +413,55 @@ export interface PreIntakePayload {
 export const updatePreIntake = async (appointmentId: string, payload: PreIntakePayload) => {
 	const res = await ApiService.patch(API_ENDPOINTS.APPOINTMENTS.PRE_INTAKE(appointmentId), payload)
 
+	return res.data
+}
+
+// -- Doctor achievements --------------------------------------------------------
+
+export interface AchievementsResponse {
+	success: boolean
+	message: string
+	data: DoctorAchievementItem[]
+}
+
+export interface AchievementResponse {
+	success: boolean
+	message: string
+	data: DoctorAchievementItem
+}
+
+export interface AchievementPayload {
+	title: string
+	achievement_type: DoctorAchievementType
+	organization?: string | null
+	achievement_date?: string | null // YYYY-MM-DD
+	description?: string | null
+	document_s3_key?: string | null
+	is_public?: boolean
+}
+
+export const getAchievements = async (): Promise<AchievementsResponse> => {
+	const res = await ApiService.get<AchievementsResponse>(API_ENDPOINTS.DOCTOR_PROFILE.ACHIEVEMENTS)
+	return res.data
+}
+
+export const createAchievement = async (payload: AchievementPayload): Promise<AchievementResponse> => {
+	const res = await ApiService.post<AchievementResponse>(API_ENDPOINTS.DOCTOR_PROFILE.ACHIEVEMENTS, payload)
+	return res.data
+}
+
+export const updateAchievement = async (
+	publicId: string,
+	payload: Partial<AchievementPayload>
+): Promise<AchievementResponse> => {
+	const res = await ApiService.put<AchievementResponse>(
+		API_ENDPOINTS.DOCTOR_PROFILE.ACHIEVEMENT_BY_ID(publicId),
+		payload
+	)
+	return res.data
+}
+
+export const deleteAchievement = async (publicId: string) => {
+	const res = await ApiService.delete(API_ENDPOINTS.DOCTOR_PROFILE.ACHIEVEMENT_BY_ID(publicId))
 	return res.data
 }

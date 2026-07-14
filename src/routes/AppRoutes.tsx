@@ -31,6 +31,7 @@ import AllSpecialitiesPage from '../features/dashboard/AllSpecialitiesPage'
 import RadiologySearchPage from '../features/radiology/search/RadiologySearchPage'
 import LaboratorySearchPage from '../features/laboratory/search/LaboratorySearchPage'
 import { useAuth } from '../hooks/useAuth'
+import FavouriteDoctorsPage from '../features/doctor/favourites/FavouriteDoctorsPage'
 
 function ProtectedLayout() {
 	return (
@@ -115,6 +116,7 @@ export default function AppRoutes() {
 					<Route path={ROUTES.RADIOLOGY.PROFILE} element={<RadiologyProfilePage />} />
 					<Route path={ROUTES.RADIOLOGY.BOOKINGS} element={<BookingsList />} />
 					<Route path={ROUTES.RADIOLOGY.BOOKING_DETAIL} element={<BookingDetailPage />} />
+				<Route path={ROUTES.PORTAL.FAVOURITES} element={<FavouriteDoctorsPage />} />
 				</Route>
 			</Route>
 

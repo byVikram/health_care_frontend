@@ -26,6 +26,8 @@ export const API_ENDPOINTS = {
 		UPDATE_HOSPITAL: '/api/doctors/hospitals',
 		UPDATE_AVAILABILITY: '/api/doctors/availability',
 		DELETE_ACCOUNT: '/api/doctors/profile',
+		ACHIEVEMENTS: '/api/doctors/achievements',
+		ACHIEVEMENT_BY_ID: (publicId: string) => `/api/doctors/achievements/${publicId}`,
 	},
 	LABORATORY_PROFILE: {
 		DETAILS: '/api/laboratory/details',
@@ -59,6 +61,8 @@ export const API_ENDPOINTS = {
 		VITALS_HISTORY: (id: string) => `/api/patients/${id}/vitals`,
 		REPORTS: (id: string) => `/api/patients/${id}/reports`,
 		REPORTS_CREATE: '/api/patients/reports',
+		FAVOURITES: '/api/patients/me/favourites',
+		TOGGLE_FAVOURITE: (doctorPublicId: string) => `/api/patients/me/favourites/${doctorPublicId}`,
 		LABORATORY_REPORTS: (id: string) => `/api/patients/${id}/laboratory-reports`,
 		RADIOLOGY_REPORTS: (id: string) => `/api/patients/${id}/radiology-reports`,
 	},

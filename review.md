@@ -1,393 +1,164 @@
-## Project: Karola Health Web App
+# Consultation and Past Medical History Feature Implementation Review
 
-This report presents a thorough structural, architectural, and quality analysis of the frontend codebase. Issues are categorized by severity along with concrete code examples, impact analysis, and actionable refactoring recommendations.
+## Files Created
+- `src/features/consultation/components/DicomViewer.tsx`: Implements a web-compatible DICOM viewer component. It renders Cornerstone library inside an isolated `iframe` with `srcDoc` to handle base64 DICOM file loading, scaling (zoom in/out/reset), window/level adjustment on mouse/touch drag, and image inversion (☀) matching the mobile app's feature-parity.
 
----
+## Files Modified
+- `src/constants/apiUrls.ts`: Added the new endpoints for `LABORATORY_REPORTS`, `RADIOLOGY_REPORTS`, and `TREATMENT_HISTORY` under the `PATIENT` object.
+- `src/features/consultation/consultationService.ts`: Declared interfaces (`TreatmentRecord`, `LaboratoryReportRecord`, `RadiologyReportRecord`) and added service layer helper functions (`getPatientTreatmentHistory`, `getPatientLaboratoryReports`, `getPatientRadiologyReports`) to communicate with the corresponding backend APIs.
+- `src/features/consultation/components/PastMedicalHistory.tsx`: Refactored the entire component to load and render the respective data arrays for the selected tabs (Prescription, Laboratory, Radiology, Ancillary) mirroring the React Native reference implementation. Includes actions for viewing/downloading PDFs and loading DICOM files interactively.
 
-## Executive Summary of Findings
+## Summary of the Implementation
+- **Category Tabs & Layout**: Re-implemented Category tabs (Prescription, Laboratory, Radiology, Ancillary) using the existing tab icons.
+- **Prescription Tab**: Displays treatments and prescriptions mapped chronologically. Features a download button linked to the prescription S3 URL.
+- **Laboratory Tab**: Renders lab reports with summary findings, result values as a key-value grid, and PDF visibility support.
+- **Radiology Tab**: Renders radiology reports with summary findings. Includes a PDF viewer button and a monitor view action button that triggers the custom `DicomViewer`. When active, it displays the Cornerstone image viewer.
+- **Ancillary Tab**: Renders standalone patient ancillary reports filtered from the main reports API.
+- **DICOM Viewer Integration**: Handled loading of both remote S3 images and the local sample DICOM file. We copied the binary `sample-dicon.dcm` to the frontend assets folder and fetched it locally in dev environments.
 
-| Severity     | Count | Primary Impact Areas                         | Key Issues                                                                                                                                                       |
-| :----------- | :---: | :------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Critical** |   2   | Security, Reliability                        | Hardcoded Auth Bypass, Endpoint Config Fragility                                                                                                                 |
-| **High**     |   3   | Maintainability, Usability, Domain Integrity | Blocked Radiology Onboarding, LocalStorage Mapper Pollution, Copy-Paste Settings Tab (Drift & Data Leak)                                                         |
-| **Medium**   |   4   | Reusability, Styling Consistency, Clean Code | Duplicated `buildS3Url`, Custom Local Layout Cards (`SectionCard`), Style Inconsistencies (`AppSwitch` omission), File Extension mismatch (`Utils.tsx` vs `.ts`) |
-| **Low**      |   2   | Redundancy                                   | Duplicate Routes, Direct `localStorage` usage in UI Components                                                                                                   |
+## Assumptions Made
+- The backend services for treatments (`/api/treatments/patient/${id}/history`), laboratory reports (`/api/patients/${id}/laboratory-reports`), and radiology reports (`/api/patients/${id}/radiology-reports`) are fully accessible using the logged-in doctor's authorization headers.
+- The `DicomViewer`'s external script dependencies (Cornerstone, dicom-parser, and cornerstoneWADOImageLoader) can be fetched dynamically from the JSDeliver CDN.
 
----
-
-## 1. Critical Severity Issues
-
-### 1.1. Hardcoded Security Bypass for All Protected Routes
-
-- **Vulnerability Type**: Authentication & Authorization Bypass
-- **Location:** [AppRoutes.tsx](src/routes/AppRoutes.tsx#L57)
-
-#### Context & Impact
-
-In `AppRoutes.tsx`, the user authentication check is bypassed by a hardcoded constant:
-
-```tsx
-export default function AppRoutes() {
-	const isAuthenticated = true // 🔴 Hardcoded bypass
-    ...
-```
-
-This bypass prevents `ProtectedRoute` from redirecting unauthenticated users to `/login`. Unauthenticated users can access diagnostic results, patient profiles, scheduling systems, and order requests, exposing a major security flaw.
-
-#### Refactoring Recommendation
-
-Derive authentication status reactively using the `useAuth` hook:
-
-```diff
- export default function AppRoutes() {
--	const isAuthenticated = true
-+	const { accessToken } = useAuth()
-+	const isAuthenticated = !!accessToken
-```
+## Known Limitations or Follow-up Items
+- In the development environment, local file loading is simulated by fetching the copied `/src/assets/dicon/sample-dicon.dcm` directly from the development server's served files.
 
 ---
 
-### 1.2. REST API URL Construction Redundancy & Axios Instance Misconfiguration
+# Doctor Profile Page — Dynamic Data Implementation
 
-- **Issue Type**: Architectural Inefficiency & Fragility
-- **Location:** [apiUrls.ts](src/constants/apiUrls.ts) and [apiService.ts](src/services/apiService.ts#L7)
+## Files Modified
 
-#### Context & Impact
+### Frontend
+- **`src/features/doctor/doctorService.ts`**: Fixed `mapDoctorProfileApi()` to use `contact_number` from the API response (previously hardcoded to `''`). Removed the hardcoded `contactVerified: false` comment and kept it as `false` since no separate contact verification tracking exists in the backend.
+- **`src/types/doctor-profile-api.ts`**: Added `contact_number?: string` to the `personal_details` field of `DoctorProfileApiData` to correctly type the new field returned by the backend.
 
-The base URL is hardcoded into every endpoint string within `apiUrls.ts`:
+### Backend
+- **`app/doctors/service.py`** — `get_personal_details()`: Added `User.email`, `User.contact_number` to the query select and join. Returns `email` and `contact_number` in the result dict.
+- **`app/doctors/service.py`** — `update_personal_details()`: Added handling to update `current_user.email` and `current_user.contact_number` on the `User` model directly (since these fields live on `User`, not `DoctorDetails`). Added `email` and `mobile_number` to the exclusion set when iterating over `DoctorDetails` fields.
+- **`app/doctors/service.py`** — `get_doctor_details()`: Added `User.contact_number` to the query select. Returns `contact_number` in `personal_details`.
 
-```typescript
-export const BASE_URL = import.meta.env.VITE_API_ENDPOINT as string
+## APIs Used
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/api/doctors/details` | `GET` | Fetch combined doctor profile (personal + professional + hospitals) |
+| `/api/doctors/personal-details` | `GET` | Fetch personal details only |
+| `/api/doctors/personal-details` | `PATCH` | Update personal details (name, email, contact, gender, DOB, location, languages, social media) |
+| `/api/doctors/professional-details` | `GET/PATCH` | Fetch/update professional details (degrees, registration, about, specialities) |
+| `/api/doctors/hospitals` | `GET/PATCH` | Fetch/update hospital info |
+| `/api/doctors/availability` | `GET/PATCH` | Fetch/update availability |
+| `/api/doctors/achievements` | `GET/POST/PUT/DELETE` | Achievements CRUD |
 
-export const API_ENDPOINTS = {
-	AUTH: {
-		SEND_OTP: `${BASE_URL}/api/auth/send-otp`, // 🔴 Redundant base URL template literal
-        ...
-```
+## Hardcoded Fields Replaced with Dynamic Data
+| Field | Was | Now |
+|---|---|---|
+| `contactNumber` | `''` (hardcoded) | `pd?.contact_number ?? ''` from API |
+| `email` | `pd?.email ?? ''` | Already mapped (confirmed correct) |
+| `gender` | `pd?.gender ?? ''` | Already mapped (confirmed correct) |
+| `dateOfBirth` | `pd?.date_of_birth ?? ''` | Already mapped (confirmed correct) |
+| `location` | `pd?.location ?? ''` | Already mapped (confirmed correct) |
+| `languages` | `pd?.languages ?? []` | Already mapped (confirmed correct) |
+| `instagram/facebook/twitter` | Mapped from `social_media_handles` | Confirmed correct |
+| `experience` | `prof?.experience_years` | Already mapped (confirmed correct) |
+| `degrees` | Full degrees array from API | Already mapped (confirmed correct) |
+| `registrationNumber` | `prof?.registration_number ?? ''` | Already mapped (confirmed correct) |
+| `about` | `prof?.about ?? ''` | Already mapped (confirmed correct) |
+| `specialization` | First speciality label from API | Already mapped (confirmed correct) |
+| `hospitals` | Full hospital list from API | Already mapped (confirmed correct) |
 
-Meanwhile, the global Axios instance in `apiService.ts` is created without a `baseURL`:
+## Assumptions Made
+- `contactVerified` and `emailVerified` remain `false` since the backend does not expose a separate OTP/email-verification status flag in the profile API response. This can be wired up in a follow-up once a `/api/auth/verification-status` or similar endpoint is added.
+- The `DoctorDetails.favourite_doctors` JSON field on the backend is not displayed in any frontend tab (it's used by the favourites API separately).
 
-```typescript
-const axiosInstance = axios.create() // 🔴 Missing baseURL option
-```
-
-This forces developers to prepend `${BASE_URL}` to every single route string. It also breaks if `BASE_URL` contains a trailing slash, leading to double-slashed paths (e.g., `http://api//api/auth`).
-
-#### Refactoring Recommendation
-
-1. Configure `baseURL` directly on the Axios instance in `apiService.ts`:
-
-```typescript
-const axiosInstance = axios.create({
-	baseURL: (import.meta.env.VITE_API_ENDPOINT as string) || '/',
-})
-```
-
-2. Remove base URL formatting from `apiUrls.ts`:
-
-```typescript
-export const API_ENDPOINTS = {
-	AUTH: {
-		SEND_OTP: '/api/auth/send-otp', // Clean and relative
-		VERIFY_OTP: '/api/auth/verify-otp',
-        ...
-```
-
----
-
-## 2. High Severity Issues
-
-### 2.1. Blocked Radiology Onboarding Flow
-
-- **Issue Type**: Functional Block / Business Logic Defect
-- **Location:** [useAuth.ts](src/hooks/useAuth.ts#L145-L151)
-
-#### Context & Impact
-
-Inside the onboarding control hook `useOnboardingFlow`, role selection returns early if the selected role is `'RADIOLOGY'`:
-
-```typescript
-const handleRoleSelect = (role: OnboardingUserRole) => {
-	if (role === 'RADIOLOGY') return // 🔴 Early exit prevents onboarding execution
-	const roleId = ROLE_ID_MAP[role]
-	setSelectedRole(role)
-	setSelectedRoleId(roleId)
-	setOnboardingStep('onboarding')
-}
-```
-
-This prevents diagnostic centers and radiologists from completing their onboarding process.
-
-#### Refactoring Recommendation
-
-Enable radiology onboarding by mapping it to its onboarding steps:
-
-```diff
- const handleRoleSelect = (role: OnboardingUserRole) => {
--	if (role === 'RADIOLOGY') return
- 	const roleId = ROLE_ID_MAP[role]
- 	setSelectedRole(role)
- 	setSelectedRoleId(roleId)
- 	setOnboardingStep('onboarding')
- }
-```
+## Known Limitations or Follow-up Items
+- **Additional Details (treatments / areas_of_expertise)**: These fields do not currently exist in the `DoctorDetails` database model or any backend API. The `DoctorAdditionalDetailTab` save button is wired to a no-op (`async () => {}`). A follow-up backend task is required to add `treatments: JSON` and `areas_of_expertise: JSON` columns to `doctor_details` and expose them through a `/api/doctors/additional-details` endpoint.
+- **`contactVerified` / `emailVerified`**: Currently always `false`. Requires a backend verification-status endpoint to be meaningful.
+- **Avatar upload**: Uses `/api/doctors/upload-avatar` which may require a separate S3 pre-signed URL flow to be confirmed working end-to-end.
 
 ---
 
-### 2.2. Side-Effects in Pure Mapper (Separation of Concerns Violation)
+# Prescription & Doctor Details — Appointment Drawer Implementation
 
-- **Issue Type**: Architectural Code Pollution
-- **Location:** [radiologyService.ts](src/features/radiology/radiologyService.ts#L65-L94)
+## Files Modified
 
-#### Context & Impact
+### Frontend
+- **`src/features/appointments/components/AppointmentDetailsDrawer.tsx`**: Full rewrite to add two new sections:
+  - **Doctor Details** section: rendered immediately below the appointment info block. Shows avatar, name, speciality/degree, experience years, hospital, languages, and about text (in a teal info box matching the design).
+  - **Prescription** section: rendered below Doctor Details and above Appointment History. Fetches treatment data from the backend via `GET /api/treatments/appointment/by-appt/{appointmentPublicId}`. Displays Diagnosis, Medicines table (Medicine / Dosage / Frequency / Duration columns), Follow-up Date, Instructions/Notes, and a Download button for the prescription PDF. Shows a graceful empty state when no prescription exists. Both sections are wrapped in dashed-border cards matching the provided UI design.
+- **`src/constants/apiUrls.ts`**: Added `TREATMENTS.BY_APPOINTMENT_PUBLIC_ID` endpoint constant.
+- **`src/types/appointment.ts`**: Extended `AppointmentDoctor` interface with `speciality`, `degree`, `experience_years`, `languages`, `about` fields (returned by the appointment detail API).
 
-In `radiologyService.ts`, the map function `mapRadiologyDetailsApi` reads directly from browser `localStorage`:
+### Backend
+- **`app/treatments/service.py`**: Added `get_treatment_by_appointment_public_id()` — resolves appointment `public_id` → internal `id` before fetching the treatment record, with BOLA authorization.
+- **`app/treatments/router.py`**: Added `GET /api/treatments/appointment/by-appt/{appointment_public_id}` route accessible by both `doctor` and `patient` roles.
 
-```typescript
-export const mapRadiologyDetailsApi = (data: RadiologyDetailsApiData): RadiologyProfile => {
-	...
-	let professionalMock = { ... }
-	try {
-		const stored = localStorage.getItem('radiology_professional_tab') // 🔴 Direct Side Effect
-		if (stored) {
-			professionalMock = JSON.parse(stored)
-		}
-	} catch { ... }
-    ...
-```
+## APIs Integrated
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/api/appointments/{public_id}` | `GET` | Existing: fetch appointment details incl. doctor info |
+| `/api/treatments/appointment/by-appt/{appointment_public_id}` | `GET` | **New**: fetch prescription/treatment record by appointment public UUID |
 
-A data mapping utility must be a pure function. Coupling it to `localStorage` breaks testability, makes server-side rendering (SSR) impossible, and causes silent state sync failures.
+## Summary
+The `AppointmentDetailsDrawer` now shows a complete view matching the reference design:
+1. **Doctor + status header** (existing)
+2. **Appointment info grid** (existing)
+3. **Doctor Details** (new) — full card with avatar, speciality, degree, experience, hospital, languages and about
+4. **Prescription** (new) — fetches from the backend; shows structured diagnosis, medicines table, follow-up date, instructions; Download button for PDF; graceful empty state
+5. **Appointment History** (existing)
 
-#### Refactoring Recommendation
+## Assumptions Made
+- The `vitals` JSON field in the `PatientTreatment` model stores medicines as an array under a key named `medicines`, `medications`, or `prescription`. If none of these keys are present, only the free-text `notes` field is shown.
+- The `diagnosis` field, if stored, is expected under `vitals.diagnosis` or `vitals.chief_complaint`.
+- The `prescription_s3_key` field stores a direct S3 URL (pre-signed or public) and is opened directly in a new browser tab on download.
+- The appointment detail API (`GET /api/appointments/{id}`) already returns `doctor.degree` and `doctor.speciality` from the backend (confirmed via service code review).
 
-Pass optional local overrides to the mapper function, keeping the mapper pure:
-
-```typescript
-export const mapRadiologyDetailsApi = (
-	data: RadiologyDetailsApiData,
-	localOverrides?: Partial<RadiologyProfile['professional']>
-): RadiologyProfile => {
-	const det = data.details
-	return {
-		id: data.public_id ?? '',
-		personal: { ... },
-		professional: {
-			degree: '',
-			registrationNumber: det?.license_number ?? '',
-			...localOverrides
-		}
-	}
-}
-```
+## Known Limitations or Follow-up Items
+- **Structured medicines data**: If the doctor enters the prescription as free-text in `notes` only (not as a structured `vitals.medicines` array), the medicines table will be empty and only the Instructions section will show. The ConsultationPage's `ConsultationNotes` component appears to use a freehand canvas, so structured medicines data may not be populated in all cases.
+- **Download button**: Opens the raw `prescription_s3_key` URL. If the S3 key is not a full URL but a relative key, a pre-signed URL generation step will be needed on the backend.
+- **Doctor languages / about**: These fields are available on `DoctorDetails` in the backend, but the appointment detail API currently does not join and return them. The Doctor Details section will only show them if the backend is updated to include them in the appointment detail response.
 
 ---
 
-### 2.3. Copy-Paste Settings Tab Drift & Naming Mismatch
+# Reversion of Doctor Details & Prescription Sections from Appointment Drawer
 
-- **Issue Type**: High Code Drift & Component Naming Collision
-- **Locations**:
-    - `src/features/radiology/profile/components/SettingsTab.tsx`
-    - `src/features/laboratory/profile/components/LabSettingsTab.tsx`
+## Files Reverted / Restored
+- **`src/features/appointments/components/AppointmentDetailsDrawer.tsx`**: Restored the drawer component to its previous state. The "Doctor Details" card and "Prescription" card sections have been completely removed. Layout adjustments (drawer width) were also reverted.
 
-#### Context & Impact
-
-1. **Naming Mismatch**: Both settings components export a component named `PatientSettingTab`, leading to incorrect references during import:
-    ```typescript
-    // Inside radiology/profile/components/SettingsTab.tsx
-    export default function PatientSettingTab() { ... } // 🔴 Mismatched name
-    ```
-2. **Text Drift & Data Leak (Crucial)**: In the Radiology Settings Tab, the settings labels are hardcoded for the **Pharmacy** module:
-    ```typescript
-    const notifRows = [
-        { label: 'Get notifications for new prescription orders', ... }, // 🔴 Pharmacy domain
-        { label: 'Get notified about low stock or inventory updates', ... }, // 🔴 Pharmacy domain
-        { label: 'Receive pharmacy updates and health alerts', ... }, // 🔴 Pharmacy domain
-    ]
-    ```
-    A radiologist or diagnostic technician will see notification settings related to prescription orders and inventory, which is confusing and functionally incorrect.
-
-#### Refactoring Recommendation
-
-Rename components to match their files and feature folders, and correct the domain-specific labels for each user role. For example, for Radiology:
-
-```typescript
-export default function RadiologySettingTab() {
-    ...
-    const notifRows = [
-        { label: 'Get notifications for new scan bookings', ... },
-        { label: 'Get alerts for pending report uploads', ... },
-        { label: 'Receive radiology updates and diagnostic alerts', ... },
-    ]
-    ...
-}
-```
+## Summary of Reverted Changes
+- Removed **Doctor Details** section and its UI dependencies from the drawer.
+- Removed **Prescription** section (medicines list, diagnosis, instructions) and its dynamic API fetching logic from the drawer.
+- Reverted the custom skeleton loader items designed for these sections.
+- Kept the backend services, types, and other API endpoints intact as they are independent integrations.
 
 ---
 
-## 3. Medium Severity Issues
+# Reversion of Past Medical History Feature (Frontend & Backend)
 
-### 3.1. Duplicated S3 URL Builder Helper
+## Files Reverted / Restored
 
-- **Issue Type**: DRY (Don't Repeat Yourself) Principle Violation
-- **Locations**:
-    - `src/features/radiology/bookings/RadiologyBookingPage.tsx`
-    - `src/features/radiology/bookings/BookingDetailPage.tsx#L141-L148`
-    - `src/features/Pharmacy/orders/PlaceOrderPage.tsx#L49-L53`
-    - `src/features/Pharmacy/orders/OrderDeatailPage.tsx#L218-L225`
+### Frontend
+- **`src/features/consultation/components/PastMedicalHistory.tsx`**: Restored to its previous state (before the refactor that added dynamic API-driven tabs for Prescription, Laboratory, Radiology, and Ancillary reports with DICOM viewer support). The component now only renders the original report list using `getPatientReports`.
+- **`src/features/consultation/ConsultationPage.tsx`**: Removed the `PastMedicalHistory` import (line 11) and its usage inside the Grid layout. The consultation page no longer renders the Past Medical History section.
+- **`src/features/consultation/consultationService.ts`**: Reverted to remove the `TreatmentRecord`, `LaboratoryReportRecord`, and `RadiologyReportRecord` interfaces, as well as the `getPatientTreatmentHistory`, `getPatientLaboratoryReports`, and `getPatientRadiologyReports` service functions.
+- **`src/constants/apiUrls.ts`**: Reverted to remove the `LABORATORY_REPORTS`, `RADIOLOGY_REPORTS`, and `TREATMENT_HISTORY` endpoint constants that were added under the `PATIENT` object.
+- **`src/features/consultation/components/DicomViewer.tsx`**: Deleted — this custom DICOM viewer component was added exclusively for the Past Medical History feature.
+- **`src/assets/dicon/`**: Deleted — the local sample DICOM binary asset directory was added exclusively for this feature.
 
-#### Context & Impact
+### Backend
+- **`app/patients/router.py`**: Removed the `GET /{patient_public_id}/laboratory-reports` and `GET /{patient_public_id}/radiology-reports` endpoints and their imports (`LaboratoryReportResponse`, `RadiologyReportResponse`).
+- **`app/patients/service.py`**: Removed `get_patient_laboratory_reports()` and `get_patient_radiology_reports()` functions.
+- **`app/treatments/router.py`**: Removed the `GET /patient/{patient_public_id}/history` endpoint.
+- **`app/treatments/service.py`**: Removed the `get_patient_treatment_history()` function.
 
-The `buildS3Url` helper is duplicated across at least four files. Some files contain a fallback S3 URL, while others do not. For example, the pharmacy version checks for existing full URL prefixes (`http://` or `https://`), but the radiology details page version does not. This leaves radiology open to broken image links if the backend returns a full URL.
+## Summary of Reverted Changes
+- Removed all dynamic API integrations from `PastMedicalHistory.tsx` (treatment history, lab reports, radiology reports, DICOM loading).
+- Restored `PastMedicalHistory.tsx` to use only `getPatientReports` with the original tab filter.
+- Removed the Past Medical History section rendering from `ConsultationPage.tsx`.
+- Deleted the `DicomViewer.tsx` component and local DICOM sample assets.
+- Removed backend routes and service functions for patient treatment history, laboratory reports, and radiology reports under the patient context.
 
-#### Refactoring Recommendation
+## Assumptions Made
+- The general laboratory and radiology models, migrations, and their existing shared schemas (`LaboratoryReportResponse`, `RadiologyReportResponse`) were **not** reverted — they are reused by other features in the lab and radiology booking flows.
+- The existing `GET /api/patients/{id}/reports` endpoint and `getPatientReports` service were pre-existing and remain intact.
+- The `get_treatment_by_appointment_public_id` function and its route in `app/treatments/router.py` were **not** reverted — they belong to the Appointment Drawer prescription feature, which has its own separate revert history.
 
-Move this helper to a single file, e.g., `src/utils/s3.ts`:
-
-```typescript
-// src/utils/s3.ts
-const S3_BASE_URL = (import.meta.env.VITE_S3_BASE_URL as string) || ''
-
-export const buildS3Url = (key?: string | null): string => {
-	if (!key) return ''
-	if (key.startsWith('http://') || key.startsWith('https://')) return key
-	return `${S3_BASE_URL.replace(/\/$/, '')}/${key.replace(/^\//, '')}`
-}
-```
-
----
-
-### 3.2. Local Component Re-declarations (`SectionCard`)
-
-- **Issue Type**: UI Inconsistency and Duplicate Code
-- **Locations**:
-    - `src/features/radiology/bookings/BookingDetailPage.tsx#L57-L66`
-    - `src/features/Pharmacy/orders/OrderDeatailPage.tsx#L175-L184`
-    - `src/features/Pharmacy/orders/PlaceOrderPage.tsx#L720-L760`
-
-#### Context & Impact
-
-Each of these files defines a local `SectionCard` component. The inner padding, margins, and headings differ slightly between files (e.g., `p: 2` vs `p: 1.75`), which leads to inconsistent UI styling across the application's detail screens.
-
-#### Refactoring Recommendation
-
-Extract this into a generic component in `src/components/common/Card/SectionCard.tsx`:
-
-```tsx
-// src/components/common/Card/SectionCard.tsx
-import { ReactNode } from 'react'
-import { Card, CardContent, Typography, Box } from '@mui/material'
-import { customCardStyle } from '../../../styles/commonStyles'
-
-interface SectionCardProps {
-	title: string
-	stepNumber?: number
-	children: ReactNode
-}
-
-export default function SectionCard({ title, stepNumber, children }: SectionCardProps) {
-	return (
-		<Card sx={{ ...customCardStyle, height: '100%', mb: 2 }}>
-			<CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-				<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1.5 }}>
-					{stepNumber !== undefined && (
-						<Box
-							sx={{
-								width: 24,
-								height: 24,
-								borderRadius: '50%',
-								bgcolor: 'primary.main',
-								display: 'flex',
-								alignItems: 'center',
-								justifyContent: 'center',
-							}}
-						>
-							<Typography sx={{ color: '#fff', fontSize: 12, fontWeight: 700 }}>{stepNumber}</Typography>
-						</Box>
-					)}
-					<Typography variant="subtitle2" fontWeight={700} color="#1E2A2A">
-						{title}
-					</Typography>
-				</Box>
-				{children}
-			</CardContent>
-		</Card>
-	)
-}
-```
-
----
-
-### 3.3. Design System Bypasses (Inline Custom Switch Customization)
-
-- **Issue Type**: Theme Divergence
-- **Location**: `src/features/laboratory/profile/components/LabSettingsTab.tsx#L27-L62`
-
-#### Context & Impact
-
-Instead of using the standard `AppSwitch` component from `src/components/common/Switch/AppSwitch.tsx`, the `LabSettingsTab` manually redefines switch styles in a `switchSx` object. This bypasses the project's central design token controls and creates style redundancy.
-
-#### Refactoring Recommendation
-
-Import and use `AppSwitch`:
-
-```diff
--import { Switch } from '@mui/material'
--const switchSx = { ... }
-+import AppSwitch from '../../../../components/common/Switch/AppSwitch'
-
-...
-- <Switch checked={row.value} onChange={(e) => row.setter(e.target.checked)} sx={switchSx} />
-+ <AppSwitch checked={row.value} onChange={(e) => row.setter(e.target.checked)} />
-```
-
----
-
-### 3.4. Incorrect File Extension for Plain TypeScript Utility
-
-- **Issue Type**: Coding Standard Violation
-- **Location**: `src/utils/Utils.tsx`
-
-#### Context & Impact
-
-The file `src/utils/Utils.tsx` contains only a formatting function `formatINR` and contains no JSX syntax. Files with no UI elements should use the `.ts` extension to prevent confusion and keep build/lint scopes accurate.
-
-#### Refactoring Recommendation
-
-Rename `src/utils/Utils.tsx` to `src/utils/Utils.ts` and update related import paths.
-
----
-
-## 4. Low Severity Issues
-
-### 4.1. Duplicate Route Registration
-
-- **Issue Type**: Routing Redundancy
-- **Location**: `src/routes/AppRoutes.tsx`
-
-#### Context & Impact
-
-In `AppRoutes.tsx`, the route path `ROUTES.PHARMACY.ORDER_DETAIL` is registered twice:
-
-- Line 99: `<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />`
-- Line 101: `<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />`
-
-Similarly, `ROUTES.PHARMACY.ORDERS` is defined twice (lines 100 and 105). This is redundant and makes the routing map harder to maintain.
-
-#### Refactoring Recommendation
-
-Remove duplicate route elements from `AppRoutes.tsx`.
-
----
-
-### 4.2. Inconsistent Feature Directory Casing
-
-- **Issue Type**: Directory Casing Inconsistency
-- **Location**: `src/features/`
-
-#### Context & Impact
-
-All feature directories are named in lowercase (e.g., `appointments`, `auth`, `doctor`, `radiology`, etc.), except for `src/features/Pharmacy` which is capitalized. This casing difference can cause issues on case-sensitive filesystems (like Linux-based CI/CD pipelines).
-
-#### Refactoring Recommendation
-
-Rename `src/features/Pharmacy` to `src/features/pharmacy` and update imports.
