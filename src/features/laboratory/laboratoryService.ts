@@ -308,3 +308,95 @@ export const createLaboratoryBooking = async (
 	)
 	return res.data
 }
+
+
+// ── Bookings list / detail (patient + laboratory-staff views) ─────────────
+
+export interface LaboratoryReport {
+	id: number
+	public_id: string
+	booking_id: number
+	patient_id: number
+	report_pdf_s3_key: string
+	dicom_images_s3_keys: string[] | null
+	scan_images_s3_keys: string[] | null
+	summary_findings: string | null
+	uploaded_at: string
+}
+
+export interface LaboratoryQuotePayload {
+	items: Array<{
+		booking_item_id: number
+		custom_test_name?: string
+		quoted_price: number
+	}>
+	prescription_verified?: boolean
+	notes?: string
+}
+
+export interface LaboratoryReportPayload {
+	report_pdf_s3_key: string
+	dicom_images_s3_keys?: string[]
+	scan_images_s3_keys?: string[]
+	summary_findings?: string
+}
+
+export interface LaboratoryReportResponse {
+	success: boolean
+	message: string
+	data: LaboratoryReport
+}
+
+/**
+ * GET /api/laboratory/bookings
+ * Backend is role-aware: a laboratory-staff token returns the clinic's incoming booking
+ * queue, a patient token returns only that patient's own bookings (mirrors mobile's
+ * OrderListLaboratoryPage / getLabBookings).
+ */
+export const getLaboratoryBookings = async (status?: string): Promise<LaboratoryBookingsResponse> => {
+	const params = status ? { status } : {}
+	const res = await ApiService.getWithParams<LaboratoryBookingsResponse>(
+		API_ENDPOINTS.LABORATORY.BOOKINGS,
+		params
+	)
+	return res.data
+}
+
+/** GET /api/laboratory/bookings/:id — fetch a specific booking order details */
+export const getLaboratoryBookingById = async (bookingId: string): Promise<LaboratoryBookingResponse> => {
+	const res = await ApiService.get<LaboratoryBookingResponse>(API_ENDPOINTS.LABORATORY.BOOKING_DETAIL(bookingId))
+	return res.data
+}
+
+/** PATCH /api/laboratory/bookings/:id/quote — submit pricing quote for booking items (lab staff) */
+export const submitLaboratoryBookingQuote = async (
+	bookingId: string,
+	payload: LaboratoryQuotePayload
+): Promise<LaboratoryUpdateResponse> => {
+	const res = await ApiService.patch<LaboratoryUpdateResponse>(
+		`${API_ENDPOINTS.LABORATORY.BOOKING_DETAIL(bookingId)}/quote`,
+		payload
+	)
+	return res.data
+}
+
+/** PATCH /api/laboratory/bookings/:id/verify — verify booking prescription (lab staff) */
+export const verifyLaboratoryPrescription = async (bookingId: string): Promise<LaboratoryUpdateResponse> => {
+	const res = await ApiService.patch<LaboratoryUpdateResponse>(
+		API_ENDPOINTS.LABORATORY.VERIFY_PRESCRIPTION(bookingId),
+		{}
+	)
+	return res.data
+}
+
+/** POST /api/laboratory/bookings/:id/report — upload result report and complete booking (lab staff) */
+export const uploadLaboratoryReport = async (
+	bookingId: string,
+	payload: LaboratoryReportPayload
+): Promise<LaboratoryReportResponse> => {
+	const res = await ApiService.post<LaboratoryReportResponse>(
+		API_ENDPOINTS.LABORATORY.UPLOAD_REPORT(bookingId),
+		payload
+	)
+	return res.data
+}

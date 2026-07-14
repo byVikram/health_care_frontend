@@ -65,7 +65,7 @@ function UploadBox({
 				>
 					{label}
 					{required && (
-						<Box component="span" sx={{ color: 'error.main', ml: 0.3 }}>
+						<Box component="span" sx={{ color: 'text.secondary', ml: 0.3 }}>
 							*
 						</Box>
 					)}
@@ -402,7 +402,7 @@ export default function DoctorProfessionalTab({ data, onChange, onSaveSuccess }:
 										</Grid>
 
 										<UploadBox
-											label="Upload image or PDF of Qualification proofs *"
+											label="Upload image or PDF of Qualification proofs"
 											required
 											description="Submit council registration proof or passing certificate."
 											onChange={(file) =>

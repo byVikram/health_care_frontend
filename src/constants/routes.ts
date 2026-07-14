@@ -31,6 +31,8 @@ export const ROUTES = {
 
 	LABORATORY: {
 		SEARCH: '/laboratory/search',
+		ORDERS: '/laboratory/orders',
+		ORDER_DETAIL: '/laboratory/orders/:bookingId',
 	},
 
 	ANCILLARY: {
@@ -63,6 +65,7 @@ export const ROUTES = {
 	PORTAL: {
 		HOME: '/portal',
 		PROFILE: '/profile',
+		FAVOURITES: '/profile?tab=favourites',
 		CONSULTATION: '/consultation/:patientId/:appointmentId',
 		APPOINTMENT_DETAIL: '/portal/appointments/:appointmentId',
 	},

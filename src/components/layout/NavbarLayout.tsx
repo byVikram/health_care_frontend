@@ -1,4 +1,4 @@
-﻿// src/components/layout/NavbarLayout.tsx
+// src/components/layout/NavbarLayout.tsx
 import React, { useState, useRef, useEffect, ReactNode, cloneElement } from 'react'
 import {
 	Box,
@@ -27,6 +27,7 @@ import AppNavBar from '../common/Navbar/AppNavBar'
 import { clearAuth, useAuth } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { USER_ROLES } from '../../constants/constants'
+import { ROUTES } from '../../constants/routes'
 import { useMemo } from 'react'
 import { LookupHospital, PatientProfile } from '../../hooks/useAuth'
 import { toast } from 'react-toastify'
@@ -50,14 +51,14 @@ function isDividerMenuItem(item: ProfileMenuItem): item is { divider: true } {
 const PATIENT_PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
 	{ label: 'Add User', path: '#add-user', special: 'add-user' },
 	{ divider: true },
-	{ label: 'My Appointments', path: '/portal/appointments' },
-	{ label: 'My Tests', path: '#' },
-	{ label: 'My Medicine Orders', path: '#' },
-	{ label: 'My Medical Records', path: '#' },
-	{ label: 'My Online Consultations', path: '#' },
+	{ label: 'My Appointments', path: ROUTES.APPOINTMENTS },
+	{ label: 'Medicine Orders', path: ROUTES.PHARMACY.ORDERS },
+	{ label: 'Lab Bookings', path: ROUTES.LABORATORY.ORDERS },
+	{ label: 'Radiology Bookings', path: ROUTES.RADIOLOGY.BOOKINGS },
+	{ label: 'My Favourite Doctors', path: ROUTES.PORTAL.FAVOURITES },
 	{ label: 'My Feedback', path: '#' },
 	{ divider: true },
-	{ label: 'Profile', path: '/profile' },
+	{ label: 'Profile', path: ROUTES.PORTAL.PROFILE },
 	{ label: 'Settings', path: '#' },
 	{ label: 'Help Line', path: '#help-line' },
 	{ divider: true },
@@ -442,7 +443,7 @@ function ProfileDropdown({
 				const isAddUser = item.special === 'add-user'
 				return (
 					<MenuItem
-						key={item.path}
+						key={`${item.path}-${idx}`}
 						onClick={() => handleClick(item)}
 						sx={{
 							py: 1,

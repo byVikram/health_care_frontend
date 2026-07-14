@@ -30,6 +30,8 @@ import BookingDetailPage from '../features/radiology/bookings/BookingDetailPage'
 import AllSpecialitiesPage from '../features/dashboard/AllSpecialitiesPage'
 import RadiologySearchPage from '../features/radiology/search/RadiologySearchPage'
 import LaboratorySearchPage from '../features/laboratory/search/LaboratorySearchPage'
+import LaboratoryOrdersList from '../features/laboratory/bookings/LaboratoryOrdersList'
+import LaboratoryBookingDetailPage from '../features/laboratory/bookings/LaboratoryBookingDetailPage'
 import { useAuth } from '../hooks/useAuth'
 
 function ProtectedLayout() {
@@ -115,6 +117,8 @@ export default function AppRoutes() {
 					<Route path={ROUTES.RADIOLOGY.PROFILE} element={<RadiologyProfilePage />} />
 					<Route path={ROUTES.RADIOLOGY.BOOKINGS} element={<BookingsList />} />
 					<Route path={ROUTES.RADIOLOGY.BOOKING_DETAIL} element={<BookingDetailPage />} />
+					<Route path={ROUTES.LABORATORY.ORDERS} element={<LaboratoryOrdersList />} />
+					<Route path={ROUTES.LABORATORY.ORDER_DETAIL} element={<LaboratoryBookingDetailPage />} />
 				</Route>
 			</Route>
 

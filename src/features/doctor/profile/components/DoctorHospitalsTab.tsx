@@ -302,8 +302,8 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 			name: h.name,
 			fullAddress: h.fullAddress,
 			phone_number: h.phone_number ?? '',
-			video_consultation_fee: h.video_consultation_fee ?? '',
-			offline_consultation_fee: h.clinic_consultation_fee ?? '',
+			video_consultation_fee: String(h.video_consultation_fee ?? ''),
+			offline_consultation_fee: String(h.clinic_consultation_fee ?? ''),
 		})
 
 		setFollowUpDays(h.free_followup_validity_days ?? 7)
@@ -431,6 +431,8 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 	const handleSave = async () => {
 		const trimmedName = form.name.trim()
 		const trimmedAddress = form.fullAddress.trim()
+		const videoConsultationFee = Number(form.video_consultation_fee.trim() || 0)
+		const clinicConsultationFee = Number(form.offline_consultation_fee.trim() || 0)
 		const isPrimary = hospitals.length === 0
 
 		if (!trimmedName) {
@@ -470,8 +472,8 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 							fullAddress: trimmedAddress,
 							location: trimmedAddress,
 							phone_number: form.phone_number.trim(),
-							video_consultation_fee: form.video_consultation_fee.trim(),
-							clinic_consultation_fee: form.offline_consultation_fee.trim(),
+							video_consultation_fee: videoConsultationFee,
+							clinic_consultation_fee: clinicConsultationFee,
 							free_followup_validity_days: followUpDays,
 							reschedule_allowed_until_hours: rescheduleCutoff,
 							allow_pay_later: allowPayLater,
@@ -502,8 +504,8 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 					fullAddress: trimmedAddress,
 					isPrimary: isPrimary,
 					phone_number: form.phone_number.trim(),
-					video_consultation_fee: form.video_consultation_fee.trim(),
-					clinic_consultation_fee: form.offline_consultation_fee.trim(),
+					video_consultation_fee: videoConsultationFee,
+					clinic_consultation_fee: clinicConsultationFee,
 					free_followup_validity_days: followUpDays,
 					reschedule_allowed_until_hours: rescheduleCutoff,
 					allow_pay_later: allowPayLater,

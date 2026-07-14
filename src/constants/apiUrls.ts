@@ -38,6 +38,9 @@ export const API_ENDPOINTS = {
 		SEARCH: '/api/laboratory/search',
 		TESTS: '/api/laboratory/tests',
 		BOOKINGS: '/api/laboratory/bookings',
+		BOOKING_DETAIL: (id: string) => `/api/laboratory/bookings/${id}`,
+		VERIFY_PRESCRIPTION: (id: string) => `/api/laboratory/bookings/${id}/verify`,
+		UPLOAD_REPORT: (id: string) => `/api/laboratory/bookings/${id}/report`,
 	},
 	SPECIALITIES: {
 		LIST: '/api/specialities',

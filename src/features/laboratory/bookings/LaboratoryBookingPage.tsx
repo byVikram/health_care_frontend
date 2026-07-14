@@ -38,7 +38,7 @@ import {
 	LaboratoryTest,
 	LaboratoryBookingCreatePayload,
 } from '../laboratoryService'
-import { getPatientTreatmentHistory } from '../../Pharmacy/pharmacyService'
+import { getPatientTreatmentHistory } from '../../pharmacy/pharmacyService'
 import { TreatmentRecord, SelectOption } from '../../../types/pharmacyOrder'
 import { formatINR } from '../../../utils/Utils'
 

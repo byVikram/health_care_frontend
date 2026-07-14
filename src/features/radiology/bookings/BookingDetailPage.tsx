@@ -47,6 +47,8 @@ import {
 	RadiologyReport,
 } from '../radiologyService'
 import { formatINR } from '../../../utils/Utils'
+import { useAuth } from '../../../hooks/useAuth'
+import { USER_ROLES } from '../../../constants/constants'
 
 
 interface QuoteFormItem {
@@ -93,6 +95,8 @@ const getStatusChipSx = (status: string) => {
 export default function BookingDetailPage() {
 	const { bookingId } = useParams<{ bookingId: string }>()
 	const navigate = useNavigate()
+	const { role } = useAuth()
+	const isRadiologyViewer = role === USER_ROLES.RADIOLOGY
 
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
@@ -504,11 +508,19 @@ export default function BookingDetailPage() {
 											<Typography variant="body2" fontWeight={600}>
 												Prescription Verified:
 											</Typography>
-											<AppSwitch
-												checked={booking.prescription_verified}
-												onChange={(e) => handleVerifyPrescription(e.target.checked)}
-												disabled={verifyingPrescription || booking.prescription_verified}
-											/>
+											{isRadiologyViewer ? (
+												<AppSwitch
+													checked={booking.prescription_verified}
+													onChange={(e) => handleVerifyPrescription(e.target.checked)}
+													disabled={verifyingPrescription || booking.prescription_verified}
+												/>
+											) : (
+												<Chip
+													label={booking.prescription_verified ? 'Verified' : 'Pending'}
+													size="small"
+													color={booking.prescription_verified ? 'success' : 'default'}
+												/>
+											)}
 										</Box>
 										{booking.prescription_verified && (
 											<Typography
@@ -525,7 +537,14 @@ export default function BookingDetailPage() {
 						</SectionCard>
 
 						{/* Booking Scans Quote/List Card */}
-						{booking.status === 'pending_quote' ? (
+						{booking.status === 'pending_quote' && !isRadiologyViewer ? (
+							<SectionCard title="Pricing Quotation">
+								<Typography variant="body2" color="text.secondary">
+									Your booking has been received. The diagnostic center is preparing a price quote
+									for the requested scans — you'll be notified once it's ready to review and pay.
+								</Typography>
+							</SectionCard>
+						) : booking.status === 'pending_quote' ? (
 							<SectionCard title="Pricing Quotation Entry">
 								<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
 									Submit the quoted price for each scan. You can also specify custom names (e.g.
@@ -717,7 +736,16 @@ export default function BookingDetailPage() {
 						{(booking.status.toLowerCase() === 'confirmed' ||
 							booking.status.toLowerCase() === 'completed') && (
 							<SectionCard title="Diagnostic Scan Report">
-								{booking.status.toLowerCase() === 'confirmed' ? (
+								{booking.status.toLowerCase() === 'confirmed' && !isRadiologyViewer ? (
+									<Box
+										sx={{ p: 1.5, bgcolor: '#F8FCFC', borderRadius: 1.5, border: '1px solid #E2E8F0' }}
+									>
+										<Typography variant="body2" color="text.secondary">
+											Your scan is confirmed. The diagnostic center will upload your report here
+											once it's ready.
+										</Typography>
+									</Box>
+								) : booking.status.toLowerCase() === 'confirmed' ? (
 									<Stack spacing={2}>
 										<Typography variant="body2" color="text.secondary">
 											Upload the PDF scan findings, optionally add DICOM medical imaging keys, and

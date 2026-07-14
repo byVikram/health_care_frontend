@@ -13,11 +13,14 @@ import AppSelect from '../../../components/common/Select/AppSelect'
 import AppTable from '../../../components/common/Table/AppTable'
 import { getRadiologyBookings, RadiologyBooking } from '../radiologyService'
 import { formatINR } from '../../../utils/Utils'
+import { useAuth } from '../../../hooks/useAuth'
+import { USER_ROLES } from '../../../constants/constants'
 
 interface BookingRow extends Record<string, unknown> {
 	id: string
 	patientName: string
 	patientAvatar: string
+	radiologyName: string
 	scansList: string
 	date: string
 	time: string
@@ -86,6 +89,8 @@ const getStatusChipSx = (status: string) => {
 
 export default function BookingsList() {
 	const navigate = useNavigate()
+	const { role } = useAuth()
+	const isRadiologyViewer = role === USER_ROLES.RADIOLOGY
 
 	const [allBookings, setAllBookings] = useState<BookingRow[]>([])
 	const [bookings, setBookings] = useState<BookingRow[]>([])
@@ -128,6 +133,7 @@ export default function BookingsList() {
 					id: booking.public_id,
 					patientName: booking.patient_name || '-',
 					patientAvatar: '', // Backend patient model has avatar_s3_key if needed
+					radiologyName: booking.radiology_name || '-',
 					scansList: scanNames || 'No Scans Configured',
 					date,
 					time,
@@ -154,6 +160,7 @@ export default function BookingsList() {
 			const matchesSearch =
 				!debouncedSearch ||
 				row.patientName.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+				row.radiologyName.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
 				row.scansList.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
 				(row.totalCost && String(row.totalCost).includes(debouncedSearch))
 			const matchesDate = !dateFilter || row.date === dateFilter
@@ -189,7 +196,7 @@ export default function BookingsList() {
 		() => [
 			{
 				field: 'patientName',
-				label: 'Patient Name',
+				label: isRadiologyViewer ? 'Patient Name' : 'Radiology Center',
 				render: (_: unknown, row: BookingRow) => (
 					<Box
 						onClick={() => navigate(`/radiology/bookings/${row.id}`)}
@@ -204,10 +211,10 @@ export default function BookingsList() {
 						}}
 					>
 						<Avatar src={row.patientAvatar} sx={{ width: 36, height: 36, fontSize: 14 }}>
-							{row.patientName?.charAt(0)}
+							{(isRadiologyViewer ? row.patientName : row.radiologyName)?.charAt(0)}
 						</Avatar>
 						<Typography fontSize={13} fontWeight={600}>
-							{row.patientName}
+							{isRadiologyViewer ? row.patientName : row.radiologyName}
 						</Typography>
 					</Box>
 				),
@@ -289,7 +296,7 @@ export default function BookingsList() {
 				),
 			},
 		],
-		[navigate]
+		[navigate, isRadiologyViewer]
 	)
 
 	const rows = useMemo(() => bookings, [bookings])
@@ -298,10 +305,12 @@ export default function BookingsList() {
 		<Box sx={{ p: 3 }}>
 			<Box sx={{ mb: 3 }}>
 				<Typography variant="h5" fontWeight={700} color="primary.dark">
-					Bookings Queue
+					{isRadiologyViewer ? 'Bookings Queue' : 'My Radiology Bookings'}
 				</Typography>
 				<Typography fontSize={13} color="text.secondary">
-					Manage incoming radiology booking requests, submit price quotes, verify prescriptions, and upload reports.
+					{isRadiologyViewer
+						? 'Manage incoming radiology booking requests, submit price quotes, verify prescriptions, and upload reports.'
+						: 'Track your radiology scan bookings, quotes, and reports.'}
 				</Typography>
 			</Box>
 
@@ -346,7 +355,7 @@ export default function BookingsList() {
 
 					<AppInput
 						size="small"
-						placeholder="Search Patient, Scans..."
+						placeholder={isRadiologyViewer ? 'Search Patient, Scans...' : 'Search Center, Scans...'}
 						value={search}
 						onChange={(e) => {
 							setSearch(e.target.value)
