@@ -21,6 +21,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
 import AppButton from '../Button/AppButton'
 import { useAuth } from '../../../hooks/useAuth'
+import NotificationPanel from '../../../features/referrals/NotificationPanel'
 
 const navItems = [
 	{ label: 'Home', href: '/#home' },
@@ -304,6 +305,9 @@ const AppNavBar: React.FC<AppNavBarProps> = ({ onProfileClick, avatarSrc }) => {
 									</Box>
 								)}
 							</Box>
+
+					{/* Notification bell for authenticated users */}
+					{accessToken && <NotificationPanel iconColor="#fff" />}
 
 					{/* Avatar for authenticated patient — triggers profile dropdown */}
 					{accessToken && onProfileClick && (

@@ -19,6 +19,7 @@ import { ROUTES } from '../constants/routes'
 import TestRegister from '../features/auth/test/TestRegister'
 import PortalPage from '../features/portal/PortalPage'
 import DoctorAppointmentList from '../features/appointments/AppointmentList'
+import PatientAppointmentDetailPage from '../features/patient/PatientAppointmentDetailPage'
 import WelcomePage from '../features/auth/WelcomePage'
 import OrderList from '../features/pharmacy/orders/OrderList'
 import OrderDetailPage from '../features/pharmacy/orders/OrderDeatailPage'
@@ -78,11 +79,14 @@ export default function AppRoutes() {
 
 
 			<Route path={ROUTES.PUBLIC.WELCOME_DOCTOR} element={<WelcomePage role="doctor" />} />
+			<Route element={<ProtectedLayout />}>
+				<Route path={ROUTES.ROOT} element={<DashboardPage />} />
+			</Route>
 
 			{/* Protected routes */}
 			<Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
 				<Route element={<ProtectedLayout />}>
-					<Route path={ROUTES.ROOT} element={<DashboardPage />} />
+					
 					<Route path={ROUTES.DOCTORS.DETAIL} element={<DoctorDetailPage />} />
 					<Route path={ROUTES.DOCTORS.SEARCH} element={<DoctorSearchPage />} />
 					<Route path={ROUTES.PAYMENT} element={<PaymentPage />} />
@@ -94,26 +98,27 @@ export default function AppRoutes() {
 					
 				</Route>
 
-			<Route element={<SidebarProtectedLayout />} />
+				<Route element={<SidebarProtectedLayout />} />
 
-			<Route element={<LoggedInNavbarLayout />}>
-				<Route path={ROUTES.PORTAL.HOME} element={<PortalPage />} />
-				<Route path={ROUTES.APPOINTMENTS} element={<DoctorAppointmentList />} />
-				<Route path={ROUTES.PORTAL.PROFILE} element={<ProfilePage />} />
-				<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
-				<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
-				<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
-				<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
-				{/* <Route path={ROUTES.PHARMACY.PROFILE} element={<PharmacyProfilePage />} /> */}
-				<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
+				<Route element={<LoggedInNavbarLayout />}>
+					<Route path={ROUTES.PORTAL.HOME} element={<PortalPage />} />
+					<Route path={ROUTES.APPOINTMENTS} element={<DoctorAppointmentList />} />
+					<Route path={ROUTES.PORTAL.APPOINTMENT_DETAIL} element={<PatientAppointmentDetailPage />} />
+					<Route path={ROUTES.PORTAL.PROFILE} element={<ProfilePage />} />
+					<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
+					<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
+					<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
+					<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
+					{/* <Route path={ROUTES.PHARMACY.PROFILE} element={<PharmacyProfilePage />} /> */}
+					<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
 
-				<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
-				<Route path={ROUTES.RADIOLOGY.PROFILE} element={<RadiologyProfilePage />} />
-				<Route path={ROUTES.RADIOLOGY.BOOKINGS} element={<BookingsList />} />
-				<Route path={ROUTES.RADIOLOGY.BOOKING_DETAIL} element={<BookingDetailPage />} />
+					<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
+					<Route path={ROUTES.RADIOLOGY.PROFILE} element={<RadiologyProfilePage />} />
+					<Route path={ROUTES.RADIOLOGY.BOOKINGS} element={<BookingsList />} />
+					<Route path={ROUTES.RADIOLOGY.BOOKING_DETAIL} element={<BookingDetailPage />} />
 				<Route path={ROUTES.PORTAL.FAVOURITES} element={<FavouriteDoctorsPage />} />
+				</Route>
 			</Route>
-		</Route>
 
 			{/* <Route path={ROUTES.LABORATORY.PROFILE} element={<LaboratoryProfilePage />} /> */}
 

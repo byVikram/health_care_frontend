@@ -459,8 +459,10 @@ export default function PortalPage() {
 									display: 'flex',
 									alignItems: 'center',
 									gap: 2,
-								}}
-							>
+									position: 'relative',
+							}}
+						>
+			
 								<Box
 									component="img"
 									src={user?.avatar || drImage}

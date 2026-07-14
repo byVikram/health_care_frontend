@@ -1,6 +1,6 @@
-﻿// src/features/doctor/DoctorDetailPage.tsx
+// src/features/doctor/DoctorDetailPage.tsx
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { Box, Container, Typography, Divider, Grid, Card } from '@mui/material'
 import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined'
 import ApartmentOutlinedIcon from '@mui/icons-material/ApartmentOutlined'
@@ -87,6 +87,8 @@ export default function DoctorDetailPage() {
 	const [slotsLoading, setSlotsLoading] = useState(false)
 
 	const { id } = useParams<{ id: string }>()
+	const [searchParams] = useSearchParams()
+	const referralId = searchParams.get('referral_id') ?? undefined
 
 	const navigate = useNavigate()
 
@@ -587,6 +589,7 @@ export default function DoctorDetailPage() {
 							allowPayLater: selectedType === 'clinic',
 							appointmentDate: formatDateForApi(selectedDate),
 							startTime: formatTimeForApi(resolvedSelectedTime),
+							referralId,
 						}
 					})
 				}}

@@ -63,6 +63,8 @@ export const API_ENDPOINTS = {
 		REPORTS_CREATE: '/api/patients/reports',
 		FAVOURITES: '/api/patients/me/favourites',
 		TOGGLE_FAVOURITE: (doctorPublicId: string) => `/api/patients/me/favourites/${doctorPublicId}`,
+		LABORATORY_REPORTS: (id: string) => `/api/patients/${id}/laboratory-reports`,
+		RADIOLOGY_REPORTS: (id: string) => `/api/patients/${id}/radiology-reports`,
 	},
 	LOOKUP: {
 		GET: '/api/lookup',
@@ -93,6 +95,10 @@ export const API_ENDPOINTS = {
 		UPDATE_MEDICINES: (id: string) => `/api/pharmacy-orders/${id}/medicines`,
 		SEND_REMINDER: (id: string) => `/api/pharmacy-orders/${id}/remind`,
 	},
+	TREATMENTS: {
+		GET_BY_APPOINTMENT: (appointmentId: string) => `/api/treatments/appointment/${appointmentId}`,
+		PATIENT_HISTORY: (patientPublicId: string) => `/api/treatments/patient/${patientPublicId}/history`,
+	},
 	RADIOLOGY_PROFILE: {
 		DETAILS: '/api/radiology/profile',
 		UPDATE: '/api/radiology/profile',
@@ -104,5 +110,15 @@ export const API_ENDPOINTS = {
 		VERIFY_PRESCRIPTION: (id: string) => `/api/radiology/bookings/${id}/verify`,
 		UPLOAD_REPORT: (id: string) => `/api/radiology/bookings/${id}/report`,
 		SEARCH: '/api/radiology/search',
+	},
+	REFERRALS: {
+		CREATE: '/api/referrals',
+		SENT: '/api/referrals/sent',
+		RECEIVED: '/api/referrals/received',
+		DETAIL: (id: string) => `/api/referrals/${id}`,
+	},
+	NOTIFICATIONS: {
+		LIST: '/api/notifications',
+		MARK_READ: (id: string) => `/api/notifications/${id}/read`,
 	},
 }

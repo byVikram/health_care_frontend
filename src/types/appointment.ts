@@ -21,7 +21,9 @@ export interface AppointmentDoctor {
 	id: string
 	name: string
 	avatar_s3_key: string | undefined
-	specialty?: string
+	degree?: string | null
+	speciality?: string | null // actual key returned by GET /api/appointments/{id}
+	specialty?: string // legacy/alternate key kept for backward compatibility
 	specialization?: string  // alternate key some backends use
 	speciality?: string       // key returned by the appointment detail API
 	degree?: string | null
@@ -68,6 +70,21 @@ export interface Appointment {
 	} | null
 	history?: AppointmentHistoryEntry[]
 	rescheduled_by?: string | null
+	referral?: {
+		id: string
+		referring_doctor: {
+			id: string
+			name: string
+			avatar_s3_key?: string | null
+			avatar_url?: string | null
+			avatar?: string | null
+			profile_picture?: string | null
+			photo_url?: string | null
+			image_url?: string | null
+		}
+		notes: string | null
+		status: string
+	} | null
 }
 
 export interface AppointmentsResponse {

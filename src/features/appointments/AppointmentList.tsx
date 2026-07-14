@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react'
 import { Box, Typography, Avatar, InputAdornment, Card, Pagination, IconButton, Tooltip, Popover } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+// import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import AppTable from '../../components/common/Table/AppTable'
 import { customCardStyle } from '../../styles/commonStyles'
 // import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth, LookupHospital } from '../../hooks/useAuth'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import AppSelect from '../../components/common/Select/AppSelect'
@@ -25,6 +25,7 @@ import ConfirmIcon from '../../assets/icons/confirm.svg'
 import RejectIcon from '../../assets/icons/reject.svg'
 import RescheduleIcon from '../../assets/icons/reschedule.svg'
 import AppointmentDetailsDrawer from './components/AppointmentDetailsDrawer'
+import { ROUTES } from '../../constants/routes'
 
 // Status IDs accepted by PATCH /api/appointments/update-status.
 // Resolved from the lookup table when available, falling back to the
@@ -98,6 +99,7 @@ const TERMINAL_STATUSES = new Set(['cancelled'])
 
 export default function AppointmentList() {
 	const [searchParams] = useSearchParams()
+	const navigate = useNavigate()
 	const { role, lookupData } = useAuth()
 	const queryView = searchParams.get('view')
 	const viewAs: 'doctor' | 'patient' =
@@ -654,7 +656,9 @@ export default function AppointmentList() {
 		},
 	}
 
-	// ── View column — Eye icon, visible to both doctor and patient at any status ──
+	// ── View column ─────────────────────────────────────────────────────────
+	// Patient view opens the full appointment details page; doctor view keeps
+	// the compact details drawer for reviewing appointments in-place.
 	const viewColumn: ColDef = {
 		field: 'view',
 		label: '',
@@ -664,6 +668,10 @@ export default function AppointmentList() {
 					size="small"
 					onClick={(e) => {
 						e.stopPropagation()
+						if (viewAs === 'patient') {
+							navigate(ROUTES.PORTAL.APPOINTMENT_DETAIL.replace(':appointmentId', row.id))
+							return
+						}
 						setDetailsAppointmentId(row.id)
 						setDetailsDrawerOpen(true)
 					}}
@@ -878,6 +886,14 @@ export default function AppointmentList() {
 						columns={columns}
 						rows={rows}
 						emptyMessage="No appointments found"
+						onRowClick={
+							viewAs === 'patient'
+								? (row) =>
+										navigate(
+											ROUTES.PORTAL.APPOINTMENT_DETAIL.replace(':appointmentId', row.id)
+										)
+								: undefined
+						}
 					/>
 					{meta.pages > 1 && (
 						<Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
