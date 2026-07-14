@@ -56,8 +56,9 @@ interface PaymentState {
 	appointmentMode: 'clinic_visit' | 'video_call'
 	appointmentDate: string
 	startTime: string
-
 	allowPayLater?: boolean
+	/** Present only when booking from a referral */
+	referralId?: string
 }
 
 interface PaymentOption {
@@ -120,8 +121,8 @@ export default function PaymentPage() {
 		appointmentMode = 'clinic_visit',
 		appointmentDate = '',
 		startTime = '',
-
 		allowPayLater = true,
+		referralId,
 	} = state
 
 	const total = consultationFee + serviceFee
@@ -155,14 +156,17 @@ export default function PaymentPage() {
 		setBooking(true)
 		setErrorMsg(null)
 		try {
-			const response = await createAppointment({
+			const payload: Record<string, unknown> = {
 				doctor_id: doctorId,
 				hospital_id: hospitalId || undefined,
 				appointment_mode: appointmentMode,
 				appointment_date: appointmentDate,
 				start_time: startTime,
 				patient_id: patientId || undefined,
-			})
+			}
+			if (referralId) payload.referral_id = referralId
+
+			const response = await createAppointment(payload as unknown as Parameters<typeof createAppointment>[0])
 
 			setAppointmentId((response.data as { id: string }).id)
 
@@ -215,6 +219,34 @@ export default function PaymentPage() {
 						overflow: 'hidden',
 					}}
 				>
+					{/* Referral banner — shown only when booking from a referral */}
+					{referralId && (
+						<Box
+							sx={{
+								bgcolor: '#e8f4f8',
+								borderBottom: '1px solid rgba(12,124,124,0.2)',
+								px: 2.5,
+								py: 1,
+								display: 'flex',
+								alignItems: 'center',
+								gap: 0.8,
+							}}
+						>
+							<Box
+								sx={{
+									width: 6,
+									height: 6,
+									borderRadius: '50%',
+									bgcolor: '#0c7c7c',
+									flexShrink: 0,
+								}}
+							/>
+							<Typography fontSize={12} fontWeight={600} color="#0c7c7c">
+								Booking via referral
+							</Typography>
+						</Box>
+					)}
+
 					{/* Doctor header */}
 					<Box sx={{ px: 2.5, py: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
 						<Avatar

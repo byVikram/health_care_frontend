@@ -55,18 +55,30 @@ const MOCK_DOCTOR: ConsultationDoctor = {
 const splitCsv = (value: string | string[]) =>
 	(Array.isArray(value) ? value : value.split(',')).map((item) => item.trim()).filter(Boolean)
 
-const formatDisplayValue = (value: string) =>
-	value
-		.trim()
-		.replace(/[_-]+/g, ' ')
-		.replace(/\b\w/g, (char) => char.toUpperCase())
+const formatDisplayValue = (
+  value: string | number | null | undefined
+): string => {
+  if (value == null) return '';
 
-const formatMetricValue = (value: string, unit: string) => {
-	const trimmedValue = value.trim()
-	if (!trimmedValue) return ''
+  return String(value)
+    .trim()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
 
-	return /^-?\d+(\.\d+)?$/.test(trimmedValue) ? `${Number(trimmedValue)} ${unit}` : trimmedValue
-}
+const formatMetricValue = (
+  value: string | number | null | undefined,
+  unit: string
+) => {
+  if (value == null) return '';
+
+  const stringValue = String(value).trim();
+  if (!stringValue) return '';
+
+  return /^-?\d+(\.\d+)?$/.test(stringValue)
+    ? `${Number(stringValue)} ${unit}`
+    : stringValue;
+};
 
 const formatDateOfBirth = (dateOfBirth: string) => {
 	if (!dateOfBirth) return ''

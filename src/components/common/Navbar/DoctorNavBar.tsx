@@ -6,9 +6,9 @@ import LocationOnIcon from '@mui/icons-material/LocationOn'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined'
 
-import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined'
 import { useAuth, LookupHospital } from '../../../hooks/useAuth'
 import { USER_ROLES } from '../../../constants/constants'
+import NotificationPanel from '../../../features/referrals/NotificationPanel'
 
 interface DoctorNavBarProps {
 	onProfileClick?: () => void
@@ -193,9 +193,7 @@ export default function DoctorNavBar({ onProfileClick, onHospitalChange, avatarS
 				<IconButton sx={{ color: '#fff', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
 					<CalendarTodayOutlinedIcon sx={{ fontSize: 22 }} />
 				</IconButton>
-				<IconButton sx={{ color: '#fff', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
-					<NotificationsNoneOutlinedIcon sx={{ fontSize: 24 }} />
-				</IconButton>
+				<NotificationPanel iconColor="#fff" />
 
 				{/* Divider */}
 				<Box sx={{ width: '1px', height: '22px', bgcolor: 'rgba(255,255,255,0.3)' }} />
