@@ -1,4 +1,4 @@
-﻿// src/features/laboratory/bookings/LaboratoryBookingPage.tsx
+// src/features/laboratory/bookings/LaboratoryBookingPage.tsx
 //
 // Patient-facing "Book a Lab Test" drawer.
 // Mirrors RadiologyBookingPage.tsx exactly — same 3-step layout, same AppDrawer wrapper.
@@ -38,7 +38,7 @@ import {
 	LaboratoryTest,
 	LaboratoryBookingCreatePayload,
 } from '../laboratoryService'
-import { getPatientTreatmentHistory } from '../../Pharmacy/pharmacyService'
+import { fetchPatientTreatmentHistory } from '../../patient/patientService'
 import { TreatmentRecord, SelectOption } from '../../../types/pharmacyOrder'
 import { formatINR } from '../../../utils/Utils'
 
@@ -166,7 +166,7 @@ export default function LaboratoryBookingPage({
 			if (!accessToken || !user?.id) { setLoadingTreatments(false); return }
 			try {
 				setLoadingTreatments(true)
-				const data = await getPatientTreatmentHistory(user.id)
+				const data = await fetchPatientTreatmentHistory(user.id)
 				setTreatments(data)
 				if (data.length > 0) setSelectedTreatmentId(data[0].id)
 			} catch {

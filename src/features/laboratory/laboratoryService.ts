@@ -278,6 +278,7 @@ export const searchLaboratories = async (params: {
 	page?: number
 	limit?: number
 	max_price?: number
+	laboratory_id?: string
 }): Promise<LaboratorySearchResponse> => {
 	const res = await ApiService.getWithParams<LaboratorySearchResponse>(
 		API_ENDPOINTS.LABORATORY.SEARCH,
@@ -308,3 +309,4 @@ export const createLaboratoryBooking = async (
 	)
 	return res.data
 }
+

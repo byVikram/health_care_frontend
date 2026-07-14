@@ -170,6 +170,12 @@ export default function NotificationPanel({ iconColor = 'inherit' }: Props) {
 			const query = params.toString()
 			const url = query ? '/doctors/' + notification.redirect_id + '?' + query : '/doctors/' + notification.redirect_id
 			navigate(url)
+		} else if (notification.redirect_type === 'laboratory' && notification.redirect_id) {
+			navigate(`/laboratory/search?open_lab_id=${notification.redirect_id}`)
+		} else if (notification.redirect_type === 'radiology' && notification.redirect_id) {
+			navigate(`/radiology/search?open_radiology_id=${notification.redirect_id}`)
+		} else if (notification.redirect_type === 'pharmacy' && notification.redirect_id) {
+			navigate(`/pharmacies?open_pharmacy_id=${notification.redirect_id}`)
 		}
 	}
 

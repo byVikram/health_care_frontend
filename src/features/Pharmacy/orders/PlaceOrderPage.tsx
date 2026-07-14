@@ -36,11 +36,12 @@ import prescriptionImage from '../../../assets/Pharmacy/Prescription.svg'
 import { buildS3Url } from '../../../utils/s3'
 import { formatDoctorName } from '../../../utils/Utils'
 
-import { createPharmacyOrder, getPatientTreatmentHistory } from '../pharmacyService'
+import { createPharmacyOrder } from '../pharmacyService'
 import {
 	getPatientAddresses,
 	addPatientAddress,
 	PatientAddressOut,
+	fetchPatientTreatmentHistory,
 } from '../../patient/patientService'
 import { TreatmentRecord, DeliveryType, SelectOption } from '../../../types/pharmacyOrder'
 import SectionCard from '../../../components/common/Card/SectionCard'
@@ -131,7 +132,7 @@ export default function PlaceOrderPage({
 			}
 			try {
 				setLoadingReports(true)
-				const data = await getPatientTreatmentHistory(user.id)
+				const data = await fetchPatientTreatmentHistory(user.id)
 				setTreatments(data)
 				if (data.length > 0) {
 					setSelectedTreatmentId(data[0].id)

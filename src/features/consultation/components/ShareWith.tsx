@@ -11,6 +11,8 @@ import { searchLaboratories } from '../../laboratory/laboratoryService'
 import { searchRadiologyCenters } from '../../radiology/radiologyService'
 import { LaboratorySearchResultItem } from '../../../types/laboratory-search'
 import { RadiologySearchResultItem } from '../../../types/radiology-search'
+import ApiService from '../../../services/apiService'
+import { toast } from 'react-toastify'
 
 const TABS = [
 	{ id: 'pharmacy', label: 'Pharmacy' },
@@ -116,10 +118,31 @@ function toPharmacyPlaces(items: PharmacyListItem[]): Place[] {
 	}))
 }
 
-export default function ShareWith() {
+interface ShareWithProps {
+	appointmentId?: string
+}
+
+export default function ShareWith({ appointmentId }: ShareWithProps) {
 	const [activeTab, setActiveTab] = useState('laboratory')
 	const [city, setCity] = useState('')
 	const [area, setArea] = useState('')
+
+	const handleShare = async (place: Place) => {
+		if (!appointmentId) {
+			toast.error('No active appointment context found.')
+			return
+		}
+		try {
+			await ApiService.post('/api/referrals/share', {
+				appointment_id: appointmentId,
+				target_type: activeTab,
+				target_id: place.id,
+			})
+			toast.success(`Successfully shared prescription with ${place.name}!`)
+		} catch {
+			toast.error('Failed to share prescription with selected center.')
+		}
+	}
 
 	const [pharmacyPlaces, setPharmacyPlaces] = useState<Place[]>([])
 	const [laboratoryPlaces, setLaboratoryPlaces] = useState<Place[]>([])
@@ -368,6 +391,7 @@ export default function ShareWith() {
 									variant="contained"
 									label="Share"
 									size="small"
+									onClick={() => handleShare(place)}
 									sx={{
 										flexShrink: 0,
 										alignSelf: 'flex-start',

@@ -2,6 +2,7 @@ import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { Patient, PatientLifeStyle, PatientMedical, PatientPersonal } from '../../types/patient'
 import { buildS3Url } from '../../utils/s3'
+import type { TreatmentRecord } from '../../types/pharmacyOrder'
 
 export interface PatientUpdateResponse {
 	success: boolean
@@ -165,16 +166,14 @@ function sortHistoryDesc(a: PastMedicalHistoryItem, b: PastMedicalHistoryItem): 
 	return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime)
 }
 
-export const getPatientPastMedicalHistory = async (
+export const getPatientPrescriptionHistory = async (
 	patientPublicId: string
 ): Promise<PastMedicalHistoryItem[]> => {
-	const [treatmentsRes, laboratoryRes, radiologyRes] = await Promise.all([
-		ApiService.get<TreatmentHistoryResponse>(API_ENDPOINTS.TREATMENTS.PATIENT_HISTORY(patientPublicId)),
-		ApiService.get<ApiListResponse<LaboratoryReportRecord>>(API_ENDPOINTS.PATIENT.LABORATORY_REPORTS(patientPublicId)),
-		ApiService.get<ApiListResponse<RadiologyReportRecord>>(API_ENDPOINTS.PATIENT.RADIOLOGY_REPORTS(patientPublicId)),
-	])
+	const res = await ApiService.get<TreatmentHistoryResponse>(
+		API_ENDPOINTS.TREATMENTS.PATIENT_HISTORY(patientPublicId)
+	)
 
-	const prescriptions = getTreatmentHistoryList(treatmentsRes.data)
+	return getTreatmentHistoryList(res.data)
 		.filter((item) => !!item.prescription_s3_key)
 		.map<PastMedicalHistoryItem>((item) => ({
 			id: String(
@@ -190,22 +189,73 @@ export const getPatientPastMedicalHistory = async (
 			notes: item.notes ?? item.diagnosis ?? null,
 			title: item.follow_up_date ? `Follow-up: ${item.follow_up_date}` : null,
 		}))
+		.sort(sortHistoryDesc)
+}
 
-	const laboratoryReports = (laboratoryRes.data.data ?? []).map<PastMedicalHistoryItem>((item) => ({
-		id: item.public_id,
-		category: 'laboratory',
-		date: item.uploaded_at,
-		fileUrl: buildS3Url(item.report_pdf_s3_key),
-		notes: item.summary_findings ?? null,
-	}))
+export const getPatientLaboratoryHistory = async (
+	patientPublicId: string
+): Promise<PastMedicalHistoryItem[]> => {
+	const res = await ApiService.get<ApiListResponse<LaboratoryReportRecord>>(
+		API_ENDPOINTS.PATIENT.LABORATORY_REPORTS(patientPublicId)
+	)
 
-	const radiologyReports = (radiologyRes.data.data ?? []).map<PastMedicalHistoryItem>((item) => ({
-		id: item.public_id,
-		category: 'radiology',
-		date: item.uploaded_at,
-		fileUrl: buildS3Url(item.report_pdf_s3_key),
-		notes: item.summary_findings ?? null,
-	}))
+	return (res.data.data ?? [])
+		.map<PastMedicalHistoryItem>((item) => ({
+			id: item.public_id,
+			category: 'laboratory',
+			date: item.uploaded_at,
+			fileUrl: buildS3Url(item.report_pdf_s3_key),
+			notes: item.summary_findings ?? null,
+		}))
+		.sort(sortHistoryDesc)
+}
 
-	return [...prescriptions, ...laboratoryReports, ...radiologyReports].sort(sortHistoryDesc)
+export const getPatientRadiologyHistory = async (
+	patientPublicId: string
+): Promise<PastMedicalHistoryItem[]> => {
+	const res = await ApiService.get<ApiListResponse<RadiologyReportRecord>>(
+		API_ENDPOINTS.PATIENT.RADIOLOGY_REPORTS(patientPublicId)
+	)
+
+	return (res.data.data ?? [])
+		.map<PastMedicalHistoryItem>((item) => ({
+			id: item.public_id,
+			category: 'radiology',
+			date: item.uploaded_at,
+			fileUrl: buildS3Url(item.report_pdf_s3_key),
+			notes: item.summary_findings ?? null,
+		}))
+		.sort(sortHistoryDesc)
+}
+
+// ── Shared patient prescription / treatment history (used by Pharmacy, Lab & Radiology booking drawers) ──
+
+/**
+ * GET /api/treatments/patient/:patientPublicId/history
+ * Returns the patient's doctor-consultation history, filtered to records that
+ * carry a prescription so the booking drawers can display and link them.
+ * Maps each record to TreatmentRecord using the treatment's public_id as `id`.
+ */
+export const fetchPatientTreatmentHistory = async (
+	patientPublicId: string,
+): Promise<TreatmentRecord[]> => {
+	const res = await ApiService.get<any>(
+		API_ENDPOINTS.TREATMENTS.PATIENT_HISTORY(patientPublicId),
+	)
+	const responseData = res.data?.data
+	const records: any[] = Array.isArray(responseData)
+		? responseData
+		: (responseData?.history ?? responseData?.treatments ?? [])
+
+	return records
+		.filter((record) => !!record.prescription_s3_key)
+		.map((record): TreatmentRecord => ({
+			id: String(record.public_id ?? record.id),
+			created_at: record.appointment_date ?? record.created_at ?? record.updated_at ?? new Date().toISOString(),
+			doctor_name: record.doctor_name || record.doctor?.name || null,
+			hospital_name: record.hospital_name || record.hospital?.name || null,
+			notes: record.notes ?? record.diagnosis ?? null,
+			prescription_s3_key: record.prescription_s3_key,
+			source: 'treatment',
+		}))
 }

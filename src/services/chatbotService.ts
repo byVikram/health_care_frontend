@@ -74,6 +74,7 @@ export async function sendMessageStream(
 	message: string,
 	onChunk: (text: string) => void,
 	onStructured: (payload: ChatResponse) => void,
+	onSessionTitle: (title: string) => void,
 	onError: (err: any) => void
 ): Promise<void> {
 	try {
@@ -122,6 +123,9 @@ export async function sendMessageStream(
 							onChunk(parsed.delta)
 						} else if (parsed.type === 'structured') {
 							onStructured(parsed.payload)
+							if (parsed.session_title) {
+								onSessionTitle(parsed.session_title)
+							}
 						}
 					} catch (e) {
 						console.error('Error parsing SSE data:', e, dataStr)

@@ -20,8 +20,13 @@ export default function ChatBot() {
 	const [isLoading, setIsLoading] = useState(false)
 
 	const isInitializing = React.useRef(false)
+	// Tracks whether `sessions` currently reflects the backend, so repeated
+	// "open history" clicks don't re-issue listSessions() for data we already have.
+	const sessionsLoadedRef = React.useRef(false)
 
-	// Fetch existing session or create a new one on opening the chatbot
+	// Fetch existing session or create a new one. Called lazily on first open
+	// (see handleOpen) rather than on mount, since most page loads never open
+	// the widget at all.
 	const initChatbotSession = async () => {
 		if (isInitializing.current) return
 		isInitializing.current = true
@@ -45,6 +50,7 @@ export default function ChatBot() {
 			// Pre-fetch all user sessions to populate history list
 			const list = await listSessions()
 			setSessions(list)
+			sessionsLoadedRef.current = true
 
 			if (!activeSessionId) {
 				if (list && list.length > 0) {
@@ -54,7 +60,7 @@ export default function ChatBot() {
 					const newSession = await createSession('New Conversation')
 					activeSessionId = newSession.id
 					isNewSession = true
-					
+
 					// Re-fetch list to include the newly created session
 					const updatedList = await listSessions()
 					setSessions(updatedList)
@@ -92,19 +98,14 @@ export default function ChatBot() {
 		}
 	}
 
-	// Initialize session once when layout mounts
-	React.useEffect(() => {
-		initChatbotSession()
-	}, [])
-
+	// Session init is intentionally lazy: ChatBot is mounted in NavbarLayout on
+	// every authenticated page, so running this on mount would hit the
+	// sessions/create/get APIs on every page load even if the user never
+	// opens the widget. Run it on first open instead.
 	const handleOpen = () => {
 		setIsOpen(true)
-		// Safe fallback: trigger refresh if somehow not set
 		if (!sessionId) {
 			initChatbotSession()
-		} else {
-			// Trigger fresh load of history list when chat is opened
-			handleLoadSessions()
 		}
 	}
 
@@ -120,10 +121,13 @@ export default function ChatBot() {
 			setSessionId(newSession.id)
 			localStorage.setItem('careai_session_id', newSession.id)
 			setMessages([])
-			
-			// Refresh history list
+
+			// Refresh history list — a new session was just added, so this one
+			// genuinely needs fresh data (unlike the History toggle, which reuses
+			// whatever's already loaded).
 			const list = await listSessions()
 			setSessions(list)
+			sessionsLoadedRef.current = true
 		} catch (err) {
 			console.error('Failed to create new chat session:', err)
 		} finally {
@@ -159,10 +163,15 @@ export default function ChatBot() {
 		}
 	}
 
+	// Used by the History panel toggle. Sessions are patched locally as titles
+	// change (see handleSend's onSessionTitle), so once loaded there's nothing
+	// left to go stale — skip the refetch on repeat opens.
 	const handleLoadSessions = async () => {
+		if (sessionsLoadedRef.current) return
 		try {
 			const list = await listSessions()
 			setSessions(list)
+			sessionsLoadedRef.current = true
 		} catch (err) {
 			console.error('Failed to load sessions:', err)
 		}
@@ -196,6 +205,10 @@ export default function ChatBot() {
 				currentSessionId = newSession.id
 				setSessionId(newSession.id)
 				localStorage.setItem('careai_session_id', newSession.id)
+				// Keep the cached sessions list in sync — sessionsLoadedRef being true
+				// would otherwise skip a real refetch later and this session would
+				// never show up in History.
+				setSessions((prev) => [newSession, ...prev])
 			}
 
 			// Stream message response
@@ -225,8 +238,14 @@ export default function ChatBot() {
 						)
 					)
 					setIsLoading(false)
-					// Refresh titles list as the backend may auto-name the conversation on first prompt
-					void handleLoadSessions()
+				},
+				(title) => {
+					// Backend auto-names new conversations on the first prompt and sends the
+					// current title on every "structured" event — patch it in place instead
+					// of refetching the whole session list.
+					setSessions((prev) =>
+						prev.map((session) => (session.id === currentSessionId ? { ...session, title } : session))
+					)
 				},
 				(err) => {
 					setMessages((prev) =>
