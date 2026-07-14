@@ -260,7 +260,7 @@ export default function ChatMessage({ message, onFeedbackSubmit }: ChatMessagePr
 
 									<Box sx={{ flex: 1, minWidth: 0 }}>
 										<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-											<Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '13px', color: 'text.primary', noWrap: true }}>
+											<Typography variant="subtitle2" noWrap sx={{ fontWeight: 700, fontSize: '13px', color: 'text.primary' }}>
 												{doc.name}
 											</Typography>
 											{doc.rating !== undefined && (
