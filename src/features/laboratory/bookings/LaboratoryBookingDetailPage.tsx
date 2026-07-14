@@ -13,8 +13,11 @@ import {
 	Card,
 	Chip,
 	CircularProgress,
+	FormControl,
 	Grid,
 	IconButton,
+	MenuItem,
+	Select,
 	Snackbar,
 	Stack,
 	Typography,
@@ -43,6 +46,7 @@ import {
 	submitLaboratoryBookingQuote,
 	verifyLaboratoryPrescription,
 	uploadLaboratoryReport,
+	updateLaboratoryBookingStatus,
 	LaboratoryBooking,
 	LaboratoryBookingItem,
 	LaboratoryReport,
@@ -113,6 +117,7 @@ export default function LaboratoryBookingDetailPage() {
 	const [quoteItems, setQuoteItems] = useState<QuoteFormItem[]>([])
 	const [quoteNotes, setQuoteNotes] = useState('')
 	const [submittingQuote, setSubmittingQuote] = useState(false)
+	const [updatingStatus, setUpdatingStatus] = useState(false)
 
 	const [verifyingPrescription, setVerifyingPrescription] = useState(false)
 
@@ -289,6 +294,34 @@ export default function LaboratoryBookingDetailPage() {
 
 	const handleCloseToast = () => setToast((prev) => ({ ...prev, open: false }))
 
+	const labStatusOptions = [
+		{ value: 'pending_quote', label: 'Pending Quote', color: '#D97706', bg: '#FEF3C7' },
+		{ value: 'pending_payment', label: 'Pending Payment', color: '#4F46E5', bg: '#EEF2FF' },
+		{ value: 'confirmed', label: 'Confirmed', color: '#0D9488', bg: '#CCFBF1' },
+		{ value: 'sample_collected', label: 'Sample Collected', color: '#673AB7', bg: '#EDE7F6' },
+		{ value: 'report_ready', label: 'Report Ready', color: '#0097A7', bg: '#E0F7FA' },
+		{ value: 'completed', label: 'Completed', color: '#16A34A', bg: '#DCFCE7' },
+		{ value: 'cancelled', label: 'Cancelled', color: '#DC2626', bg: '#FEE2E2' },
+	]
+
+	const handleStatusChange = async (newStatus: string) => {
+		if (!booking || updatingStatus) return
+		setUpdatingStatus(true)
+		try {
+			const result = await updateLaboratoryBookingStatus(booking.public_id, newStatus)
+			if (result.success) {
+				showToast(`Status updated to ${labStatusOptions.find((s) => s.value === newStatus)?.label}`, 'success')
+				setBooking((prev) => (prev ? { ...prev, status: newStatus } : null))
+			} else {
+				throw new Error(result.message)
+			}
+		} catch (err) {
+			showToast(err instanceof Error ? err.message : 'Failed to update status.', 'error')
+		} finally {
+			setUpdatingStatus(false)
+		}
+	}
+
 	const patientData = useMemo(() => {
 		return {
 			name: booking?.patient_name || 'Patient',
@@ -305,6 +338,15 @@ export default function LaboratoryBookingDetailPage() {
 			prescriptionUrl: booking?.external_prescription_s3_key
 				? buildS3Url(booking.external_prescription_s3_key)
 				: prescriptionImage,
+			age: booking?.patient?.age || '—',
+			gender: booking?.patient?.gender || '—',
+			phone: booking?.patient?.phone || booking?.patient_phone || '—',
+			clinicName: booking?.clinic?.name || '—',
+			avatarUrl: booking?.patient?.avatar_s3_key
+				? buildS3Url(booking.patient.avatar_s3_key)
+				: booking?.patient?.avatar
+					? buildS3Url(booking.patient.avatar)
+					: undefined,
 		}
 	}, [booking])
 
@@ -398,59 +440,64 @@ export default function LaboratoryBookingDetailPage() {
 				{/* Left column */}
 				<Grid size={{ xs: 12, md: 8 }}>
 					<Stack spacing={3}>
-						{/* Patient details */}
 						<SectionCard title="Patient Details">
-							<Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-								<Avatar sx={{ width: 48, height: 48, bgcolor: 'primary.main', fontWeight: 600 }}>
-									{patientData.name.charAt(0)}
+							<Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-start' }}>
+								{/* Avatar */}
+								<Avatar
+									src={patientData.avatarUrl}
+									sx={{
+										width: 56,
+										height: 56,
+										background: patientData.avatarUrl ? undefined : 'linear-gradient(135deg, #00796B 0%, #004D40 100%)',
+										fontWeight: 700,
+										fontSize: 22,
+										borderRadius: '12px',
+										boxShadow: '0 4px 14px rgba(0,121,107,0.25)',
+										border: '2px solid #E0F2F1',
+									}}
+								>
+									{patientData.name.charAt(0).toUpperCase()}
 								</Avatar>
 								<Box sx={{ flex: 1 }}>
-									<Typography variant="subtitle1" fontWeight={700} color="text.primary">
+									<Typography variant="subtitle1" fontWeight={700} color="text.primary" sx={{ mb: 1 }}>
 										{patientData.name}
 									</Typography>
-									<Grid container spacing={2} sx={{ mt: 0.5 }}>
+									<Grid container spacing={2}>
 										<Grid size={{ xs: 6, sm: 4 }}>
-											<Typography variant="caption" color="text.secondary">
-												Patient ID
-											</Typography>
+											<Typography variant="caption" color="text.secondary">Scheduled Date</Typography>
+											<Typography variant="body2" fontWeight={600}>{patientData.date}</Typography>
+										</Grid>
+										<Grid size={{ xs: 6, sm: 4 }}>
+											<Typography variant="caption" color="text.secondary">Scheduled Time</Typography>
+											<Typography variant="body2" fontWeight={600}>{patientData.time}</Typography>
+										</Grid>
+										<Grid size={{ xs: 6, sm: 4 }}>
+											<Typography variant="caption" color="text.secondary">Age / Gender</Typography>
 											<Typography variant="body2" fontWeight={600}>
-												{patientData.id}
+												{patientData.age !== '—' ? `${patientData.age} yrs` : '—'} / {patientData.gender}
 											</Typography>
 										</Grid>
 										<Grid size={{ xs: 6, sm: 4 }}>
-											<Typography variant="caption" color="text.secondary">
-												Scheduled Date
-											</Typography>
-											<Typography variant="body2" fontWeight={600}>
-												{patientData.date}
-											</Typography>
+											<Typography variant="caption" color="text.secondary">Phone</Typography>
+											<Typography variant="body2" fontWeight={600}>{patientData.phone}</Typography>
 										</Grid>
 										<Grid size={{ xs: 6, sm: 4 }}>
-											<Typography variant="caption" color="text.secondary">
-												Scheduled Time
-											</Typography>
-											<Typography variant="body2" fontWeight={600}>
-												{patientData.time}
-											</Typography>
+											<Typography variant="caption" color="text.secondary">Clinic</Typography>
+											<Typography variant="body2" fontWeight={600}>{patientData.clinicName}</Typography>
+										</Grid>
+										<Grid size={{ xs: 6, sm: 4 }}>
+											<Typography variant="caption" color="text.secondary">Laboratory</Typography>
+											<Typography variant="body2" fontWeight={600}>{booking.laboratory_name || '—'}</Typography>
 										</Grid>
 									</Grid>
+									{/* Notes */}
+									<Box sx={{ mt: 1.5, p: 1.5, bgcolor: '#F8FCFC', borderRadius: 1.5, border: '1px solid #E2E8F0' }}>
+										<Typography variant="caption" color="text.secondary" fontWeight={600}>Patient Notes:</Typography>
+										<Typography variant="body2" color="text.primary" sx={{ mt: 0.5 }}>
+											{patientData.notes}
+										</Typography>
+									</Box>
 								</Box>
-							</Box>
-							<Box
-								sx={{
-									mt: 2,
-									p: 1.5,
-									bgcolor: '#F8FCFC',
-									borderRadius: 1.5,
-									border: '1px solid #E2E8F0',
-								}}
-							>
-								<Typography variant="caption" color="text.secondary" fontWeight={600}>
-									Patient Notes:
-								</Typography>
-								<Typography variant="body2" color="text.primary" sx={{ mt: 0.5 }}>
-									{patientData.notes}
-								</Typography>
 							</Box>
 						</SectionCard>
 
@@ -672,6 +719,38 @@ export default function LaboratoryBookingDetailPage() {
 					<Stack spacing={3}>
 						{/* Timeline step list */}
 						<SectionCard title="Booking Workflow Status">
+							{/* Status change dropdown — lab staff only */}
+							{isLabViewer && (
+								<Box sx={{ mb: 2.5 }}>
+									<Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mb: 0.75, display: 'block' }}>
+										Change Status
+									</Typography>
+									<FormControl fullWidth size="small">
+										<Select
+											value={booking.status}
+											onChange={(e) => handleStatusChange(e.target.value)}
+											disabled={updatingStatus}
+											sx={{
+												'& .MuiSelect-select': {
+													py: 1,
+													bgcolor: labStatusOptions.find((s) => s.value === booking.status)?.bg,
+													color: labStatusOptions.find((s) => s.value === booking.status)?.color,
+													fontWeight: 600,
+												},
+											}}
+										>
+											{labStatusOptions.map((option) => (
+												<MenuItem key={option.value} value={option.value}>
+													<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+														<Box sx={{ width: 9, height: 9, borderRadius: '50%', bgcolor: option.color }} />
+														{option.label}
+													</Box>
+												</MenuItem>
+											))}
+										</Select>
+									</FormControl>
+								</Box>
+							)}
 							<Box sx={{ pl: 1 }}>
 								{timelineSteps.map((step, idx) => {
 									const isLast = idx === timelineSteps.length - 1

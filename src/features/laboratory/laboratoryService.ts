@@ -207,20 +207,45 @@ export interface LaboratoryBooking {
 	public_id: string
 	patient_id: number
 	patient_name: string
+	patient_phone: string | null
 	laboratory_name: string
 	laboratory_public_id: string
+	laboratory_phone: string | null
+	doctor_phone: string | null
 	booking_date: string
 	booking_time: string
 	status: string
 	payment_status: string
 	prescription_verified: boolean
 	verified_by_user_id: number | null
+	verified_by_name: string | null
 	verified_at: string | null
 	total_price: number | null
 	notes: string | null
 	external_prescription_s3_key: string | null
 	booking_items: LaboratoryBookingItem[]
 	created_at: string
+
+	// Rich nested objects returned by the detail endpoint
+	patient?: {
+		id: string
+		name: string
+		phone: string | null
+		age: number | null
+		gender: string | null
+		avatar_s3_key?: string | null
+	}
+	clinic?: {
+		name: string
+		phone: string | null
+		address: string | null
+	}
+	laboratory?: {
+		id: string
+		name: string
+		phone: string | null
+		address: string | null
+	}
 }
 
 export interface LaboratoryBookingResponse {
@@ -397,6 +422,18 @@ export const uploadLaboratoryReport = async (
 	const res = await ApiService.post<LaboratoryReportResponse>(
 		API_ENDPOINTS.LABORATORY.UPLOAD_REPORT(bookingId),
 		payload
+	)
+	return res.data
+}
+
+/** PATCH /api/laboratory/bookings/:id/status — update booking status (lab staff) */
+export const updateLaboratoryBookingStatus = async (
+	bookingId: string,
+	status: string
+): Promise<LaboratoryUpdateResponse> => {
+	const res = await ApiService.patch<LaboratoryUpdateResponse>(
+		API_ENDPOINTS.LABORATORY.UPDATE_STATUS(bookingId),
+		{ status }
 	)
 	return res.data
 }

@@ -201,20 +201,45 @@ export interface RadiologyBooking {
 	public_id: string
 	patient_id: number
 	patient_name: string
+	patient_phone: string | null
 	radiology_name: string
 	radiology_public_id: string
+	radiology_phone: string | null
+	doctor_phone: string | null
 	booking_date: string
 	booking_time: string
 	status: string
 	payment_status: string
 	prescription_verified: boolean
 	verified_by_user_id: number | null
+	verified_by_name: string | null
 	verified_at: string | null
 	total_price: number | null
 	notes: string | null
 	external_prescription_s3_key: string | null
 	booking_items: RadiologyBookingItem[]
 	created_at: string
+
+	// Rich nested objects returned by the detail endpoint
+	patient?: {
+		id: string
+		name: string
+		phone: string | null
+		age: number | null
+		gender: string | null
+		avatar_s3_key?: string | null
+	}
+	clinic?: {
+		name: string
+		phone: string | null
+		address: string | null
+	}
+	radiology?: {
+		id: string
+		name: string
+		phone: string | null
+		address: string | null
+	}
 }
 
 export interface RadiologyReport {
@@ -369,6 +394,18 @@ export const createRadiologyBooking = async (
 	const res = await ApiService.post<BookingResponse>(
 		API_ENDPOINTS.RADIOLOGY_PROFILE.BOOKINGS,
 		payload
+	)
+	return res.data
+}
+
+/** PATCH /api/radiology/bookings/:id/status — update booking status (radiology staff) */
+export const updateRadiologyBookingStatus = async (
+	bookingId: string,
+	status: string
+): Promise<{ success: boolean; message: string }> => {
+	const res = await ApiService.patch<{ success: boolean; message: string }>(
+		API_ENDPOINTS.RADIOLOGY_PROFILE.UPDATE_STATUS(bookingId),
+		{ status }
 	)
 	return res.data
 }
