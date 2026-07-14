@@ -1,5 +1,5 @@
-﻿// src/features/consultation/components/PastMedicalHistory.tsx
-import { useState, useEffect } from 'react'
+// src/features/consultation/components/PastMedicalHistory.tsx
+import { useEffect, useMemo, useState } from 'react'
 import { Box, Typography, useTheme } from '@mui/material'
 import SentimentDissatisfiedOutlinedIcon from '@mui/icons-material/SentimentDissatisfiedOutlined'
 import { customCardStyle } from '../../../styles/commonStyles'
@@ -8,23 +8,27 @@ import PrescriptionIcon from '../../../assets/icons/consultation/prescription.sv
 import LabIcon from '../../../assets/icons/consultation/lab.svg'
 import RadiologyIcon from '../../../assets/icons/consultation/radiology.svg'
 import AncillaryIcon from '../../../assets/icons/consultation/ancillary.svg'
-import { getPatientReports, type ReportRecord } from '../consultationService'
+import {
+	getPatientPastMedicalHistory,
+	type PastMedicalHistoryCategory,
+	type PastMedicalHistoryItem,
+} from '../../patient/patientService'
 
-const TABS = [
+const TABS: { id: PastMedicalHistoryCategory; label: string }[] = [
 	{ id: 'prescription', label: 'Prescription' },
 	{ id: 'laboratory', label: 'Laboratory' },
 	{ id: 'radiology', label: 'Radiology' },
 	{ id: 'ancillary', label: 'Ancillary' },
 ]
 
-const EMPTY_MESSAGES: Record<string, string> = {
+const EMPTY_MESSAGES: Record<PastMedicalHistoryCategory, string> = {
 	prescription: 'No past prescription history!',
 	laboratory: 'No past lab test history!',
 	radiology: 'No past radiology history!',
 	ancillary: 'No past ancillary history!',
 }
 
-const TAB_ICONS: Record<string, string> = {
+const TAB_ICONS: Record<PastMedicalHistoryCategory, string> = {
 	prescription: PrescriptionIcon,
 	laboratory: LabIcon,
 	radiology: RadiologyIcon,
@@ -45,34 +49,105 @@ interface Props {
 	patientPublicId?: string
 }
 
+function getDateRange(value: string): { start?: Date; end?: Date } {
+	const today = new Date()
+	today.setHours(0, 0, 0, 0)
+
+	const end = new Date(today)
+	end.setHours(23, 59, 59, 999)
+
+	if (value === 'today') {
+		return { start: today, end }
+	}
+
+	if (value === 'yesterday') {
+		const yesterday = new Date(today)
+		yesterday.setDate(yesterday.getDate() - 1)
+		const yesterdayEnd = new Date(yesterday)
+		yesterdayEnd.setHours(23, 59, 59, 999)
+		return { start: yesterday, end: yesterdayEnd }
+	}
+
+	const days = value === '7days' ? 7 : value === '30days' ? 30 : value === '90days' ? 90 : undefined
+
+	if (!days) {
+		return {}
+	}
+
+	const start = new Date(today)
+	start.setDate(start.getDate() - days + 1)
+
+	return { start, end }
+}
+
+function isWithinDateRange(dateValue: string, rangeValue: string): boolean {
+	const { start, end } = getDateRange(rangeValue)
+
+	if (!start || !end) {
+		return true
+	}
+
+	const itemDate = new Date(dateValue)
+
+	if (Number.isNaN(itemDate.getTime())) {
+		return false
+	}
+
+	return itemDate >= start && itemDate <= end
+}
+
+function formatHistoryDate(dateValue: string): string {
+	const date = new Date(dateValue)
+
+	if (Number.isNaN(date.getTime())) {
+		return dateValue || '-'
+	}
+
+	return new Intl.DateTimeFormat('en-IN', {
+		day: '2-digit',
+		month: 'short',
+		year: 'numeric',
+	}).format(date)
+}
+
 export default function PastMedicalHistory({ patientPublicId }: Props) {
-	const [activeTab, setActiveTab] = useState('laboratory')
-	const [selectedDate, setSelectedDate] = useState('yesterday')
-	const [reports, setReports] = useState<ReportRecord[]>([])
+	const [activeTab, setActiveTab] = useState<PastMedicalHistoryCategory>('laboratory')
+	const [selectedDate, setSelectedDate] = useState('all')
+	const [historyItems, setHistoryItems] = useState<PastMedicalHistoryItem[]>([])
 	const [loading, setLoading] = useState(false)
+	const [error, setError] = useState<string | null>(null)
 	const theme = useTheme()
 
 	useEffect(() => {
 		if (!patientPublicId) return
 
-		const fetchReports = async () => {
+		const fetchHistory = async () => {
 			try {
 				setLoading(true)
+				setError(null)
 
-				const data = await getPatientReports(patientPublicId)
+				const data = await getPatientPastMedicalHistory(patientPublicId)
 
-				setReports(data)
+				setHistoryItems(data)
 			} catch (error) {
-				console.error('Error fetching reports', error)
+				console.error('Error fetching past medical history', error)
+				setError('Failed to load past medical history. Please try again.')
+				setHistoryItems([])
 			} finally {
 				setLoading(false)
 			}
 		}
 
-		fetchReports()
+		fetchHistory()
 	}, [patientPublicId])
 
-	const filteredReports = reports.filter((report) => report.report_type === activeTab)
+	const filteredHistoryItems = useMemo(
+		() =>
+			historyItems.filter(
+				(item) => item.category === activeTab && isWithinDateRange(item.date, selectedDate)
+			),
+		[activeTab, historyItems, selectedDate]
+	)
 
 	return (
 		<Box sx={{ ...customCardStyle, mt: 2, minHeight: '80vh', flexGrow: 1 }}>
@@ -169,30 +244,12 @@ export default function PastMedicalHistory({ patientPublicId }: Props) {
 				})}
 			</Box>
 
-			{/* Empty state */}
-			{/* <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4, gap: 1.5 }}>
-			<Box
-				sx={{
-					width: 80,
-					height: 80,
-					borderRadius: '50%',
-					border: '2px solid',
-					borderColor: 'divider',
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-				}}
-			>
-				<SentimentDissatisfiedOutlinedIcon sx={{ fontSize: 44, color: 'text.disabled' }} />
-			</Box>
-			<Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '13.5px', fontWeight: 500 }}>
-				{EMPTY_MESSAGES[activeTab]}
-			</Typography>
-		</Box> */}
 			<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
 				{loading ? (
-					<Typography>Loading...</Typography>
-				) : filteredReports.length === 0 ? (
+					<Typography sx={{ color: 'text.secondary', fontSize: '13.5px' }}>Loading...</Typography>
+				) : error ? (
+					<Typography sx={{ color: 'error.main', fontSize: '13.5px', fontWeight: 500 }}>{error}</Typography>
+				) : filteredHistoryItems.length === 0 ? (
 					<Box
 						sx={{
 							display: 'flex',
@@ -234,9 +291,9 @@ export default function PastMedicalHistory({ patientPublicId }: Props) {
 						</Typography>
 					</Box>
 				) : (
-					filteredReports.map((report) => (
+					filteredHistoryItems.map((item) => (
 						<Box
-							key={report.id}
+							key={item.id}
 							sx={{
 								border: '1px solid',
 								borderColor: 'divider',
@@ -256,31 +313,46 @@ export default function PastMedicalHistory({ patientPublicId }: Props) {
 									fontWeight: 600,
 								}}
 							>
-								{report.report_date}
+								{formatHistoryDate(item.date)}
 							</Typography>
 
+							{item.title && (
+								<Typography
+									sx={{
+										fontSize: '13px',
+										color: 'text.primary',
+										fontWeight: 600,
+									}}
+								>
+									{item.title}
+								</Typography>
+							)}
 
 							{/* PDF Preview */}
-							<iframe
-								src={`${report.file_s3_key}#toolbar=0&navpanes=0&scrollbar=0`}
-								title={report.report_type}
-								width="100%"
-								height="300px"
-								style={{
-									border: '1px solid #e0e0e0',
-									borderRadius: '8px',
-								}}
-							/>
+							{item.fileUrl && (
+								<iframe
+									src={`${item.fileUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+									title={item.category}
+									width="100%"
+									height="300px"
+									style={{
+										border: '1px solid #e0e0e0',
+										borderRadius: '8px',
+									}}
+								/>
+							)}
 
 							{/* Notes */}
-							<Typography
-								sx={{
-									fontSize: '14px',
-									lineHeight: 1.6,
-								}}
-							>
-								{report.notes}
-							</Typography>
+							{item.notes && (
+								<Typography
+									sx={{
+										fontSize: '14px',
+										lineHeight: 1.6,
+									}}
+								>
+									{item.notes}
+								</Typography>
+							)}
 						</Box>
 					))
 				)}

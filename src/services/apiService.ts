@@ -3,6 +3,13 @@ import axios, { AxiosResponse, AxiosRequestConfig } from 'axios'
 import { clearAuth } from '../hooks/useAuth'
 import { toast } from 'react-toastify'
 
+// Extends the standard axios config with app-specific opt-outs, e.g. to
+// silence the global error toast for requests where a non-2xx response
+// (like a 404) is an expected, handled state rather than a real error.
+export interface ApiRequestConfig extends AxiosRequestConfig {
+	suppressErrorToast?: boolean
+}
+
 // ── Axios instance ────────────────────────────────────────────────────────────
 export const API_BASE_URL = (import.meta.env.VITE_API_ENDPOINT as string | undefined)?.replace(/\/+$/, '')
 
@@ -32,7 +39,9 @@ axiosInstance.interceptors.response.use(
 		if (status === 401) {
 			clearAuth()
 			window.location.href = '/login'
-		} else {
+		} else if (!error.config?.suppressErrorToast) {
+			// Callers can opt out (e.g. when a 404 is an expected "not found yet"
+			// state rather than a real error) by passing { suppressErrorToast: true }.
 			toast.error(message) // 👈 global toast
 		}
 
@@ -42,7 +51,7 @@ axiosInstance.interceptors.response.use(
 
 // ── ApiService ────────────────────────────────────────────────────────────────
 const ApiService = {
-	get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+	get<T = unknown>(url: string, config?: ApiRequestConfig): Promise<AxiosResponse<T>> {
 		return axiosInstance.get<T>(url, config)
 	},
 

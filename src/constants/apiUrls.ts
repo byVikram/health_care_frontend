@@ -59,6 +59,8 @@ export const API_ENDPOINTS = {
 		VITALS_HISTORY: (id: string) => `/api/patients/${id}/vitals`,
 		REPORTS: (id: string) => `/api/patients/${id}/reports`,
 		REPORTS_CREATE: '/api/patients/reports',
+		LABORATORY_REPORTS: (id: string) => `/api/patients/${id}/laboratory-reports`,
+		RADIOLOGY_REPORTS: (id: string) => `/api/patients/${id}/radiology-reports`,
 	},
 	LOOKUP: {
 		GET: '/api/lookup',
@@ -89,6 +91,10 @@ export const API_ENDPOINTS = {
 		UPDATE_MEDICINES: (id: string) => `/api/pharmacy-orders/${id}/medicines`,
 		SEND_REMINDER: (id: string) => `/api/pharmacy-orders/${id}/remind`,
 	},
+	TREATMENTS: {
+		GET_BY_APPOINTMENT: (appointmentId: string) => `/api/treatments/appointment/${appointmentId}`,
+		PATIENT_HISTORY: (patientPublicId: string) => `/api/treatments/patient/${patientPublicId}/history`,
+	},
 	RADIOLOGY_PROFILE: {
 		DETAILS: '/api/radiology/profile',
 		UPDATE: '/api/radiology/profile',
@@ -106,5 +112,15 @@ export const API_ENDPOINTS = {
 		SESSION_DETAIL: (id: string) => `/api/chatbot/sessions/${id}`,
 		SEND_MESSAGE: (id: string) => `/api/chatbot/sessions/${id}/message`,
 		LOG_FEEDBACK: (id: string) => `/api/chatbot/messages/${id}/feedback`,
+	},
+	REFERRALS: {
+		CREATE: '/api/referrals',
+		SENT: '/api/referrals/sent',
+		RECEIVED: '/api/referrals/received',
+		DETAIL: (id: string) => `/api/referrals/${id}`,
+	},
+	NOTIFICATIONS: {
+		LIST: '/api/notifications',
+		MARK_READ: (id: string) => `/api/notifications/${id}/read`,
 	},
 }
