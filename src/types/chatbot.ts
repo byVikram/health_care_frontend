@@ -8,15 +8,19 @@ export interface SourceReference {
 }
 
 export interface DoctorSuggestion {
+	id?: string
 	name: string
 	speciality: string[]
 	location: string
+	hospital_name?: string
+	avatar_s3_key?: string
 	fees: number
-	availability: string[]
+	availability?: string[]
 	rating?: number
 	consultation_mode: string
 	distance?: string
 	experience_years: number
+	earliest_slot?: string
 }
 
 export interface ChatResponse {
