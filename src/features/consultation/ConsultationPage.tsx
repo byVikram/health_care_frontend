@@ -56,28 +56,28 @@ const splitCsv = (value: string | string[]) =>
 	(Array.isArray(value) ? value : value.split(',')).map((item) => item.trim()).filter(Boolean)
 
 const formatDisplayValue = (
-  value: string | number | null | undefined
+	value: string | number | null | undefined
 ): string => {
-  if (value == null) return '';
+	if (value == null) return '';
 
-  return String(value)
-    .trim()
-    .replace(/[_-]+/g, ' ')
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+	return String(value)
+		.trim()
+		.replace(/[_-]+/g, ' ')
+		.replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
 const formatMetricValue = (
-  value: string | number | null | undefined,
-  unit: string
+	value: string | number | null | undefined,
+	unit: string
 ) => {
-  if (value == null) return '';
+	if (value == null) return '';
 
-  const stringValue = String(value).trim();
-  if (!stringValue) return '';
+	const stringValue = String(value).trim();
+	if (!stringValue) return '';
 
-  return /^-?\d+(\.\d+)?$/.test(stringValue)
-    ? `${Number(stringValue)} ${unit}`
-    : stringValue;
+	return /^-?\d+(\.\d+)?$/.test(stringValue)
+		? `${Number(stringValue)} ${unit}`
+		: stringValue;
 };
 
 const formatDateOfBirth = (dateOfBirth: string) => {
@@ -89,10 +89,10 @@ const formatDateOfBirth = (dateOfBirth: string) => {
 	return Number.isNaN(parsedDate.getTime())
 		? dateOfBirth
 		: parsedDate.toLocaleDateString('en-GB', {
-				day: '2-digit',
-				month: 'long',
-				year: 'numeric',
-			})
+			day: '2-digit',
+			month: 'long',
+			year: 'numeric',
+		})
 }
 
 const getAge = (dateOfBirth: string) => {
@@ -199,19 +199,24 @@ export default function ConsultationPage() {
 	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
 	const [appointmentType, setAppointmentType] = useState<'clinic' | 'video'>('clinic')
 
+	// Patient + appointment gate the loading screen — both tabs (Info & Timeline,
+	// Vitals) depend on the header, which needs them regardless of which tab is active.
 	useEffect(() => {
-		const fetchData = async () => {
-			if (!patientId || !appointmentId) {
-				setLoading(false)
-				return
-			}
+		if (!patientId || !appointmentId) {
+			setLoading(false)
+			return
+		}
 
+		let cancelled = false
+
+		const fetchData = async () => {
 			try {
-				const [patientRes, appointmentRes, doctorProfileRes] = await Promise.allSettled([
+				const [patientRes, appointmentRes] = await Promise.allSettled([
 					getPatientDetails(patientId) as Promise<PatientDetailsResponse>,
 					getAppointmentById(appointmentId) as Promise<AppointmentDetailsResponse>,
-					getDoctorProfile() as Promise<DoctorProfileResponse>,
 				])
+
+				if (cancelled) return
 
 				if (patientRes.status === 'fulfilled') {
 					setPatient(patientRes.value.data)
@@ -224,18 +229,44 @@ export default function ConsultationPage() {
 				} else {
 					console.error('Error fetching appointment details', appointmentRes.reason)
 				}
-
-				if (doctorProfileRes.status === 'fulfilled' && doctorProfileRes.value.success) {
-					setDoctorProfile(mapDoctorProfileApi(doctorProfileRes.value.data as Parameters<typeof mapDoctorProfileApi>[0]))
-				} else if (doctorProfileRes.status === 'rejected') {
-					console.error('Error fetching doctor profile', doctorProfileRes.reason)
-				}
 			} finally {
-				setLoading(false)
+				if (!cancelled) setLoading(false)
 			}
 		}
 
 		fetchData()
+
+		return () => {
+			cancelled = true
+		}
+	}, [patientId, appointmentId])
+
+	// Doctor profile is only used by the Info tab's ConsultationNotes header and the
+	// reschedule drawer's hospital list — fetch it in the background instead of
+	// blocking the loading screen for tabs (e.g. Vitals) that don't need it.
+	useEffect(() => {
+		if (!patientId || !appointmentId) return
+
+		let cancelled = false
+
+		const fetchDoctorProfile = async () => {
+			try {
+				const res = (await getDoctorProfile()) as DoctorProfileResponse
+				if (cancelled) return
+
+				if (res.success) {
+					setDoctorProfile(mapDoctorProfileApi(res.data as Parameters<typeof mapDoctorProfileApi>[0]))
+				}
+			} catch (error) {
+				if (!cancelled) console.error('Error fetching doctor profile', error)
+			}
+		}
+
+		fetchDoctorProfile()
+
+		return () => {
+			cancelled = true
+		}
 	}, [patientId, appointmentId])
 
 	useEffect(() => {
@@ -254,6 +285,7 @@ export default function ConsultationPage() {
 		if (!doctorId || !hospitalId) return
 
 		const dateStr = rescheduleDate.toISOString().split('T')[0]
+		let cancelled = false
 
 		const fetchSlots = async () => {
 			setRescheduleSlotsLoading(true)
@@ -266,6 +298,8 @@ export default function ConsultationPage() {
 					hospital_id: hospitalId,
 					date: dateStr,
 				})
+				if (cancelled) return
+
 				const selectedTypeMode = appointmentType === 'clinic' ? 'clinic_visit' : 'video_call'
 				const selectedModeData = getAvailabilityModeBlocks(responseData).find(
 					(item) => item.appointment_mode === selectedTypeMode
@@ -273,13 +307,17 @@ export default function ConsultationPage() {
 
 				setRescheduleSlots(selectedModeData?.sessions || [])
 			} catch {
-				toast.error('Could not load available slots.')
+				if (!cancelled) toast.error('Could not load available slots.')
 			} finally {
-				setRescheduleSlotsLoading(false)
+				if (!cancelled) setRescheduleSlotsLoading(false)
 			}
 		}
 
 		fetchSlots()
+
+		return () => {
+			cancelled = true
+		}
 	}, [appointment, appointmentType, doctorProfile, rescheduleDate, rescheduleHospitalId, rescheduleOpen])
 
 	if (loading) return <div>Loading...</div>
@@ -305,12 +343,12 @@ export default function ConsultationPage() {
 				...(lookupData?.hospitals || []),
 				...(appointment?.hospital
 					? [
-							{
-								id: appointment.hospital.id,
-								label: appointment.hospital.name,
-								address: appointment.hospital.address,
-							},
-						]
+						{
+							id: appointment.hospital.id,
+							label: appointment.hospital.name,
+							address: appointment.hospital.address,
+						},
+					]
 					: []),
 			].map((hospital) => [hospital.id, hospital] as const)
 		).values()
@@ -356,17 +394,17 @@ export default function ConsultationPage() {
 				setAppointment((prev) =>
 					prev
 						? {
-								...prev,
-								appointment_date: dateStr,
-								start_time: rescheduleTime,
-								hospital: selectedHospital
-									? {
-											id: selectedHospital.id,
-											name: selectedHospital.label,
-											address: selectedHospital.address ?? '',
-										}
-									: prev.hospital,
-							}
+							...prev,
+							appointment_date: dateStr,
+							start_time: rescheduleTime,
+							hospital: selectedHospital
+								? {
+									id: selectedHospital.id,
+									name: selectedHospital.label,
+									address: selectedHospital.address ?? '',
+								}
+								: prev.hospital,
+						}
 						: prev
 				)
 				toast.success(res.data.message || 'Appointment rescheduled!')
@@ -467,15 +505,15 @@ export default function ConsultationPage() {
 					<Grid container spacing={3}>
 						<Grid size={{ xs: 12, md: 6 }}>
 							<PatientInfoCard patient={consultationPatient} />
-							<PastMedicalHistory patientPublicId={patientId}/>
+							<PastMedicalHistory patientPublicId={patientId} />
 						</Grid>
 						<Grid size={{ xs: 12, md: 6 }} display={'flex'} flexDirection={'column'}>
 							<ConsultationNotes doctor={consultationDoctor} />
-							<ShareWith />
+							<ShareWith appointmentId={appointmentId} />
 						</Grid>
 					</Grid>
 				)}
-				{activeTab === 1 && patientId && <VitalsTab patientPublicId={patientId}/>}
+				{activeTab === 1 && patientId && <VitalsTab patientPublicId={patientId} />}
 			</Container>
 			<RescheduleDrawer
 				rescheduleOpen={rescheduleOpen}

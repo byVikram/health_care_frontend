@@ -33,6 +33,7 @@ import LaboratorySearchPage from '../features/laboratory/search/LaboratorySearch
 import LaboratoryOrdersList from '../features/laboratory/bookings/LaboratoryOrdersList'
 import LaboratoryBookingDetailPage from '../features/laboratory/bookings/LaboratoryBookingDetailPage'
 import { useAuth } from '../hooks/useAuth'
+import FavouriteDoctorsPage from '../features/doctor/favourites/FavouriteDoctorsPage'
 
 function ProtectedLayout() {
 	return (
@@ -87,7 +88,7 @@ export default function AppRoutes() {
 			{/* Protected routes */}
 			<Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
 				<Route element={<ProtectedLayout />}>
-					
+
 					<Route path={ROUTES.DOCTORS.DETAIL} element={<DoctorDetailPage />} />
 					<Route path={ROUTES.DOCTORS.SEARCH} element={<DoctorSearchPage />} />
 					<Route path={ROUTES.PAYMENT} element={<PaymentPage />} />
@@ -96,7 +97,7 @@ export default function AppRoutes() {
 					<Route path={ROUTES.SPECIALITIES} element={<AllSpecialitiesPage />} />
 					<Route path={ROUTES.RADIOLOGY.SEARCH} element={<RadiologySearchPage />} />
 					<Route path={ROUTES.LABORATORY.SEARCH} element={<LaboratorySearchPage />} />
-					
+
 				</Route>
 
 				<Route element={<SidebarProtectedLayout />} />
@@ -119,6 +120,7 @@ export default function AppRoutes() {
 					<Route path={ROUTES.RADIOLOGY.BOOKING_DETAIL} element={<BookingDetailPage />} />
 					<Route path={ROUTES.LABORATORY.ORDERS} element={<LaboratoryOrdersList />} />
 					<Route path={ROUTES.LABORATORY.ORDER_DETAIL} element={<LaboratoryBookingDetailPage />} />
+					<Route path={ROUTES.PORTAL.FAVOURITES} element={<FavouriteDoctorsPage />} />
 				</Route>
 			</Route>
 

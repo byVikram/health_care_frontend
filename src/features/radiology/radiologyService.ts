@@ -337,13 +337,13 @@ export interface RadiologySearchResponse {
 
 
 export const searchRadiologyCenters = async (params: {
-	
 	scan_type_id?: number
 	city?: string
 	search?: string
 	page?: number
 	limit?: number
 	max_price?: number
+	radiology_id?: string
 }): Promise<RadiologySearchResponse> => {
 	const res = await ApiService.getWithParams<RadiologySearchResponse>(
 		API_ENDPOINTS.RADIOLOGY_PROFILE.SEARCH,

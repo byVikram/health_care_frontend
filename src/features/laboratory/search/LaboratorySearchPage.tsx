@@ -1,4 +1,4 @@
-﻿// src/features/laboratory/search/LaboratorySearchPage.tsx
+// src/features/laboratory/search/LaboratorySearchPage.tsx
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Box, Container, Typography, Grid, Chip, Card } from '@mui/material'
@@ -58,6 +58,24 @@ export default function LaboratorySearchPage() {
 		setSelectedItem(item)
 		setBookingOpen(true)
 	}
+
+	useEffect(() => {
+		const openLabId = searchParams.get('open_lab_id')
+		if (openLabId) {
+			const fetchSingleLab = async () => {
+				try {
+					const res = await searchLaboratories({ laboratory_id: openLabId })
+					if (res.data && res.data.length > 0) {
+						setSelectedItem(res.data[0])
+						setBookingOpen(true)
+					}
+				} catch (err) {
+					console.error("Failed to load preselected laboratory", err)
+				}
+			}
+			void fetchSingleLab()
+		}
+	}, [searchParams])
 
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const handleSearchChange = (value: string) => {

@@ -10,6 +10,10 @@ import FavoriteIcon from '@mui/icons-material/Favorite'
 import ShareIcon from '@mui/icons-material/Share'
 import { DoctorDetailData } from '../../../../types/doctor-detail'
 import { FaInstagram, FaFacebookF, FaXTwitter } from 'react-icons/fa6'
+import { useEffect } from 'react'
+import { toast } from 'react-toastify'
+import { togglePatientFavouriteDoctor, getPatientFavouriteDoctors } from '../../doctorService'
+import { useAuth } from '../../../../hooks/useAuth'
 
 interface StatItemProps {
 	icon: React.ReactNode
@@ -58,9 +62,32 @@ function formatHandle(raw: string): string {
 }
 
 export default function DoctorProfileCard({ doctor }: DoctorProfileCardProps) {
-	const [isFavourited, setIsFavourited] = useState(false)
+	const { role, accessToken } = useAuth()
+	const [isFavourited, setIsFavourited] = useState(doctor.is_favourited || false)
 	const [snackbarOpen, setSnackbarOpen] = useState(false)
 	const [snackbarMsg, setSnackbarMsg] = useState('')
+	
+	useEffect(() => {
+		// Only fetch favourites if logged in as a patient and the status isn't already true
+		if (role === 'patient' && accessToken && !doctor.is_favourited) {
+			let active = true
+			const checkFavouriteStatus = async () => {
+				try {
+					const res = await getPatientFavouriteDoctors()
+					if (active && res?.data?.favourite_ids) {
+						if (res.data.favourite_ids.includes(doctor.id)) {
+							setIsFavourited(true)
+						}
+					}
+				} catch (error) {
+					// Ignore errors silently (e.g. not authenticated)
+				}
+			}
+			checkFavouriteStatus()
+			return () => { active = false }
+		}
+	}, [doctor.id, doctor.is_favourited, role, accessToken])
+	
 	const specialization = doctor.specialities?.[0] || 'General'
 	const primaryHospital =
 		doctor.hospitals.find((h) => h.is_primary) || (doctor.hospitals.length > 0 ? doctor.hospitals[0] : null)
@@ -68,10 +95,19 @@ export default function DoctorProfileCard({ doctor }: DoctorProfileCardProps) {
 
 	const social = doctor.details.social_media_handles ?? {}
 
-	const handleFavourite = () => {
-		setIsFavourited((prev) => !prev)
-		setSnackbarMsg(!isFavourited ? 'Added to favourites' : 'Removed from favourites')
-		setSnackbarOpen(true)
+	const handleFavourite = async () => {
+		const newStatus = !isFavourited
+		// Optimistic update
+		setIsFavourited(newStatus)
+		try {
+			await togglePatientFavouriteDoctor(doctor.id)
+			toast.success(newStatus ? 'Doctor added to favourites.' : 'Doctor removed from favourites.')
+		} catch (error) {
+			// Revert on failure
+			setIsFavourited(!newStatus)
+			toast.error('Failed to update favourites')
+			console.error('Failed to toggle favourite', error)
+		}
 	}
 
 	const handleShare = () => {

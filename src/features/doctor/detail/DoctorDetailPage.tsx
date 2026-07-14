@@ -2,6 +2,10 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { Box, Container, Typography, Divider, Grid, Card } from '@mui/material'
+import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined'
+import ApartmentOutlinedIcon from '@mui/icons-material/ApartmentOutlined'
+import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
+import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined'
 import DoctorProfileCard from './components/DoctorProfileCard'
 import AppSelect from '../../../components/common/Select/AppSelect'
 // import AppointmentTypeSelector from './components/AppointmentTypeSelector'
@@ -20,6 +24,10 @@ import { getDoctorById, getDoctorAvailability } from '../doctorService'
 import AppSkeleton from '../../../components/common/Skeleton/AppSkeleton'
 import ConsentForm from '../../appointments/components/ConsentForm'
 import { useAuth } from '../../../hooks/useAuth'
+import AchievementCard, { AchievementCardData } from '../../../components/common/Card/AchievementCard'
+import HorizontalCardCarousel from '../../../components/common/Carousel/HorizontalCardCarousel'
+import ProfessionalDetailsSection from './components/ProfessionalDetailsSection'
+import AchievementDetailsModal from '../../../components/common/Modal/AchievementDetailsModal'
 
 type AvailabilityMode = 'clinic' | 'video'
 type ApiAvailabilityMode = 'clinic_visit' | 'video_call'
@@ -61,6 +69,8 @@ export default function DoctorDetailPage() {
 	const [selectedDate, setSelectedDate] = useState(new Date())
 	const [selectedTime, setSelectedTime] = useState('')
 	const [showFullAbout, setShowFullAbout] = useState(false)
+	const [selectedAchievement, setSelectedAchievement] = useState<AchievementCardData | null>(null)
+	const [detailsModalOpen, setDetailsModalOpen] = useState(false)
 
 
 	const [bookingSuccessModal, setBookingSuccessModal] = useState(false)
@@ -328,12 +338,93 @@ export default function DoctorDetailPage() {
 												{primaryHospital?.working_hours || 'Not available'}
 											</Typography> */}
 										</Box>
-										<Box sx={{ ...customCardStyle, p: 3, minHeight: '280px' }}>
+										<ProfessionalDetailsSection doctorDetail={doctorDetail} />
+										{doctorDetail.achievements && doctorDetail.achievements.length > 0 && (
+											<Box sx={{ ...customCardStyle, p: 3 }}>
+												<Typography variant="h5" sx={{ mb: 2 }}>
+													Achievements
+												</Typography>
+												<HorizontalCardCarousel gap={2} ariaLabel="doctor-achievements">
+													{doctorDetail.achievements.map((achievement) => (
+														<AchievementCard
+															key={achievement.id}
+															achievement={achievement}
+															onClick={(ach) => {
+																setSelectedAchievement(ach)
+																setDetailsModalOpen(true)
+															}}
+														/>
+													))}
+												</HorizontalCardCarousel>
+											</Box>
+										)}
 
+										{/* Location Section */}
+										<Box sx={{ ...customCardStyle, p: 3 }}>
+											<Typography variant="h5" sx={{ mb: 2 }}>
+												Location
+											</Typography>
+											{selectedHospitalEntry?.hospital ? (
+												<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+													<Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+														<Box
+															sx={{
+																bgcolor: 'rgba(43,111,113,0.08)',
+																color: 'primary.main',
+																p: 1,
+																borderRadius: '8px',
+																display: 'flex',
+																alignItems: 'center',
+																justifyContent: 'center',
+																flexShrink: 0,
+															}}
+														>
+															<PlaceOutlinedIcon sx={{ fontSize: 22 }} />
+														</Box>
+														<Box>
+															<Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
+																{selectedHospitalEntry.hospital.name}
+															</Typography>
+															<Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>
+																{selectedHospitalEntry.hospital.address || 'No address details available.'}
+															</Typography>
+														</Box>
+													</Box>
 
-
-
-
+													{/* Embedded Map Widget */}
+													<Box
+														sx={{
+															width: '100%',
+															height: 250,
+															borderRadius: '12px',
+															overflow: 'hidden',
+															border: '1px solid',
+															borderColor: 'divider',
+															bgcolor: 'action.hover',
+														}}
+													>
+														<iframe
+															title={`Map of ${selectedHospitalEntry.hospital.name}`}
+															width="100%"
+															height="100%"
+															style={{ border: 0 }}
+															src={
+																selectedHospitalEntry.hospital.latitude && selectedHospitalEntry.hospital.longitude
+																	? `https://maps.google.com/maps?q=${selectedHospitalEntry.hospital.latitude},${selectedHospitalEntry.hospital.longitude}&z=15&output=embed`
+																	: `https://maps.google.com/maps?q=${encodeURIComponent(
+																			selectedHospitalEntry.hospital.address || selectedHospitalEntry.hospital.name
+																		)}&z=15&output=embed`
+															}
+															allowFullScreen
+															loading="lazy"
+														/>
+													</Box>
+												</Box>
+											) : (
+												<Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+													No location details available. Please select a hospital.
+												</Typography>
+											)}
 										</Box>
 										{/* <Box sx={{ ...customCardStyle, p: 3 }}>
 											<AppointmentTypeSelector
@@ -373,6 +464,50 @@ export default function DoctorDetailPage() {
 									size="small"
 									sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
 								/>
+
+								{selectedHospitalEntry && (
+									<Box
+										sx={{
+											mt: 1,
+											display: 'flex',
+											flexDirection: 'column',
+											gap: 0.75,
+										}}
+									>
+										{/* Address */}
+										{selectedHospitalEntry.hospital.address && (
+											<Box sx={{ display: 'flex', gap: 0.75, alignItems: 'flex-start' }}>
+												<PlaceOutlinedIcon sx={{ fontSize: 14, color: 'text.secondary', mt: 0.2 }} />
+												<Typography
+													variant="body2"
+													sx={{
+														color: 'text.secondary',
+														fontSize: '12.5px',
+														lineHeight: 1.45,
+													}}
+												>
+													{selectedHospitalEntry.hospital.address}
+												</Typography>
+											</Box>
+										)}
+
+										{/* Contact Number */}
+										{selectedHospitalEntry.hospital.contact_number && (
+											<Box sx={{ display: 'flex', gap: 0.75, alignItems: 'flex-start' }}>
+												<PhoneOutlinedIcon sx={{ fontSize: 14, color: 'text.secondary', mt: 0.2 }} />
+												<Typography
+													variant="body2"
+													sx={{
+														color: 'text.secondary',
+														fontSize: '12.5px',
+													}}
+												>
+													{selectedHospitalEntry.hospital.contact_number}
+												</Typography>
+											</Box>
+										)}
+									</Box>
+								)}
 							</Box>
 							<DateSlotPicker
 								selectedDate={selectedDate}
@@ -469,6 +604,12 @@ export default function DoctorDetailPage() {
 
 				confirmLabel="Done"
 				hideCancelButton
+			/>
+
+			<AchievementDetailsModal
+				open={detailsModalOpen}
+				onClose={() => setDetailsModalOpen(false)}
+				achievement={selectedAchievement}
 			/>
 		</Box>
 	)

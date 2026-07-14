@@ -1,4 +1,4 @@
-﻿// src/types/doctor-profile.ts
+// src/types/doctor-profile.ts
 
 export interface DoctorProfilePersonal {
 	name: string
@@ -92,4 +92,25 @@ export interface DoctorProfile {
 export interface DoctorAdditionalDetail {
 	treatments: string[]
 	areas_of_expertise: string[]
+}
+
+export type DoctorAchievementType =
+	| 'Award'
+	| 'Certification'
+	| 'Research'
+	| 'Publication'
+	| 'Conference'
+	| 'Recognition'
+
+export interface DoctorAchievementItem {
+	id: string // public_id
+	title: string
+	achievement_type: DoctorAchievementType
+	organization?: string | null
+	achievement_date?: string | null // YYYY-MM-DD
+	description?: string | null
+	document_s3_key?: string | null
+	is_public: boolean
+	created_at?: string | null
+	updated_at?: string | null
 }

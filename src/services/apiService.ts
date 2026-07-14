@@ -11,7 +11,7 @@ export interface ApiRequestConfig extends AxiosRequestConfig {
 }
 
 // ── Axios instance ────────────────────────────────────────────────────────────
-const API_BASE_URL = (import.meta.env.VITE_API_ENDPOINT as string | undefined)?.replace(/\/+$/, '')
+export const API_BASE_URL = (import.meta.env.VITE_API_ENDPOINT as string | undefined)?.replace(/\/+$/, '')
 
 const axiosInstance = axios.create({
 	baseURL: API_BASE_URL || undefined,

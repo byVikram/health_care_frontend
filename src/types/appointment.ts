@@ -22,9 +22,12 @@ export interface AppointmentDoctor {
 	name: string
 	avatar_s3_key: string | undefined
 	degree?: string | null
-	speciality?: string | null // actual key returned by GET /api/appointments/{id}
-	specialty?: string // legacy/alternate key kept for backward compatibility
-	specialization?: string  // alternate key some backends use
+	speciality?: string | null // key returned by GET /api/appointments/{id}
+	specialty?: string          // legacy/alternate key kept for backward compatibility
+	specialization?: string     // alternate key some backends use
+	experience_years?: number | null
+	languages?: string[] | null
+	about?: string | null
 }
 
 export interface AppointmentPatient {

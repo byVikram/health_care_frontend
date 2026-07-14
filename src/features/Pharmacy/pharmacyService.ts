@@ -14,6 +14,7 @@ export interface PharmacyListParams {
 	home_delivery?: boolean
 	is_24_x_7?: boolean
 	emergency_medicine?: boolean
+	pharmacy_id?: string
 }
 
 export interface PharmacyListItem {

@@ -142,6 +142,39 @@ export default function PharmacySearchPage() {
 		setPlaceOrderOpen(true)
 	}
 
+	// Auto-open drawer when navigated from a notification with open_pharmacy_id param.
+	// Fetches the specific pharmacy directly by ID to avoid pagination issues.
+	useEffect(() => {
+		const openPharmacyId = searchParams.get('open_pharmacy_id')
+		if (!openPharmacyId) return
+
+		const fetchAndOpen = async () => {
+			try {
+				const res = await getPharmacies({ pharmacy_id: openPharmacyId })
+				const item = res.data?.[0]
+				if (item) {
+					const pharmacy: PharmacyItem = {
+						id: item.id,
+						name: item.name ?? '',
+						owner_name: item.owner_name ?? '',
+						avatar_s3_key: item.avatar_s3_key,
+						address: item.address ?? '',
+						city: item.city ?? '',
+						operating_hours: item.operating_hours as unknown as PharmacyItem['operating_hours'],
+						home_delivery_available: item.home_delivery_available,
+						is_24_x_7: item.is_24_x_7,
+						emergency_medicine_available: item.emergency_medicine_available,
+					}
+					setSelectedPharmacy(pharmacy)
+					setPlaceOrderOpen(true)
+				}
+			} catch (err) {
+				console.error('Failed to load pharmacy for notification redirect', err)
+			}
+		}
+		void fetchAndOpen()
+	}, [searchParams])
+
 	return (
 		<>
 		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>

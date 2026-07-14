@@ -1,18 +1,29 @@
 // src/features/consultation/components/PastMedicalHistory.tsx
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Box, Typography, useTheme } from '@mui/material'
 import SentimentDissatisfiedOutlinedIcon from '@mui/icons-material/SentimentDissatisfiedOutlined'
-import { customCardStyle } from '../../../styles/commonStyles'
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import { customCardStyle, customScrollbar } from '../../../styles/commonStyles'
 
 import PrescriptionIcon from '../../../assets/icons/consultation/prescription.svg'
 import LabIcon from '../../../assets/icons/consultation/lab.svg'
 import RadiologyIcon from '../../../assets/icons/consultation/radiology.svg'
 import AncillaryIcon from '../../../assets/icons/consultation/ancillary.svg'
 import {
-	getPatientPastMedicalHistory,
+	getPatientPrescriptionHistory,
+	getPatientLaboratoryHistory,
+	getPatientRadiologyHistory,
 	type PastMedicalHistoryCategory,
 	type PastMedicalHistoryItem,
 } from '../../patient/patientService'
+
+// Ancillary has no backing API yet, so it's intentionally absent here.
+const HISTORY_FETCHERS: Partial<Record<PastMedicalHistoryCategory, (patientPublicId: string) => Promise<PastMedicalHistoryItem[]>>> = {
+	prescription: getPatientPrescriptionHistory,
+	laboratory: getPatientLaboratoryHistory,
+	radiology: getPatientRadiologyHistory,
+}
 
 const TABS: { id: PastMedicalHistoryCategory; label: string }[] = [
 	{ id: 'prescription', label: 'Prescription' },
@@ -44,6 +55,82 @@ const DATE_OPTIONS = [
 	{ value: '90days', label: '90 Days' },
 	{ value: 'custom', label: 'Custom' },
 ]
+
+/** Prescription attachments are usually scanned photos, not PDFs — preview them
+ * inline as an image. If the object isn't image-renderable (e.g. a PDF was
+ * uploaded instead), fall back to a plain same-tab link. */
+function PrescriptionAttachment({ fileUrl }: { fileUrl: string }) {
+	const [imageFailed, setImageFailed] = useState(false)
+
+	if (imageFailed) {
+		return (
+			<Box
+				sx={{
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'space-between',
+					gap: 1.5,
+					px: 1.5,
+					py: 1.25,
+					border: '1px solid',
+					borderColor: 'divider',
+					borderRadius: '10px',
+				}}
+			>
+				<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+					<DescriptionOutlinedIcon sx={{ fontSize: 18, color: 'text.secondary', flexShrink: 0 }} />
+					<Typography
+						sx={{
+							fontSize: '12.5px',
+							fontWeight: 500,
+							color: 'text.primary',
+							overflow: 'hidden',
+							textOverflow: 'ellipsis',
+							whiteSpace: 'nowrap',
+						}}
+					>
+						Prescription attachment
+					</Typography>
+				</Box>
+				<Typography
+					component="a"
+					href={fileUrl}
+					sx={{
+						flexShrink: 0,
+						display: 'inline-flex',
+						alignItems: 'center',
+						gap: 0.4,
+						fontSize: '12.5px',
+						fontWeight: 600,
+						color: 'primary.main',
+						textDecoration: 'none',
+						'&:hover': { textDecoration: 'underline' },
+					}}
+				>
+					<OpenInNewIcon sx={{ fontSize: 14 }} />
+					View file
+				</Typography>
+			</Box>
+		)
+	}
+
+	return (
+		<Box
+			component="img"
+			src={fileUrl}
+			alt="Prescription attachment"
+			onError={() => setImageFailed(true)}
+			sx={{
+				width: '100%',
+				maxHeight: 300,
+				objectFit: 'contain',
+				border: '1px solid #e0e0e0',
+				borderRadius: '8px',
+				backgroundColor: '#fafafa',
+			}}
+		/>
+	)
+}
 
 interface Props {
 	patientPublicId?: string
@@ -118,40 +205,76 @@ export default function PastMedicalHistory({ patientPublicId }: Props) {
 	const [error, setError] = useState<string | null>(null)
 	const theme = useTheme()
 
+	// Cache fetched results per category so switching tabs back and forth
+	// doesn't re-call laboratory-reports/radiology-reports/history APIs.
+	const historyCacheRef = useRef<Partial<Record<PastMedicalHistoryCategory, PastMedicalHistoryItem[]>>>({})
+
 	useEffect(() => {
 		if (!patientPublicId) return
+
+		const fetcher = HISTORY_FETCHERS[activeTab]
+		if (!fetcher) {
+			// Ancillary tab — no API to call.
+			setHistoryItems([])
+			setError(null)
+			setLoading(false)
+			return
+		}
+
+		const cached = historyCacheRef.current[activeTab]
+		if (cached) {
+			setHistoryItems(cached)
+			setError(null)
+			setLoading(false)
+			return
+		}
+
+		let cancelled = false
 
 		const fetchHistory = async () => {
 			try {
 				setLoading(true)
 				setError(null)
 
-				const data = await getPatientPastMedicalHistory(patientPublicId)
+				const data = await fetcher(patientPublicId)
+				if (cancelled) return
 
+				historyCacheRef.current[activeTab] = data
 				setHistoryItems(data)
 			} catch (error) {
+				if (cancelled) return
 				console.error('Error fetching past medical history', error)
 				setError('Failed to load past medical history. Please try again.')
 				setHistoryItems([])
 			} finally {
-				setLoading(false)
+				if (!cancelled) setLoading(false)
 			}
 		}
 
 		fetchHistory()
-	}, [patientPublicId])
+
+		return () => {
+			cancelled = true
+		}
+	}, [activeTab, patientPublicId])
 
 	const filteredHistoryItems = useMemo(
-		() =>
-			historyItems.filter(
-				(item) => item.category === activeTab && isWithinDateRange(item.date, selectedDate)
-			),
-		[activeTab, historyItems, selectedDate]
+		() => historyItems.filter((item) => isWithinDateRange(item.date, selectedDate)),
+		[historyItems, selectedDate]
 	)
 
 	return (
-		<Box sx={{ ...customCardStyle, mt: 2, minHeight: '80vh', flexGrow: 1 }}>
-			<Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
+		<Box
+			sx={{
+				...customCardStyle,
+				mt: 2,
+				height: '90vh',
+				flexGrow: 1,
+				display: 'flex',
+				flexDirection: 'column',
+			}}
+		>
+			<Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main', flexShrink: 0 }}>
 				Past medical history
 			</Typography>
 
@@ -164,6 +287,7 @@ export default function PastMedicalHistory({ patientPublicId }: Props) {
 					borderBottom: '1px solid',
 					borderColor: 'divider',
 					pb: 1,
+					flexShrink: 0,
 				}}
 			>
 				{TABS.map((tab) => {
@@ -209,6 +333,7 @@ export default function PastMedicalHistory({ patientPublicId }: Props) {
 					gap: 1,
 					flexWrap: 'wrap',
 					mb: 2,
+					flexShrink: 0,
 				}}
 			>
 				{DATE_OPTIONS.map((option) => {
@@ -244,7 +369,18 @@ export default function PastMedicalHistory({ patientPublicId }: Props) {
 				})}
 			</Box>
 
-			<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+			{/* Results list — scrolls on its own; header/tabs/filters above stay fixed. */}
+			<Box
+				sx={{
+					flex: 1,
+					overflowY: 'auto',
+					display: 'flex',
+					flexDirection: 'column',
+					gap: 2,
+					pr: 0.5,
+					...customScrollbar,
+				}}
+			>
 				{loading ? (
 					<Typography sx={{ color: 'text.secondary', fontSize: '13.5px' }}>Loading...</Typography>
 				) : error ? (
@@ -328,18 +464,23 @@ export default function PastMedicalHistory({ patientPublicId }: Props) {
 								</Typography>
 							)}
 
-							{/* PDF Preview */}
-							{item.fileUrl && (
-								<iframe
-									src={`${item.fileUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-									title={item.category}
-									width="100%"
-									height="300px"
-									style={{
-										border: '1px solid #e0e0e0',
-										borderRadius: '8px',
-									}}
-								/>
+							{/* Prescription attachments are usually scanned photos, not PDFs — preview
+								them inline instead of assuming a PDF viewer via iframe. */}
+							{item.fileUrl && item.category === 'prescription' ? (
+								<PrescriptionAttachment fileUrl={item.fileUrl} />
+							) : (
+								item.fileUrl && (
+									<iframe
+										src={`${item.fileUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+										title={item.category}
+										width="100%"
+										height="300px"
+										style={{
+											border: '1px solid #e0e0e0',
+											borderRadius: '8px',
+										}}
+									/>
+								)
 							)}
 
 							{/* Notes */}

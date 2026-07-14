@@ -1,4 +1,4 @@
-﻿// src/types/doctor-detail.ts
+// src/types/doctor-detail.ts
 
 export interface DoctorDetailHospital {
 	id: string
@@ -18,6 +18,16 @@ export interface DoctorDetailHospital {
 	}
 }
 
+export interface DoctorAchievement {
+	id: string
+	title: string
+	achievement_type: string
+	organization: string | null
+	achievement_date: string | null
+	description: string | null
+	document_s3_key: string | null
+}
+
 export interface DoctorAvailability {
 	hospital_id: string
 	day_of_week: number
@@ -29,6 +39,14 @@ export interface DoctorAvailability {
 	can_toggle?: boolean
 }
 
+/** A single educational qualification returned by the public doctor detail API */
+export interface DoctorDetailDegree {
+	degree: string
+	specialization?: string | null
+	college: string
+	year_of_passing: string
+}
+
 export interface DoctorDetailData {
 	id: string
 	name: string
@@ -38,6 +56,7 @@ export interface DoctorDetailData {
 		location: string
 		experience_years: number
 		languages: string[]
+		/** Primary / legacy single-degree fields */
 		degree: string
 		college: string
 		year_of_passing: string
@@ -48,10 +67,14 @@ export interface DoctorDetailData {
 			facebook?: string | null
 			twitter?: string | null
 		}
+		/** Full degrees list — optional until the public API exposes it */
+		degrees?: DoctorDetailDegree[]
 	}
 	specialities: string[]
 	hospitals: DoctorDetailHospital[]
+	achievements: DoctorAchievement[]
 	availability: DoctorAvailability[]
+	is_favourited?: boolean
 }
 
 export interface DoctorDetailResponse {

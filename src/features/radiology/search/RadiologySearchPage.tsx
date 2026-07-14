@@ -1,4 +1,4 @@
-﻿// src/features/radiology/search/RadiologySearchPage.tsx
+// src/features/radiology/search/RadiologySearchPage.tsx
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Box, Container, Typography, Grid, Chip, Card } from '@mui/material'
@@ -68,6 +68,24 @@ export default function RadiologySearchPage() {
 		setSelectedItem(item)
 		setBookingOpen(true)
 	}
+
+	useEffect(() => {
+		const openRadiologyId = searchParams.get('open_radiology_id')
+		if (openRadiologyId) {
+			const fetchSingleRad = async () => {
+				try {
+					const res = await searchRadiologyCenters({ radiology_id: openRadiologyId })
+					if (res.data && res.data.length > 0) {
+						setSelectedItem(res.data[0])
+						setBookingOpen(true)
+					}
+				} catch (err) {
+					console.error("Failed to load preselected radiology center", err)
+				}
+			}
+			void fetchSingleRad()
+		}
+	}, [searchParams])
 
 	// ── Re-sync filters when URL changes (e.g. modal navigates with new scan_type_id) ──
 	useEffect(() => {

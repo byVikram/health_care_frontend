@@ -1,7 +1,12 @@
 // src/features/laboratory/laboratoryService.ts
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
-import { LaboratoryProfile, LaboratoryProfilePersonal, LaboratoryProfileProfessional, LaboratoryService } from '../../types/laboratory-profile'
+import {
+	LaboratoryProfile,
+	LaboratoryProfilePersonal,
+	LaboratoryProfileProfessional,
+	LaboratoryService,
+} from '../../types/laboratory-profile'
 import { LaboratorySearchResultItem } from '../../types/laboratory-search'
 
 // ── Shape of what the API returns ──────────────────────────────────────────
@@ -92,30 +97,35 @@ export function mapLaboratoryProfileApi(data: LaboratoryProfileApiResponse): Lab
 }
 
 // ── Profile API calls (existing — untouched) ───────────────────────────────
-export async function getLaboratoryProfile(): Promise<{ success: boolean; data: LaboratoryProfileApiResponse; message: string }> {
+export async function getLaboratoryProfile(): Promise<{
+	success: boolean
+	data: LaboratoryProfileApiResponse
+	message: string
+}> {
 	const res = await ApiService.get<{ success: boolean; data: LaboratoryProfileApiResponse; message: string }>(
 		API_ENDPOINTS.LABORATORY_PROFILE.DETAILS
 	)
 	return res.data
 }
 
-export async function updateLaboratoryPersonalDetails(payload: Partial<LaboratoryProfilePersonal>): Promise<{ success: boolean; message: string }> {
-	const res = await ApiService.put<{ success: boolean; message: string }>(
-		API_ENDPOINTS.LABORATORY_PROFILE.DETAILS,
-		{
-			name: payload.name,
-			email: payload.email,
-			gender: payload.gender,
-			date_of_birth: payload.dateOfBirth,
-			location: payload.location,
-			instagram: payload.instagram,
-			facebook: payload.facebook,
-		}
-	)
+export async function updateLaboratoryPersonalDetails(
+	payload: Partial<LaboratoryProfilePersonal>
+): Promise<{ success: boolean; message: string }> {
+	const res = await ApiService.put<{ success: boolean; message: string }>(API_ENDPOINTS.LABORATORY_PROFILE.DETAILS, {
+		name: payload.name,
+		email: payload.email,
+		gender: payload.gender,
+		date_of_birth: payload.dateOfBirth,
+		location: payload.location,
+		instagram: payload.instagram,
+		facebook: payload.facebook,
+	})
 	return res.data
 }
 
-export async function updateLaboratoryProfessionalDetails(payload: Partial<LaboratoryProfileProfessional>): Promise<{ success: boolean; message: string }> {
+export async function updateLaboratoryProfessionalDetails(
+	payload: Partial<LaboratoryProfileProfessional>
+): Promise<{ success: boolean; message: string }> {
 	const res = await ApiService.put<{ success: boolean; message: string }>(
 		API_ENDPOINTS.LABORATORY_PROFILE.PROFESSIONAL_DETAILS,
 		{
@@ -263,9 +273,9 @@ export const getMyLaboratoryTests = async (): Promise<LaboratoryTestsResponse> =
 }
 
 /** PATCH /api/laboratory/tests - update/configure this laboratory's test catalog */
-export const updateMyLaboratoryTests = async (
-	payload: { tests: LaboratoryTestSetupItem[] }
-): Promise<LaboratoryTestsResponse> => {
+export const updateMyLaboratoryTests = async (payload: {
+	tests: LaboratoryTestSetupItem[]
+}): Promise<LaboratoryTestsResponse> => {
 	const res = await ApiService.patch<LaboratoryTestsResponse>(API_ENDPOINTS.LABORATORY.TESTS, payload)
 	return res.data
 }
@@ -278,11 +288,9 @@ export const searchLaboratories = async (params: {
 	page?: number
 	limit?: number
 	max_price?: number
+	laboratory_id?: string
 }): Promise<LaboratorySearchResponse> => {
-	const res = await ApiService.getWithParams<LaboratorySearchResponse>(
-		API_ENDPOINTS.LABORATORY.SEARCH,
-		params,
-	)
+	const res = await ApiService.getWithParams<LaboratorySearchResponse>(API_ENDPOINTS.LABORATORY.SEARCH, params)
 	return res.data
 }
 
@@ -291,24 +299,19 @@ export const searchLaboratories = async (params: {
  * Fetches the full test catalog for a given lab center (patient-facing, for the booking drawer).
  */
 export const fetchLaboratoryTestsForCenter = async (laboratoryId: string): Promise<LaboratoryTestsResponse> => {
-	const res = await ApiService.getWithParams<LaboratoryTestsResponse>(
-		API_ENDPOINTS.LABORATORY.TESTS,
-		{ laboratory_id: laboratoryId },
-	)
+	const res = await ApiService.getWithParams<LaboratoryTestsResponse>(API_ENDPOINTS.LABORATORY.TESTS, {
+		laboratory_id: laboratoryId,
+	})
 	return res.data
 }
 
 /** POST /api/laboratory/bookings */
 export const createLaboratoryBooking = async (
-	payload: LaboratoryBookingCreatePayload,
+	payload: LaboratoryBookingCreatePayload
 ): Promise<LaboratoryBookingResponse> => {
-	const res = await ApiService.post<LaboratoryBookingResponse>(
-		API_ENDPOINTS.LABORATORY.BOOKINGS,
-		payload,
-	)
+	const res = await ApiService.post<LaboratoryBookingResponse>(API_ENDPOINTS.LABORATORY.BOOKINGS, payload)
 	return res.data
 }
-
 
 // ── Bookings list / detail (patient + laboratory-staff views) ─────────────
 
@@ -355,10 +358,7 @@ export interface LaboratoryReportResponse {
  */
 export const getLaboratoryBookings = async (status?: string): Promise<LaboratoryBookingsResponse> => {
 	const params = status ? { status } : {}
-	const res = await ApiService.getWithParams<LaboratoryBookingsResponse>(
-		API_ENDPOINTS.LABORATORY.BOOKINGS,
-		params
-	)
+	const res = await ApiService.getWithParams<LaboratoryBookingsResponse>(API_ENDPOINTS.LABORATORY.BOOKINGS, params)
 	return res.data
 }
 

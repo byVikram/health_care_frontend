@@ -31,6 +31,7 @@ import { ROUTES } from '../../constants/routes'
 import { useMemo } from 'react'
 import { LookupHospital, PatientProfile } from '../../hooks/useAuth'
 import { toast } from 'react-toastify'
+import ChatBot from '../ChatBot'
 
 const NAVBAR_HEIGHT = 64
 
@@ -559,7 +560,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 			<Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200 }}>
 				{role === USER_ROLES.PATIENT ? (
 					<AppNavBar
-						onProfileClick={() => { 
+						onProfileClick={() => {
 							setAccountSwitcherOpen(false)
 							setDropdownOpen((prev) => !prev)
 						}}
@@ -604,6 +605,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 						activeHospital,
 					})}
 			</Box>
+			<ChatBot />
 		</Box>
 	)
 }

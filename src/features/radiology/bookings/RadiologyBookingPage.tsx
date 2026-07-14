@@ -41,7 +41,7 @@ import {
 	RadiologyScan,
 	RadiologyBookingCreatePayload,
 } from '../radiologyService'
-import { getPatientTreatmentHistory } from '../../pharmacy/pharmacyService'
+import { fetchPatientTreatmentHistory } from '../../patient/patientService'
 import { TreatmentRecord, SelectOption } from '../../../types/pharmacyOrder'
 import { formatINR } from '../../../utils/Utils'
 import SectionCard from '../../../components/common/Card/SectionCard'
@@ -189,7 +189,7 @@ export default function RadiologyBookingPage({
 			}
 			try {
 				setLoadingTreatments(true)
-				const data = await getPatientTreatmentHistory(user.id)
+				const data = await fetchPatientTreatmentHistory(user.id)
 				setTreatments(data)
 				if (data.length > 0) {
 					setSelectedTreatmentId(data[0].id)
