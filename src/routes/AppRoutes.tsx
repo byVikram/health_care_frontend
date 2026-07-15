@@ -19,13 +19,22 @@ import { ROUTES } from '../constants/routes'
 import TestRegister from '../features/auth/test/TestRegister'
 import PortalPage from '../features/portal/PortalPage'
 import DoctorAppointmentList from '../features/appointments/AppointmentList'
+import PatientAppointmentDetailPage from '../features/patient/PatientAppointmentDetailPage'
 import WelcomePage from '../features/auth/WelcomePage'
-import OrderList from '../features/Pharmacy/OrderList'
-import OrderDetailPage from '../features/Pharmacy/OrderDetailPage'
-
-
-
-
+import OrderList from '../features/pharmacy/orders/OrderList'
+import OrderDetailPage from '../features/pharmacy/orders/OrderDeatailPage'
+import PharmacySearchPage from '../features/pharmacy/components/PharmacySearchPage'
+import RadiologyProfilePage from '../features/radiology/profile/RadiologyProfilePage'
+import BookingsList from '../features/radiology/bookings/BookingsList'
+import BookingDetailPage from '../features/radiology/bookings/BookingDetailPage'
+import AllSpecialitiesPage from '../features/dashboard/AllSpecialitiesPage'
+import RadiologySearchPage from '../features/radiology/search/RadiologySearchPage'
+import LaboratorySearchPage from '../features/laboratory/search/LaboratorySearchPage'
+import LaboratoryOrdersList from '../features/laboratory/bookings/LaboratoryOrdersList'
+import LaboratoryBookingDetailPage from '../features/laboratory/bookings/LaboratoryBookingDetailPage'
+import { useAuth } from '../hooks/useAuth'
+import FavouriteDoctorsPage from '../features/doctor/favourites/FavouriteDoctorsPage'
+import FavouriteDoctorsPage from '../features/doctor/favourites/FavouriteDoctorsPage'
 
 function ProtectedLayout() {
 	return (
@@ -52,50 +61,74 @@ function LoggedInNavbarLayout() {
 }
 
 export default function AppRoutes() {
-	const isAuthenticated = true
+	const { accessToken } = useAuth()
+	const isAuthenticated = !!accessToken
 
 	return (
 		<Routes>
 			{/* Public routes */}
 			<Route path={ROUTES.AUTH.LOGIN} element={<LoginPage />} />
 
-			{/*
-			  Register route — owns the full sign-up journey internally:
-			    /register  →  RoleSelectorPage (fetches roles from api/auth/get-roles)
-			                → OnBoardingPage   (role-specific slides)
-			                → RegisterForm     (submits with selected roleId UUID)
-			*/}
 			<Route path={ROUTES.AUTH.REGISTER} element={<RegisterPage />} />
 
-			<Route path={ROUTES.TEST_REGISTER} element={<TestRegister onSubmit={(email) => console.log('Registered:', email)} />} />
+			<Route
+				path={ROUTES.TEST_REGISTER}
+				element={<TestRegister onSubmit={(email) => console.log('Registered:', email)} />}
+			/>
 			<Route path={ROUTES.DOCTOR_ACCOUNT_DETAILS} element={<DoctorAccountDetailsPage />} />
 
-			{/* Welcome page — single route, role passed via ?role=<roleKey> query param */}
+
 			<Route path={ROUTES.PUBLIC.WELCOME} element={<WelcomePage />} />
-			{/* Backward-compat alias for doctor welcome */}
+
+
 			<Route path={ROUTES.PUBLIC.WELCOME_DOCTOR} element={<WelcomePage role="doctor" />} />
+			<Route element={<ProtectedLayout />}>
+				<Route path={ROUTES.ROOT} element={<DashboardPage />} />
+			</Route>
 
 			{/* Protected routes */}
 			<Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
 				<Route element={<ProtectedLayout />}>
-					<Route path={ROUTES.ROOT} element={<DashboardPage />} />
+
 					<Route path={ROUTES.DOCTORS.DETAIL} element={<DoctorDetailPage />} />
 					<Route path={ROUTES.DOCTORS.SEARCH} element={<DoctorSearchPage />} />
 					<Route path={ROUTES.PAYMENT} element={<PaymentPage />} />
 					<Route path={ROUTES.TEST} element={<TestPage />} />
+					<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
+					<Route path={ROUTES.SPECIALITIES} element={<AllSpecialitiesPage />} />
+					<Route path={ROUTES.RADIOLOGY.SEARCH} element={<RadiologySearchPage />} />
+					<Route path={ROUTES.LABORATORY.SEARCH} element={<LaboratorySearchPage />} />
+
+				</Route>
+
+				<Route element={<SidebarProtectedLayout />} />
+
+				<Route element={<LoggedInNavbarLayout />}>
+					<Route path={ROUTES.PORTAL.HOME} element={<PortalPage />} />
+					<Route path={ROUTES.APPOINTMENTS} element={<DoctorAppointmentList />} />
+					<Route path={ROUTES.PORTAL.APPOINTMENT_DETAIL} element={<PatientAppointmentDetailPage />} />
+					<Route path={ROUTES.PORTAL.PROFILE} element={<ProfilePage />} />
+					<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
+					<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
+					<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
+					<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
+					{/* <Route path={ROUTES.PHARMACY.PROFILE} element={<PharmacyProfilePage />} /> */}
+					<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
+
+					<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
+					<Route path={ROUTES.RADIOLOGY.PROFILE} element={<RadiologyProfilePage />} />
+					<Route path={ROUTES.RADIOLOGY.BOOKINGS} element={<BookingsList />} />
+					<Route path={ROUTES.RADIOLOGY.BOOKING_DETAIL} element={<BookingDetailPage />} />
+					<Route path={ROUTES.PORTAL.FAVOURITES} element={<FavouriteDoctorsPage />} />
+					<Route path={ROUTES.LABORATORY.ORDERS} element={<LaboratoryOrdersList />} />
+					<Route path={ROUTES.LABORATORY.ORDER_DETAIL} element={<LaboratoryBookingDetailPage />} />
+					<Route path={ROUTES.PORTAL.FAVOURITES} element={<FavouriteDoctorsPage />} />
 				</Route>
 			</Route>
 
-			<Route element={<SidebarProtectedLayout />} />
+			{/* <Route path={ROUTES.LABORATORY.PROFILE} element={<LaboratoryProfilePage />} /> */}
 
-			<Route element={<LoggedInNavbarLayout />}>
-				<Route path={ROUTES.PORTAL.HOME} element={<PortalPage />} />
-				<Route path={ROUTES.APPOINTMENTS} element={<DoctorAppointmentList />} />
-				<Route path={ROUTES.PORTAL.PROFILE} element={<ProfilePage />} />
-				<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
-			</Route>
-            <Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
-<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
+
 			<Route path="*" element={<NotFoundPage />} />
 		</Routes>
 	)

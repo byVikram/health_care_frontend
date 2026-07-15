@@ -1,6 +1,6 @@
 // src/features/consultation/components/ConsultationNotes.tsx
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
-import { Box, Typography, Divider, IconButton, Tooltip } from '@mui/material'
+import { Box, Typography, Divider, IconButton, Tooltip, TextField } from '@mui/material'
 import UndoIcon from '@mui/icons-material/Undo'
 import RedoIcon from '@mui/icons-material/Redo'
 import TextFieldsIcon from '@mui/icons-material/TextFields'
@@ -53,7 +53,6 @@ const TOOLBAR_ACTIONS = [
 	{ icon: <CameraAltOutlinedIcon fontSize="small" />, label: 'Camera' },
 	{ icon: <ImageOutlinedIcon fontSize="small" />, label: 'Image' },
 	{ icon: <MicNoneOutlinedIcon fontSize="small" />, label: 'Voice' },
-
 ]
 
 export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
@@ -69,6 +68,13 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 	const recognitionRef = useRef<ISpeechRecognition | null>(null)
 	const manualStopRef = useRef(false)
 
+	// Text undo / redo stacks
+	const textUndoStackRef = useRef<string[]>([])
+	const textRedoStackRef = useRef<string[]>([])
+
+	// Typing debounce for grouping keystrokes into one undo step
+	const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const valueBeforeBurstRef = useRef<string>('')
 
 	const captureSnapshot = () => {
 		const canvas = canvasRef.current
@@ -162,15 +168,52 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 	}
 
 	const handleUndo = () => {
+		// Try text undo first; fall back to canvas undo
+		const prevText = textUndoStackRef.current.pop()
+		if (prevText !== undefined) {
+			textRedoStackRef.current.push(transcript)
+			setTranscript(prevText)
+			return
+		}
+
+		// Canvas undo
 		const context = contextRef.current
 		const previousSnapshot = undoStackRef.current.pop()
 		if (!context || !previousSnapshot) return
-
 		context.putImageData(previousSnapshot, 0, 0)
 	}
 
+	const handleRedo = () => {
+		const nextText = textRedoStackRef.current.pop()
+		if (nextText !== undefined) {
+			textUndoStackRef.current.push(transcript)
+			setTranscript(nextText)
+		}
+	}
 
+	// Called on every keystroke in the TextField
+	const handleTranscriptChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+		const newValue = e.target.value
 
+		// On first keystroke of a new burst, remember the value before typing started
+		if (typingDebounceRef.current === null) {
+			valueBeforeBurstRef.current = transcript
+		}
+
+		// Clear previous debounce timer
+		if (typingDebounceRef.current !== null) {
+			clearTimeout(typingDebounceRef.current)
+		}
+
+		// After 800 ms of inactivity, commit the pre-burst snapshot to undo history
+		typingDebounceRef.current = setTimeout(() => {
+			textUndoStackRef.current.push(valueBeforeBurstRef.current)
+			textRedoStackRef.current = []
+			typingDebounceRef.current = null
+		}, 800)
+
+		setTranscript(newValue)
+	}
 
 	const handleVoiceRecording = async () => {
 		// STOP if already recording
@@ -215,12 +258,20 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 			for (let i = event.resultIndex; i < event.results.length; i++) {
 				const result = event.results[i]
 				if (result.isFinal) {
-					finalizedText += result[0].transcript + ' '
+					// Push previous value to undo stack before appending
+					setTranscript((prev) => {
+						textUndoStackRef.current.push(prev)
+						textRedoStackRef.current = []
+						finalizedText = prev + result[0].transcript + ' '
+						return finalizedText
+					})
 				} else {
 					interimText += result[0].transcript
 				}
 			}
-			setTranscript(finalizedText + interimText)
+			if (interimText) {
+				setTranscript(finalizedText + interimText)
+			}
 		}
 
 		recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
@@ -252,7 +303,6 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 				borderColor: 'divider',
 				borderRadius: '16px',
 				overflow: 'hidden',
-				// height: '300px',
 				display: 'flex',
 				flexGrow: 1,
 				flexDirection: 'column',
@@ -308,9 +358,11 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 							onClick={
 								action.label === 'Undo'
 									? handleUndo
-									: action.label === 'Voice'
-										? handleVoiceRecording
-										: undefined
+									: action.label === 'Redo'
+										? handleRedo
+										: action.label === 'Voice'
+											? handleVoiceRecording
+											: undefined
 							}
 							sx={{
 								color: action.label === 'Voice' && isListening ? 'error.main' : 'text.secondary',
@@ -331,46 +383,61 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 					flex: 1,
 					position: 'relative',
 					bgcolor: 'background.paper',
+					display: 'flex',
+					flexDirection: 'column',
 				}}
 			>
-				{/* Voice Transcript */}
-				<Box
+				{/* Editable transcript TextField — sits on top of canvas */}
+				<TextField
+					multiline
+					fullWidth
+					value={transcript}
+					onChange={handleTranscriptChange}
+					InputProps={{ readOnly: isListening }}
+					placeholder="Start speaking or type notes here…"
 					sx={{
 						position: 'absolute',
-						top: 16,
-						left: 16,
-						right: 16,
+						top: 0,
+						left: 0,
+						right: 0,
+						bottom: 0,
 						zIndex: 1,
-						pointerEvents: 'none',
-					}}
-				>
-					<Typography
-						sx={{
+						'& .MuiOutlinedInput-root': {
+							height: '100%',
+							alignItems: 'flex-start',
+							'& fieldset': { border: 'none' },
+						},
+						'& .MuiInputBase-input': {
 							fontSize: '15px',
-							color: 'text.primary',
-							whiteSpace: 'pre-wrap',
-						}}
-					>
-						{transcript}
-					</Typography>
-				</Box>
+							lineHeight: 1.6,
+							padding: '16px',
+							height: '100% !important',
+							overflow: 'auto !important',
+							cursor: isListening ? 'default' : 'text',
+						},
+					}}
+				/>
 
-				{/* Drawing Canvas */}
+				{/* Drawing Canvas — behind the TextField */}
 				<Box
 					component="canvas"
 					ref={canvasRef}
-				onPointerDown={handlePointerDown}
-				onPointerMove={handlePointerMove}
+					onPointerDown={handlePointerDown}
+					onPointerMove={handlePointerMove}
 					onPointerUp={stopDrawing}
 					onPointerLeave={stopDrawing}
 					sx={{
-						flex: 1,
+						position: 'absolute',
+						top: 0,
+						left: 0,
 						width: '100%',
 						height: '100%',
 						border: 'none',
 						outline: 'none',
 						bgcolor: 'transparent',
-					cursor: 'crosshair',
+						cursor: 'crosshair',
+						zIndex: 0,
+						pointerEvents: 'none', // canvas drawing disabled while text mode is primary
 					}}
 				/>
 			</Box>

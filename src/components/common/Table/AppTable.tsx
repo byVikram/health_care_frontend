@@ -16,12 +16,14 @@ interface AppTableProps<T extends Record<string, unknown> = Record<string, unkno
   emptyMessage?: string;
 }
 
-export default function AppTable<T extends Record<string, unknown>>({
-  columns = [],
-  rows = [],
-  loading = false,
-  emptyMessage = "No data found.",
-}: AppTableProps<T>) {
+export default function AppTable<T extends Record<string, unknown>>(props: AppTableProps<T> & { onRowClick?: (row: T) => void }) {
+  const {
+    columns = [],
+    rows = [],
+    loading = false,
+    emptyMessage = "No data found.",
+    onRowClick,
+  } = props;
   return (
     <TableContainer component={Paper} sx={{ borderRadius: "12px", border: "1px solid", borderColor: "divider", boxShadow: "none" }}>
       <Table>
@@ -59,7 +61,13 @@ export default function AppTable<T extends Record<string, unknown>>({
             rows.map((row, i) => (
               <TableRow
                 key={(row.id as string | number) ?? i}
-                sx={{ "&:last-child td": { border: 0 }, "&:hover": { bgcolor: "#f8fbff" }, transition: "background 0.15s" }}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                sx={{
+                  "&:last-child td": { border: 0 },
+                  "&:hover": { bgcolor: "#f8fbff" },
+                  transition: "background 0.15s",
+                  cursor: onRowClick ? "pointer" : "default",
+                }}
               >
                 {columns.map((col) => (
                   <TableCell key={col.field} align={col.align || "left"} sx={{ color: "text.primary", fontSize: "0.875rem", py: 1.75 }}>

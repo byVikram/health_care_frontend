@@ -7,7 +7,7 @@ export interface DoctorProfilePersonal {
 	email: string
 	emailVerified: boolean
 	gender: string
-	avatar : string
+	avatar: string
 	dateOfBirth: string
 	location: string
 	instagram: string
@@ -17,16 +17,41 @@ export interface DoctorProfilePersonal {
 	languages: string[]
 }
 
+export interface DoctorDegree {
+	id?: number
+	degree: string
+	specialization?: string
+	college: string
+	yearOfPassing: string
+	qualificationProof?: string
+}
+
 export interface DoctorProfileProfessional {
 	specialization_id: string
 	specialization_label: string
-	degree: string
-	college: string
-	yearOfPassing: string
-	qualificationProof: string
+	degree?: string
+	college?: string
+	yearOfPassing?: string
+	qualificationProof?: string
+	degrees: DoctorDegree[]
 	registrationNumber: string
 	registrationProof: string
 	about: string
+}
+
+export type AppointmentType = 'clinic' | 'video'
+
+export type TimeSlot = { start: string; end: string }
+
+export type SectionSlots = {
+	morning: TimeSlot[]
+	afternoon: TimeSlot[]
+	evening: TimeSlot[]
+}
+
+export type WorkingHoursState = {
+	sections: SectionSlots
+	slotDuration: number
 }
 
 export interface DoctorHospital {
@@ -36,8 +61,12 @@ export interface DoctorHospital {
 	fullAddress: string
 	isPrimary: boolean
 	phone_number?: string
-	video_consultation_fee?: string
-	offline_consultation_fee?: string
+	video_consultation_fee?: number
+	clinic_consultation_fee?: number
+	free_followup_validity_days?: number
+	reschedule_allowed_until_hours?: number
+	allow_pay_later?: boolean
+	availability?: Record<number, Record<AppointmentType, WorkingHoursState>>
 }
 
 export interface DoctorAvailability {
@@ -57,4 +86,31 @@ export interface DoctorProfile {
 	professional: DoctorProfileProfessional
 	hospitals: DoctorHospital[]
 	availability: DoctorAvailability
+	additionalDetail: DoctorAdditionalDetail
+}
+
+export interface DoctorAdditionalDetail {
+	treatments: string[]
+	areas_of_expertise: string[]
+}
+
+export type DoctorAchievementType =
+	| 'Award'
+	| 'Certification'
+	| 'Research'
+	| 'Publication'
+	| 'Conference'
+	| 'Recognition'
+
+export interface DoctorAchievementItem {
+	id: string // public_id
+	title: string
+	achievement_type: DoctorAchievementType
+	organization?: string | null
+	achievement_date?: string | null // YYYY-MM-DD
+	description?: string | null
+	document_s3_key?: string | null
+	is_public: boolean
+	created_at?: string | null
+	updated_at?: string | null
 }

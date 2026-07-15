@@ -8,13 +8,46 @@ export const ROUTES = {
 
 	PUBLIC: {
 		WELCOME: '/welcome',
-		WELCOME_DOCTOR: '/welcome-doctor', // kept for backward compat
+		WELCOME_DOCTOR: '/welcome-doctor',
 	},
 
 	DOCTORS: {
 		DETAIL: '/doctors/:id',
 		SEARCH: '/doctors/search',
 	},
+
+	PHARMACY: {
+		ORDERS: '/pharmacy/orders',
+		ORDER_DETAIL: '/pharmacy/orders/:orderId',
+		SEARCH: '/pharmacies',
+	},
+
+	RADIOLOGY: {
+		PROFILE: '/radiology/profile',
+		BOOKINGS: '/radiology/bookings',
+		BOOKING_DETAIL: '/radiology/bookings/:bookingId',
+		SEARCH: '/radiology/search',
+	},
+
+	LABORATORY: {
+		SEARCH: '/laboratory/search',
+		ORDERS: '/laboratory/orders',
+		ORDER_DETAIL: '/laboratory/orders/:bookingId',
+	},
+
+	ANCILLARY: {
+		SEARCH: '/ancillary/search',
+	},
+
+	ALLIED: {
+		SEARCH: '/allied/search',
+	},
+
+	THERAPEUTIC: {
+		SEARCH: '/therapeutic/search',
+	},
+
+	SPECIALITIES: '/specialities',
 
 	TEST: '/test',
 	TEST_REGISTER: '/test-register',
@@ -32,11 +65,8 @@ export const ROUTES = {
 	PORTAL: {
 		HOME: '/portal',
 		PROFILE: '/profile',
+		FAVOURITES: '/portal/favourites',
 		CONSULTATION: '/consultation/:patientId/:appointmentId',
+		APPOINTMENT_DETAIL: '/portal/appointments/:appointmentId',
 	},
-
-	PHARMACY: {
-  ORDERS: "/pharmacy/orders",
-  ORDER_DETAIL: "/pharmacy/orders/:orderId",
-},
 }

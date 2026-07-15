@@ -1,5 +1,6 @@
 // src/features/doctor/doctorService.ts
 import ApiService from '../../services/apiService'
+import dayjs from 'dayjs'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { AppointmentsResponse } from '../../types/appointment'
 import { DoctorSearchResponse } from '../../types/doctor-search'
@@ -11,7 +12,7 @@ import {
 	DoctorProfileApiHospital,
 	DoctorProfileApiAvailability,
 } from '../../types/doctor-profile-api'
-import { DoctorProfile } from '../../types/doctor-profile'
+import { DoctorProfile, DoctorAchievementItem, DoctorAchievementType } from '../../types/doctor-profile'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 
 export interface AppointmentParams {
@@ -22,6 +23,7 @@ export interface AppointmentParams {
 	hospital_id?: string
 	status?: string
 	appSearch?: string
+	variant?: 'all' | 'upcoming'
 }
 
 export interface DoctorSearchParams {
@@ -41,6 +43,7 @@ export interface CreateAppointmentPayload {
 	appointment_mode: 'clinic_visit' | 'video_call'
 	appointment_date: string
 	start_time: string
+	patient_id?: string
 }
 
 export interface CreateAppointmentResponse {
@@ -80,24 +83,36 @@ export const getSpecialities = async (): Promise<SpecialitiesResponse> => {
 	return res.data
 }
 
+export type ApiAvailabilityMode = 'clinic_visit' | 'video_call'
+
+export interface AvailabilityModeBlock {
+	appointment_mode?: ApiAvailabilityMode
+	sessions?: SlotGroup[]
+}
+
 export interface AvailabilityResponse {
-	data?: SlotGroup[]
+	data?: SlotGroup[] | AvailabilityModeBlock[]
+}
+
+export type DoctorAvailabilityResponse = SlotGroup[] | AvailabilityModeBlock[] | AvailabilityResponse
+
+export const isAvailabilityModeBlock = (item: unknown): item is AvailabilityModeBlock =>
+	typeof item === 'object' && item !== null && ('appointment_mode' in item || 'sessions' in item)
+
+export const getAvailabilityModeBlocks = (response: DoctorAvailabilityResponse): AvailabilityModeBlock[] => {
+	const items = Array.isArray(response) ? response : Array.isArray(response.data) ? response.data : []
+	return items.filter(isAvailabilityModeBlock)
 }
 
 export const getDoctorAvailability = async (params: {
 	doctor_id?: string
 	hospital_id: number | string
 	date: string
-}): Promise<SlotGroup[] | AvailabilityResponse> => {
-	const res = await ApiService.getWithParams<SlotGroup[] | AvailabilityResponse>(
+}): Promise<DoctorAvailabilityResponse> => {
+	const res = await ApiService.getWithParams<DoctorAvailabilityResponse>(
 		API_ENDPOINTS.DOCTORS.AVAILABILITY,
 		params as Record<string, unknown>
 	)
-	return res.data
-}
-
-export const createHospital = async (data: Record<string, unknown>) => {
-	const res = await ApiService.post(API_ENDPOINTS.DOCTOR_PROFILE.HOSPITALS, data)
 	return res.data
 }
 
@@ -121,7 +136,7 @@ export interface SlotOverrideBatchPayload {
 		is_blocked: boolean
 	}>
 	reason?: string
-	appointment_mode?:string
+	appointment_mode?: string
 }
 
 export interface SlotOverrideResponse {
@@ -142,6 +157,11 @@ export const createSlotOverrideBatch = async (payload: SlotOverrideBatchPayload)
 // -- Doctor profile -------------------------------------------------------------
 export const getDoctorProfile = async (): Promise<DoctorProfileApiResponse> => {
 	const res = await ApiService.get<DoctorProfileApiResponse>(API_ENDPOINTS.DOCTOR_PROFILE.DETAILS)
+	return res.data
+}
+
+export const updatePersonalDetails = async (data: Record<string, unknown>) => {
+	const res = await ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.PERSONAL_DETAILS, data)
 	return res.data
 }
 
@@ -186,14 +206,23 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 		})
 	}
 
-	// Build hospitals
+	// Build hospitals — include all appointment-rules fields
 	const hospitals: DoctorProfile['hospitals'] = Array.isArray(data?.hospitals)
 		? data.hospitals.map((h: DoctorProfileApiHospital) => ({
-				id: h.hospital.id,
+				id: h.hospital?.id ?? h.id,
 				name: h.hospital?.name ?? '',
 				location: h.hospital?.address ?? '',
 				fullAddress: h.hospital?.address ?? '',
 				isPrimary: h.is_primary ?? false,
+				video_consultation_fee: h.hospital?.video_consultation_fee ?? 0,
+				clinic_consultation_fee: h.hospital?.clinic_consultation_fee ?? 0,
+				phone_number: h.hospital?.contact_number ?? '',
+				free_followup_validity_days:
+					h.appointment_rules?.free_followup_validity_days ?? h.free_followup_validity_days ?? 7,
+				reschedule_allowed_until_hours:
+					h.appointment_rules?.reschedule_allowed_until_hours ?? h.reschedule_allowed_until_hours ?? 2,
+				allow_pay_later: h.appointment_rules?.allow_pay_later ?? h.allow_pay_later ?? false,
+				availability: h.availability,
 			}))
 		: []
 
@@ -205,16 +234,16 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 		specialization: prof?.specialities?.[0]?.label ?? '',
 		personal: {
 			name: pd?.name ?? '',
-			contactNumber: '',
+			contactNumber: pd?.contact_number ?? '',
 			contactVerified: false,
 			email: pd?.email ?? '',
 			emailVerified: false,
 			gender: pd?.gender ?? '',
-			dateOfBirth: pd?.date_of_birth ?? '',
+			dateOfBirth: pd?.date_of_birth ? dayjs(pd.date_of_birth, 'YYYY-MM-DD').format('DD/MM/YYYY') : '',
 			location: pd?.location ?? '',
-			instagram: pd?.instagram ?? '',
-			facebook: pd?.facebook ?? '',
-			twitter: pd?.twitter ??'',
+			instagram: pd?.social_media_handles?.instagram ?? '',
+			facebook: pd?.social_media_handles?.facebook ?? '',
+			twitter: pd?.social_media_handles?.twitter ?? '',
 			avatar: pd?.avatar_s3_key ?? '',
 			experience: String(prof?.experience_years ?? 0),
 			languages: pd?.languages ?? [],
@@ -226,12 +255,26 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 			college: prof?.college ?? '',
 			yearOfPassing: prof?.year_of_passing ?? '',
 			qualificationProof: prof?.qualification_proof_s3_key ?? '',
+			degrees: Array.isArray(prof?.degrees)
+				? prof.degrees.map((d) => ({
+						id: d.id,
+						degree: d.degree,
+						specialization: d.specialization || '',
+						college: d.college,
+						yearOfPassing: d.year_of_passing,
+						qualificationProof: d.qualification_proof_s3_key || '',
+					}))
+				: [],
 			registrationNumber: prof?.registration_number ?? '',
 			registrationProof: prof?.registration_proof_s3_key ?? '',
 			about: prof?.about ?? '',
 		},
 		hospitals,
 		availability,
+		additionalDetail: {
+			treatments: [],
+			areas_of_expertise: [],
+		},
 	}
 }
 
@@ -272,5 +315,154 @@ export const getFavouriteDoctors = async (): Promise<FavouritesResponse> => {
 
 export const toggleFavouriteDoctor = async (publicId: string): Promise<ToggleFavouriteResponse> => {
 	const res = await ApiService.post<ToggleFavouriteResponse>(API_ENDPOINTS.DOCTORS_FAVOURITES.TOGGLE(publicId), {})
+	return res.data
+}
+
+// -- Patient Favourite doctors ---------------------------------------------------------
+
+export const getPatientFavouriteDoctors = async (): Promise<FavouritesResponse> => {
+	const res = await ApiService.get<FavouritesResponse>(API_ENDPOINTS.PATIENT.FAVOURITES)
+	return res.data
+}
+
+export const togglePatientFavouriteDoctor = async (publicId: string): Promise<ToggleFavouriteResponse> => {
+	const res = await ApiService.post<ToggleFavouriteResponse>(API_ENDPOINTS.PATIENT.TOGGLE_FAVOURITE(publicId), {})
+	return res.data
+}
+
+// -- Hospitals ---------------------------------------------------------
+
+export interface CreateHospitalPayload {
+	name: string
+	phone_number?: string
+	full_address?: string
+	video_consultation_fee?: string
+	offline_consultation_fee?: string
+	is_primary?: boolean
+}
+
+export interface CreateHospitalResponse {
+	message: string
+	data: {
+		hospital_id: string
+		public_id: string
+	}
+}
+
+export interface UpdateHospitalPayload {
+	hospital_id: string
+	// Hospital table fields
+	name?: string
+	full_address?: string
+	phone_number?: string
+	// DoctorHospital link fields
+	is_primary?: boolean
+	video_consultation_fee?: string
+	offline_consultation_fee?: string
+	available_days?: string[]
+	working_hours?: string
+	free_followup_validity_days?: number
+	reschedule_allowed_until_hours?: number
+	allow_pay_later?: boolean
+}
+
+export interface AvailabilitySlot {
+	start_time: string
+	end_time: string
+	slot_duration: number
+	buffer_time: number
+}
+
+export interface UpdateAvailabilityPayload {
+	hospital_id: string
+	day_of_week: number
+	appointment_mode: string
+	slots: AvailabilitySlot[]
+	is_active?: boolean
+}
+
+export interface BulkAvailabilityPayload {
+	hospital_id: string
+	availability: Record<number, Record<string, unknown>>
+}
+
+export const createHospital = async (data: CreateHospitalPayload): Promise<CreateHospitalResponse> => {
+	const res = await ApiService.post<CreateHospitalResponse>(API_ENDPOINTS.DOCTOR_PROFILE.HOSPITALS, data)
+	return res.data
+}
+
+export const updateHospital = async (payload: UpdateHospitalPayload) => {
+	return ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.UPDATE_HOSPITAL, payload)
+}
+
+export const updateAvailability = async (payload: UpdateAvailabilityPayload) => {
+	return ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.UPDATE_AVAILABILITY, payload)
+}
+
+export const updateWeeklyAvailability = async (payload: BulkAvailabilityPayload) => {
+	return ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.UPDATE_AVAILABILITY, payload)
+}
+
+// ----pre-intake --------------------------------------------------------------
+
+export interface PreIntakePayload {
+	symptoms?: string
+	duration?: string
+	severity?: 'mild' | 'moderate' | 'severe'
+}
+
+export const updatePreIntake = async (appointmentId: string, payload: PreIntakePayload) => {
+	const res = await ApiService.patch(API_ENDPOINTS.APPOINTMENTS.PRE_INTAKE(appointmentId), payload)
+
+	return res.data
+}
+
+// -- Doctor achievements --------------------------------------------------------
+
+export interface AchievementsResponse {
+	success: boolean
+	message: string
+	data: DoctorAchievementItem[]
+}
+
+export interface AchievementResponse {
+	success: boolean
+	message: string
+	data: DoctorAchievementItem
+}
+
+export interface AchievementPayload {
+	title: string
+	achievement_type: DoctorAchievementType
+	organization?: string | null
+	achievement_date?: string | null // YYYY-MM-DD
+	description?: string | null
+	document_s3_key?: string | null
+	is_public?: boolean
+}
+
+export const getAchievements = async (): Promise<AchievementsResponse> => {
+	const res = await ApiService.get<AchievementsResponse>(API_ENDPOINTS.DOCTOR_PROFILE.ACHIEVEMENTS)
+	return res.data
+}
+
+export const createAchievement = async (payload: AchievementPayload): Promise<AchievementResponse> => {
+	const res = await ApiService.post<AchievementResponse>(API_ENDPOINTS.DOCTOR_PROFILE.ACHIEVEMENTS, payload)
+	return res.data
+}
+
+export const updateAchievement = async (
+	publicId: string,
+	payload: Partial<AchievementPayload>
+): Promise<AchievementResponse> => {
+	const res = await ApiService.put<AchievementResponse>(
+		API_ENDPOINTS.DOCTOR_PROFILE.ACHIEVEMENT_BY_ID(publicId),
+		payload
+	)
+	return res.data
+}
+
+export const deleteAchievement = async (publicId: string) => {
+	const res = await ApiService.delete(API_ENDPOINTS.DOCTOR_PROFILE.ACHIEVEMENT_BY_ID(publicId))
 	return res.data
 }

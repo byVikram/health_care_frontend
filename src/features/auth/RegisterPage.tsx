@@ -11,8 +11,7 @@ import { UserRole, onboardingData } from '../../data/onboardingData'
 function labelToUserRole(label: string): UserRole {
 	const map: Record<string, UserRole> = {
 		patient:    'PATIENT',
-		doctor:     'PATIENT',
-		
+		doctor:     'DOCTOR',
 		pharmacy:   'PHARMACY',
 		laboratory: 'LABORATORY',
 		radiology:  'RADIOLOGY',

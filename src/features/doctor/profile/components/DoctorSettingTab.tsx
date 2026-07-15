@@ -1,6 +1,6 @@
-﻿// src/features/doctor/profile/components/DoctorSettingTab.tsx
+// src/features/doctor/profile/components/DoctorSettingTab.tsx
 import { useState } from 'react'
-import { Box, Typography, Button, Dialog, DialogContent, DialogActions, Switch, Divider } from '@mui/material'
+import { Box, Typography, Button, Dialog, DialogContent, DialogActions, Divider } from '@mui/material'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import StarBorderIcon from '@mui/icons-material/StarBorder'
@@ -13,38 +13,7 @@ import { API_ENDPOINTS } from '../../../../constants/apiUrls'
 import { clearAuth } from '../../../../hooks/useAuth'
 import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-
-const switchSx = {
-	width: 56,
-	height: 30,
-	padding: 0,
-	'& .MuiSwitch-switchBase': {
-		padding: 0,
-		margin: '3px',
-		transitionDuration: '300ms',
-		'&.Mui-checked': {
-			transform: 'translateX(26px)',
-			color: '#fff',
-			'& + .MuiSwitch-track': {
-				backgroundColor: '#2B6F71',
-				opacity: 1,
-				border: 0,
-			},
-		},
-	},
-	'& .MuiSwitch-thumb': {
-		boxSizing: 'border-box',
-		width: 24,
-		height: 24,
-		boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-	},
-	'& .MuiSwitch-track': {
-		borderRadius: 15,
-		backgroundColor: '#E2E8F0',
-		opacity: 1,
-		transition: 'background-color 300ms',
-	},
-}
+import AppSwitch from '../../../../components/common/Switch/AppSwitch'
 
 export default function DoctorSettingTab() {
 	const [openDialog, setOpenDialog] = useState(false)
@@ -165,7 +134,7 @@ export default function DoctorSettingTab() {
 							<Typography sx={{ fontSize: '14px', color: 'text.primary', fontWeight: 450, flex: 1 }}>
 								{row.label}
 							</Typography>
-							<Switch checked={row.value} onChange={(e) => row.setter(e.target.checked)} sx={switchSx} />
+							<AppSwitch checked={row.value} onChange={(e) => row.setter(e.target.checked)} />
 						</Box>
 						{i < notifRows.length - 1 && <Divider />}
 					</Box>

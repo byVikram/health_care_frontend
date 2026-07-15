@@ -6,9 +6,9 @@ import LocationOnIcon from '@mui/icons-material/LocationOn'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routes'
-import { getAppointments, getDoctorAvailability, getDoctorById } from '../doctor/doctorService'
+import { getAppointments, getDoctorAvailability, getDoctorById, getAvailabilityModeBlocks } from '../doctor/doctorService'
 import { Appointment } from '../../types/appointment'
-import drImage from '../../assets/Services/doctors-service.png'
+// import drImage from '../../assets/Services/doctors-service.png'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 import { LookupHospital } from '../../hooks/useAuth'
@@ -20,6 +20,7 @@ import AppButton from '../../components/common/Button/AppButton'
 import AppInput from '../../components/common/Input/AppInput'
 import { customScrollbar } from '../../styles/commonStyles'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
+
 
 const STATUS_STYLES: Record<string, { color: string; bgColor: string; text: string }> = {
 	confirmed: { color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)', text: 'Confirmed' },
@@ -75,7 +76,7 @@ export function PatientAppointments() {
 				setLoading(true)
 				setError('')
 				const [apptRes, statusRes] = await Promise.all([
-					getAppointments({ limit: 10 }),
+					getAppointments({ limit: 10, variant: 'upcoming' }),
 					ApiService.get<{ success: boolean; data: { id: string; label: string }[] }>(
 						API_ENDPOINTS.APPOINTMENTS.STATUSES
 					),
@@ -95,6 +96,10 @@ export function PatientAppointments() {
 		}
 
 		fetchData()
+
+		const onAccountSwitch = () => fetchData()
+		window.addEventListener('auth-changed', onAccountSwitch)
+		return () => window.removeEventListener('auth-changed', onAccountSwitch)
 	}, [])
 
 	useEffect(() => {
@@ -138,12 +143,13 @@ export function PatientAppointments() {
 					hospital_id: hospitalId,
 					date: dateStr,
 				})
-				let processedData: SlotGroup[] = []
-				if (Array.isArray(responseData)) {
-					processedData = responseData as SlotGroup[]
-				} else if (responseData && Array.isArray((responseData as { data: SlotGroup[] }).data)) {
-					processedData = (responseData as { data: SlotGroup[] }).data
-				}
+				const selectedTypeMode = appointmentType === 'clinic' ? 'clinic_visit' : 'video_call'
+				const selectedModeData = getAvailabilityModeBlocks(responseData).find(
+					(item) => item.appointment_mode === selectedTypeMode
+				)
+
+				const processedData = selectedModeData?.sessions || []
+
 				setRescheduleSlots(processedData)
 			} catch {
 				toast.error('Could not load available slots.')
@@ -153,7 +159,7 @@ export function PatientAppointments() {
 		}
 
 		fetchSlots()
-	}, [rescheduleDate, rescheduleOpen, rescheduleAppt, rescheduleHospitalId])
+	}, [rescheduleDate, rescheduleOpen, rescheduleAppt, rescheduleHospitalId,appointmentType])
 
 	const statusOf = (appt: Appointment) =>
 		localStatuses[appt.id] ||
@@ -192,7 +198,28 @@ export function PatientAppointments() {
 
 			if (res.data?.success) {
 				toast.success(res.data.message || 'Appointment rescheduled!')
-				setLocalStatuses((prev) => ({ ...prev, [rescheduleAppt.id]: 'rescheduled' }))
+				const currentStatus = statusOf(rescheduleAppt)
+				const nextStatus = currentStatus === 'pending' ? 'pending' : 'rescheduled'
+				setLocalStatuses((prev) => ({ ...prev, [rescheduleAppt.id]: nextStatus }))
+				
+				setAppointments((prev) =>
+					prev.map((a) =>
+						a.id === rescheduleAppt.id
+							? {
+									...a,
+									appointment_date: dateStr,
+									start_time: rescheduleTime,
+									hospital: rescheduleHospitalId
+										? {
+												id: rescheduleHospitalId,
+												name: rescheduleHospitals.find((h) => h.id === rescheduleHospitalId)?.label || a.hospital?.name || '',
+												address: a.hospital?.address || '',
+										  }
+										: a.hospital,
+							  }
+							: a
+					)
+				)
 				setRescheduleOpen(false)
 			} else {
 				toast.error(res.data?.message || 'Reschedule failed. Please try again.')
@@ -286,7 +313,7 @@ export function PatientAppointments() {
 						{appointments.map((appt) => {
 							const status = statusOf(appt)
 							const style = getStatusStyle(status)
-							const isVirtual = appt.appointment_mode === 'online'
+							const isVirtual  = appt.appointment_mode === 'video call'
 							const canJoin = isVirtual && status === 'confirmed'
 							const canAct = status !== 'cancelled' && status !== 'completed'
 
@@ -322,15 +349,15 @@ export function PatientAppointments() {
 													height: 48,
 													borderRadius: '50%',
 													overflow: 'hidden',
-													border: '2px solid',
-													borderColor: style.color,
+
+
 													flexShrink: 0,
 												}}
 											>
 												<Box
 													component="img"
-													src={drImage}
-													alt={appt.doctor.name}
+													src={appt.doctor?.avatar_s3_key ?? ''}
+													alt={appt.doctor?.name ?? ''}
 													sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
 												/>
 											</Box>
@@ -350,7 +377,7 @@ export function PatientAppointments() {
 															color: 'text.primary',
 														}}
 													>
-														{appt.doctor.name}
+														{appt.doctor?.name ?? 'Unknown Doctor'}
 													</Typography>
 													<Chip
 														label={style.text}
@@ -401,7 +428,7 @@ export function PatientAppointments() {
 													/>
 												)}
 												<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-													{isVirtual ? 'Virtual' : 'In-person'}
+													{isVirtual ? 'Video Call' : 'Clinic Visit'}
 												</Typography>
 											</Box>
 										</Box>
@@ -561,32 +588,6 @@ export function PatientAppointments() {
 						label="Submit"
 						loading={cancelSubmitting}
 						onClick={handleCancelAppointment}
-						//  {
-						// 	if (!cancelAppt || !cancelledStatusId) return
-						// 	setCancelSubmitting(true)
-						// 	try {
-						// 		const res = await ApiService.patch<{ success: boolean; message: string }>(
-						// 			API_ENDPOINTS.APPOINTMENTS.UPDATE,
-						// 			{
-						// 				appointment_id: cancelAppt.id,
-						// 				status_id: cancelledStatusId,
-						// 				reason: cancelReason,
-						// 			}
-						// 		)
-						// 		if (res.data?.success) {
-						// 			toast.success('Appointment cancelled successfully')
-						// 			setAppointments((prev) => prev.filter((a) => a.id !== cancelAppt.id))
-						// 			setCancelOpen(false)
-						// 			setCancelReason('')
-						// 		} else {
-						// 			toast.error(res.data?.message || 'Failed to cancel appointment')
-						// 		}
-						// 	} catch {
-						// 		toast.error('Something went wrong. Please try again.')
-						// 	} finally {
-						// 		setCancelSubmitting(false)
-						// 	}
-						// }}
 						disabled={!cancelReason.trim()}
 					/>
 				</Box>

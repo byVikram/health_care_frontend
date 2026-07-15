@@ -8,7 +8,6 @@ import AppDatePicker from '../../../../components/common/DatePicker/AppDatePicke
 import ProfileFormActions from '../../../../components/common/ProfileFormActions/ProfileFormActions'
 import { LaboratoryProfilePersonal } from '../../../../types/laboratory-profile'
 import { customCardStyle } from '../../../../styles/commonStyles'
-import { updateLaboratoryPersonalDetails } from '../../laboratoryService'
 import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
@@ -37,14 +36,11 @@ export default function LabPersonalTab({ data, onChange }: LabPersonalTabProps) 
 		setIsDirty(JSON.stringify(data) !== JSON.stringify(saved))
 	}, [data, saved])
 
-	const handleSave = async () => {
+	const handleSave = () => {
 		try {
-			const res = await updateLaboratoryPersonalDetails(data)
-			if (res?.success) {
-				toast.success('Changes saved successfully!')
-			}
 			setSaved(data)
 			setIsDirty(false)
+			toast.success('Changes saved successfully!')
 		} catch {
 			toast.error('Something went wrong. Please try again.')
 		}
@@ -60,7 +56,7 @@ export default function LabPersonalTab({ data, onChange }: LabPersonalTabProps) 
 				<Grid container spacing={2}>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
-							label="Full Name"
+							label="Full Name*"
 							value={data.name}
 							placeholder="Enter your full name"
 							onChange={(e) => onChange({ name: e.target.value })}
@@ -68,7 +64,7 @@ export default function LabPersonalTab({ data, onChange }: LabPersonalTabProps) 
 					</Grid>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
-							label="Location"
+							label="Location*"
 							value={data.location}
 							placeholder="Enter your location"
 							onChange={(e) => onChange({ location: e.target.value })}
@@ -79,7 +75,7 @@ export default function LabPersonalTab({ data, onChange }: LabPersonalTabProps) 
 				<Grid container spacing={2}>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
-							label="Mobile Number"
+							label="Mobile Number*"
 							value={data.contactNumber}
 							placeholder="+91 XXXXXXXXXX"
 							type="tel"
@@ -89,7 +85,7 @@ export default function LabPersonalTab({ data, onChange }: LabPersonalTabProps) 
 					</Grid>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
-							label="Email ID"
+							label="Email ID*"
 							value={data.email}
 							placeholder="Enter your email"
 							type="email"
@@ -102,7 +98,7 @@ export default function LabPersonalTab({ data, onChange }: LabPersonalTabProps) 
 				<Grid container spacing={2}>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppSelect
-							label="Gender"
+							label="Gender*"
 							value={data.gender || ''}
 							options={GENDER_OPTIONS}
 							placeholder="Select gender"

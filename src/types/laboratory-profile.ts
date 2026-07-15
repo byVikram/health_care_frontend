@@ -15,14 +15,26 @@ export interface LaboratoryProfilePersonal {
 }
 
 export interface LaboratoryProfileProfessional {
-	labName: string
+	specializationId: string
+	specializationLabel: string
+	degree: string
+	institute: string
+	yearOfPassing: string
+	qualificationProof: string
 	registrationNumber: string
+	certificationAuthority: string
+	licenseExpiryDate: string
 	registrationProof: string
-	accreditationBody: string
-	accreditationNumber: string
-	accreditationProof: string
+	currentLab: string
+	yearsOfExperience: string
+	previousOrganization: string
+	areaOfExpertise: string
+	skills: string[]
+	labLicenseProof: string
+	trainingCertificateProof: string
+	internshipProof: string
+	idVerificationProof: string
 	about: string
-	operatingSince: string
 }
 
 export interface LaboratoryService {

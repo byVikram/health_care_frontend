@@ -33,13 +33,11 @@ import {
 	MedicalServices,
 	LocationOn,
 
-
-
 	// UploadFile,
 } from '@mui/icons-material'
 import AppButton from '../../components/common/Button/AppButton'
 import ConfirmModal from '../../components/common/Modal/ConfirmModal'
-import { createAppointment } from '../doctor/doctorService'
+import { createAppointment, updatePreIntake } from '../doctor/doctorService'
 import AppInput from '../../components/common/Input/AppInput'
 
 /* ─── types ─────────────────────────────────────────────────── */
@@ -58,6 +56,9 @@ interface PaymentState {
 	appointmentMode: 'clinic_visit' | 'video_call'
 	appointmentDate: string
 	startTime: string
+	allowPayLater?: boolean
+	/** Present only when booking from a referral */
+	referralId?: string
 }
 
 interface PaymentOption {
@@ -76,47 +77,28 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
 	{
 		id: 'googlepay',
 		label: 'Google Pay',
-		icon: (
-			<Box
-				component="img"
-				src={googlePayImg}
-				sx={{ width: 48, height: 28, objectFit: 'contain' }}
-			/>
-		),
+		icon: <Box component="img" src={googlePayImg} sx={{ width: 48, height: 28, objectFit: 'contain' }} />,
 	},
 	{
 		id: 'paytm',
 		label: 'Paytm',
-		icon: (
-			<Box
-				component="img"
-				src={paytmImg}
-				sx={{ width: 48, height: 28, objectFit: 'contain' }}
-			/>
-		),
+		icon: <Box component="img" src={paytmImg} sx={{ width: 48, height: 28, objectFit: 'contain' }} />,
 	},
 	{
 		id: 'amazonpay',
 		label: 'Amazon Pay',
-		icon: (
-			<Box
-				component="img"
-				src={amazonPayImg}
-				sx={{ width: 48, height: 28, objectFit: 'contain' }}
-			/>
-		),
+		icon: <Box component="img" src={amazonPayImg} sx={{ width: 48, height: 28, objectFit: 'contain' }} />,
 	},
 	{
 		id: 'card',
 		label: 'Credit Card',
 		icon: <Box component="img" src={creditCardImg} sx={{ width: 28, height: 28, objectFit: 'contain' }} />,
 	},
-
-
-
-
-
 ]
+
+// interface PaymentPageProps {
+// 	allowPayLater?: boolean
+// }
 
 /* ─── component ──────────────────────────────────────────────── */
 export default function PaymentPage() {
@@ -139,11 +121,13 @@ export default function PaymentPage() {
 		appointmentMode = 'clinic_visit',
 		appointmentDate = '',
 		startTime = '',
+		allowPayLater = true,
+		referralId,
 	} = state
 
 	const total = consultationFee + serviceFee
 
-	const [paymentChoice, setPaymentChoice] = useState<'now' | 'later'>('later')
+	const [paymentChoice, setPaymentChoice] = useState<'now' | 'later'>(allowPayLater ? 'later' : 'now')
 	const [selectedPayment, setSelectedPayment] = useState('phonepe')
 	const [whatsapp, setWhatsapp] = useState(false)
 	const [booking, setBooking] = useState(false)
@@ -152,8 +136,10 @@ export default function PaymentPage() {
 	const [symptoms, setSymptoms] = useState('')
 	const [duration, setDuration] = useState('')
 	const [severity, setSeverity] = useState<'mild' | 'moderate' | 'severe' | ''>('')
+	const [appointmentId, setAppointmentId] = useState('')
 	// const [reportFile, setReportFile] = useState<File | null>(null)
 	const [errorMsg, setErrorMsg] = useState<string | null>(null)
+	const patientId = localStorage.getItem('patient_id')
 
 	const infoRows = [
 		{ icon: <CalendarToday sx={{ fontSize: 14, color: 'text.secondary' }} />, label: 'Date:', value: date },
@@ -170,13 +156,21 @@ export default function PaymentPage() {
 		setBooking(true)
 		setErrorMsg(null)
 		try {
-			await createAppointment({
+			const payload: Record<string, unknown> = {
 				doctor_id: doctorId,
 				hospital_id: hospitalId || undefined,
 				appointment_mode: appointmentMode,
 				appointment_date: appointmentDate,
 				start_time: startTime,
-			})
+				patient_id: patientId || undefined,
+			}
+			if (referralId) payload.referral_id = referralId
+
+			const response = await createAppointment(payload as unknown as Parameters<typeof createAppointment>[0])
+
+			setAppointmentId((response.data as { id: string }).id)
+
+			setSuccessOpen(true)
 			setSuccessOpen(true)
 		} catch {
 			setErrorMsg('Failed to book appointment. Please try again.')
@@ -225,6 +219,34 @@ export default function PaymentPage() {
 						overflow: 'hidden',
 					}}
 				>
+					{/* Referral banner — shown only when booking from a referral */}
+					{referralId && (
+						<Box
+							sx={{
+								bgcolor: '#e8f4f8',
+								borderBottom: '1px solid rgba(12,124,124,0.2)',
+								px: 2.5,
+								py: 1,
+								display: 'flex',
+								alignItems: 'center',
+								gap: 0.8,
+							}}
+						>
+							<Box
+								sx={{
+									width: 6,
+									height: 6,
+									borderRadius: '50%',
+									bgcolor: '#0c7c7c',
+									flexShrink: 0,
+								}}
+							/>
+							<Typography fontSize={12} fontWeight={600} color="#0c7c7c">
+								Booking via referral
+							</Typography>
+						</Box>
+					)}
+
 					{/* Doctor header */}
 					<Box sx={{ px: 2.5, py: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
 						<Avatar
@@ -332,12 +354,14 @@ export default function PaymentPage() {
 							>
 								<FormControlLabel
 									value="later"
+									disabled={!allowPayLater}
 									sx={{
 										mx: 0,
 										px: 1.5,
 										width: '100%',
 										display: 'flex',
 										justifyContent: 'space-between',
+										opacity: !allowPayLater ? 0.5 : 1,
 									}}
 									control={
 										<Radio
@@ -470,7 +494,11 @@ export default function PaymentPage() {
 					{/* WhatsApp notification */}
 					<Box sx={{ px: 2.5, py: 1.75, display: 'flex', alignItems: 'flex-start', gap: 1 }}>
 						<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1 }}>
-							<Box component="img" src={whatsappImg} sx={{ width: 22, height: 22, objectFit: 'contain', flexShrink: 0 }} />
+							<Box
+								component="img"
+								src={whatsappImg}
+								sx={{ width: 22, height: 22, objectFit: 'contain', flexShrink: 0 }}
+							/>
 							<Box>
 								<Typography variant="body2" fontWeight={600} color="text.primary">
 									Get notifications on whatsapp
@@ -585,7 +613,7 @@ export default function PaymentPage() {
 						<Typography fontWeight={700} fontSize={16} color="#fff">
 							Share Symptoms Before Your Appointment
 						</Typography>
-						<Typography variant = "body2" fontSize={12} color="rgba(255,255,255,0.8)" mt={0.5}>
+						<Typography variant="body2" fontSize={12} color="rgba(255,255,255,0.8)" mt={0.5}>
 							Help your doctor understand your condition better by adding symptoms or concerns before the
 							consultation.
 						</Typography>
@@ -595,7 +623,7 @@ export default function PaymentPage() {
 					<Box sx={{ px: 3, py: 2.5, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
 						{/* Symptoms textarea */}
 						<Box>
-							<Typography variant = "body2" fontSize={13} fontWeight={600} color="text.primary" mb={0.8}>
+							<Typography variant="body2" fontSize={13} fontWeight={600} color="text.primary" mb={0.8}>
 								Symptoms / Reason for Visit
 							</Typography>
 
@@ -737,12 +765,20 @@ export default function PaymentPage() {
 								label="Submit Details"
 								fullWidth
 								disabled={!symptoms.trim() && !severity}
-								onClick={() => {
-									// Save symptoms to sessionStorage keyed by doctor+date+time
-									const key = 'symptoms_' + doctorId + '_' + appointmentDate + '_' + startTime
-									sessionStorage.setItem(key, JSON.stringify({ symptoms, duration, severity }))
-									setSymptomsOpen(false)
-									navigate('/doctors/' + doctorId)
+								onClick={async () => {
+									try {
+										await updatePreIntake(appointmentId, {
+											symptoms,
+											duration,
+											severity: severity || undefined,
+										})
+
+										setSymptomsOpen(false)
+										navigate('/doctors/' + doctorId)
+									} catch (error) {
+										console.error(error)
+										setErrorMsg('Failed to save symptoms')
+									}
 								}}
 							/>
 						</Box>

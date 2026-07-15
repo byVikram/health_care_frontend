@@ -7,7 +7,7 @@ import ArticleSection from './ArticleSection'
 import UpcomingEventsSection from './UpcomingEventsSection'
 import CommunityBlogsSection from './CommunityBlogsSection'
 import PodcastsSection from './PodcastsSection'
-import HealthQuestionsSection from './HealthQuestionsSection'
+import PatientHealthQuestionsSection from '../patient/components/PatientHealthQuestionsSection'
 
 import ServicesSection from './ServiceSection'
 import EmergencyBannerSection from './EmergencySection'
@@ -146,9 +146,9 @@ export default function DashboardPage() {
 			{/* Podcasts & Videocasts Section */}
 
 			{/* Health Questions Section */}
-			<Box id="contact" sx={{ scrollMarginTop: { xs: 80, md: 96 } }}>
-				<HealthQuestionsSection />
-			</Box>
+			<Container id="contact" maxWidth="lg" sx={{ py: 2, scrollMarginTop: { xs: 80, md: 96 } }}>
+				<PatientHealthQuestionsSection />
+			</Container>
 		</Box>
 	)
 }

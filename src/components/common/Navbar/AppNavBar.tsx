@@ -11,6 +11,7 @@ import {
 	ListItemButton,
 	ListItemText,
 	useMediaQuery,
+	Avatar,
 } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import CloseIcon from '@mui/icons-material/Close'
@@ -20,11 +21,13 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
 import AppButton from '../Button/AppButton'
 import { useAuth } from '../../../hooks/useAuth'
+import NotificationPanel from '../../../features/referrals/NotificationPanel'
 
 const navItems = [
 	{ label: 'Home', href: '/#home' },
 	{ label: 'Services', href: '/#services' },
 	{ label: 'Find doctors', href: '/doctors/search' },
+	// { label: 'Radiology', href: '/radiology/search' },
 	{ label: 'Community', href: '/#community' },
 	{ label: 'Contact', href: '/#contact' },
 	{ label: 'Demo', href: '#' },
@@ -40,7 +43,12 @@ const LOCATIONS = [
 
 const hashSectionIds = navItems.filter((item) => item.href.startsWith('/#')).map((item) => item.href.replace('/#', ''))
 
-const AppNavBar: React.FC = () => {
+interface AppNavBarProps {
+	onProfileClick?: () => void
+	avatarSrc?: string
+}
+
+const AppNavBar: React.FC<AppNavBarProps> = ({ onProfileClick, avatarSrc }) => {
 	const navigate = useNavigate()
 	const location = useLocation()
 	const theme = useTheme()
@@ -297,6 +305,33 @@ const AppNavBar: React.FC = () => {
 									</Box>
 								)}
 							</Box>
+
+					{/* Notification bell for authenticated users */}
+					{accessToken && <NotificationPanel iconColor="#fff" />}
+
+					{/* Avatar for authenticated patient — triggers profile dropdown */}
+					{accessToken && onProfileClick && (
+						<Box
+							sx={{
+								display: 'flex',
+								alignItems: 'center',
+								gap: 0.5,
+								cursor: 'pointer',
+								borderRadius: '20px',
+								px: 0.5,
+								py: 0.25,
+								'&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
+								transition: 'background 0.15s',
+							}}
+							onClick={onProfileClick}
+						>
+							<Avatar
+								src={avatarSrc}
+								sx={{ width: 36, height: 36, border: '2px solid rgba(255,255,255,0.5)' }}
+							/>
+							<KeyboardArrowDownIcon sx={{ color: 'rgba(255,255,255,0.85)', fontSize: 18 }} />
+						</Box>
+					)}
 
 					{!accessToken && (
 						<>

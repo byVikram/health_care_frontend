@@ -8,13 +8,16 @@ import AppSelect from '../../../../components/common/Select/AppSelect'
 import { DoctorProfilePersonal } from '../../../../types/doctor-profile'
 import { customCardStyle } from '../../../../styles/commonStyles'
 import AppDatePicker from '../../../../components/common/DatePicker/AppDatePicker'
-import { updateProfessionalDetails } from '../../doctorService'
+import { updatePersonalDetails } from '../../doctorService'
 import 'react-toastify/dist/ReactToastify.css'
 import { toast } from 'react-toastify'
+import AppMultiSelect from '../../../../components/common/Select/AppMultiSelect'
+import dayjs from 'dayjs'
 
 interface DoctorPersonalTabProps {
 	data: DoctorProfilePersonal
 	onChange: (updated: Partial<DoctorProfilePersonal>) => void
+	onSaveSuccess?: () => void
 }
 
 const GENDER_OPTIONS = [
@@ -37,64 +40,36 @@ const verifiedAdornment = (
 	</InputAdornment>
 )
 
-export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabProps) {
+export default function DoctorPersonalTab({ data, onChange, onSaveSuccess }: DoctorPersonalTabProps) {
 	const [isDirty, setIsDirty] = useState(false)
-	// const [showSuccess, setShowSuccess] = useState(false)
 	const [saved, setSaved] = useState(data)
 
 	useEffect(() => {
 		setIsDirty(JSON.stringify(data) !== JSON.stringify(saved))
 	}, [data, saved])
 
-	// const handleSave = () => {
-	// 	setSaved(data)
-	// 	setIsDirty(false)
-	// 	setShowSuccess(true)
-	// }
-
-	// const handleSave = async () => {
-	// try {
-	// 	const payload = {
-	// 		name: data.name,
-	// 		location: data.location,
-	// 		gender: data.gender,
-	// 		date_of_birth: data.dateOfBirth,
-	// 		languages: data.languages,
-	// 		email: data.email,
-	// 	}
-
-	// 	await updateProfessionalDetails(payload)
-
-	// 	setSaved(data)
-	// 	setIsDirty(false)
-	// 	setShowSuccess(true)
-	// 	} catch (error) {
-	// 	console.error(error)
-	// }
-	// }
-
 	const handleSave = async () => {
 		try {
-			const payload = {
+			const payload: Record<string, unknown> = {
 				name: data.name,
 				location: data.location,
 				gender: data.gender,
-				date_of_birth: data.dateOfBirth,
+				date_of_birth: data.dateOfBirth ? dayjs(data.dateOfBirth, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
 				languages: data.languages,
 				email: data.email,
-				instagram: data.instagram,
-				facebook: data.facebook,
-				twitter: data.twitter,
+				social_media_handles: {
+					instagram: data.instagram,
+					facebook: data.facebook,
+					twitter: data.twitter,
+				},
 			}
 
-			const res = await updateProfessionalDetails(payload)
+			await updatePersonalDetails(payload)
 
-			if (res) {
-				toast.success('Changes saved successfully!')
-			}
-
+			toast.success('Personal details saved successfully!')
 			setSaved(data)
 			setIsDirty(false)
+			onSaveSuccess?.()
 		} catch (error) {
 			toast.error('Something went wrong. Please try again.')
 			console.error(error)
@@ -102,11 +77,7 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 	}
 
 	return (
-		<Box
-			sx={{
-				...customCardStyle,
-			}}
-		>
+		<Box sx={{ ...customCardStyle }}>
 			<Typography variant="h4" sx={{ fontWeight: 700, mb: 3, color: 'text.primary' }}>
 				Personal Details
 			</Typography>
@@ -115,7 +86,7 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 				<Grid container spacing={2}>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
-							label="Full Name"
+							label="Full Name *"
 							value={data.name}
 							placeholder="Enter your full name"
 							onChange={(e) => onChange({ name: e.target.value })}
@@ -124,7 +95,7 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
-							label="Location"
+							label="Location*"
 							value={data.location}
 							placeholder="Enter your location"
 							onChange={(e) => onChange({ location: e.target.value })}
@@ -135,7 +106,7 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 				<Grid container spacing={2}>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
-							label="Mobile Number"
+							label="Mobile Number*"
 							value={data.contactNumber}
 							placeholder="+91 XXXXXXXXXX"
 							type="tel"
@@ -146,7 +117,7 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 					</Grid>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
-							label="Email ID"
+							label="Email ID*"
 							value={data.email}
 							placeholder="Enter your email"
 							type="email"
@@ -159,7 +130,7 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 				<Grid container spacing={2}>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppSelect
-							label="Gender"
+							label="Gender*"
 							value={data.gender || ''}
 							options={GENDER_OPTIONS}
 							placeholder="Select gender"
@@ -167,13 +138,6 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 						/>
 					</Grid>
 					<Grid size={{ xs: 12, sm: 6 }}>
-						{/* <AppInput
-							label="Date of Birth"
-							value={data.dateOfBirth}
-							type="date"
-							onChange={(e) => onChange({ dateOfBirth: e.target.value })}
-						/> */}
-
 						<AppDatePicker
 							label="Date of Birth"
 							value={data.dateOfBirth}
@@ -186,7 +150,7 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 				<Grid container spacing={2}>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppSelect
-							label="Years of Experience"
+							label="Years of Experience*"
 							value={data.experience || ''}
 							options={EXPERIENCE_OPTIONS}
 							placeholder="Select experience"
@@ -194,12 +158,12 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 						/>
 					</Grid>
 					<Grid size={{ xs: 12, sm: 6 }}>
-						<AppSelect
+						<AppMultiSelect
 							label="Languages Known"
-							value={data.languages?.[0] || ''}
+							value={data.languages || []}
 							options={LANGUAGE_OPTIONS}
 							placeholder="Select language"
-							onChange={(e) => onChange({ languages: [e.target.value as string] })}
+							onChange={(selected) => onChange({ languages: selected as string[] })}
 						/>
 					</Grid>
 				</Grid>
@@ -211,11 +175,7 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 							value={data.instagram}
 							placeholder="https://instagram.com/your-handle"
 							type="url"
-							slotProps={{
-								inputLabel: {
-									shrink: true,
-								},
-							}}
+							slotProps={{ inputLabel: { shrink: true } }}
 							onChange={(e) => onChange({ instagram: e.target.value })}
 						/>
 					</Grid>
@@ -226,33 +186,24 @@ export default function DoctorPersonalTab({ data, onChange }: DoctorPersonalTabP
 							value={data.facebook}
 							placeholder="https://facebook.com/your-profile"
 							type="url"
-							slotProps={{
-								inputLabel: {
-									shrink: true,
-								},
-							}}
+							slotProps={{ inputLabel: { shrink: true } }}
 							onChange={(e) => onChange({ facebook: e.target.value })}
 						/>
 					</Grid>
 				</Grid>
 
-
-			<Grid container spacing={2}>
-				<Grid size={{ xs: 12, sm: 6 }}>
-					<AppInput
-						label="Twitter"
-						value={data.twitter}
-						placeholder="https://twitter.com/your-handle"
-						type="url"
-						slotProps={{
-							inputLabel: {
-								shrink: true,
-							},
-						}}
-						onChange={(e) => onChange({ twitter: e.target.value })}
-					/>
+				<Grid container spacing={2}>
+					<Grid size={{ xs: 12, sm: 6 }}>
+						<AppInput
+							label="Twitter"
+							value={data.twitter}
+							placeholder="https://twitter.com/your-handle"
+							type="url"
+							slotProps={{ inputLabel: { shrink: true } }}
+							onChange={(e) => onChange({ twitter: e.target.value })}
+						/>
+					</Grid>
 				</Grid>
-			</Grid>
 				<Grid size={{ xs: 12 }} mt={2} display={'flex'} justifyContent={'flex-end'}></Grid>
 			</Box>
 			<ProfileFormActions isDirty={isDirty} onSave={handleSave} showSuccess={false} onCloseSnackbar={() => {}} />

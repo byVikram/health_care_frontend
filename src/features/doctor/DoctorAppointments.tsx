@@ -1,6 +1,16 @@
-import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
+// import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 import { useState, useEffect } from 'react'
-import { Box, Typography, InputAdornment, Divider, Chip, Popover, Dialog, DialogContent, Tooltip } from '@mui/material'
+import {
+	Box,
+	Typography,
+	// InputAdornment,
+	Divider,
+	Chip,
+	Popover,
+	Dialog,
+	DialogContent,
+	Tooltip,
+} from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
@@ -20,7 +30,11 @@ import { updateAppointmentsStatus } from '../../features/dashboard/dashboardServ
 import { toast } from 'react-toastify'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
 import DoctorFavouritesTab from './profile/components/DoctorFavouritesTab'
-import { getDoctorAvailability } from './doctorService'
+import { getDoctorAvailability, getAvailabilityModeBlocks } from './doctorService'
+import ReferralBadge from '../referrals/ReferralBadge'
+import ReferralInfoCard from '../referrals/ReferralInfoCard'
+import ReferralNotesDialog from '../referrals/ReferralNotesDialog'
+import type { DoctorRow } from './profile/components/DoctorFavouritesTab'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
@@ -41,12 +55,18 @@ const formatTime12h = (t?: string | null) => {
 	return `${String(hour).padStart(2, '0')}:${String(m).padStart(2, '0')} ${suffix}`
 }
 
+const isVideoMode = (mode?: string | null) => mode === 'video_call'
+
 const allActionButtons = [
 	{ icon: ConfirmIcon, label: 'Confirm', bg: '#e8f5e9', color: '#4caf50', action: 'confirm' },
 	{ icon: RejectIcon, label: 'Reject', bg: '#ffeeee', color: '#e53935', action: 'reject' },
 	{ icon: RescheduleIcon, label: 'Reschedule', bg: '#fff8e8', color: '#f59e0b', action: 'reschedule' },
 	{ icon: ReferIcon, label: 'Refer', bg: '#e8f4f8', color: '#0c7c7c', action: 'refer' },
 ]
+
+const tooltipTriggerSx = {
+	cursor: 'pointer',
+}
 
 export function DoctorAppointments({
 	selectedDate,
@@ -87,9 +107,17 @@ export function DoctorAppointments({
 	const [otpModalOpen, setOtpModalOpen] = useState(false)
 	const [referModalOpen, setReferModalOpen] = useState(false)
 	const [selectedAppointmentId, setSelectedAppointmentId] = useState('')
+	// Referral state
+	const [selectedReferAppointmentId, setSelectedReferAppointmentId] = useState('')
+	const [referNotesOpen, setReferNotesOpen] = useState(false)
+	const [selectedReferDoctor, setSelectedReferDoctor] = useState<DoctorRow | null>(null)
 	const [selectedPatientId, setSelectedPatientId] = useState('')
 	// Appointment action state
 	const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({})
+	const [localTimes, setLocalTimes] = useState<Record<string, { start_time: string; end_time: string | null }>>({})
+	// Tracks who initiated the most recent reschedule for each appointment (locally, before page refresh).
+	// 'doctor' means the doctor rescheduled → patient must confirm; Confirm button is hidden for doctor.
+	const [localRescheduledBy, setLocalRescheduledBy] = useState<Record<string, string>>({})
 
 	// Reject confirmation popover state
 	const [rejectAnchorEl, setRejectAnchorEl] = useState<HTMLElement | null>(null)
@@ -118,8 +146,19 @@ export function DoctorAppointments({
 
 	// Helpers
 	const getStatusLabel = (apt: Appointment): string => {
-		if (localStatuses[apt.id]) return localStatuses[apt.id]
-		return typeof apt.status === 'string' ? apt.status : (apt.status?.label ?? 'pending')
+		// Local status override (set after an action is taken without a full page refresh)
+		const localStatus = localStatuses[apt.id]
+		const status = (localStatus ?? (typeof apt.status === 'string' ? apt.status : (apt.status?.label ?? 'pending'))).toLowerCase()
+
+		if (status === 'rescheduled') {
+			// Prefer local tracking of who rescheduled; fall back to API field.
+			const rescheduledBy = (localRescheduledBy[apt.id] ?? apt.rescheduled_by ?? '').toLowerCase()
+			if (rescheduledBy === 'doctor') return 'Waiting for Patient Confirmation'
+			if (rescheduledBy === 'patient') return 'Waiting for Your Confirmation'
+			return 'Rescheduled'
+		}
+
+		return localStatus ?? (typeof apt.status === 'string' ? apt.status : (apt.status?.label ?? 'pending'))
 	}
 
 	// Fetch slots whenever the reschedule date changes
@@ -143,12 +182,14 @@ export function DoctorAppointments({
 					hospital_id: hospitalId,
 					date: dateStr,
 				})
-				let processedData: SlotGroup[] = []
-				if (Array.isArray(responseData)) {
-					processedData = responseData as SlotGroup[]
-				} else if (responseData && Array.isArray((responseData as { data: SlotGroup[] }).data)) {
-					processedData = (responseData as { data: SlotGroup[] }).data
-				}
+				console.log('Slots API Response:', responseData)
+				const selectedTypeMode = appointmentType === 'clinic' ? 'clinic_visit' : 'video_call'
+				const selectedModeData = getAvailabilityModeBlocks(responseData).find(
+					(item) => item.appointment_mode === selectedTypeMode
+				)
+
+				const processedData = selectedModeData?.sessions || []
+
 				setRescheduleSlots(processedData)
 			} catch {
 				toast.error('Could not load available slots.')
@@ -158,7 +199,7 @@ export function DoctorAppointments({
 		}
 
 		fetchSlots()
-	}, [rescheduleDate, rescheduleOpen, rescheduleAppt, rescheduleHospitalId])
+	}, [rescheduleDate, rescheduleOpen, rescheduleAppt, rescheduleHospitalId, appointmentType])
 
 	// Submit reschedule
 	const handleRescheduleConfirm = async () => {
@@ -182,7 +223,27 @@ export function DoctorAppointments({
 			)
 			if (res.data?.success) {
 				toast.success(res.data.message || 'Appointment rescheduled!')
-				setLocalStatuses((prev) => ({ ...prev, [rescheduleAppt.id]: 'rescheduled' }))
+				const currentStatus = getStatusLabel(rescheduleAppt)
+				const nextStatus = currentStatus === 'pending' ? 'pending' : 'rescheduled'
+				setLocalStatuses((prev) => ({ ...prev, [rescheduleAppt.id]: nextStatus }))
+				// Record that the DOCTOR was the initiator so the Confirm button is
+				// correctly hidden and the status label reads "Waiting for Patient Confirmation".
+				if (nextStatus === 'rescheduled') {
+					setLocalRescheduledBy((prev) => ({ ...prev, [rescheduleAppt.id]: 'doctor' }))
+				}
+				
+				const slot = rescheduleSlots
+					.flatMap((s) => s.slots)
+					.find((sl) => sl.start_time === rescheduleTime)
+				const slotEndTime = slot ? slot.end_time : null
+
+				setLocalTimes((prev) => ({
+					...prev,
+					[rescheduleAppt.id]: {
+						start_time: rescheduleTime,
+						end_time: slotEndTime,
+					},
+				}))
 				setRescheduleOpen(false)
 			} else {
 				toast.error(res.data?.message || 'Reschedule failed. Please try again.')
@@ -219,6 +280,8 @@ export function DoctorAppointments({
 				setRescheduleOpen(true)
 			}
 			if (action === 'refer') {
+				// Store the appointment being referred so the notes dialog can use it
+				setSelectedReferAppointmentId(appointmentId)
 				setReferModalOpen(true)
 			}
 		} catch {
@@ -268,7 +331,6 @@ export function DoctorAppointments({
 	// Render
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
-
 			{/* ── Complete-profile overlay (new registration only) ─────────────── */}
 			{showProfilePrompt && (
 				<Box
@@ -327,39 +389,28 @@ export function DoctorAppointments({
 					fullWidth
 					placeholder="Search Patient ID, Name..."
 					value={searchQuery}
-					onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-					size="small"
-					slotProps={{
-						input: {
-							startAdornment: (
-								<InputAdornment position="start">
-									<SearchIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
-								</InputAdornment>
-							),
-							endAdornment: (
-								<InputAdornment position="end">
-									<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-										<MicNoneOutlinedIcon
-											sx={{ fontSize: 20, color: 'text.disabled', cursor: 'pointer' }}
-										/>
-										<Box sx={{ width: '1px', height: '18px', bgcolor: 'divider' }} />
-										<QrCodeScannerIcon
-											sx={{ fontSize: 20, color: 'text.disabled', cursor: 'pointer' }}
-										/>
-									</Box>
-								</InputAdornment>
-							),
-						},
-					}}
-					sx={{
-						'& .MuiOutlinedInput-root': {
-							borderRadius: '12px',
-							bgcolor: 'background.default',
-							'& fieldset': { borderColor: 'divider' },
-							'&:hover fieldset': { borderColor: 'primary.main' },
-							'&.Mui-focused fieldset': { borderColor: 'primary.main' },
-						},
-					}}
+					onChange={(e) => setSearchQuery(e.target.value)}
+					enableVoiceSearch
+					onVoiceResult={(text) => setSearchQuery(text)}
+					startIcon={<SearchIcon sx={{ color: 'text.disabled', fontSize: 20 }} />}
+					endIcon={
+						<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+							<Box
+								sx={{
+									width: '1px',
+									height: '18px',
+									bgcolor: 'divider',
+								}}
+							/>
+							<QrCodeScannerIcon
+								sx={{
+									fontSize: 20,
+									color: 'text.disabled',
+									cursor: 'pointer',
+								}}
+							/>
+						</Box>
+					}
 				/>
 			</Box>
 
@@ -464,10 +515,20 @@ export function DoctorAppointments({
 							const statusLabel = getStatusLabel(apt)
 							const isCancelled = statusLabel === 'cancelled'
 							const isConfirmed = statusLabel === 'confirmed'
+							// True when the doctor is the reschedule initiator — Confirm must be hidden
+							// because the doctor should never confirm their own reschedule.
+							const rescheduledByDoctor =
+								statusLabel.toLowerCase().includes('waiting for patient') ||
+								(statusLabel === 'rescheduled' &&
+									(localRescheduledBy[apt.id] ?? apt.rescheduled_by ?? '').toLowerCase() === 'doctor')
 							const patientName = apt.patient?.name ?? 'Unknown Patient'
 
 							const visibleActions = allActionButtons.filter(
-								(btn) => !(btn.action === 'confirm' && isConfirmed)
+								(btn) =>
+									// Hide Confirm when already confirmed
+									!(btn.action === 'confirm' && isConfirmed) &&
+									// Hide Confirm when doctor rescheduled — patient must confirm, not doctor
+									!(btn.action === 'confirm' && rescheduledByDoctor)
 							)
 
 							return (
@@ -500,7 +561,7 @@ export function DoctorAppointments({
 											flexShrink: 0,
 										}}
 									>
-										{apt.appointment_mode === 'online' ? (
+										{isVideoMode(apt.appointment_mode) ? (
 											<VideocamIcon
 												sx={{ fontSize: 17, color: isCancelled ? '#b0b0b0' : '#0c7c7c' }}
 											/>
@@ -530,51 +591,67 @@ export function DoctorAppointments({
 											>
 												{patientName}
 											</Typography>
-											<Chip
-												label={statusLabel}
-												size="small"
+											<Box
 												sx={{
-													fontSize: '9px',
-													height: 16,
-													bgcolor: isCancelled
-														? '#ffeeee'
-														: isConfirmed
-															? '#e8f5e9'
-															: '#fff8e8',
-													color: isCancelled
-														? '#e53935'
-														: isConfirmed
-															? '#4caf50'
-															: '#f59e0b',
-													fontWeight: 600,
+													display: 'inline-flex',
+													alignItems: 'center',
+													gap: 0.6,
+													flexShrink: 0,
 												}}
-											/>
+											>
+												{/* Referral badge with hover tooltip showing referral details */}
+												{apt.referral && (
+													<Tooltip
+														arrow
+														placement="bottom-start"
+														slotProps={{
+															tooltip: {
+																sx: { bgcolor: 'transparent', p: 0, boxShadow: 'none' },
+															},
+															arrow: { sx: { color: 'background.paper' } },
+														}}
+														title={<ReferralInfoCard referral={apt.referral} />}
+													>
+														<Box
+															component="span"
+															onClick={(e) => e.stopPropagation()}
+															sx={{ display: 'inline-flex', alignItems: 'center', ...tooltipTriggerSx }}
+														>
+															<ReferralBadge />
+														</Box>
+													</Tooltip>
+												)}
+												<Chip
+													label={statusLabel}
+													size="small"
+													sx={{
+														fontSize: '9px',
+														height: 16,
+														bgcolor: isCancelled
+															? '#ffeeee'
+															: isConfirmed
+																? '#e8f5e9'
+																: rescheduledByDoctor
+																	? '#fff3e0'
+																	: '#fff8e8',
+														color: isCancelled
+															? '#e53935'
+															: isConfirmed
+																? '#4caf50'
+																: rescheduledByDoctor
+																	? '#e65100'
+																	: '#f59e0b',
+														fontWeight: 600,
+													}}
+												/>
+											</Box>
 
 											{/* Symptoms info tooltip */}
 											{(() => {
-												const key =
-													'symptoms_' +
-													apt.doctor?.id +
-													'_' +
-													apt.appointment_date +
-													'_' +
-													(apt.start_time ? apt.start_time.slice(0, 5) : '')
-												const raw = sessionStorage.getItem(key)
-												let info: { symptoms?: string; duration?: string; severity?: string } =
-													{}
-												let hasSymptoms = false
-												if (raw) {
-													try {
-														info = JSON.parse(raw)
-														hasSymptoms = !!(
-															info.symptoms ||
-															info.duration ||
-															info.severity
-														)
-													} catch {
-														/* ignore */
-													}
-												}
+												const info = apt.pre_intake || {}
+
+												const hasSymptoms = !!(info.symptoms || info.duration || info.severity)
+
 												const severityColors: Record<string, string> = {
 													mild: '#4caf50',
 													moderate: '#f59e0b',
@@ -728,7 +805,7 @@ export function DoctorAppointments({
 															sx={{
 																fontSize: 14,
 																color: hasSymptoms ? '#0c7c7c' : 'text.disabled',
-																cursor: 'pointer',
+																...tooltipTriggerSx,
 																'&:hover': { color: 'primary.main' },
 																verticalAlign: 'middle',
 																ml: 0.3,
@@ -745,7 +822,7 @@ export function DoctorAppointments({
 											<Typography variant="body2">|</Typography>
 											<AccessTimeIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
 											<Typography variant="body2">
-												{formatTime12h(apt.start_time)} - {formatTime12h(apt.end_time)}
+												{formatTime12h(localTimes[apt.id]?.start_time ?? apt.start_time)} - {formatTime12h(localTimes[apt.id]?.end_time ?? apt.end_time)}
 											</Typography>
 										</Box>
 									</Box>
@@ -957,12 +1034,29 @@ export function DoctorAppointments({
 						mode="refer"
 						title="Refer a doctor"
 						onShare={(doctor) => {
-							toast.success(`Referred to ${doctor.name}`)
-							setReferModalOpen(false)
+							// Open step 2: referral notes dialog
+							setSelectedReferDoctor(doctor)
+							setReferNotesOpen(true)
 						}}
 					/>
 				</DialogContent>
 			</Dialog>
+			
+			<ReferralNotesDialog
+				open={referNotesOpen}
+				onClose={() => {
+					setReferNotesOpen(false)
+					setSelectedReferDoctor(null)
+				}}
+				appointmentId={selectedReferAppointmentId}
+				doctor={selectedReferDoctor}
+				onSuccess={() => {
+					setReferNotesOpen(false)
+					setReferModalOpen(false)
+					setSelectedReferDoctor(null)
+					setSelectedReferAppointmentId('')
+				}}
+			/>
 
 			<Dialog open={otpModalOpen} onClose={() => setOtpModalOpen(false)} maxWidth="xs" fullWidth>
 				<DialogContent sx={{ pt: 3 }}>

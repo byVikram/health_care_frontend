@@ -1,18 +1,42 @@
 // src/components/layout/NavbarLayout.tsx
 import React, { useState, useRef, useEffect, ReactNode, cloneElement } from 'react'
-import { Box, Paper, MenuItem, Divider, Typography, Stack, IconButton, Avatar } from '@mui/material'
-import { SwapHoriz as SwapIcon, Check as CheckIcon } from '@mui/icons-material'
+import {
+	Box,
+	Paper,
+	MenuItem,
+	Divider,
+	Typography,
+	Stack,
+	IconButton,
+	Avatar,
+	Dialog,
+	DialogTitle,
+	DialogContent,
+	DialogActions,
+	Button,
+	TextField,
+} from '@mui/material'
+import {
+	SwapHoriz as SwapIcon,
+	Check as CheckIcon,
+	PersonAdd as PersonAddIcon,
+	Close as CloseIcon,
+} from '@mui/icons-material'
 import DoctorNavBar from '../common/Navbar/DoctorNavBar'
+import AppNavBar from '../common/Navbar/AppNavBar'
 import { clearAuth, useAuth } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { USER_ROLES } from '../../constants/constants'
-import { LookupHospital } from '../../hooks/useAuth'
-
+import { ROUTES } from '../../constants/routes'
+import { useMemo } from 'react'
+import { LookupHospital, PatientProfile } from '../../hooks/useAuth'
+import { toast } from 'react-toastify'
+import ChatBot from '../ChatBot'
+import ChatBot from '../ChatBot'
 
 const NAVBAR_HEIGHT = 64
 
-// Account type definition
-type Account = {
+type ProfileAccount = {
 	id: string
 	name: string
 	email?: string
@@ -20,20 +44,23 @@ type Account = {
 	avatar?: string
 }
 
-type ProfileMenuItem = { label: string; path: string; danger?: true } | { divider: true }
+type ProfileMenuItem = { label: string; path: string; danger?: true; special?: 'add-user' } | { divider: true }
 
 function isDividerMenuItem(item: ProfileMenuItem): item is { divider: true } {
 	return 'divider' in item && item.divider === true
 }
+
 const PATIENT_PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
-	{ label: 'My Appointments', path: '#' },
-	{ label: 'My Tests', path: '#' },
-	{ label: 'My Medicine Orders', path: '#' },
-	{ label: 'My Medical Records', path: '#' },
-	{ label: 'My Online Consultations', path: '#' },
+	{ label: 'Add User', path: '#add-user', special: 'add-user' },
+	{ divider: true },
+	{ label: 'My Appointments', path: ROUTES.APPOINTMENTS },
+	{ label: 'Medicine Orders', path: ROUTES.PHARMACY.ORDERS },
+	{ label: 'Lab Bookings', path: ROUTES.LABORATORY.ORDERS },
+	{ label: 'Radiology Bookings', path: ROUTES.RADIOLOGY.BOOKINGS },
+	{ label: 'My Favourite Doctors', path: ROUTES.PORTAL.FAVOURITES },
 	{ label: 'My Feedback', path: '#' },
 	{ divider: true },
-	{ label: 'Profile', path: '/profile' },
+	{ label: 'Profile', path: ROUTES.PORTAL.PROFILE },
 	{ label: 'Settings', path: '#' },
 	{ label: 'Help Line', path: '#help-line' },
 	{ divider: true },
@@ -57,27 +84,140 @@ const getProfileMenuItems = (role: string): readonly ProfileMenuItem[] => {
 	return PATIENT_PROFILE_MENU_ITEMS
 }
 
-// Sample accounts data - replace with actual data from your auth context
-const SAMPLE_ACCOUNTS: Account[] = [
-	{
-		id: '1',
-		name: 'John Doe',
-		email: 'john.doe@example.com',
-		relation: 'self',
-	},
-	{
-		id: '2',
-		name: 'Sarah John',
-		email: 'john.doe@example.com',
-		relation: 'wife',
-	},
-	{
-		id: '3',
-		name: 'Steven John',
-		email: 'john.doe@example.com',
-		relation: 'son',
-	},
-]
+// ---- Add User Modal ----
+function AddUserModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+	const [name, setName] = useState('')
+	const [role, setRole] = useState('')
+	const [nameError, setNameError] = useState(false)
+	const [roleError, setRoleError] = useState(false)
+
+	const handleAdd = () => {
+		const hasNameError = name.trim() === ''
+		const hasRoleError = role.trim() === ''
+		setNameError(hasNameError)
+		setRoleError(hasRoleError)
+		if (hasNameError || hasRoleError) return
+		// TODO: wire to your API
+		console.log('Add user:', { name: name.trim(), role: role.trim() })
+		toast.success('User added successfully!')
+		handleClose()
+	}
+
+	const handleClose = () => {
+		setName('')
+		setRole('')
+		setNameError(false)
+		setRoleError(false)
+		onClose()
+	}
+
+	return (
+		<Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '12px' } }}>
+			<DialogTitle
+				sx={{
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'space-between',
+					py: 1.25,
+					px: 2,
+					borderBottom: '1px solid',
+					borderColor: 'divider',
+				}}
+			>
+				<Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '15px' }}>
+					Add User
+				</Typography>
+				<IconButton
+					onClick={handleClose}
+					size="small"
+					sx={{
+						color: 'text.secondary',
+						'&:hover': { bgcolor: 'action.hover' },
+						'&:focus': { outline: 'none' },
+					}}
+				>
+					<CloseIcon fontSize="small" />
+				</IconButton>
+			</DialogTitle>
+
+			<DialogContent sx={{ pt: '14px !important', px: 2, pb: 1 }}>
+				<TextField
+					label="Name"
+					placeholder="Enter full name"
+					value={name}
+					onChange={(e) => {
+						setName(e.target.value)
+						setNameError(false)
+					}}
+					error={nameError}
+					helperText={nameError ? 'Name is required' : ''}
+					fullWidth
+					size="small"
+					sx={{ mb: 2 }}
+				/>
+				<TextField
+					label="Role"
+					placeholder="Enter role"
+					value={role}
+					onChange={(e) => {
+						setRole(e.target.value)
+						setRoleError(false)
+					}}
+					error={roleError}
+					helperText={roleError ? 'Role is required' : ''}
+					fullWidth
+					size="small"
+				/>
+			</DialogContent>
+
+			<DialogActions
+				sx={{
+					px: 2,
+					pb: 2,
+					pt: 1,
+					borderTop: '1px solid',
+					borderColor: 'divider',
+					gap: 1,
+					justifyContent: 'flex-end',
+				}}
+			>
+				<Button
+					onClick={handleClose}
+					variant="outlined"
+					size="medium"
+					sx={{
+						minWidth: 100,
+						fontSize: 14,
+						fontWeight: 400,
+						borderRadius: '8px',
+						boxShadow: 'none',
+						border: '2px solid',
+						textTransform: 'none',
+						'&:focus': { outline: 'none' },
+					}}
+				>
+					Cancel
+				</Button>
+				<Button
+					onClick={handleAdd}
+					variant="contained"
+					size="medium"
+					sx={{
+						minWidth: 100,
+						fontSize: 14,
+						fontWeight: 400,
+						borderRadius: '8px',
+						boxShadow: 'none',
+						textTransform: 'none',
+						'&:focus': { outline: 'none' },
+					}}
+				>
+					Add
+				</Button>
+			</DialogActions>
+		</Dialog>
+	)
+}
 
 // ---- Account Switcher Dropdown ----
 function AccountSwitcher({
@@ -86,9 +226,9 @@ function AccountSwitcher({
 	onSwitchAccount,
 	onClose,
 }: {
-	accounts: Account[]
-	currentAccount: Account
-	onSwitchAccount: (account: Account) => void
+	accounts: PatientProfile[]
+	currentAccount: PatientProfile | null
+	onSwitchAccount: (account: PatientProfile) => void
 	onClose: () => void
 }) {
 	const ref = useRef<HTMLDivElement>(null)
@@ -103,23 +243,10 @@ function AccountSwitcher({
 		return () => document.removeEventListener('mousedown', handleClickOutside)
 	}, [onClose])
 
-	const handleSwitch = (account: Account) => {
+	const handleSwitch = (account: PatientProfile) => {
 		onSwitchAccount(account)
 		onClose()
 	}
-
-	// const getRoleColor = (role: string) => {
-	// 	switch (role) {
-	// 		case 'doctor':
-	// 			return '#2196f3'
-	// 		case 'patient':
-	// 			return '#4caf50'
-	// 		case 'admin':
-	// 			return '#ff9800'
-	// 		default:
-	// 			return '#9e9e9e'
-	// 	}
-	// }
 
 	return (
 		<Paper
@@ -140,7 +267,6 @@ function AccountSwitcher({
 				},
 			}}
 		>
-			{/* Header */}
 			<Box
 				sx={{
 					padding: '12px 16px',
@@ -154,7 +280,6 @@ function AccountSwitcher({
 				</Typography>
 			</Box>
 
-			{/* Account List */}
 			{accounts.map((account) => (
 				<MenuItem
 					key={account.id}
@@ -165,32 +290,24 @@ function AccountSwitcher({
 						display: 'flex',
 						alignItems: 'center',
 						justifyContent: 'space-between',
-						'&:hover': {
-							bgcolor: 'action.hover',
-						},
+						'&:hover': { bgcolor: 'action.hover' },
 					}}
 				>
 					<Stack direction="row" spacing={2} alignItems="center" flex={1}>
 						<Avatar
-							sx={{
-								// bgcolor: getRoleColor(account.role),
-								width: 40,
-								height: 40,
-								fontSize: '1rem',
-							}}
+							src={account.avatar_s3_key || undefined}
+							sx={{ width: 40, height: 40, fontSize: '1rem' }}
 						>
 							{account.name.charAt(0)}
 						</Avatar>
 						<Box flex={1}>
 							<Typography variant="body2" fontWeight={500}>
 								{account.name}
-								{account.relation}
 							</Typography>
 							<Typography
 								variant="caption"
 								sx={{
 									display: 'block',
-									// color: getRoleColor(account.role),
 									fontSize: '0.7rem',
 									textTransform: 'capitalize',
 								}}
@@ -199,7 +316,7 @@ function AccountSwitcher({
 							</Typography>
 						</Box>
 					</Stack>
-					{currentAccount.id === account.id && <CheckIcon fontSize="small" color="primary" />}
+					{currentAccount?.id === account.id && <CheckIcon fontSize="small" color="primary" />}
 				</MenuItem>
 			))}
 		</Paper>
@@ -211,11 +328,13 @@ function ProfileDropdown({
 	onClose,
 	currentAccount,
 	onOpenAccountSwitcher,
+	onOpenAddUser,
 	role = 'patient',
 }: {
 	onClose: () => void
-	currentAccount: Account
+	currentAccount: ProfileAccount
 	onOpenAccountSwitcher: () => void
+	onOpenAddUser: () => void
 	role: string
 }) {
 	const navigate = useNavigate()
@@ -231,13 +350,19 @@ function ProfileDropdown({
 		return () => document.removeEventListener('mousedown', handleClickOutside)
 	}, [onClose])
 
-	const handleClick = (path: string) => {
+	const handleClick = (item: ProfileMenuItem) => {
+		if (isDividerMenuItem(item)) return
+		if (item.special === 'add-user') {
+			onClose()
+			onOpenAddUser()
+			return
+		}
 		onClose()
-		if (path === '/logout') {
+		if (item.path === '/logout') {
 			clearAuth()
 			navigate('/login')
 		} else {
-			navigate(path)
+			navigate(item.path)
 		}
 	}
 
@@ -260,7 +385,7 @@ function ProfileDropdown({
 				},
 			}}
 		>
-			{/* Header with Account Switcher button */}
+			{/* Header */}
 			<Box
 				sx={{
 					display: 'flex',
@@ -304,10 +429,7 @@ function ProfileDropdown({
 						sx={{
 							bgcolor: 'primary.main',
 							color: 'white',
-							'&:hover': {
-								bgcolor: 'primary.dark',
-								transform: 'scale(1.05)',
-							},
+							'&:hover': { bgcolor: 'primary.dark', transform: 'scale(1.05)' },
 							transition: 'all 0.2s ease',
 						}}
 					>
@@ -320,47 +442,34 @@ function ProfileDropdown({
 				if (isDividerMenuItem(item)) {
 					return <Divider key={`divider-${idx}`} sx={{ my: 0.5 }} />
 				}
+				const isAddUser = item.special === 'add-user'
 				return (
 					<MenuItem
-						key={item.path}
-						onClick={() => handleClick(item.path)}
+						key={`${item.path}-${idx}`}
+						onClick={() => handleClick(item)}
 						sx={{
 							py: 1,
 							px: 2,
 							fontSize: '0.875rem',
-							color: item.danger ? 'error.main' : 'text.primary',
+							color: item.danger ? 'error.main' : isAddUser ? 'primary.main' : 'text.primary',
+							display: 'flex',
+							alignItems: 'center',
+							gap: 1,
 							'&:hover': {
-								bgcolor: item.danger ? 'error.lighter' : 'action.hover',
+								bgcolor: item.danger
+									? 'error.lighter'
+									: isAddUser
+										? 'rgba(43,111,113,0.06)'
+										: 'action.hover',
 								color: item.danger ? 'error.dark' : 'primary.main',
 							},
 						}}
 					>
+						{isAddUser && <PersonAddIcon sx={{ fontSize: 16 }} />}
 						{item.label}
 					</MenuItem>
 				)
 			})}
-
-			{/* Edit Profile at bottom */}
-			{/* <Divider sx={{ my: 0.5 }} />
-			<MenuItem
-				onClick={handleEditProfile}
-				sx={{
-					py: 1.5,
-					px: 2,
-					display: 'flex',
-					alignItems: 'center',
-					gap: 1,
-					color: 'primary.main',
-					'&:hover': {
-						bgcolor: 'primary.lighter',
-					},
-				}}
-			>
-				<EditIcon fontSize="small" />
-				<Typography variant="body2" fontWeight={500}>
-					Edit Profile
-				</Typography>
-			</MenuItem> */}
 		</Paper>
 	)
 }
@@ -371,34 +480,44 @@ interface NavbarLayoutProps {
 }
 
 export default function NavbarLayout({ children }: NavbarLayoutProps) {
-	const { role, user } = useAuth()
-
+	const { role, user, lookupData } = useAuth()
+	const navigate = useNavigate()
+	const activePatientId = localStorage.getItem('patient_id')
 	const [dropdownOpen, setDropdownOpen] = useState(false)
 	const [activeHospital, setActiveHospital] = useState<LookupHospital | null>(null)
 	const [accountSwitcherOpen, setAccountSwitcherOpen] = useState(false)
+	const [addUserOpen, setAddUserOpen] = useState(false)
 
-	// Replace with actual current account from your auth context
-	const [currentAccount, setCurrentAccount] = useState<Account>(SAMPLE_ACCOUNTS[0])
-	const [availableAccounts] = useState<Account[]>(SAMPLE_ACCOUNTS)
-	const profileAccount: Account = {
-		id: user?.id || currentAccount.id,
-		name: user?.name || currentAccount.name,
-		email: user?.email || currentAccount.email,
-		relation: currentAccount.relation,
-		avatar: user?.avatar || currentAccount.avatar,
+	const availableAccounts = useMemo(() => lookupData?.patient_profiles ?? [], [lookupData])
+	const currentAccount = useMemo(() => {
+		if (!lookupData?.patient_profiles?.length) return null
+		return (
+			lookupData.patient_profiles.find((profile) => profile.id === activePatientId) ||
+			lookupData.patient_profiles[0]
+		)
+	}, [lookupData, activePatientId])
+
+	useEffect(() => {
+		if (!localStorage.getItem('patient_id') && lookupData?.patient_profiles?.length) {
+			const selfProfile = lookupData.patient_profiles.find((profile) => profile.is_self)
+			if (selfProfile) {
+				localStorage.setItem('patient_id', selfProfile.id)
+			}
+		}
+	}, [lookupData])
+
+	const profileAccount = {
+		id: currentAccount?.id || '',
+		name: currentAccount?.name || '',
+		email: user?.email || '',
+		relation: currentAccount?.relation || '',
+		avatar: currentAccount?.avatar_s3_key || '',
 	}
 
-	const handleSwitchAccount = (account: Account) => {
-		setCurrentAccount(account)
-		// Here you would also update your auth context, redirect based on role, etc.
-		console.log('Switched to account:', account)
-
-		// Optional: Navigate to role-specific dashboard
-		// if (account.role === 'doctor') {
-		//   navigate('/doctor/dashboard')
-		// } else if (account.role === 'patient') {
-		//   navigate('/patient/dashboard')
-		// }
+	const handleSwitchAccount = (account: PatientProfile) => {
+		localStorage.setItem('patient_id', account.id)
+		window.dispatchEvent(new Event('auth-changed'))
+		navigate(0)
 	}
 
 	const handleOpenAccountSwitcher = () => {
@@ -429,26 +548,46 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 				position: 'relative',
 			}}
 		>
-			{/* Navbar fixed full width */}
-			<Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200 }}>
+			{/* <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200 }}>
 				<DoctorNavBar
 					onProfileClick={() => {
 						setAccountSwitcherOpen(false)
 						setDropdownOpen((prev) => !prev)
 					}}
 					onHospitalChange={handleHospitalChange}
+					avatarSrc={role === 'patient' ? (profileAccount.avatar || undefined) : (user?.avatar || undefined)}
 				/>
+			</Box> */}
+			<Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200 }}>
+				{role === USER_ROLES.PATIENT ? (
+					<AppNavBar
+						onProfileClick={() => {
+							setAccountSwitcherOpen(false)
+							setDropdownOpen((prev) => !prev)
+						}}
+						avatarSrc={profileAccount.avatar || undefined}
+					/>
+				) : (
+					<DoctorNavBar
+						onProfileClick={() => {
+							setAccountSwitcherOpen(false)
+							setDropdownOpen((prev) => !prev)
+						}}
+						onHospitalChange={handleHospitalChange}
+						avatarSrc={user?.avatar || undefined}
+					/>
+				)}
 			</Box>
 
-    	{/* Dropdowns */}
-    	{dropdownOpen && (
-      		<ProfileDropdown
-        		onClose={handleCloseAll}
-        		currentAccount={profileAccount}
-        		onOpenAccountSwitcher={handleOpenAccountSwitcher}
-        		role={role || 'patient'}
-      	/>
-    	)}
+			{dropdownOpen && (
+				<ProfileDropdown
+					onClose={handleCloseAll}
+					currentAccount={profileAccount}
+					onOpenAccountSwitcher={handleOpenAccountSwitcher}
+					onOpenAddUser={() => setAddUserOpen(true)}
+					role={role || 'patient'}
+				/>
+			)}
 
 			{accountSwitcherOpen && (
 				<AccountSwitcher
@@ -459,13 +598,15 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 				/>
 			)}
 
-			{/* Page content */}
+			<AddUserModal open={addUserOpen} onClose={() => setAddUserOpen(false)} />
+
 			<Box sx={{ flex: 1, mt: `${NAVBAR_HEIGHT}px` }}>
 				{children &&
 					cloneElement(children as React.ReactElement<{ activeHospital: LookupHospital | null }>, {
 						activeHospital,
 					})}
 			</Box>
+			<ChatBot />
 		</Box>
 	)
 }

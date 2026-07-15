@@ -4,7 +4,7 @@ import { SpecialitiesResponse } from '../types/speciality'
 import { AppointmentStatus } from '../types/appointment'
 import { UserRole as OnboardingUserRole } from '../data/onboardingData'
 
-export type UserRole = 'doctor' | 'patient' | 'laboratory' | 'PHARMACY' | 'radiology'
+export type UserRole = 'doctor' | 'patient' | 'laboratory' | 'pharmacy' | 'radiology'
 
 export interface AuthUser {
 	id?: string
@@ -22,10 +22,19 @@ export interface LookupHospital {
 	address?: string
 }
 
+export interface PatientProfile {
+	id: string
+	name: string
+	relation: string
+	avatar_s3_key?: string
+	is_self: boolean
+}
+
 export interface LookupData {
-	appoinment_statuses: AppointmentStatus[]
+	appointment_statuses: AppointmentStatus[]
 	specialities: SpecialitiesResponse[]
 	hospitals: LookupHospital[]
+	patient_profiles: PatientProfile[]
 }
 
 export interface AuthState {
@@ -134,7 +143,6 @@ export function useOnboardingFlow(): OnboardingFlow {
 
 	
 	const handleRoleSelect = (role: OnboardingUserRole) => {
-		if (role === 'RADIOLOGY') return
 		const roleId = ROLE_ID_MAP[role]
 		setSelectedRole(role)
 		setSelectedRoleId(roleId)

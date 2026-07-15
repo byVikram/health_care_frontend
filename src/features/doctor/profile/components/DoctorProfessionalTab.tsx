@@ -1,18 +1,22 @@
 // src/features/doctor/profile/components/DoctorProfessionalTab.tsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import ProfileFormActions from '../../../../components/common/ProfileFormActions/ProfileFormActions'
-import { useRef } from 'react'
-import { Box, Typography, Grid, Divider } from '@mui/material'
+import { Box, Typography, Grid, Divider, Button, IconButton } from '@mui/material'
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import AddIcon from '@mui/icons-material/Add'
 import AppInput from '../../../../components/common/Input/AppInput'
 import AppSelect from '../../../../components/common/Select/AppSelect'
-import { DoctorProfileProfessional } from '../../../../types/doctor-profile'
+import { DoctorProfileProfessional, DoctorDegree } from '../../../../types/doctor-profile'
 import { customCardStyle } from '../../../../styles/commonStyles'
-import { getSpecialities } from '../../doctorService'
+import { getSpecialities, updateProfessionalDetails } from '../../doctorService'
+import { toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 interface DoctorProfessionalTabProps {
 	data: DoctorProfileProfessional
 	onChange: (updated: Partial<DoctorProfileProfessional>) => void
+	onSaveSuccess?: () => void
 }
 
 const DEGREE_OPTIONS = ['MBBS', 'MD', 'MS', 'BDS', 'MDS', 'BAMS', 'BHMS', 'BPT', 'DNB'].map((d) => ({
@@ -54,41 +58,27 @@ function UploadBox({
 
 	return (
 		<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-			{/* Text section takes remaining space */}
 			<Box sx={{ flex: 1 }}>
 				<Typography
 					variant="caption"
-					sx={{
-						color: 'text.secondary',
-						fontSize: '12px',
-						fontWeight: 500,
-						display: 'block',
-					}}
+					sx={{ color: 'text.secondary', fontSize: '12px', fontWeight: 500, display: 'block' }}
 				>
 					{label}
 					{required && (
-						<Box component="span" sx={{ color: 'error.main', ml: 0.3 }}>
+						<Box component="span" sx={{ color: 'text.secondary', ml: 0.3 }}>
 							*
 						</Box>
 					)}
 				</Typography>
-
 				{description && (
 					<Typography
 						variant="caption"
-						sx={{
-							color: 'text.secondary',
-							fontSize: '11.5px',
-							display: 'block',
-							lineHeight: 1.5,
-						}}
+						sx={{ color: 'text.secondary', fontSize: '11.5px', display: 'block', lineHeight: 1.5 }}
 					>
 						{description}
 					</Typography>
 				)}
 			</Box>
-
-			{/* Upload box takes only required width */}
 			<Box
 				onClick={() => ref.current?.click()}
 				sx={{
@@ -104,10 +94,7 @@ function UploadBox({
 					justifyContent: 'center',
 					cursor: 'pointer',
 					bgcolor: 'rgba(43,111,113,0.03)',
-					'&:hover': {
-						borderColor: 'primary.main',
-						bgcolor: 'rgba(43,111,113,0.06)',
-					},
+					'&:hover': { borderColor: 'primary.main', bgcolor: 'rgba(43,111,113,0.06)' },
 					transition: 'all 0.15s',
 				}}
 			>
@@ -115,7 +102,6 @@ function UploadBox({
 				<Typography variant="caption" sx={{ color: 'primary.main', fontSize: '11px', fontWeight: 600 }}>
 					Upload
 				</Typography>
-
 				<input
 					ref={ref}
 					type="file"
@@ -139,58 +125,117 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 	)
 }
 
-export default function DoctorProfessionalTab({ data, onChange }: DoctorProfessionalTabProps) {
+export default function DoctorProfessionalTab({ data, onChange, onSaveSuccess }: DoctorProfessionalTabProps) {
 	const [isDirty, setIsDirty] = useState(false)
 	const [showSuccess, setShowSuccess] = useState(false)
 	const [saved, setSaved] = useState(data)
-
 	const [specialities, setSpecialities] = useState<SpecialityValue[]>([])
 
 	useEffect(() => {
 		setIsDirty(JSON.stringify(data) !== JSON.stringify(saved))
 	}, [data, saved])
 
-	const handleSave = () => {
-		setSaved(data)
-		setIsDirty(false)
-		setShowSuccess(true)
-	}
-	const selectedLabel = data.specialization_label
-	// SPECIALIZATION_OPTIONS.find((o) => o.value === data.specialization)?.label ?? data.specialization
-
 	useEffect(() => {
-		// setSpecialityLoading(true)
-
 		const fetchSpecialities = async () => {
 			try {
 				const res = await getSpecialities()
-
 				const formattedRoles = res.data.map((role: SpecialityId) => ({
-					value: role.id, // or role.id if you prefer
+					value: role.id,
 					label: role.label,
 				}))
-
 				setSpecialities(formattedRoles)
 			} catch (err) {
 				console.log(err)
-			} finally {
-				// setSpecialityLoading(false)
+			}
+		}
+		fetchSpecialities()
+	}, [])
+
+	const handleDegreeFieldChange = (index: number, updatedField: Partial<DoctorDegree>) => {
+		const currentDegrees = [...(data.degrees || [])]
+		currentDegrees[index] = { ...currentDegrees[index], ...updatedField }
+		onChange({ degrees: currentDegrees })
+	}
+
+	const handleAddDegree = () => {
+		const newDegree: DoctorDegree = {
+			degree: '',
+			specialization: '',
+			college: '',
+			yearOfPassing: '',
+			qualificationProof: '',
+		}
+		onChange({ degrees: [...(data.degrees || []), newDegree] })
+	}
+
+	const handleRemoveDegree = (index: number) => {
+		const currentDegrees = (data.degrees || []).filter((_, idx) => idx !== index)
+		onChange({ degrees: currentDegrees })
+	}
+
+	const handleSave = async () => {
+		// Validation
+		const degrees = data.degrees || []
+		if (degrees.length === 0) {
+			toast.error('Please add at least one educational qualification.')
+			return
+		}
+
+		for (let i = 0; i < degrees.length; i++) {
+			const deg = degrees[i]
+			if (!deg.degree) {
+				toast.error(`Please select a degree for qualification #${i + 1}`)
+				return
+			}
+			if (!deg.college) {
+				toast.error(`Please select or enter college for qualification #${i + 1}`)
+				return
+			}
+			if (!deg.yearOfPassing) {
+				toast.error(`Please enter the passing year for qualification #${i + 1}`)
+				return
 			}
 		}
 
-		fetchSpecialities()
+		if (!data.registrationNumber) {
+			toast.error('Registration number is required.')
+			return
+		}
 
-		// return () => {
-		// 	active = false
-		// }
-	}, [])
+		try {
+			const payload: Record<string, unknown> = {
+				// experience_years: data.experience || undefined,
+				registration_number: data.registrationNumber,
+				about: data.about,
+				registration_proof_s3_key: data.registrationProof || null,
+				specialities: [data.specialization_id],
+				degrees: degrees.map((d) => ({
+					degree: d.degree,
+					specialization: d.specialization || null,
+					college: d.college,
+					year_of_passing: d.yearOfPassing,
+					qualification_proof_s3_key: d.qualificationProof || null,
+				})),
+			}
+
+			await updateProfessionalDetails(payload)
+
+			toast.success('Professional details saved successfully!')
+			setSaved(data)
+			setIsDirty(false)
+			setShowSuccess(true)
+			onSaveSuccess?.()
+		} catch (error) {
+			toast.error('Something went wrong. Please try again.')
+			console.error(error)
+		}
+	}
+
+	const selectedLabel = data.specialization_label
+	const degrees = data.degrees || []
 
 	return (
-		<Box
-			sx={{
-				...customCardStyle,
-			}}
-		>
+		<Box sx={{ ...customCardStyle }}>
 			<Typography variant="h4" sx={{ fontWeight: 700, mb: 3, color: 'text.primary' }}>
 				Professional Details
 			</Typography>
@@ -199,56 +244,176 @@ export default function DoctorProfessionalTab({ data, onChange }: DoctorProfessi
 				{/* Specialization */}
 				<Box>
 					<SectionTitle>Select specialization</SectionTitle>
-					<AppSelect
+					{/* <AppSelect
 						label=""
 						value={data.specialization_id || ''}
 						options={specialities}
 						placeholder="Select your specialization"
 						onChange={(e) => onChange({ specialization_id: e.target.value as string })}
+					/> */}
+					<AppSelect
+						label=""
+						value={data.specialization_id || ''}
+						options={specialities}
+						placeholder="Select your specialization"
+						onChange={(e) => {
+							const selected = specialities.find((s) => s.value === e.target.value)
+
+							onChange({
+								specialization_id: selected?.value || '',
+								specialization_label: selected?.label || '',
+							})
+						}}
 					/>
 				</Box>
 
 				<Divider />
 
-				{/* Educational qualification */}
+				{/* Educational qualifications list */}
 				<Box>
-					<SectionTitle>Educational qualification and proof</SectionTitle>
-					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-						<AppSelect
-							label="Select Degree *"
-							value={data.degree || ''}
-							options={DEGREE_OPTIONS}
-							// placeholder="Select your degree"
-							onChange={(e) => onChange({ degree: e.target.value as string })}
-						/>
-
-						<Grid container spacing={2}>
-							<Grid size={{ xs: 12, sm: 6 }}>
-								<AppSelect
-									label="Select College/University *"
-									value={data.college || ''}
-									options={COLLEGE_OPTIONS}
-									placeholder="Select college or university"
-									onChange={(e) => onChange({ college: e.target.value as string })}
-								/>
-							</Grid>
-							<Grid size={{ xs: 12, sm: 6 }}>
-								<AppInput
-									label="Select Year *"
-									value={data.yearOfPassing}
-									placeholder="Enter year of passing"
-									onChange={(e) => onChange({ yearOfPassing: e.target.value })}
-								/>
-							</Grid>
-						</Grid>
-
-						<UploadBox
-							label="Upload image or PDF of Qualification proofs"
-							required
-							description="Non allied practitioners should submit council registration proof with mentioned degree name. Allied practitioners should submit mark sheets / passing certificates from UGC approved university."
-							onChange={(file) => onChange({ qualificationProof: file.name })}
-						/>
+					<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+						<SectionTitle>Educational qualifications and proofs</SectionTitle>
+						<Button
+							variant="outlined"
+							color="primary"
+							startIcon={<AddIcon />}
+							onClick={handleAddDegree}
+							sx={{ textTransform: 'none', borderRadius: '8px', fontWeight: 600 }}
+						>
+							Add Qualification
+						</Button>
 					</Box>
+
+					{degrees.length === 0 ? (
+						<Box
+							sx={{
+								border: '1px dashed',
+								borderColor: 'divider',
+								borderRadius: '8px',
+								p: 3,
+								textAlign: 'center',
+								bgcolor: 'background.paper',
+							}}
+						>
+							<Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+								No qualifications added yet.
+							</Typography>
+							<Button variant="text" startIcon={<AddIcon />} onClick={handleAddDegree}>
+								Add your first degree
+							</Button>
+						</Box>
+					) : (
+						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+							{degrees.map((deg, index) => (
+								<Box
+									key={index}
+									sx={{
+										border: '1px solid',
+										borderColor: 'divider',
+										borderRadius: '12px',
+										p: 3,
+										position: 'relative',
+										bgcolor: 'background.paper',
+										boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+									}}
+								>
+									<Box
+										sx={{
+											display: 'flex',
+											justifyContent: 'space-between',
+											alignItems: 'center',
+											mb: 2,
+										}}
+									>
+										<Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+											Qualification #{index + 1}
+										</Typography>
+										{degrees.length > 1 && (
+											<IconButton
+												size="small"
+												color="error"
+												onClick={() => handleRemoveDegree(index)}
+												sx={{
+													p: 0,
+													'&:hover': {
+														backgroundColor: 'transparent',
+													},
+												}}
+											>
+												<DeleteOutlineIcon fontSize="small" />
+											</IconButton>
+										)}
+									</Box>
+
+									<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+										<Grid container spacing={2}>
+											<Grid size={{ xs: 12, sm: 6 }}>
+												<AppSelect
+													label="Select Degree *"
+													value={deg.degree || ''}
+													options={DEGREE_OPTIONS}
+													onChange={(e) =>
+														handleDegreeFieldChange(index, {
+															degree: e.target.value as string,
+														})
+													}
+												/>
+											</Grid>
+											<Grid size={{ xs: 12, sm: 6 }}>
+												<AppInput
+													label="Specialization / Field (Optional)"
+													value={deg.specialization || ''}
+													placeholder="e.g. Cardiology, Pediatrics"
+													onChange={(e) =>
+														handleDegreeFieldChange(index, {
+															specialization: e.target.value,
+														})
+													}
+												/>
+											</Grid>
+										</Grid>
+
+										<Grid container spacing={2}>
+											<Grid size={{ xs: 12, sm: 8 }}>
+												<AppSelect
+													label="Select College/University *"
+													value={deg.college || ''}
+													options={COLLEGE_OPTIONS}
+													placeholder="Select college or university"
+													onChange={(e) =>
+														handleDegreeFieldChange(index, {
+															college: e.target.value as string,
+														})
+													}
+												/>
+											</Grid>
+											<Grid size={{ xs: 12, sm: 4 }}>
+												<AppInput
+													label="Year of Passing *"
+													value={deg.yearOfPassing || ''}
+													placeholder="YYYY"
+													onChange={(e) =>
+														handleDegreeFieldChange(index, {
+															yearOfPassing: e.target.value,
+														})
+													}
+												/>
+											</Grid>
+										</Grid>
+
+										<UploadBox
+											label="Upload image or PDF of Qualification proofs"
+											required
+											description="Submit council registration proof or passing certificate."
+											onChange={(file) =>
+												handleDegreeFieldChange(index, { qualificationProof: file.name })
+											}
+										/>
+									</Box>
+								</Box>
+							))}
+						</Box>
+					)}
 				</Box>
 
 				<Divider />
@@ -274,7 +439,6 @@ export default function DoctorProfessionalTab({ data, onChange }: DoctorProfessi
 								</Typography>
 							</Box>
 						)}
-
 						<Grid container spacing={2} alignItems="flex-end">
 							<Grid size={{ xs: 12, sm: 8 }}>
 								<AppInput
@@ -285,22 +449,15 @@ export default function DoctorProfessionalTab({ data, onChange }: DoctorProfessi
 								/>
 							</Grid>
 							<Grid size={{ xs: 12, sm: 4 }}>
-								<UploadBox
-									label=""
-									required
-									onChange={(file) => onChange({ registrationProof: file.name })}
-								/>
+								<UploadBox label="" onChange={(file) => onChange({ registrationProof: file.name })} />
 							</Grid>
 						</Grid>
-
 						<AppInput
 							label="About / Bio"
 							value={data.about}
 							placeholder="Write a short bio about yourself"
 							onChange={(e) => onChange({ about: e.target.value })}
 						/>
-
-						<Grid size={{ xs: 12 }} mt={2} display={'flex'} justifyContent={'flex-end'}></Grid>
 					</Box>
 				</Box>
 			</Box>
