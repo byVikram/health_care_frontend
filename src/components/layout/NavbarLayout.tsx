@@ -32,6 +32,7 @@ import { useMemo } from 'react'
 import { LookupHospital, PatientProfile } from '../../hooks/useAuth'
 import { toast } from 'react-toastify'
 import ChatBot from '../ChatBot'
+import ChatBot from '../ChatBot'
 
 const NAVBAR_HEIGHT = 64
 
