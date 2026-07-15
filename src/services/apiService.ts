@@ -33,6 +33,10 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
 	(response) => response,
 	(error) => {
+		if (axios.isCancel(error)) {
+			return Promise.reject(error)
+		}
+
 		const status = error.response?.status
 		const message = error.response?.data?.message || 'Something went wrong'
 
@@ -55,9 +59,8 @@ const ApiService = {
 		return axiosInstance.get<T>(url, config)
 	},
 
-	getWithParams<T = unknown>(url: string, params: Record<string, unknown>): Promise<AxiosResponse<T>> {
-		return axiosInstance.get<T>(url, { params })
-
+	getWithParams<T = unknown>(url: string, params: Record<string, unknown>, config?: ApiRequestConfig): Promise<AxiosResponse<T>> {
+		return axiosInstance.get<T>(url, { params, ...config })
 	},
 
 	post<T = unknown>(url: string, body: unknown): Promise<AxiosResponse<T>> {

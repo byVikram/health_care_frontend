@@ -147,30 +147,70 @@ export default function DoctorDetailPage() {
 	useEffect(() => {
 		if (!id) return
 		let active = true
+		const controller = new AbortController()
 
 		const fetchDoctor = async () => {
 			try {
 				setLoading(true)
 				setError(null)
-				const res = await getDoctorById(id)
+				
+				const cachedLat = sessionStorage.getItem('user_lat')
+				const cachedLon = sessionStorage.getItem('user_lon')
+				let lat = cachedLat ? parseFloat(cachedLat) : undefined
+				let lon = cachedLon ? parseFloat(cachedLon) : undefined
+				
+				if (lat === undefined || lon === undefined) {
+					let position: GeolocationPosition | null = null
+					if (navigator.geolocation) {
+						position = await new Promise<GeolocationPosition>((resolve, reject) => {
+							navigator.geolocation.getCurrentPosition(resolve, reject, {
+								enableHighAccuracy: true,
+								timeout: 10000,
+								maximumAge: 0,
+							})
+						}).catch((err) => {
+							console.warn('Geolocation failed or denied on details page, using default coordinates.', err)
+							return null
+						})
+					}
+					if (!position) {
+						position = {
+							coords: {
+								latitude: 12.9716,
+								longitude: 77.5946,
+							}
+						} as GeolocationPosition
+					}
+					lat = position.coords.latitude
+					lon = position.coords.longitude
+					sessionStorage.setItem('user_lat', lat.toString())
+					sessionStorage.setItem('user_lon', lon.toString())
+				}
+				
+				if (!active) return
+
+				const res = await getDoctorById(id, lat, lon, controller.signal)
 				if (!active) return
 				setDoctorDetail(res.data)
-				const primaryHospitalData =
-					res.data.hospitals.find((h: { is_primary: boolean }) => h.is_primary) ||
-					(res.data.hospitals.length > 0 ? res.data.hospitals[0] : null)
-				setSelectedHospital(primaryHospitalData?.hospital.id || '')
+				if (res.data.hospitals && res.data.hospitals.length > 0) {
+					const primaryHospitalData =
+						res.data.hospitals.find((h: { is_primary: boolean }) => h.is_primary) ||
+						res.data.hospitals[0]
+					setSelectedHospital(primaryHospitalData.hospital.id)
+				}
 			} catch (err) {
-				console.log(err)
+				console.error(err)
 				if (!active) return
-				setError('Failed to load doctor details')
+				setError('Failed to fetch doctor details')
 			} finally {
-				setLoading(false)
+				if (active) setLoading(false)
 			}
 		}
 
 		fetchDoctor()
 		return () => {
 			active = false
+			controller.abort()
 		}
 	}, [id])
 
@@ -309,7 +349,7 @@ export default function DoctorDetailPage() {
 							<Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
 								{doctorDetail && (
 									<>
-										<DoctorProfileCard doctor={doctorDetail} />
+										<DoctorProfileCard doctor={doctorDetail} selectedHospitalId={selectedHospital} />
 										<Box sx={{ ...customCardStyle, p: 3 }}>
 											<Typography variant="h5" sx={{ mb: 1.5 }}>
 												About

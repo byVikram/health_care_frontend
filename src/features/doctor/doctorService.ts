@@ -34,6 +34,10 @@ export interface DoctorSearchParams {
 	min_rating?: number
 	max_price?: number
 	sort?: string
+	latitude?: number
+	longitude?: number
+	nearby?: boolean
+	radius?: number
 }
 
 export interface CreateAppointmentPayload {
@@ -64,16 +68,26 @@ export const createAppointment = async (payload: CreateAppointmentPayload): Prom
 	return res.data
 }
 
-export const getDoctors = async (params?: DoctorSearchParams): Promise<DoctorSearchResponse> => {
+export const getDoctors = async (params?: DoctorSearchParams, signal?: AbortSignal): Promise<DoctorSearchResponse> => {
 	const res = await ApiService.getWithParams<DoctorSearchResponse>(
 		API_ENDPOINTS.DOCTORS.SEARCH,
-		(params ?? {}) as Record<string, unknown>
+		(params ?? {}) as Record<string, unknown>,
+		{ signal }
 	)
 	return res.data
 }
 
-export const getDoctorById = async (id: string): Promise<DoctorDetailResponse> => {
-	const res = await ApiService.get<DoctorDetailResponse>(API_ENDPOINTS.DOCTORS.DETAIL(id))
+
+
+export const getDoctorById = async (id: string, latitude?: number, longitude?: number, signal?: AbortSignal): Promise<DoctorDetailResponse> => {
+	const params: Record<string, unknown> = {}
+	if (latitude !== undefined) params.latitude = latitude
+	if (longitude !== undefined) params.longitude = longitude
+	const res = await ApiService.getWithParams<DoctorDetailResponse>(
+		API_ENDPOINTS.DOCTORS.DETAIL(id),
+		params,
+		{ signal }
+	)
 	return res.data
 }
 
