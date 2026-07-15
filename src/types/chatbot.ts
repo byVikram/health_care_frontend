@@ -7,6 +7,15 @@ export interface SourceReference {
 	chunk_id: string
 }
 
+export interface HospitalSuggestion {
+	name: string
+	address: string
+	distance?: string
+	fees: number
+	consultation_mode: string
+	earliest_slot?: string
+}
+
 export interface DoctorSuggestion {
 	id?: string
 	name: string
@@ -21,6 +30,7 @@ export interface DoctorSuggestion {
 	distance?: string
 	experience_years: number
 	earliest_slot?: string
+	hospitals?: HospitalSuggestion[]
 }
 
 export interface ChatResponse {

@@ -260,7 +260,7 @@ export default function ChatMessage({ message, onFeedbackSubmit }: ChatMessagePr
 
 									<Box sx={{ flex: 1, minWidth: 0 }}>
 										<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-											<Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '13px', color: 'text.primary', noWrap: true }}>
+											<Typography variant="subtitle2" noWrap sx={{ fontWeight: 700, fontSize: '13px', color: 'text.primary' }}>
 												{doc.name}
 											</Typography>
 											{doc.rating !== undefined && (
@@ -277,32 +277,63 @@ export default function ChatMessage({ message, onFeedbackSubmit }: ChatMessagePr
 											{doc.speciality.join(', ')} • {doc.experience_years} Years Exp
 										</Typography>
 
-										{doc.hospital_name && (
-											<Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '11px', display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
-												🏥 {doc.hospital_name}
-											</Typography>
-										)}
+										{doc.hospitals && doc.hospitals.length > 0 ? (
+											<Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 1, borderTop: '1px dashed', borderColor: 'divider', pt: 1 }}>
+												{doc.hospitals.map((hosp, hIdx) => (
+													<Box key={hIdx} sx={{ pl: 0.5 }}>
+														<Typography variant="body2" sx={{ color: 'text.primary', fontSize: '11.5px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+															🏥 {hosp.name} {hosp.distance ? `(${hosp.distance})` : ''}
+														</Typography>
+														<Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '11px', pl: 2 }}>
+															📍 {hosp.address}
+														</Typography>
+														{hosp.earliest_slot && (
+															<Typography variant="body2" sx={{ color: 'success.main', fontSize: '10.5px', fontWeight: 600, pl: 2, mt: 0.25 }}>
+																📅 Next slot: {hosp.earliest_slot}
+															</Typography>
+														)}
+														<Typography variant="body2" sx={{ color: 'primary.main', fontSize: '10.5px', fontWeight: 600, pl: 2, mt: 0.25 }}>
+															Fees: ₹{hosp.fees} ({hosp.consultation_mode})
+														</Typography>
+													</Box>
+												))}
+											</Box>
+										) : (
+											<>
+												{doc.hospital_name && (
+													<Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '11px', display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
+														🏥 {doc.hospital_name}
+													</Typography>
+												)}
 
-										<Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '11px', display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
-											📍 {doc.location} {doc.distance ? `(${doc.distance})` : ''}
-										</Typography>
+												<Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '11px', display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
+													📍 {doc.location} {doc.distance ? `(${doc.distance})` : ''}
+												</Typography>
 
-										{doc.earliest_slot && (
-											<Typography variant="body2" sx={{ color: 'success.main', fontSize: '11px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-												📅 Next available slot: {doc.earliest_slot}
-											</Typography>
+												{doc.earliest_slot && (
+													<Typography variant="body2" sx={{ color: 'success.main', fontSize: '11px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+														📅 Next available slot: {doc.earliest_slot}
+													</Typography>
+												)}
+											</>
 										)}
 
 										<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1.25 }}>
-											<Typography variant="subtitle2" sx={{ color: 'primary.main', fontSize: '11.5px', fontWeight: 700 }}>
-												Fees: ₹{doc.fees}
-											</Typography>
+											{!doc.hospitals || doc.hospitals.length === 0 ? (
+												<Typography variant="subtitle2" sx={{ color: 'primary.main', fontSize: '11.5px', fontWeight: 700 }}>
+													Fees: ₹{doc.fees}
+												</Typography>
+											) : (
+												<Box />
+											)}
 											<Box sx={{ display: 'flex', gap: 0.75 }}>
-												<Chip 
-													label={doc.consultation_mode} 
-													size="small" 
-													sx={{ fontSize: '10px', height: '18px', textTransform: 'capitalize' }} 
-												/>
+												{(!doc.hospitals || doc.hospitals.length === 0) && (
+													<Chip 
+														label={doc.consultation_mode} 
+														size="small" 
+														sx={{ fontSize: '10px', height: '18px', textTransform: 'capitalize' }} 
+													/>
+												)}
 												{doc.id && (
 													<Button 
 														size="small" 
