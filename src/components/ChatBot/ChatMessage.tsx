@@ -132,7 +132,7 @@ export default function ChatMessage({ message, onFeedbackSubmit }: ChatMessagePr
 					{/* Structured Medical Payload Section */}
 					{isBot && message.structured_payload && (
 						<Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-							
+
 
 
 							{/* Possible Conditions Bullets Section */}
@@ -272,7 +272,7 @@ export default function ChatMessage({ message, onFeedbackSubmit }: ChatMessagePr
 												</Box>
 											)}
 										</Box>
-										
+
 										<Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '11px', mt: 0.25, fontWeight: 500 }}>
 											{doc.speciality.join(', ')} • {doc.experience_years} Years Exp
 										</Typography>
@@ -328,21 +328,21 @@ export default function ChatMessage({ message, onFeedbackSubmit }: ChatMessagePr
 											)}
 											<Box sx={{ display: 'flex', gap: 0.75 }}>
 												{(!doc.hospitals || doc.hospitals.length === 0) && (
-													<Chip 
-														label={doc.consultation_mode} 
-														size="small" 
-														sx={{ fontSize: '10px', height: '18px', textTransform: 'capitalize' }} 
+													<Chip
+														label={doc.consultation_mode}
+														size="small"
+														sx={{ fontSize: '10px', height: '18px', textTransform: 'capitalize' }}
 													/>
 												)}
 												{doc.id && (
-													<Button 
-														size="small" 
-														variant="contained" 
-														sx={{ 
-															fontSize: '10px', 
-															height: '18px', 
-															py: 0, 
-															px: 1, 
+													<Button
+														size="small"
+														variant="contained"
+														sx={{
+															fontSize: '10px',
+															height: '18px',
+															py: 0,
+															px: 1,
 															minWidth: 'auto',
 															textTransform: 'none',
 															fontWeight: 600

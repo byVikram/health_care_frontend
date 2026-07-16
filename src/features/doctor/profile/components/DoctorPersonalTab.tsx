@@ -12,6 +12,7 @@ import { updatePersonalDetails } from '../../doctorService'
 import 'react-toastify/dist/ReactToastify.css'
 import { toast } from 'react-toastify'
 import AppMultiSelect from '../../../../components/common/Select/AppMultiSelect'
+import dayjs from 'dayjs'
 
 interface DoctorPersonalTabProps {
 	data: DoctorProfilePersonal
@@ -53,6 +54,7 @@ export default function DoctorPersonalTab({ data, onChange, onSaveSuccess }: Doc
 				name: data.name,
 				location: data.location,
 				gender: data.gender,
+				date_of_birth: data.dateOfBirth ? dayjs(data.dateOfBirth, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
 				languages: data.languages,
 				email: data.email,
 				social_media_handles: {

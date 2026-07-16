@@ -7,26 +7,27 @@ import {
 	Avatar,
 	Box,
 	Card,
-	// CardContent,
 	Chip,
 	CircularProgress,
+	FormControl,
 	Grid,
 	IconButton,
+	MenuItem,
+	Select,
 	Snackbar,
 	Stack,
-	// Tooltip,
 	Typography,
 } from '@mui/material'
 import {
 	ArrowBack,
 	CheckCircle,
-	// Cancel,
 	CloudUpload,
 	FilePresent,
 	Payments,
 	Description,
 	AssignmentTurnedIn,
 	Verified,
+	DeleteOutline,
 } from '@mui/icons-material'
 
 import AppButton from '../../../components/common/Button/AppButton'
@@ -34,6 +35,7 @@ import SectionCard from '../../../components/common/Card/SectionCard'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppSwitch from '../../../components/common/Switch/AppSwitch'
 import AppTable from '../../../components/common/Table/AppTable'
+import AppSelect from '../../../components/common/Select/AppSelect'
 
 import prescriptionImage from '../../../assets/Pharmacy/Prescription.svg'
 import { buildS3Url } from '../../../utils/s3'
@@ -42,18 +44,24 @@ import {
 	submitRadiologyBookingQuote,
 	verifyRadiologyPrescription,
 	uploadRadiologyReport,
+	updateRadiologyBookingStatus,
+	fetchRadiologyScansForCenter,
 	RadiologyBooking,
 	RadiologyBookingItem,
 	RadiologyReport,
 } from '../radiologyService'
 import { formatINR } from '../../../utils/Utils'
+import { useAuth } from '../../../hooks/useAuth'
+import { USER_ROLES } from '../../../constants/constants'
 
 
 interface QuoteFormItem {
-	booking_item_id: number
+	booking_item_id: number | null
+	radiology_scan_id: number | null
 	scanName: string
 	custom_scan_name: string
 	quoted_price: number
+	base_price?: number | null
 }
 
 const getStatusLabel = (status: string) => {
@@ -93,15 +101,20 @@ const getStatusChipSx = (status: string) => {
 export default function BookingDetailPage() {
 	const { bookingId } = useParams<{ bookingId: string }>()
 	const navigate = useNavigate()
+	const { role } = useAuth()
+	const isRadiologyViewer = role === USER_ROLES.RADIOLOGY
 
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 	const [booking, setBooking] = useState<RadiologyBooking | null>(null)
 
-	// Quote submission states
 	const [quoteItems, setQuoteItems] = useState<QuoteFormItem[]>([])
 	const [quoteNotes, setQuoteNotes] = useState('')
 	const [submittingQuote, setSubmittingQuote] = useState(false)
+	const [updatingStatus, setUpdatingStatus] = useState(false)
+
+	const [catalogScans, setCatalogScans] = useState<any[]>([])
+	const [loadingCatalog, setLoadingCatalog] = useState(false)
 
 	// Verification state
 	const [verifyingPrescription, setVerifyingPrescription] = useState(false)
@@ -150,21 +163,17 @@ export default function BookingDetailPage() {
 			if (data.status === 'pending_quote') {
 				const initialItems = data.booking_items.map((item) => ({
 					booking_item_id: item.id,
-					scanName: item.radiology_scan.scan_type.name,
-					custom_scan_name: item.custom_scan_name || item.radiology_scan.scan_type.name,
+					radiology_scan_id: item.radiology_scan?.id || null,
+					scanName: item.radiology_scan?.scan_type?.name || item.custom_scan_name || 'Scan',
+					custom_scan_name: item.custom_scan_name || item.radiology_scan?.scan_type?.name || 'Scan',
 					quoted_price: item.quoted_price || 0,
+					base_price: item.radiology_scan?.base_price,
 				}))
 				setQuoteItems(initialItems)
 			}
 
 			// If completed, fetch or render reports if they are returned inside booking.
-			// Let's check if there is a report attached. Since report model is linked via reports list,
-			// let's grab the first report if available.
-
-			
-			// if (data.status === 'completed' && (data as any).reports?.length) {
-			// 	setReportDetails((data as any).reports[0])
-			// }
+			// Let's grab the first report if available.
 			const bookingWithReports = data as RadiologyBooking & {
 				reports?: RadiologyReport[]
 			}
@@ -182,6 +191,61 @@ export default function BookingDetailPage() {
 	useEffect(() => {
 		fetchBookingDetails()
 	}, [fetchBookingDetails])
+
+	// Fetch radiology catalog scans
+	useEffect(() => {
+		if (
+			role === USER_ROLES.RADIOLOGY &&
+			booking?.status === 'pending_quote' &&
+			booking?.radiology_public_id
+		) {
+			const load = async () => {
+				try {
+					setLoadingCatalog(true)
+					const res = await fetchRadiologyScansForCenter(booking.radiology_public_id)
+					setCatalogScans(res.data || [])
+				} catch (err) {
+					console.error('Failed to load radiology scans catalog:', err)
+				} finally {
+					setLoadingCatalog(false)
+				}
+			}
+			void load()
+		}
+	}, [role, booking?.status, booking?.radiology_public_id])
+
+	const availableScanOptions = useMemo(() => {
+		const selectedIds = new Set(
+			quoteItems.map((item) => item.radiology_scan_id).filter(Boolean)
+		)
+		return catalogScans
+			.filter((scan) => !selectedIds.has(scan.id))
+			.map((scan) => ({
+				label: `${scan.scan_type?.name || 'Scan'} (Base: ₹${scan.base_price || 0})`,
+				value: scan.id,
+			}))
+	}, [catalogScans, quoteItems])
+
+	const handleAddScan = (scanId: string | number) => {
+		const scan = catalogScans.find((s) => s.id === Number(scanId))
+		if (scan) {
+			setQuoteItems((prev) => [
+				...prev,
+				{
+					booking_item_id: null,
+					radiology_scan_id: scan.id,
+					scanName: scan.scan_type?.name || 'Scan',
+					custom_scan_name: scan.scan_type?.name || 'Scan',
+					quoted_price: scan.base_price || 0,
+					base_price: scan.base_price,
+				},
+			])
+		}
+	}
+
+	const handleDeleteScan = (index: number) => {
+		setQuoteItems((prev) => prev.filter((_, i) => i !== index))
+	}
 
 	const handleVerifyPrescription = async (checked: boolean) => {
 		if (!booking || verifyingPrescription) return
@@ -204,21 +268,26 @@ export default function BookingDetailPage() {
 		}
 	}
 
-	const handleQuotePriceChange = (bookingItemId: number, value: string) => {
+	const handleQuotePriceChange = (index: number, value: string) => {
 		const parsed = parseFloat(value) || 0
 		setQuoteItems((prev) =>
-			prev.map((item) => (item.booking_item_id === bookingItemId ? { ...item, quoted_price: parsed } : item))
+			prev.map((item, i) => (i === index ? { ...item, quoted_price: parsed } : item))
 		)
 	}
 
-	const handleCustomNameChange = (bookingItemId: number, value: string) => {
+	const handleCustomNameChange = (index: number, value: string) => {
 		setQuoteItems((prev) =>
-			prev.map((item) => (item.booking_item_id === bookingItemId ? { ...item, custom_scan_name: value } : item))
+			prev.map((item, i) => (i === index ? { ...item, custom_scan_name: value } : item))
 		)
 	}
 
 	const handleSubmitQuote = async () => {
 		if (!booking) return
+
+		if (quoteItems.length === 0) {
+			showToast('Please add at least one scan item.', 'error')
+			return
+		}
 
 		// Validation
 		const missingPrices = quoteItems.some((item) => item.quoted_price <= 0)
@@ -232,6 +301,7 @@ export default function BookingDetailPage() {
 			const payload = {
 				items: quoteItems.map((item) => ({
 					booking_item_id: item.booking_item_id,
+					radiology_scan_id: item.booking_item_id ? null : item.radiology_scan_id,
 					custom_scan_name: item.custom_scan_name,
 					quoted_price: item.quoted_price,
 				})),
@@ -290,6 +360,32 @@ export default function BookingDetailPage() {
 
 	const handleCloseToast = () => setToast((prev) => ({ ...prev, open: false }))
 
+	const radiologyStatusOptions = [
+		{ value: 'pending_quote', label: 'Pending Quote', color: '#D97706', bg: '#FEF3C7' },
+		{ value: 'pending_payment', label: 'Pending Payment', color: '#4F46E5', bg: '#EEF2FF' },
+		{ value: 'confirmed', label: 'Confirmed', color: '#0D9488', bg: '#CCFBF1' },
+		{ value: 'completed', label: 'Completed', color: '#16A34A', bg: '#DCFCE7' },
+		{ value: 'cancelled', label: 'Cancelled', color: '#DC2626', bg: '#FEE2E2' },
+	]
+
+	const handleStatusChange = async (newStatus: string) => {
+		if (!booking || updatingStatus) return
+		setUpdatingStatus(true)
+		try {
+			const result = await updateRadiologyBookingStatus(booking.public_id, newStatus)
+			if (result.success) {
+				showToast(`Status updated to ${radiologyStatusOptions.find((s) => s.value === newStatus)?.label}`, 'success')
+				setBooking((prev) => (prev ? { ...prev, status: newStatus } : null))
+			} else {
+				throw new Error(result.message)
+			}
+		} catch (err) {
+			showToast(err instanceof Error ? err.message : 'Failed to update status.', 'error')
+		} finally {
+			setUpdatingStatus(false)
+		}
+	}
+
 	const patientData = useMemo(() => {
 		return {
 			name: booking?.patient_name || 'Patient',
@@ -306,6 +402,15 @@ export default function BookingDetailPage() {
 			prescriptionUrl: booking?.external_prescription_s3_key
 				? buildS3Url(booking.external_prescription_s3_key)
 				: prescriptionImage,
+			age: booking?.patient?.age || '—',
+			gender: booking?.patient?.gender || '—',
+			phone: booking?.patient?.phone || booking?.patient_phone || '—',
+			clinicName: booking?.clinic?.name || '—',
+			avatarUrl: booking?.patient?.avatar_s3_key
+				? buildS3Url(booking.patient.avatar_s3_key)
+				: booking?.patient?.avatar
+					? buildS3Url(booking.patient.avatar)
+					: undefined,
 		}
 	}, [booking])
 
@@ -399,59 +504,64 @@ export default function BookingDetailPage() {
 				{/* Left column */}
 				<Grid size={{ xs: 12, md: 8 }}>
 					<Stack spacing={3}>
-						{/* Patient details */}
 						<SectionCard title="Patient Details">
-							<Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-								<Avatar sx={{ width: 48, height: 48, bgcolor: 'primary.main', fontWeight: 600 }}>
-									{patientData.name.charAt(0)}
+							<Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-start' }}>
+								{/* Avatar */}
+								<Avatar
+									src={patientData.avatarUrl}
+									sx={{
+										width: 56,
+										height: 56,
+										background: patientData.avatarUrl ? undefined : 'linear-gradient(135deg, #00796B 0%, #004D40 100%)',
+										fontWeight: 700,
+										fontSize: 22,
+										borderRadius: '12px',
+										boxShadow: '0 4px 14px rgba(0,121,107,0.25)',
+										border: '2px solid #E0F2F1',
+									}}
+								>
+									{patientData.name.charAt(0).toUpperCase()}
 								</Avatar>
 								<Box sx={{ flex: 1 }}>
-									<Typography variant="subtitle1" fontWeight={700} color="text.primary">
+									<Typography variant="subtitle1" fontWeight={700} color="text.primary" sx={{ mb: 1 }}>
 										{patientData.name}
 									</Typography>
-									<Grid container spacing={2} sx={{ mt: 0.5 }}>
+									<Grid container spacing={2}>
 										<Grid size={{ xs: 6, sm: 4 }}>
-											<Typography variant="caption" color="text.secondary">
-												Patient ID
-											</Typography>
+											<Typography variant="caption" color="text.secondary">Scheduled Date</Typography>
+											<Typography variant="body2" fontWeight={600}>{patientData.date}</Typography>
+										</Grid>
+										<Grid size={{ xs: 6, sm: 4 }}>
+											<Typography variant="caption" color="text.secondary">Scheduled Time</Typography>
+											<Typography variant="body2" fontWeight={600}>{patientData.time}</Typography>
+										</Grid>
+										<Grid size={{ xs: 6, sm: 4 }}>
+											<Typography variant="caption" color="text.secondary">Age / Gender</Typography>
 											<Typography variant="body2" fontWeight={600}>
-												{patientData.id}
+												{patientData.age !== '—' ? `${patientData.age} yrs` : '—'} / {patientData.gender}
 											</Typography>
 										</Grid>
 										<Grid size={{ xs: 6, sm: 4 }}>
-											<Typography variant="caption" color="text.secondary">
-												Scheduled Date
-											</Typography>
-											<Typography variant="body2" fontWeight={600}>
-												{patientData.date}
-											</Typography>
+											<Typography variant="caption" color="text.secondary">Phone</Typography>
+											<Typography variant="body2" fontWeight={600}>{patientData.phone}</Typography>
 										</Grid>
 										<Grid size={{ xs: 6, sm: 4 }}>
-											<Typography variant="caption" color="text.secondary">
-												Scheduled Time
-											</Typography>
-											<Typography variant="body2" fontWeight={600}>
-												{patientData.time}
-											</Typography>
+											<Typography variant="caption" color="text.secondary">Clinic</Typography>
+											<Typography variant="body2" fontWeight={600}>{patientData.clinicName}</Typography>
+										</Grid>
+										<Grid size={{ xs: 6, sm: 4 }}>
+											<Typography variant="caption" color="text.secondary">Radiology Center</Typography>
+											<Typography variant="body2" fontWeight={600}>{booking.radiology_name || '—'}</Typography>
 										</Grid>
 									</Grid>
+									{/* Notes */}
+									<Box sx={{ mt: 1.5, p: 1.5, bgcolor: '#F8FCFC', borderRadius: 1.5, border: '1px solid #E2E8F0' }}>
+										<Typography variant="caption" color="text.secondary" fontWeight={600}>Patient Notes:</Typography>
+										<Typography variant="body2" color="text.primary" sx={{ mt: 0.5 }}>
+											{patientData.notes}
+										</Typography>
+									</Box>
 								</Box>
-							</Box>
-							<Box
-								sx={{
-									mt: 2,
-									p: 1.5,
-									bgcolor: '#F8FCFC',
-									borderRadius: 1.5,
-									border: '1px solid #E2E8F0',
-								}}
-							>
-								<Typography variant="caption" color="text.secondary" fontWeight={600}>
-									Patient Notes:
-								</Typography>
-								<Typography variant="body2" color="text.primary" sx={{ mt: 0.5 }}>
-									{patientData.notes}
-								</Typography>
 							</Box>
 						</SectionCard>
 
@@ -504,11 +614,19 @@ export default function BookingDetailPage() {
 											<Typography variant="body2" fontWeight={600}>
 												Prescription Verified:
 											</Typography>
-											<AppSwitch
-												checked={booking.prescription_verified}
-												onChange={(e) => handleVerifyPrescription(e.target.checked)}
-												disabled={verifyingPrescription || booking.prescription_verified}
-											/>
+											{isRadiologyViewer ? (
+												<AppSwitch
+													checked={booking.prescription_verified}
+													onChange={(e) => handleVerifyPrescription(e.target.checked)}
+													disabled={verifyingPrescription || booking.prescription_verified}
+												/>
+											) : (
+												<Chip
+													label={booking.prescription_verified ? 'Verified' : 'Pending'}
+													size="small"
+													color={booking.prescription_verified ? 'success' : 'default'}
+												/>
+											)}
 										</Box>
 										{booking.prescription_verified && (
 											<Typography
@@ -525,7 +643,14 @@ export default function BookingDetailPage() {
 						</SectionCard>
 
 						{/* Booking Scans Quote/List Card */}
-						{booking.status === 'pending_quote' ? (
+						{booking.status === 'pending_quote' && !isRadiologyViewer ? (
+							<SectionCard title="Pricing Quotation">
+								<Typography variant="body2" color="text.secondary">
+									Your booking has been received. The diagnostic center is preparing a price quote
+									for the requested scans — you'll be notified once it's ready to review and pay.
+								</Typography>
+							</SectionCard>
+						) : booking.status === 'pending_quote' ? (
 							<SectionCard title="Pricing Quotation Entry">
 								<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
 									Submit the quoted price for each scan. You can also specify custom names (e.g.
@@ -535,29 +660,38 @@ export default function BookingDetailPage() {
 								<Stack spacing={2} sx={{ mb: 3 }}>
 									{quoteItems.map((item, idx) => (
 										<Box
-											key={item.booking_item_id}
+											key={idx}
 											sx={{
 												p: 2,
 												bgcolor: '#F8FCFC',
 												borderRadius: 1.5,
 												border: '1px solid #E2E8F0',
+												position: 'relative',
 											}}
 										>
-											<Typography
-												variant="subtitle2"
-												fontWeight={700}
-												color="primary.dark"
-												sx={{ mb: 1.5 }}
-											>
-												Scan #{idx + 1}: {item.scanName}
-											</Typography>
+											<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+												<Typography
+													variant="subtitle2"
+													fontWeight={700}
+													color="primary.dark"
+												>
+													Scan #{idx + 1}: {item.scanName}
+												</Typography>
+												<IconButton
+													size="small"
+													color="error"
+													onClick={() => handleDeleteScan(idx)}
+												>
+													<DeleteOutline fontSize="small" />
+												</IconButton>
+											</Box>
 											<Grid container spacing={2}>
 												<Grid size={{ xs: 12, sm: 7 }}>
 													<AppInput
 														label="Custom/Specific Scan Name"
 														value={item.custom_scan_name}
 														onChange={(e) =>
-															handleCustomNameChange(item.booking_item_id, e.target.value)
+															handleCustomNameChange(idx, e.target.value)
 														}
 														placeholder="Defaults to standard name"
 														size="small"
@@ -569,7 +703,7 @@ export default function BookingDetailPage() {
 														type="number"
 														value={item.quoted_price || ''}
 														onChange={(e) =>
-															handleQuotePriceChange(item.booking_item_id, e.target.value)
+															handleQuotePriceChange(idx, e.target.value)
 														}
 														placeholder="Price in ₹"
 														size="small"
@@ -578,6 +712,18 @@ export default function BookingDetailPage() {
 											</Grid>
 										</Box>
 									))}
+
+									{/* Add scan dropdown */}
+									{availableScanOptions.length > 0 && (
+										<Box sx={{ mt: 1 }}>
+											<AppSelect
+												placeholder="+ Add Scan Item"
+												options={availableScanOptions}
+												value=""
+												onChange={(e) => handleAddScan(e.target.value)}
+											/>
+										</Box>
+									)}
 
 									<AppInput
 										label="Quotation Notes / Terms"
@@ -589,7 +735,10 @@ export default function BookingDetailPage() {
 									/>
 								</Stack>
 
-								<Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+								<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+									<Typography variant="subtitle1" fontWeight={700} color="primary.dark">
+										Total: {formatINR(quoteItems.reduce((sum, item) => sum + (Number(item.quoted_price) || 0), 0))}
+									</Typography>
 									<AppButton
 										label={
 											submittingQuote ? 'Submitting Quote...' : 'Submit Quote & Send to Patient'
@@ -658,6 +807,38 @@ export default function BookingDetailPage() {
 					<Stack spacing={3}>
 						{/* Timeline step list */}
 						<SectionCard title="Booking Workflow Status">
+							{/* Status change dropdown — radiology staff only */}
+							{isRadiologyViewer && (
+								<Box sx={{ mb: 2.5 }}>
+									<Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mb: 0.75, display: 'block' }}>
+										Change Status
+									</Typography>
+									<FormControl fullWidth size="small">
+										<Select
+											value={booking.status}
+											onChange={(e) => handleStatusChange(e.target.value)}
+											disabled={updatingStatus}
+											sx={{
+												'& .MuiSelect-select': {
+													py: 1,
+													bgcolor: radiologyStatusOptions.find((s) => s.value === booking.status)?.bg,
+													color: radiologyStatusOptions.find((s) => s.value === booking.status)?.color,
+													fontWeight: 600,
+												},
+											}}
+										>
+											{radiologyStatusOptions.map((option) => (
+												<MenuItem key={option.value} value={option.value}>
+													<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+														<Box sx={{ width: 9, height: 9, borderRadius: '50%', bgcolor: option.color }} />
+														{option.label}
+													</Box>
+												</MenuItem>
+											))}
+										</Select>
+									</FormControl>
+								</Box>
+							)}
 							<Box sx={{ pl: 1 }}>
 								{timelineSteps.map((step, idx) => {
 									const isLast = idx === timelineSteps.length - 1
@@ -717,7 +898,16 @@ export default function BookingDetailPage() {
 						{(booking.status.toLowerCase() === 'confirmed' ||
 							booking.status.toLowerCase() === 'completed') && (
 							<SectionCard title="Diagnostic Scan Report">
-								{booking.status.toLowerCase() === 'confirmed' ? (
+								{booking.status.toLowerCase() === 'confirmed' && !isRadiologyViewer ? (
+									<Box
+										sx={{ p: 1.5, bgcolor: '#F8FCFC', borderRadius: 1.5, border: '1px solid #E2E8F0' }}
+									>
+										<Typography variant="body2" color="text.secondary">
+											Your scan is confirmed. The diagnostic center will upload your report here
+											once it's ready.
+										</Typography>
+									</Box>
+								) : booking.status.toLowerCase() === 'confirmed' ? (
 									<Stack spacing={2}>
 										<Typography variant="body2" color="text.secondary">
 											Upload the PDF scan findings, optionally add DICOM medical imaging keys, and

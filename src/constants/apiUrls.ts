@@ -41,6 +41,11 @@ export const API_ENDPOINTS = {
 		SEARCH: '/api/laboratory/search',
 		TESTS: '/api/laboratory/tests',
 		BOOKINGS: '/api/laboratory/bookings',
+		BOOKING_DETAIL: (id: string) => `/api/laboratory/bookings/${id}`,
+		VERIFY_PRESCRIPTION: (id: string) => `/api/laboratory/bookings/${id}/verify`,
+		SUBMIT_QUOTE: (id: string) => `/api/laboratory/bookings/${id}/quote`,
+		UPDATE_STATUS: (id: string) => `/api/laboratory/bookings/${id}/status`,
+		UPLOAD_REPORT: (id: string) => `/api/laboratory/bookings/${id}/report`,
 	},
 	SPECIALITIES: {
 		LIST: '/api/specialities',
@@ -117,6 +122,7 @@ export const API_ENDPOINTS = {
 		SUBMIT_QUOTE: (id: string) => `/api/radiology/bookings/${id}/quote`,
 		VERIFY_PRESCRIPTION: (id: string) => `/api/radiology/bookings/${id}/verify`,
 		UPLOAD_REPORT: (id: string) => `/api/radiology/bookings/${id}/report`,
+		UPDATE_STATUS: (id: string) => `/api/radiology/bookings/${id}/status`,
 		SEARCH: '/api/radiology/search',
 	},
 	CHATBOT: {

@@ -1,5 +1,6 @@
 // src/features/doctor/doctorService.ts
 import ApiService from '../../services/apiService'
+import dayjs from 'dayjs'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { AppointmentsResponse } from '../../types/appointment'
 import { DoctorSearchResponse } from '../../types/doctor-search'
@@ -257,7 +258,7 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 			email: pd?.email ?? '',
 			emailVerified: false,
 			gender: pd?.gender ?? '',
-			dateOfBirth: pd?.date_of_birth ?? '',
+			dateOfBirth: pd?.date_of_birth ? dayjs(pd.date_of_birth, 'YYYY-MM-DD').format('DD/MM/YYYY') : '',
 			location: pd?.location ?? '',
 			instagram: pd?.social_media_handles?.instagram ?? '',
 			facebook: pd?.social_media_handles?.facebook ?? '',

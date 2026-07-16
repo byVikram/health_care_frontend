@@ -31,6 +31,8 @@ export const ROUTES = {
 
 	LABORATORY: {
 		SEARCH: '/laboratory/search',
+		ORDERS: '/laboratory/orders',
+		ORDER_DETAIL: '/laboratory/orders/:bookingId',
 	},
 
 	ANCILLARY: {

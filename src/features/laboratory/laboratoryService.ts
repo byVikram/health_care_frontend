@@ -1,7 +1,12 @@
 // src/features/laboratory/laboratoryService.ts
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
-import { LaboratoryProfile, LaboratoryProfilePersonal, LaboratoryProfileProfessional, LaboratoryService } from '../../types/laboratory-profile'
+import {
+	LaboratoryProfile,
+	LaboratoryProfilePersonal,
+	LaboratoryProfileProfessional,
+	LaboratoryService,
+} from '../../types/laboratory-profile'
 import { LaboratorySearchResultItem } from '../../types/laboratory-search'
 
 // ── Shape of what the API returns ──────────────────────────────────────────
@@ -92,30 +97,35 @@ export function mapLaboratoryProfileApi(data: LaboratoryProfileApiResponse): Lab
 }
 
 // ── Profile API calls (existing — untouched) ───────────────────────────────
-export async function getLaboratoryProfile(): Promise<{ success: boolean; data: LaboratoryProfileApiResponse; message: string }> {
+export async function getLaboratoryProfile(): Promise<{
+	success: boolean
+	data: LaboratoryProfileApiResponse
+	message: string
+}> {
 	const res = await ApiService.get<{ success: boolean; data: LaboratoryProfileApiResponse; message: string }>(
 		API_ENDPOINTS.LABORATORY_PROFILE.DETAILS
 	)
 	return res.data
 }
 
-export async function updateLaboratoryPersonalDetails(payload: Partial<LaboratoryProfilePersonal>): Promise<{ success: boolean; message: string }> {
-	const res = await ApiService.put<{ success: boolean; message: string }>(
-		API_ENDPOINTS.LABORATORY_PROFILE.DETAILS,
-		{
-			name: payload.name,
-			email: payload.email,
-			gender: payload.gender,
-			date_of_birth: payload.dateOfBirth,
-			location: payload.location,
-			instagram: payload.instagram,
-			facebook: payload.facebook,
-		}
-	)
+export async function updateLaboratoryPersonalDetails(
+	payload: Partial<LaboratoryProfilePersonal>
+): Promise<{ success: boolean; message: string }> {
+	const res = await ApiService.put<{ success: boolean; message: string }>(API_ENDPOINTS.LABORATORY_PROFILE.DETAILS, {
+		name: payload.name,
+		email: payload.email,
+		gender: payload.gender,
+		date_of_birth: payload.dateOfBirth,
+		location: payload.location,
+		instagram: payload.instagram,
+		facebook: payload.facebook,
+	})
 	return res.data
 }
 
-export async function updateLaboratoryProfessionalDetails(payload: Partial<LaboratoryProfileProfessional>): Promise<{ success: boolean; message: string }> {
+export async function updateLaboratoryProfessionalDetails(
+	payload: Partial<LaboratoryProfileProfessional>
+): Promise<{ success: boolean; message: string }> {
 	const res = await ApiService.put<{ success: boolean; message: string }>(
 		API_ENDPOINTS.LABORATORY_PROFILE.PROFESSIONAL_DETAILS,
 		{
@@ -197,20 +207,46 @@ export interface LaboratoryBooking {
 	public_id: string
 	patient_id: number
 	patient_name: string
+	patient_phone: string | null
 	laboratory_name: string
 	laboratory_public_id: string
+	laboratory_phone: string | null
+	doctor_phone: string | null
 	booking_date: string
 	booking_time: string
 	status: string
 	payment_status: string
 	prescription_verified: boolean
 	verified_by_user_id: number | null
+	verified_by_name: string | null
 	verified_at: string | null
 	total_price: number | null
 	notes: string | null
 	external_prescription_s3_key: string | null
 	booking_items: LaboratoryBookingItem[]
 	created_at: string
+
+	// Rich nested objects returned by the detail endpoint
+	patient?: {
+		id: string
+		name: string
+		phone: string | null
+		age: number | null
+		gender: string | null
+		avatar_s3_key?: string | null
+		avatar?: string | null
+	}
+	clinic?: {
+		name: string
+		phone: string | null
+		address: string | null
+	}
+	laboratory?: {
+		id: string
+		name: string
+		phone: string | null
+		address: string | null
+	}
 }
 
 export interface LaboratoryBookingResponse {
@@ -263,9 +299,9 @@ export const getMyLaboratoryTests = async (): Promise<LaboratoryTestsResponse> =
 }
 
 /** PATCH /api/laboratory/tests - update/configure this laboratory's test catalog */
-export const updateMyLaboratoryTests = async (
-	payload: { tests: LaboratoryTestSetupItem[] }
-): Promise<LaboratoryTestsResponse> => {
+export const updateMyLaboratoryTests = async (payload: {
+	tests: LaboratoryTestSetupItem[]
+}): Promise<LaboratoryTestsResponse> => {
 	const res = await ApiService.patch<LaboratoryTestsResponse>(API_ENDPOINTS.LABORATORY.TESTS, payload)
 	return res.data
 }
@@ -280,10 +316,7 @@ export const searchLaboratories = async (params: {
 	max_price?: number
 	laboratory_id?: string
 }): Promise<LaboratorySearchResponse> => {
-	const res = await ApiService.getWithParams<LaboratorySearchResponse>(
-		API_ENDPOINTS.LABORATORY.SEARCH,
-		params,
-	)
+	const res = await ApiService.getWithParams<LaboratorySearchResponse>(API_ENDPOINTS.LABORATORY.SEARCH, params)
 	return res.data
 }
 
@@ -292,20 +325,117 @@ export const searchLaboratories = async (params: {
  * Fetches the full test catalog for a given lab center (patient-facing, for the booking drawer).
  */
 export const fetchLaboratoryTestsForCenter = async (laboratoryId: string): Promise<LaboratoryTestsResponse> => {
-	const res = await ApiService.getWithParams<LaboratoryTestsResponse>(
-		API_ENDPOINTS.LABORATORY.TESTS,
-		{ laboratory_id: laboratoryId },
-	)
+	const res = await ApiService.getWithParams<LaboratoryTestsResponse>(API_ENDPOINTS.LABORATORY.TESTS, {
+		laboratory_id: laboratoryId,
+	})
 	return res.data
 }
 
 /** POST /api/laboratory/bookings */
 export const createLaboratoryBooking = async (
-	payload: LaboratoryBookingCreatePayload,
+	payload: LaboratoryBookingCreatePayload
 ): Promise<LaboratoryBookingResponse> => {
-	const res = await ApiService.post<LaboratoryBookingResponse>(
-		API_ENDPOINTS.LABORATORY.BOOKINGS,
-		payload,
+	const res = await ApiService.post<LaboratoryBookingResponse>(API_ENDPOINTS.LABORATORY.BOOKINGS, payload)
+	return res.data
+}
+
+// ── Bookings list / detail (patient + laboratory-staff views) ─────────────
+
+export interface LaboratoryReport {
+	id: number
+	public_id: string
+	booking_id: number
+	patient_id: number
+	report_pdf_s3_key: string
+	dicom_images_s3_keys: string[] | null
+	scan_images_s3_keys: string[] | null
+	summary_findings: string | null
+	uploaded_at: string
+}
+
+export interface LaboratoryQuotePayload {
+	items: Array<{
+		booking_item_id: number | null
+		laboratory_test_id?: number | null
+		custom_test_name?: string
+		quoted_price: number
+	}>
+	prescription_verified?: boolean
+	notes?: string
+}
+
+export interface LaboratoryReportPayload {
+	report_pdf_s3_key: string
+	dicom_images_s3_keys?: string[]
+	scan_images_s3_keys?: string[]
+	summary_findings?: string
+}
+
+export interface LaboratoryReportResponse {
+	success: boolean
+	message: string
+	data: LaboratoryReport
+}
+
+/**
+ * GET /api/laboratory/bookings
+ * Backend is role-aware: a laboratory-staff token returns the clinic's incoming booking
+ * queue, a patient token returns only that patient's own bookings (mirrors mobile's
+ * OrderListLaboratoryPage / getLabBookings).
+ */
+export const getLaboratoryBookings = async (status?: string): Promise<LaboratoryBookingsResponse> => {
+	const params = status ? { status } : {}
+	const res = await ApiService.getWithParams<LaboratoryBookingsResponse>(API_ENDPOINTS.LABORATORY.BOOKINGS, params)
+	return res.data
+}
+
+/** GET /api/laboratory/bookings/:id — fetch a specific booking order details */
+export const getLaboratoryBookingById = async (bookingId: string): Promise<LaboratoryBookingResponse> => {
+	const res = await ApiService.get<LaboratoryBookingResponse>(API_ENDPOINTS.LABORATORY.BOOKING_DETAIL(bookingId))
+	return res.data
+}
+
+/** PATCH /api/laboratory/bookings/:id/quote — submit pricing quote for booking items (lab staff) */
+export const submitLaboratoryBookingQuote = async (
+	bookingId: string,
+	payload: LaboratoryQuotePayload
+): Promise<LaboratoryUpdateResponse> => {
+	const res = await ApiService.patch<LaboratoryUpdateResponse>(
+		`${API_ENDPOINTS.LABORATORY.BOOKING_DETAIL(bookingId)}/quote`,
+		payload
+	)
+	return res.data
+}
+
+/** PATCH /api/laboratory/bookings/:id/verify — verify booking prescription (lab staff) */
+export const verifyLaboratoryPrescription = async (bookingId: string): Promise<LaboratoryUpdateResponse> => {
+	const res = await ApiService.patch<LaboratoryUpdateResponse>(
+		API_ENDPOINTS.LABORATORY.VERIFY_PRESCRIPTION(bookingId),
+		{}
+	)
+	return res.data
+}
+
+/** POST /api/laboratory/bookings/:id/report — upload result report and complete booking (lab staff) */
+export const uploadLaboratoryReport = async (
+	bookingId: string,
+	payload: LaboratoryReportPayload
+): Promise<LaboratoryReportResponse> => {
+	const res = await ApiService.post<LaboratoryReportResponse>(
+		API_ENDPOINTS.LABORATORY.UPLOAD_REPORT(bookingId),
+		payload
+	)
+	return res.data
+}
+
+/** PATCH /api/laboratory/bookings/:id/status — update booking status (lab staff) */
+export const updateLaboratoryBookingStatus = async (
+	bookingId: string,
+	status: string
+): Promise<LaboratoryUpdateResponse> => {
+	const res = await ApiService.patch<LaboratoryUpdateResponse>(
+		API_ENDPOINTS.LABORATORY.UPDATE_STATUS(bookingId),
+		{ status }
 	)
 	return res.data
 }

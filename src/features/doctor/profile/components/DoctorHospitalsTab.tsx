@@ -431,6 +431,8 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 	const handleSave = async () => {
 		const trimmedName = form.name.trim()
 		const trimmedAddress = form.fullAddress.trim()
+		const videoConsultationFee = Number(form.video_consultation_fee.trim() || 0)
+		const clinicConsultationFee = Number(form.offline_consultation_fee.trim() || 0)
 		const isPrimary = hospitals.length === 0
 
 		if (!trimmedName) {

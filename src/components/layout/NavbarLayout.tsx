@@ -27,9 +27,11 @@ import AppNavBar from '../common/Navbar/AppNavBar'
 import { clearAuth, useAuth } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { USER_ROLES } from '../../constants/constants'
+import { ROUTES } from '../../constants/routes'
 import { useMemo } from 'react'
 import { LookupHospital, PatientProfile } from '../../hooks/useAuth'
 import { toast } from 'react-toastify'
+import ChatBot from '../ChatBot'
 import ChatBot from '../ChatBot'
 
 const NAVBAR_HEIGHT = 64
@@ -51,15 +53,14 @@ function isDividerMenuItem(item: ProfileMenuItem): item is { divider: true } {
 const PATIENT_PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
 	{ label: 'Add User', path: '#add-user', special: 'add-user' },
 	{ divider: true },
-	{ label: 'My Appointments', path: '/portal/appointments' },
-	{ label: 'My Tests', path: '#' },
-	{ label: 'My Medicine Orders', path: '#' },
-	{ label: 'My Medical Records', path: '#' },
-	{ label: 'My Favourite Doctors', path: '/portal/favourites' },
-	{ label: 'My Online Consultations', path: '#' },
+	{ label: 'My Appointments', path: ROUTES.APPOINTMENTS },
+	{ label: 'Medicine Orders', path: ROUTES.PHARMACY.ORDERS },
+	{ label: 'Lab Bookings', path: ROUTES.LABORATORY.ORDERS },
+	{ label: 'Radiology Bookings', path: ROUTES.RADIOLOGY.BOOKINGS },
+	{ label: 'My Favourite Doctors', path: ROUTES.PORTAL.FAVOURITES },
 	{ label: 'My Feedback', path: '#' },
 	{ divider: true },
-	{ label: 'Profile', path: '/profile' },
+	{ label: 'Profile', path: ROUTES.PORTAL.PROFILE },
 	{ label: 'Settings', path: '#' },
 	{ label: 'Help Line', path: '#help-line' },
 	{ divider: true },
@@ -444,7 +445,7 @@ function ProfileDropdown({
 				const isAddUser = item.special === 'add-user'
 				return (
 					<MenuItem
-						key={item.path}
+						key={`${item.path}-${idx}`}
 						onClick={() => handleClick(item)}
 						sx={{
 							py: 1,
@@ -560,7 +561,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 			<Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200 }}>
 				{role === USER_ROLES.PATIENT ? (
 					<AppNavBar
-						onProfileClick={() => { 
+						onProfileClick={() => {
 							setAccountSwitcherOpen(false)
 							setDropdownOpen((prev) => !prev)
 						}}

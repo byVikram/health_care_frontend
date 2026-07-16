@@ -7,6 +7,7 @@ import MainLayout from '../components/layout/MainLayout'
 import SidebarLayout from '../components/layout/SidebarLayout'
 import NavbarLayout from '../components/layout/NavbarLayout'
 import { ROUTES } from '../constants/routes'
+
 import { useAuth } from '../hooks/useAuth'
 import AppLoader from '../components/common/Loader/AppLoader'
 
@@ -36,6 +37,9 @@ const AllSpecialitiesPage = lazy(() => import('../features/dashboard/AllSpeciali
 const RadiologySearchPage = lazy(() => import('../features/radiology/search/RadiologySearchPage'))
 const LaboratorySearchPage = lazy(() => import('../features/laboratory/search/LaboratorySearchPage'))
 const FavouriteDoctorsPage = lazy(() => import('../features/doctor/favourites/FavouriteDoctorsPage'))
+
+const LaboratoryOrdersList = lazy(() => import('../features/laboratory/bookings/LaboratoryOrdersList'))
+const LaboratoryBookingDetailPage = lazy(() => import('../features/laboratory/bookings/LaboratoryBookingDetailPage'))
 
 function ProtectedLayout() {
 	return (
@@ -113,16 +117,16 @@ export default function AppRoutes() {
 						<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
 						<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
 						<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
-						<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
 						{/* <Route path={ROUTES.PHARMACY.PROFILE} element={<PharmacyProfilePage />} /> */}
 						<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
 
-						<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
 						<Route path={ROUTES.RADIOLOGY.PROFILE} element={<RadiologyProfilePage />} />
 						<Route path={ROUTES.RADIOLOGY.BOOKINGS} element={<BookingsList />} />
 						<Route path={ROUTES.RADIOLOGY.BOOKING_DETAIL} element={<BookingDetailPage />} />
-					<Route path={ROUTES.PORTAL.FAVOURITES} element={<FavouriteDoctorsPage />} />
-					</Route>
+						<Route path={ROUTES.PORTAL.FAVOURITES} element={<FavouriteDoctorsPage />} />
+						<Route path={ROUTES.LABORATORY.ORDERS} element={<LaboratoryOrdersList />} />
+					<Route path={ROUTES.LABORATORY.ORDER_DETAIL} element={<LaboratoryBookingDetailPage />} />
+				</Route>
 				</Route>
 
 				{/* <Route path={ROUTES.LABORATORY.PROFILE} element={<LaboratoryProfilePage />} /> */}
