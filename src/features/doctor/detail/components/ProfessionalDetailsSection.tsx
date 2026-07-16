@@ -26,26 +26,6 @@ const MOCK_CERTIFICATIONS = [
 	{ title: 'Fellowship in Interventional Cardiology', issuer: 'Cardiology Society of India', year: '2019' },
 ]
 
-const MOCK_TREATMENTS = [
-	'Angioplasty',
-	'Echocardiography',
-	'Cardiac Catheterization',
-	'Pacemaker Implantation',
-	'Heart Failure Management',
-	'Hypertension Treatment',
-	'Lipid Disorders',
-	'Arrhythmia Management',
-]
-
-const MOCK_AREAS_OF_EXPERTISE = [
-	'Interventional Cardiology',
-	'Preventive Cardiology',
-	'Heart Failure',
-	'Coronary Artery Disease',
-	'Valvular Heart Disease',
-	'Electrophysiology',
-]
-
 // ─── Sub-section header ─────────────────────────────────────────────────────
 
 function SubSectionHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
@@ -90,6 +70,8 @@ export default function ProfessionalDetailsSection({ doctorDetail }: Professiona
 	const [expanded, setExpanded] = useState(false)
 
 	const details = doctorDetail.details
+	const treatments = doctorDetail.additionalDetail?.treatments?.map(t => t.label) || []
+	const areasOfExpertise = doctorDetail.additionalDetail?.areas_of_expertise?.map(a => a.label) || []
 
 	// Build the degrees list: prefer the full array if available, otherwise fall back
 	// to the single legacy fields from the public API
@@ -254,11 +236,11 @@ export default function ProfessionalDetailsSection({ doctorDetail }: Professiona
 					{/* 3. Treatments Offered */}
 					<Box>
 						<SubSectionHeader icon={<HealingOutlinedIcon fontSize="small" />} title="Treatments Offered" />
-						{MOCK_TREATMENTS.length === 0 ? (
+						{treatments.length === 0 ? (
 							<EmptyState message="No treatments listed." />
 						) : (
 							<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-								{MOCK_TREATMENTS.map((treatment) => (
+								{treatments.map((treatment) => (
 									<Chip
 										key={treatment}
 										label={treatment}
@@ -282,11 +264,11 @@ export default function ProfessionalDetailsSection({ doctorDetail }: Professiona
 					{/* 4. Areas of Expertise */}
 					<Box>
 						<SubSectionHeader icon={<PsychologyOutlinedIcon fontSize="small" />} title="Areas of Expertise" />
-						{MOCK_AREAS_OF_EXPERTISE.length === 0 ? (
+						{areasOfExpertise.length === 0 ? (
 							<EmptyState message="No areas of expertise listed." />
 						) : (
 							<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-								{MOCK_AREAS_OF_EXPERTISE.map((area) => (
+								{areasOfExpertise.map((area) => (
 									<Chip
 										key={area}
 										label={area}

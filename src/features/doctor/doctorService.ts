@@ -183,6 +183,11 @@ export const updateProfessionalDetails = async (data: Record<string, unknown>) =
 	return res.data
 }
 
+export const updateAdditionalDetails = async (data: Record<string, unknown>) => {
+	const res = await ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.ADDITIONAL_DETAILS, data)
+	return res.data
+}
+
 // Maps API response -> DoctorProfile (used by DoctorProfilePage)
 const DAY_MAP: Record<number, keyof DoctorProfile['availability']> = {
 	0: 'sunday',
@@ -285,8 +290,8 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 		hospitals,
 		availability,
 		additionalDetail: {
-			treatments: [],
-			areas_of_expertise: [],
+			treatments: data?.additionalDetail?.treatments ?? [],
+			areas_of_expertise: data?.additionalDetail?.areas_of_expertise ?? [],
 		},
 	}
 }
@@ -301,6 +306,16 @@ export interface FavouriteDoctor {
 	location: string | null
 	experience_years: number | null
 	specialities: string[]
+}
+
+export const getAreaOfExpertise = async () => {
+	const res = await ApiService.get(API_ENDPOINTS.AREA_OF_EXPERTISE.LIST)
+	return res.data
+}
+
+export const getTreatmentOfferings = async () => {
+	const res = await ApiService.get(API_ENDPOINTS.TREATMENT_OFFERINGS.LIST)
+	return res.data
 }
 
 export interface FavouritesResponse {

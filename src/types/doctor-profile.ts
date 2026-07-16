@@ -89,9 +89,14 @@ export interface DoctorProfile {
 	additionalDetail: DoctorAdditionalDetail
 }
 
+export interface OptionItem {
+	id: string
+	label: string
+}
+
 export interface DoctorAdditionalDetail {
-	treatments: string[]
-	areas_of_expertise: string[]
+	treatments: OptionItem[]
+	areas_of_expertise: OptionItem[]
 }
 
 export type DoctorAchievementType =

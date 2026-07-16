@@ -22,6 +22,7 @@ export const API_ENDPOINTS = {
 		DETAILS: '/api/doctors/details',
 		PERSONAL_DETAILS: '/api/doctors/personal-details',
 		PROFESSIONAL_DETAILS: '/api/doctors/professional-details',
+		ADDITIONAL_DETAILS: '/api/doctors/profile/additional-details',
 		HOSPITALS: '/api/doctors/hospitals',
 		UPDATE_HOSPITAL: '/api/doctors/hospitals',
 		UPDATE_AVAILABILITY: '/api/doctors/availability',
@@ -44,6 +45,12 @@ export const API_ENDPOINTS = {
 	SPECIALITIES: {
 		LIST: '/api/specialities',
 	},
+	AREA_OF_EXPERTISE: {
+		LIST: '/api/area-of-expertise',
+	},
+	TREATMENT_OFFERINGS: {
+		LIST: '/api/treatments-offering',
+	},
 	USERS: {
 		GET: '/api/users',
 		CREATE: '/api/users',
@@ -65,6 +72,7 @@ export const API_ENDPOINTS = {
 		TOGGLE_FAVOURITE: (doctorPublicId: string) => `/api/patients/me/favourites/${doctorPublicId}`,
 		LABORATORY_REPORTS: (id: string) => `/api/patients/${id}/laboratory-reports`,
 		RADIOLOGY_REPORTS: (id: string) => `/api/patients/${id}/radiology-reports`,
+		APPOINTMENTS_HOSPITALS: '/api/patients/appointments/hospitals',
 	},
 	LOOKUP: {
 		GET: '/api/lookup',
