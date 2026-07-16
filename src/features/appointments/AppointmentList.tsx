@@ -174,6 +174,46 @@ export default function AppointmentList() {
 				if (viewAs === 'patient' && activePatientId) params.patient_id = activePatientId
 				if (search) params.search = search
 
+				if (filterHospital !== 'all') {
+					params.hospital_id = filterHospital
+				}
+
+				if (filterMode !== 'all') {
+					params.appointment_mode = filterMode === 'clinic' ? 'clinic_visit' : 'video_call'
+				}
+
+				if (filterStatus !== 'all') {
+					const statusObj = lookupData?.appointment_statuses.find(
+						(s) => s.label.toLowerCase() === filterStatus.toLowerCase()
+					)
+					if (statusObj) {
+						params.status_id = statusObj.id
+					}
+				}
+
+				if (filterDate !== 'all') {
+					const today = new Date()
+					if (filterDate === 'today') {
+						params.start_date = today.toISOString().split('T')[0]
+						params.end_date = today.toISOString().split('T')[0]
+					} else if (filterDate === 'yesterday') {
+						const yesterday = new Date(today)
+						yesterday.setDate(today.getDate() - 1)
+						params.start_date = yesterday.toISOString().split('T')[0]
+						params.end_date = yesterday.toISOString().split('T')[0]
+					} else if (filterDate === 'last7') {
+						const last7 = new Date(today)
+						last7.setDate(today.getDate() - 7)
+						params.start_date = last7.toISOString().split('T')[0]
+						params.end_date = today.toISOString().split('T')[0]
+					} else if (filterDate === 'last30') {
+						const last30 = new Date(today)
+						last30.setDate(today.getDate() - 30)
+						params.start_date = last30.toISOString().split('T')[0]
+						params.end_date = today.toISOString().split('T')[0]
+					}
+				}
+
 				const res = await ApiService.getWithParams<AppointmentsResponse>(API_ENDPOINTS.APPOINTMENTS.GET, params)
 
 				const mapped: AppointmentRow[] = res.data.data.map((appt) => ({
@@ -221,7 +261,7 @@ export default function AppointmentList() {
 		}
 
 		fetchAppointments()
-	}, [page, search, size, viewAs, activePatientId])
+	}, [page, search, size, patientId, filterHospital, filterMode, filterDate, filterStatus, lookupData])
 
 	// ── Reschedule: fetch slots whenever the drawer's date/hospital/mode changes ──
 	useEffect(() => {
@@ -718,11 +758,29 @@ export default function AppointmentList() {
 		),
 	}
 
-	const hospitalOptions = [
+	const [hospitalOptions, setHospitalOptions] = useState([
 		{ value: 'all', label: 'All' },
-		{ value: 'manipal', label: 'Manipal Hospital' },
-		{ value: 'apollo', label: 'Apollo Hospital' },
-	]
+	])
+
+	useEffect(() => {
+		const fetchHospitals = async () => {
+			if (viewAs === 'patient') {
+				try {
+					const res = await ApiService.get<{ success: boolean; data: { hospital_id: number | string; hospital_name: string }[] }>(API_ENDPOINTS.PATIENT.APPOINTMENTS_HOSPITALS)
+					if (res.data?.success) {
+						const fetchedOptions = res.data.data.map((h) => ({
+							value: String(h.hospital_id),
+							label: h.hospital_name,
+						}))
+						setHospitalOptions([{ value: 'all', label: 'All' }, ...fetchedOptions])
+					}
+				} catch (err) {
+					console.error('Failed to fetch hospitals', err)
+				}
+			}
+		}
+		fetchHospitals()
+	}, [viewAs])
 
 	const modeOptions = [
 		{ value: 'all', label: 'All' },

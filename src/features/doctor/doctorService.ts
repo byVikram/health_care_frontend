@@ -35,6 +35,10 @@ export interface DoctorSearchParams {
 	min_rating?: number
 	max_price?: number
 	sort?: string
+	latitude?: number
+	longitude?: number
+	nearby?: boolean
+	radius?: number
 }
 
 export interface CreateAppointmentPayload {
@@ -65,16 +69,26 @@ export const createAppointment = async (payload: CreateAppointmentPayload): Prom
 	return res.data
 }
 
-export const getDoctors = async (params?: DoctorSearchParams): Promise<DoctorSearchResponse> => {
+export const getDoctors = async (params?: DoctorSearchParams, signal?: AbortSignal): Promise<DoctorSearchResponse> => {
 	const res = await ApiService.getWithParams<DoctorSearchResponse>(
 		API_ENDPOINTS.DOCTORS.SEARCH,
-		(params ?? {}) as Record<string, unknown>
+		(params ?? {}) as Record<string, unknown>,
+		{ signal }
 	)
 	return res.data
 }
 
-export const getDoctorById = async (id: string): Promise<DoctorDetailResponse> => {
-	const res = await ApiService.get<DoctorDetailResponse>(API_ENDPOINTS.DOCTORS.DETAIL(id))
+
+
+export const getDoctorById = async (id: string, latitude?: number, longitude?: number, signal?: AbortSignal): Promise<DoctorDetailResponse> => {
+	const params: Record<string, unknown> = {}
+	if (latitude !== undefined) params.latitude = latitude
+	if (longitude !== undefined) params.longitude = longitude
+	const res = await ApiService.getWithParams<DoctorDetailResponse>(
+		API_ENDPOINTS.DOCTORS.DETAIL(id),
+		params,
+		{ signal }
+	)
 	return res.data
 }
 
@@ -167,6 +181,11 @@ export const updatePersonalDetails = async (data: Record<string, unknown>) => {
 
 export const updateProfessionalDetails = async (data: Record<string, unknown>) => {
 	const res = await ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.PROFESSIONAL_DETAILS, data)
+	return res.data
+}
+
+export const updateAdditionalDetails = async (data: Record<string, unknown>) => {
+	const res = await ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.ADDITIONAL_DETAILS, data)
 	return res.data
 }
 
@@ -272,8 +291,8 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 		hospitals,
 		availability,
 		additionalDetail: {
-			treatments: [],
-			areas_of_expertise: [],
+			treatments: data?.additionalDetail?.treatments ?? [],
+			areas_of_expertise: data?.additionalDetail?.areas_of_expertise ?? [],
 		},
 	}
 }
@@ -288,6 +307,16 @@ export interface FavouriteDoctor {
 	location: string | null
 	experience_years: number | null
 	specialities: string[]
+}
+
+export const getAreaOfExpertise = async () => {
+	const res = await ApiService.get(API_ENDPOINTS.AREA_OF_EXPERTISE.LIST)
+	return res.data
+}
+
+export const getTreatmentOfferings = async () => {
+	const res = await ApiService.get(API_ENDPOINTS.TREATMENT_OFFERINGS.LIST)
+	return res.data
 }
 
 export interface FavouritesResponse {

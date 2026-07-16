@@ -21,7 +21,7 @@ export default function ServicesSection() {
 
 	const handleServiceClick = (service: ServicesType) => {
 		if (service.id === 1) {
-			navigate(ROUTES.SPECIALITIES)
+			navigate(`${ROUTES.DOCTORS.SEARCH}?nearby=true`)
 			return
 		}
 
