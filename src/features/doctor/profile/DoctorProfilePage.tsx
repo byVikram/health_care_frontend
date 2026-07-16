@@ -28,7 +28,7 @@ import {
 	DoctorAdditionalDetail,
 } from '../../../types/doctor-profile'
 import { customCardStyle } from '../../../styles/commonStyles'
-import { getDoctorProfile, mapDoctorProfileApi } from '../doctorService'
+import { getDoctorProfile, mapDoctorProfileApi, updateAdditionalDetails } from '../doctorService'
 import { useAuth, setAuth } from '../../../hooks/useAuth'
 import ApiService from '../../../services/apiService'
 
@@ -143,7 +143,22 @@ export default function DoctorProfilePage() {
 		setDoctor((prev) => (prev ? { ...prev, availability } : prev))
 
 	const handleAdditionalDetailChange = (updated: Partial<DoctorAdditionalDetail>) =>
-		setDoctor((prev) => (prev ? { ...prev, additionalDetail: { ...prev.additionalDetail, ...updated } } : prev))
+		setDoctor((prev) => (prev ? { ...prev, additionalDetail: { ...prev.additionalDetail, ...updated } as DoctorAdditionalDetail } : prev))
+
+	const handleAdditionalDetailsSave = async () => {
+		if (!doctor?.additionalDetail) return
+		try {
+			const payload = {
+				treatments: doctor.additionalDetail.treatments.map((t) => t.id),
+				areas_of_expertise: doctor.additionalDetail.areas_of_expertise.map((a) => a.id),
+			}
+			await updateAdditionalDetails(payload)
+			fetchProfile()
+		} catch (err) {
+			console.error('Failed to save additional details', err)
+			setError('Failed to save additional details')
+		}
+	}
 
 	if (loading) {
 		return (
@@ -196,7 +211,7 @@ export default function DoctorProfilePage() {
 					<DoctorAdditionalDetailTab
 						data={doctor.additionalDetail ?? { treatments: [], areas_of_expertise: [] }}
 						onChange={handleAdditionalDetailChange}
-						handleSave={async () => {}}
+						handleSave={handleAdditionalDetailsSave}
 					/>
 				)
 			case 'achievements':

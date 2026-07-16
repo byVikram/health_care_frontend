@@ -8,6 +8,13 @@ export interface DoctorSearchItem {
 	location: string
 	experience_years: number
 	specialities: string[]
+	distance?: number
+	hospital?: {
+		name: string
+		address: string
+		latitude: number | null
+		longitude: number | null
+	}
 }
 
 export interface DoctorSearchMeta {

@@ -25,6 +25,8 @@ const LIMIT = 12
 export default function DoctorSearchPage() {
 	const [searchParams, setSearchParams] = useSearchParams()
 
+	const isNearby = searchParams.get('nearby') === 'true'
+
 	// ── URL-persisted state ────────────────────────────────────────────────
 	const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
 	const [sortBy, setSortBy]           = useState(searchParams.get('sort') || 'rating')
@@ -82,17 +84,19 @@ export default function DoctorSearchPage() {
 		if (filters.minRating > 0)              next.set('min_rating',        String(filters.minRating))
 		if (filters.maxPrice !== 1000)          next.set('max_price',         String(filters.maxPrice))
 		if (sortBy !== 'rating')                next.set('sort',              sortBy)
+		if (isNearby)                           next.set('nearby',            'true')
 		setSearchParams(next, { replace: true })
-	}, [filters, searchQuery, sortBy, specialityLabel, setSearchParams])
+	}, [filters, searchQuery, sortBy, specialityLabel, setSearchParams, isNearby])
 
 	// ── Fetch doctors ──────────────────────────────────────────────────────
 	useEffect(() => {
 		let active = true
+		const controller = new AbortController()
 		const fetchDoctors = async () => {
-			if (page === 1) { setLoading(true); setDoctors([]) }
+			if (page === 1) { setLoading(true); setDoctors([]); setError(null) }
 			else setLoadingMore(true)
 			try {
-				const res = await getDoctors({
+				const queryParams = {
 					page,
 					limit:             LIMIT,
 					search:            searchQuery.trim() || undefined,
@@ -101,7 +105,54 @@ export default function DoctorSearchPage() {
 					min_rating:        filters.minRating > 0 ? filters.minRating : undefined,
 					max_price:         filters.maxPrice !== 1000 ? filters.maxPrice : undefined,
 					sort:              sortBy !== 'rating' ? sortBy : undefined,
-				})
+				}
+
+				let res;
+				let position: GeolocationPosition | null = null;
+				
+				if (navigator.geolocation) {
+					position = await new Promise<GeolocationPosition>((resolve, reject) => {
+						navigator.geolocation.getCurrentPosition(resolve, reject, {
+							enableHighAccuracy: true,
+							timeout: 10000,
+							maximumAge: 0,
+						})
+					}).catch((err) => {
+						console.warn('Geolocation failed or denied, using default coordinates.', err)
+						return null
+					})
+				} else {
+					console.warn('Geolocation is not supported by your browser, using default coordinates.')
+				}
+				
+				// Fallback if position was not retrieved
+				if (!position) {
+					position = {
+						coords: {
+							latitude: 12.9716,
+							longitude: 77.5946,
+						}
+					} as GeolocationPosition
+				}
+
+				sessionStorage.setItem('user_lat', position.coords.latitude.toString())
+				sessionStorage.setItem('user_lon', position.coords.longitude.toString())
+				
+				const lat = position.coords.latitude
+				const lon = position.coords.longitude
+
+				if (!active) return
+
+				res = await getDoctors(
+					{ 
+						...queryParams, 
+						latitude: lat, 
+						longitude: lon, 
+						...(isNearby ? { nearby: true } : {})
+					}, 
+					controller.signal
+				)
+
 				if (!active) return
 				const meta = res.meta ?? {
 					total: res.total ?? 0,
@@ -113,7 +164,7 @@ export default function DoctorSearchPage() {
 				setTotal(meta.total)
 				setHasMore(meta.page < meta.pages)
 				setError(null)
-			} catch (err) {
+			} catch (err: any) {
 				console.error(err)
 				if (!active) return
 				setError('Failed to load doctors')
@@ -123,8 +174,11 @@ export default function DoctorSearchPage() {
 			}
 		}
 		void fetchDoctors()
-		return () => { active = false }
-	}, [filters.consultationType, filters.maxPrice, filters.minRating, filters.speciality, page, searchQuery, sortBy])
+		return () => { 
+			active = false
+			controller.abort()
+		}
+	}, [filters.consultationType, filters.maxPrice, filters.minRating, filters.speciality, page, searchQuery, sortBy, isNearby])
 
 	const resetAndFetch = useCallback((updater: () => void) => {
 		updater()
@@ -199,7 +253,7 @@ export default function DoctorSearchPage() {
 						>
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
 								<Typography variant="h5" sx={{ fontWeight: 600 }}>
-									{visibleCount} Doctors Found
+									{isNearby ? `${visibleCount} Doctors Near You` : `${visibleCount} Doctors Found`}
 								</Typography>
 								{filters.speciality && specialityLabel && (
 									<Chip
