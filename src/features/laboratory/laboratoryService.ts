@@ -439,3 +439,4 @@ export const updateLaboratoryBookingStatus = async (
 	)
 	return res.data
 }
+

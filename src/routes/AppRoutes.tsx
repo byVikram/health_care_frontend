@@ -34,6 +34,7 @@ import LaboratoryOrdersList from '../features/laboratory/bookings/LaboratoryOrde
 import LaboratoryBookingDetailPage from '../features/laboratory/bookings/LaboratoryBookingDetailPage'
 import { useAuth } from '../hooks/useAuth'
 import FavouriteDoctorsPage from '../features/doctor/favourites/FavouriteDoctorsPage'
+import FavouriteDoctorsPage from '../features/doctor/favourites/FavouriteDoctorsPage'
 
 function ProtectedLayout() {
 	return (
@@ -118,6 +119,7 @@ export default function AppRoutes() {
 					<Route path={ROUTES.RADIOLOGY.PROFILE} element={<RadiologyProfilePage />} />
 					<Route path={ROUTES.RADIOLOGY.BOOKINGS} element={<BookingsList />} />
 					<Route path={ROUTES.RADIOLOGY.BOOKING_DETAIL} element={<BookingDetailPage />} />
+					<Route path={ROUTES.PORTAL.FAVOURITES} element={<FavouriteDoctorsPage />} />
 					<Route path={ROUTES.LABORATORY.ORDERS} element={<LaboratoryOrdersList />} />
 					<Route path={ROUTES.LABORATORY.ORDER_DETAIL} element={<LaboratoryBookingDetailPage />} />
 					<Route path={ROUTES.PORTAL.FAVOURITES} element={<FavouriteDoctorsPage />} />
