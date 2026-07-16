@@ -14,6 +14,7 @@ import VitalsTab from './components/VitalsTab'
 import ConsultationNotes from './components/ConsultationNotes'
 import { ConsultationPatient, ConsultationDoctor } from '../../types/consultation'
 import { getPatientDetails } from '../../services/userService'
+import { getPatientDetails as getMyPatientDetails } from '../patient/patientService'
 import { Patient } from '../../types/patient'
 import { getAppointmentById } from '../../services/userService'
 import { Appointment } from '../../types/appointment'
@@ -25,6 +26,7 @@ import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { toast } from 'react-toastify'
+import AppointmentDetailsDrawer from '../appointments/components/AppointmentDetailsDrawer'
 
 interface PatientDetailsResponse {
 	success: boolean
@@ -180,8 +182,9 @@ const getDrawerAppointmentType = (appointmentMode?: Appointment['appointment_mod
 
 export default function ConsultationPage() {
 	const [activeTab, setActiveTab] = useState(0)
+	const [timelineDrawerOpen, setTimelineDrawerOpen] = useState(false)
 	const navigate = useNavigate()
-	const { lookupData } = useAuth()
+	const { role, lookupData } = useAuth()
 
 	const { patientId, appointmentId } = useParams()
 
@@ -211,8 +214,13 @@ export default function ConsultationPage() {
 
 		const fetchData = async () => {
 			try {
+				const patientDetailsFetch =
+					role === 'patient'
+						? (getMyPatientDetails(patientId) as Promise<PatientDetailsResponse>)
+						: (getPatientDetails(patientId) as Promise<PatientDetailsResponse>)
+
 				const [patientRes, appointmentRes] = await Promise.allSettled([
-					getPatientDetails(patientId) as Promise<PatientDetailsResponse>,
+					patientDetailsFetch,
 					getAppointmentById(appointmentId) as Promise<AppointmentDetailsResponse>,
 				])
 
@@ -239,13 +247,13 @@ export default function ConsultationPage() {
 		return () => {
 			cancelled = true
 		}
-	}, [patientId, appointmentId])
+	}, [patientId, appointmentId, role])
 
 	// Doctor profile is only used by the Info tab's ConsultationNotes header and the
 	// reschedule drawer's hospital list — fetch it in the background instead of
 	// blocking the loading screen for tabs (e.g. Vitals) that don't need it.
 	useEffect(() => {
-		if (!patientId || !appointmentId) return
+		if (!patientId || !appointmentId || role !== 'doctor') return
 
 		let cancelled = false
 
@@ -267,7 +275,7 @@ export default function ConsultationPage() {
 		return () => {
 			cancelled = true
 		}
-	}, [patientId, appointmentId])
+	}, [patientId, appointmentId, role])
 
 	useEffect(() => {
 		if (!appointment) return
@@ -479,7 +487,15 @@ export default function ConsultationPage() {
 			</Box>
 
 			{/* Tabs */}
-			<Box sx={{ borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+			<Box
+				sx={{
+					borderBottom: '1px solid',
+					borderColor: 'divider',
+					bgcolor: 'background.paper',
+					display: 'flex',
+					alignItems: 'center',
+				}}
+			>
 				<Tabs
 					value={activeTab}
 					onChange={(_, v) => setActiveTab(v)}
@@ -497,6 +513,27 @@ export default function ConsultationPage() {
 					<Tab label="Info & Timeline" />
 					<Tab label="Vitals" />
 				</Tabs>
+
+				{/* Timeline -- sits right next to the Vitals tab. Opens the
+				    appointment history drawer (reuses AppointmentDetailsDrawer)
+				    instead of switching tab panels. */}
+				<Box
+					onClick={() => setTimelineDrawerOpen(true)}
+					sx={{
+						cursor: 'pointer',
+						textTransform: 'none',
+						fontWeight: 500,
+						fontSize: '14px',
+						color: 'text.secondary',
+						px: 1.5,
+						py: 1,
+						ml: -1,
+						borderRadius: '8px',
+						'&:hover': { color: 'primary.main', bgcolor: 'action.hover' },
+					}}
+				>
+					Timeline
+				</Box>
 			</Box>
 
 			{/* Tab content */}
@@ -532,6 +569,11 @@ export default function ConsultationPage() {
 				setRescheduleHospitalId={setRescheduleHospitalId}
 				appointmentType={appointmentType}
 				setAppointmentType={setAppointmentType}
+			/>
+			<AppointmentDetailsDrawer
+				open={timelineDrawerOpen}
+				onClose={() => setTimelineDrawerOpen(false)}
+				appointmentId={appointmentId ?? null}
 			/>
 		</Box>
 	)

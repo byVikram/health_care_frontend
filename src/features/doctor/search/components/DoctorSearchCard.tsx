@@ -6,6 +6,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn'
 import AppButton from '../../../../components/common/Button/AppButton'
 import { DoctorSearchItem } from '../../../../types/doctor-search'
 import { useNavigate } from 'react-router-dom'
+import { buildS3Url } from '../../../../utils/s3'
 
 interface DoctorSearchCardProps {
 	doctor: DoctorSearchItem
@@ -15,7 +16,7 @@ interface DoctorSearchCardProps {
 export default function DoctorSearchCard({ doctor }: DoctorSearchCardProps) {
 	const navigate = useNavigate()
 	const specialization = doctor.specialities?.[0] || 'General'
-	const avatar = doctor.avatar_s3_key || ''
+	const avatar = buildS3Url(doctor.avatar_s3_key)
 	const clinicName = doctor.location || 'Clinic'
 	const experience = doctor.experience_years || 0
 

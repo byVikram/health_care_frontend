@@ -8,10 +8,15 @@ export interface AppointmentResponse {
     // data: Appointment
 }
 
-export const updateAppointmentsStatus = async (appointmentId: string, statusId: string): Promise<AppointmentResponse> => {
+export const updateAppointmentsStatus = async (
+	appointmentId: string,
+	statusId: string,
+	reason?: string
+): Promise<AppointmentResponse> => {
     const res = await ApiService.patch<AppointmentResponse>(API_ENDPOINTS.APPOINTMENTS.UPDATE, {
 		appointment_id: appointmentId,
-		status_id:statusId
+		status_id: statusId,
+		...(reason ? { reason } : {}),
 	})
     return res.data
 }

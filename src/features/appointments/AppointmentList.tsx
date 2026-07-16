@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { Box, Typography, Avatar, InputAdornment, Card, Pagination, IconButton, Tooltip, Popover } from '@mui/material'
+import { Box, Typography, Avatar, InputAdornment, Card, Pagination, IconButton, Tooltip } from '@mui/material'
+import RejectAppointmentDialog from './components/RejectAppointmentDialog'
 import SearchIcon from '@mui/icons-material/Search'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 // import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
@@ -26,6 +27,7 @@ import RejectIcon from '../../assets/icons/reject.svg'
 import RescheduleIcon from '../../assets/icons/reschedule.svg'
 import AppointmentDetailsDrawer from './components/AppointmentDetailsDrawer'
 import { ROUTES } from '../../constants/routes'
+import { buildS3Url } from '../../utils/s3'
 
 // Status IDs accepted by PATCH /api/appointments/update-status.
 // Resolved from the lookup table when available, falling back to the
@@ -55,6 +57,7 @@ interface AppointmentRow extends Record<string, unknown> {
 	hospitalAddress: string | null
 	hospitalId: string | null
 	fees: number | null
+	reason: string | null
 }
 
 interface AppointmentMeta {
@@ -74,9 +77,10 @@ interface AppointmentsResponse {
 		start_time: string
 		end_time: string | null
 		status: string
+		reason?: string | null
 		rescheduled_by?: string | null
-		doctor: { id: string; name: string; avatar_s3_key?: string | null }
-		patient: { id: string; name: string; avatar_s3_key: string | null; gender: string | null; age: number | null }
+		doctor?: { id: string; name: string; avatar_s3_key?: string | null } | null
+		patient?: { id: string; name: string; avatar_s3_key: string | null; gender: string | null; age: number | null } | null
 		hospital: { id: string; name: string; address: string } | null
 		fees?: number | null
 	}[]
@@ -100,10 +104,16 @@ const TERMINAL_STATUSES = new Set(['cancelled'])
 export default function AppointmentList() {
 	const [searchParams] = useSearchParams()
 	const navigate = useNavigate()
-	const { role, lookupData } = useAuth()
+	const { role, user, lookupData } = useAuth()
 	const queryView = searchParams.get('view')
 	const viewAs: 'doctor' | 'patient' =
 		queryView === 'doctor' || queryView === 'patient' ? queryView : role === 'patient' ? 'patient' : 'doctor'
+	const activePatientId =
+		localStorage.getItem('patient_id') ||
+		lookupData?.patient_profiles?.find((profile) => profile.is_self)?.id ||
+		lookupData?.patient_profiles?.[0]?.id ||
+		(role === 'patient' ? user?.id : '') ||
+		''
 
 	const [search, setSearch] = useState('')
 	const [page, setPage] = useState(1)
@@ -116,11 +126,20 @@ export default function AppointmentList() {
 	const [filterMode, setFilterMode] = useState('all')
 	const [filterDate, setFilterDate] = useState('all')
 	const [filterStatus, setFilterStatus] = useState('all')
-	const patientId = localStorage.getItem('patient_id')
+
+	// Navigate a patient directly into the consultation page for a given
+	// appointment row. Doctor's OTP-gated consultation flow (DoctorAppointments.tsx)
+	// is untouched -- this only applies to the patient's own appointments list.
+	const goToConsultation = (row: AppointmentRow) => {
+		navigate(
+			ROUTES.PORTAL.CONSULTATION.replace(':patientId', row.patientId).replace(':appointmentId', row.id)
+		)
+	}
 
 	// ── Action state (Confirm / Reject / Reschedule) ────────────────────────
-	const [rejectAnchorEl, setRejectAnchorEl] = useState<HTMLElement | null>(null)
+	const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
 	const [pendingRejectId, setPendingRejectId] = useState<string | null>(null)
+	const [rejectSubmitting, setRejectSubmitting] = useState(false)
 
 	const [rescheduleOpen, setRescheduleOpen] = useState(false)
 	const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null)
@@ -138,9 +157,9 @@ export default function AppointmentList() {
 	const [detailsAppointmentId, setDetailsAppointmentId] = useState<string | null>(null)
 
 	const confirmedStatusId =
-		lookupData?.appointment_statuses.find((s) => s.label === 'confirmed')?.id ?? FALLBACK_CONFIRMED_STATUS_ID
+		lookupData?.appointment_statuses?.find((s) => s.label === 'confirmed')?.id ?? FALLBACK_CONFIRMED_STATUS_ID
 	const rejectedStatusId =
-		lookupData?.appointment_statuses.find((s) => s.label === 'cancelled')?.id ?? FALLBACK_REJECTED_STATUS_ID
+		lookupData?.appointment_statuses?.find((s) => s.label === 'cancelled')?.id ?? FALLBACK_REJECTED_STATUS_ID
 
 	useEffect(() => {
 		const fetchAppointments = async () => {
@@ -150,27 +169,28 @@ export default function AppointmentList() {
 				const params: Record<string, unknown> = {
 					page,
 					limit: size,
-					patient_id: patientId,
 				}
 
+				if (viewAs === 'patient' && activePatientId) params.patient_id = activePatientId
 				if (search) params.search = search
 
 				const res = await ApiService.getWithParams<AppointmentsResponse>(API_ENDPOINTS.APPOINTMENTS.GET, params)
 
 				const mapped: AppointmentRow[] = res.data.data.map((appt) => ({
 					id: appt.id,
-					patientName: appt.patient.name,
-					patientAvatar: appt.patient.avatar_s3_key ?? '',
-					patientId: appt.patient.id,
+					patientName: appt.patient?.name ?? 'Patient',
+					patientAvatar: buildS3Url(appt.patient?.avatar_s3_key),
+					patientId: appt.patient?.id ?? activePatientId,
 					appointmentDate: appt.appointment_date,
 					startTime: appt.start_time,
 					endTime: appt.end_time,
 					appointmentMode: appt.appointment_mode,
 					status: appt.status,
+					reason: appt.reason ?? null,
 					rescheduledBy: appt.rescheduled_by ?? null,
-					doctorName: appt.doctor.name,
-					doctorAvatar: appt.doctor.avatar_s3_key ?? '',
-					doctorId: appt.doctor.id,
+					doctorName: appt.doctor?.name ?? 'Doctor',
+					doctorAvatar: buildS3Url(appt.doctor?.avatar_s3_key),
+					doctorId: appt.doctor?.id ?? '',
 					hospitalName: appt.hospital?.name ?? null,
 					hospitalAddress: appt.hospital?.address ?? null,
 					hospitalId: appt.hospital?.id ?? null,
@@ -201,7 +221,7 @@ export default function AppointmentList() {
 		}
 
 		fetchAppointments()
-	}, [page, search, size, patientId])
+	}, [page, search, size, viewAs, activePatientId])
 
 	// ── Reschedule: fetch slots whenever the drawer's date/hospital/mode changes ──
 	useEffect(() => {
@@ -285,29 +305,31 @@ export default function AppointmentList() {
 		}
 	}
 
-	const handleRejectClick = (rowId: string, anchorEl: HTMLElement) => {
+	const handleRejectClick = (rowId: string, _anchorEl: HTMLElement) => {
 		setPendingRejectId(rowId)
-		setRejectAnchorEl(anchorEl)
+		setRejectDialogOpen(true)
 	}
 
 	const handleCancelReject = () => {
-		setRejectAnchorEl(null)
+		setRejectDialogOpen(false)
 		setPendingRejectId(null)
 	}
 
-	const handleConfirmReject = async () => {
+	const handleConfirmReject = async (reason: string) => {
 		if (!pendingRejectId) return
 		const rowId = pendingRejectId
-		setRejectAnchorEl(null)
+		setRejectSubmitting(true)
 		try {
-			const res = await updateAppointmentsStatus(rowId, rejectedStatusId)
+			const res = await updateAppointmentsStatus(rowId, rejectedStatusId, reason)
 			if (res.success) {
 				toast.success(res.message || 'Appointment rejected.')
-				setRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, status: 'cancelled' } : r)))
+				setRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, status: 'cancelled', reason } : r)))
 			}
 		} catch {
 			toast.error('Something went wrong. Please try again.')
 		} finally {
+			setRejectSubmitting(false)
+			setRejectDialogOpen(false)
 			setPendingRejectId(null)
 		}
 	}
@@ -556,9 +578,16 @@ export default function AppointmentList() {
 			field: 'status',
 			label: 'Status',
 			render: (_value, row) => (
-				<Typography fontSize={13} fontWeight={600}>
-					{getStatusDisplayLabel(row)}
-				</Typography>
+				<Box>
+					<Typography fontSize={13} fontWeight={600}>
+						{getStatusDisplayLabel(row)}
+					</Typography>
+					{row.status?.toLowerCase() === 'cancelled' && row.reason && (
+						<Typography fontSize={11} color="#e53935" lineHeight={1.3} mt={0.3} sx={{ maxWidth: 220 }}>
+							{row.reason}
+						</Typography>
+					)}
+				</Box>
 			),
 		},
 	]
@@ -669,7 +698,7 @@ export default function AppointmentList() {
 					onClick={(e) => {
 						e.stopPropagation()
 						if (viewAs === 'patient') {
-							navigate(ROUTES.PORTAL.APPOINTMENT_DETAIL.replace(':appointmentId', row.id))
+							goToConsultation(row)
 							return
 						}
 						setDetailsAppointmentId(row.id)
@@ -887,13 +916,8 @@ export default function AppointmentList() {
 						rows={rows}
 						emptyMessage="No appointments found"
 						onRowClick={
-							viewAs === 'patient'
-								? (row) =>
-										navigate(
-											ROUTES.PORTAL.APPOINTMENT_DETAIL.replace(':appointmentId', row.id)
-										)
-								: undefined
-						}
+						viewAs === 'patient' ? (row) => goToConsultation(row) : undefined
+					}
 					/>
 					{meta.pages > 1 && (
 						<Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
@@ -909,75 +933,13 @@ export default function AppointmentList() {
 				</Card>
 			)}
 
-			{/* Reject confirmation popover */}
-			<Popover
-				open={Boolean(rejectAnchorEl)}
-				anchorEl={rejectAnchorEl}
-				onClose={handleCancelReject}
-				anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-				transformOrigin={{ vertical: 'top', horizontal: 'center' }}
-				disableScrollLock
-				sx={{ zIndex: 9999 }}
-				slotProps={{
-					paper: {
-						sx: {
-							borderRadius: '16px',
-							px: 3,
-							py: 3,
-							maxWidth: 300,
-							width: 280,
-							textAlign: 'center',
-							boxShadow: '0px 8px 40px rgba(0,0,0,0.18)',
-							mt: 1,
-						},
-					},
-				}}
-			>
-				<Typography sx={{ fontWeight: 700, fontSize: '16px', color: 'text.primary', mb: 0.5 }}>
-					Are you sure?
-				</Typography>
-				<Typography sx={{ fontSize: '14px', color: 'text.primary', fontWeight: 600, mb: 3 }}>
-					You want to reject appointment
-				</Typography>
-				<Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center' }}>
-					<Box
-						onClick={handleCancelReject}
-						sx={{
-							flex: 1,
-							py: 1.2,
-							border: '2px solid #0c7c7c',
-							borderRadius: '50px',
-							color: '#0c7c7c',
-							fontWeight: 600,
-							fontSize: '13px',
-							cursor: 'pointer',
-							textAlign: 'center',
-							transition: 'background 0.2s',
-							'&:hover': { bgcolor: 'rgba(12,124,124,0.06)' },
-						}}
-					>
-						Cancel
-					</Box>
-					<Box
-						onClick={handleConfirmReject}
-						sx={{
-							flex: 1,
-							py: 1.2,
-							bgcolor: '#e53935',
-							borderRadius: '50px',
-							color: '#fff',
-							fontWeight: 600,
-							fontSize: '13px',
-							cursor: 'pointer',
-							textAlign: 'center',
-							transition: 'opacity 0.2s',
-							'&:hover': { opacity: 0.88 },
-						}}
-					>
-						Yes, Reject
-					</Box>
-				</Box>
-			</Popover>
+			{/* Reject confirmation dialog */}
+			<RejectAppointmentDialog
+				open={rejectDialogOpen}
+				onCancel={handleCancelReject}
+				onConfirm={handleConfirmReject}
+				submitting={rejectSubmitting}
+			/>
 
 			{/* Reschedule drawer */}
 			<RescheduleDrawer
