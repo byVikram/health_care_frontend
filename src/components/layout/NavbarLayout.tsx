@@ -1,5 +1,6 @@
 // src/components/layout/NavbarLayout.tsx
-import React, { useState, useRef, useEffect, ReactNode, cloneElement } from 'react'
+import React, { useState, useRef, useEffect, cloneElement } from 'react'
+import type { ReactNode } from 'react'
 import {
 	Box,
 	Paper,
@@ -25,11 +26,11 @@ import {
 import DoctorNavBar from '../common/Navbar/DoctorNavBar'
 import AppNavBar from '../common/Navbar/AppNavBar'
 import { clearAuth, useAuth } from '../../hooks/useAuth'
+import type { LookupHospital, PatientProfile } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { USER_ROLES } from '../../constants/constants'
 import { ROUTES } from '../../constants/routes'
 import { useMemo } from 'react'
-import { LookupHospital, PatientProfile } from '../../hooks/useAuth'
 import { toast } from 'react-toastify'
 import ChatBot from '../ChatBot'
 import { buildS3Url } from '../../utils/s3'
@@ -511,12 +512,14 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 	}, [lookupData, role, user?.id])
 
 	useEffect(() => {
-		if (role !== USER_ROLES.PATIENT || !user?.id) return
+		const userId = user?.id
+		if (role !== USER_ROLES.PATIENT || !userId) return
 
+		const patientId = userId as string
 		let active = true
 		const fetchPatientAvatar = async () => {
 			try {
-				const res = await getPatientDetails(user.id)
+				const res = await getPatientDetails(patientId)
 				if (active) {
 					setPatientAvatarKey(res.data.personal.avatar || '')
 				}

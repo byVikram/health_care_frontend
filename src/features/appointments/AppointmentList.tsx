@@ -11,7 +11,8 @@ import { customCardStyle } from '../../styles/commonStyles'
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { useAuth, LookupHospital } from '../../hooks/useAuth'
+import { useAuth } from '../../hooks/useAuth'
+import type { LookupHospital } from '../../hooks/useAuth'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import AppSelect from '../../components/common/Select/AppSelect'
 import Grid from '@mui/material/Grid'
@@ -20,8 +21,8 @@ import { toast } from 'react-toastify'
 import { updateAppointmentsStatus } from '../dashboard/dashboardService'
 import { getDoctorAvailability, getAvailabilityModeBlocks, getDoctorById } from '../doctor/doctorService'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
-import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
-import { Appointment } from '../../types/appointment'
+import type { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
+import type { Appointment } from '../../types/appointment'
 import ConfirmIcon from '../../assets/icons/confirm.svg'
 import RejectIcon from '../../assets/icons/reject.svg'
 import RescheduleIcon from '../../assets/icons/reschedule.svg'
@@ -261,7 +262,7 @@ export default function AppointmentList() {
 		}
 
 		fetchAppointments()
-	}, [page, search, size, patientId, filterHospital, filterMode, filterDate, filterStatus, lookupData])
+	}, [activePatientId, page, search, size, filterHospital, filterMode, filterDate, filterStatus, lookupData, viewAs])
 
 	// ── Reschedule: fetch slots whenever the drawer's date/hospital/mode changes ──
 	useEffect(() => {
@@ -345,7 +346,7 @@ export default function AppointmentList() {
 		}
 	}
 
-	const handleRejectClick = (rowId: string, _anchorEl: HTMLElement) => {
+	const handleRejectClick = (rowId: string) => {
 		setPendingRejectId(rowId)
 		setRejectDialogOpen(true)
 	}
@@ -691,7 +692,7 @@ export default function AppointmentList() {
 							size="small"
 							onClick={(e) => {
 								e.stopPropagation()
-								handleRejectClick(row.id, e.currentTarget)
+								handleRejectClick(row.id)
 							}}
 							sx={{
 								bgcolor: '#ffeeee',
