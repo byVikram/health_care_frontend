@@ -196,8 +196,16 @@ function mergeOtherVitals(records: VitalRecord[]): VitalRecord[] {
 	return Array.from(mergedRecords.values()).sort(sortByRecordedAtDesc)
 }
 
-async function getPatientMetrics(patientPublicId: string): Promise<PatientMetrics> {
-	const res = await ApiService.get<PatientDetailsMetricsResponse>(API_ENDPOINTS.PATIENT.GET_BY_ID(patientPublicId))
+async function getPatientMetrics(
+	patientPublicId: string,
+	role?: string | null
+): Promise<PatientMetrics> {
+	const res =
+		role === 'patient'
+			? await ApiService.get<PatientDetailsMetricsResponse>(API_ENDPOINTS.PATIENT.ME, {
+					params: { patient_id: patientPublicId },
+				})
+			: await ApiService.get<PatientDetailsMetricsResponse>(API_ENDPOINTS.PATIENT.GET_BY_ID(patientPublicId))
 	const personal = res.data.data?.personal
 
 	return {
@@ -233,11 +241,12 @@ async function fetchVitalsByType(
 }
 
 export const getLatestVitals = async (
-	patientPublicId: string
+	patientPublicId: string,
+	role?: string | null
 ): Promise<Record<string, VitalRecord | null>> => {
 	const [res, metrics] = await Promise.all([
 		ApiService.get<LatestVitalsApiResponse>(API_ENDPOINTS.PATIENT.VITALS_LATEST(patientPublicId)),
-		getPatientMetrics(patientPublicId).catch(() => null),
+		getPatientMetrics(patientPublicId, role).catch(() => null),
 	])
 
 	return Object.fromEntries(
@@ -250,9 +259,10 @@ export const getLatestVitals = async (
 
 export const getVitalsHistory = async (
 	patientPublicId: string,
-	params: VitalsHistoryParams
+	params: VitalsHistoryParams,
+	role?: string | null
 ): Promise<VitalRecord[]> => {
-	const metricsPromise = getPatientMetrics(patientPublicId).catch(() => null)
+	const metricsPromise = getPatientMetrics(patientPublicId, role).catch(() => null)
 
 	if (params.vital_type === 'others') {
 		const [metrics, vitalGroups] = await Promise.all([

@@ -28,6 +28,7 @@ import AchievementCard, { AchievementCardData } from '../../../components/common
 import HorizontalCardCarousel from '../../../components/common/Carousel/HorizontalCardCarousel'
 import ProfessionalDetailsSection from './components/ProfessionalDetailsSection'
 import AchievementDetailsModal from '../../../components/common/Modal/AchievementDetailsModal'
+import { buildS3Url } from '../../../utils/s3'
 
 type AvailabilityMode = 'clinic' | 'video'
 type ApiAvailabilityMode = 'clinic_visit' | 'video_call'
@@ -615,7 +616,7 @@ export default function DoctorDetailPage() {
 					navigate('/payment', {
 						state: {
 							doctorName: doctorDetail?.name ?? '',
-							avatarUrl: doctorDetail?.details?.avatar_s3_key ?? '',
+							avatarUrl: buildS3Url(doctorDetail?.details?.avatar_s3_key),
 							specialty: doctorDetail?.specialities?.[0] ?? 'Doctor',
 							date: selectedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
 							time: resolvedSelectedTime,

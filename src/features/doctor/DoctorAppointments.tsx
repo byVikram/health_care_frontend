@@ -6,7 +6,6 @@ import {
 	// InputAdornment,
 	Divider,
 	Chip,
-	Popover,
 	Dialog,
 	DialogContent,
 	Tooltip,
@@ -34,6 +33,7 @@ import { getDoctorAvailability, getAvailabilityModeBlocks } from './doctorServic
 import ReferralBadge from '../referrals/ReferralBadge'
 import ReferralInfoCard from '../referrals/ReferralInfoCard'
 import ReferralNotesDialog from '../referrals/ReferralNotesDialog'
+import RejectAppointmentDialog from '../appointments/components/RejectAppointmentDialog'
 import type { DoctorRow } from './profile/components/DoctorFavouritesTab'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 import ApiService from '../../services/apiService'
@@ -119,9 +119,10 @@ export function DoctorAppointments({
 	// 'doctor' means the doctor rescheduled → patient must confirm; Confirm button is hidden for doctor.
 	const [localRescheduledBy, setLocalRescheduledBy] = useState<Record<string, string>>({})
 
-	// Reject confirmation popover state
-	const [rejectAnchorEl, setRejectAnchorEl] = useState<HTMLElement | null>(null)
+	// Reject confirmation dialog state
+	const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
 	const [pendingRejectId, setPendingRejectId] = useState<string | null>(null)
+	const [rejectSubmitting, setRejectSubmitting] = useState(false)
 
 	useEffect(() => {
 		const shouldRefresh = sessionStorage.getItem('refreshAppointments')
@@ -267,7 +268,7 @@ export function DoctorAppointments({
 			}
 			if (action === 'reject') {
 				setPendingRejectId(appointmentId)
-				setRejectAnchorEl(anchorEl ?? null)
+				setRejectDialogOpen(true)
 			}
 			if (action === 'reschedule') {
 				const apt = appointments.find((a) => a.id === appointmentId) ?? null
@@ -289,12 +290,12 @@ export function DoctorAppointments({
 		}
 	}
 
-	// Confirm reject after popover confirmation
-	const handleConfirmReject = async () => {
+	// Confirm reject after dialog confirmation
+	const handleConfirmReject = async (reason: string) => {
 		if (!pendingRejectId) return
-		setRejectAnchorEl(null)
+		setRejectSubmitting(true)
 		try {
-			const res = await updateAppointmentsStatus(pendingRejectId, 'a7d4e1c2-9f6b-4c83-b2e1-6f3a9d8c7b12')
+			const res = await updateAppointmentsStatus(pendingRejectId, 'a7d4e1c2-9f6b-4c83-b2e1-6f3a9d8c7b12', reason)
 			if (res.success) {
 				toast.success(res.message)
 				setLocalStatuses((prev) => ({ ...prev, [pendingRejectId]: 'cancelled' }))
@@ -302,6 +303,8 @@ export function DoctorAppointments({
 		} catch {
 			toast.error('Something went wrong. Please try again.')
 		} finally {
+			setRejectSubmitting(false)
+			setRejectDialogOpen(false)
 			setPendingRejectId(null)
 		}
 	}
@@ -324,7 +327,7 @@ export function DoctorAppointments({
 	}
 
 	const handleCancelReject = () => {
-		setRejectAnchorEl(null)
+		setRejectDialogOpen(false)
 		setPendingRejectId(null)
 	}
 
@@ -901,89 +904,13 @@ export function DoctorAppointments({
 				</Box>
 			</Box>
 
-			{/* Reject Confirmation Popover */}
-			<Popover
-				open={Boolean(rejectAnchorEl)}
-				anchorEl={rejectAnchorEl}
-				onClose={handleCancelReject}
-				anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-				transformOrigin={{ vertical: 'top', horizontal: 'center' }}
-				disableScrollLock
-				sx={{ zIndex: 9999 }}
-				slotProps={{
-					paper: {
-						sx: {
-							borderRadius: '16px',
-							px: 3,
-							py: 3,
-							maxWidth: 300,
-							width: 280,
-							textAlign: 'center',
-							boxShadow: '0px 8px 40px rgba(0,0,0,0.18)',
-							mt: 1,
-							overflow: 'visible',
-							'&::before': {
-								content: '""',
-								position: 'absolute',
-								top: -8,
-								left: '50%',
-								transform: 'translateX(-50%)',
-								width: 0,
-								height: 0,
-								borderLeft: '9px solid transparent',
-								borderRight: '9px solid transparent',
-								borderBottom: '9px solid #fff',
-								filter: 'drop-shadow(0px -2px 2px rgba(0,0,0,0.06))',
-							},
-						},
-					},
-				}}
-			>
-				<Typography sx={{ fontWeight: 700, fontSize: '16px', color: 'text.primary', mb: 0.5 }}>
-					Are you sure?
-				</Typography>
-				<Typography sx={{ fontSize: '14px', color: 'text.primary', fontWeight: 600, mb: 3 }}>
-					You want to reject appointment
-				</Typography>
-				<Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center' }}>
-					<Box
-						onClick={handleCancelReject}
-						sx={{
-							flex: 1,
-							py: 1.2,
-							border: '2px solid #0c7c7c',
-							borderRadius: '50px',
-							color: '#0c7c7c',
-							fontWeight: 600,
-							fontSize: '13px',
-							cursor: 'pointer',
-							textAlign: 'center',
-							transition: 'background 0.2s',
-							'&:hover': { bgcolor: 'rgba(12,124,124,0.06)' },
-						}}
-					>
-						Cancel
-					</Box>
-					<Box
-						onClick={handleConfirmReject}
-						sx={{
-							flex: 1,
-							py: 1.2,
-							bgcolor: '#e53935',
-							borderRadius: '50px',
-							color: '#fff',
-							fontWeight: 600,
-							fontSize: '13px',
-							cursor: 'pointer',
-							textAlign: 'center',
-							transition: 'opacity 0.2s',
-							'&:hover': { opacity: 0.88 },
-						}}
-					>
-						Yes, Reject
-					</Box>
-				</Box>
-			</Popover>
+			{/* Reject Confirmation Dialog */}
+			<RejectAppointmentDialog
+				open={rejectDialogOpen}
+				onCancel={handleCancelReject}
+				onConfirm={handleConfirmReject}
+				submitting={rejectSubmitting}
+			/>
 
 			{/* Reschedule drawer */}
 			<RescheduleDrawer

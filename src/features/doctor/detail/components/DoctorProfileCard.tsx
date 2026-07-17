@@ -14,6 +14,7 @@ import { useEffect } from 'react'
 import { toast } from 'react-toastify'
 import { togglePatientFavouriteDoctor, getPatientFavouriteDoctors } from '../../doctorService'
 import { useAuth } from '../../../../hooks/useAuth'
+import { buildS3Url } from '../../../../utils/s3'
 
 interface StatItemProps {
 	icon: React.ReactNode
@@ -94,6 +95,7 @@ export default function DoctorProfileCard({ doctor, selectedHospitalId }: Doctor
 	const secondaryHospital = doctor.hospitals.find((h) => h.id !== currentHospital?.id) || null
 
 	const social = doctor.details.social_media_handles ?? {}
+	const avatarUrl = buildS3Url(doctor.details.avatar_s3_key)
 
 	const handleFavourite = async () => {
 		const newStatus = !isFavourited
@@ -181,7 +183,7 @@ export default function DoctorProfileCard({ doctor, selectedHospitalId }: Doctor
 				{/* Top: Avatar + Info */}
 				<Box sx={{ display: 'flex', gap: 2.5, p: 1, alignItems: 'flex-start' }}>
 					<Avatar
-						src={doctor.details.avatar_s3_key || ''}
+						src={avatarUrl || undefined}
 						alt={doctor.name}
 						sx={{ width: 88, height: 88, borderRadius: '50%', flexShrink: 0 }}
 						variant="rounded"
