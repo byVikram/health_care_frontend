@@ -662,27 +662,6 @@ export default function ConsultationPage() {
 					<Tab label="Vitals" />
 					<Tab label="Timeline" />
 				</Tabs>
-
-				{/* Timeline -- sits right next to the Vitals tab. Opens the
-				    appointment history drawer (reuses AppointmentDetailsDrawer)
-				    instead of switching tab panels. */}
-				<Box
-					onClick={() => setTimelineDrawerOpen(true)}
-					sx={{
-						cursor: 'pointer',
-						textTransform: 'none',
-						fontWeight: 500,
-						fontSize: '14px',
-						color: 'text.secondary',
-						px: 1.5,
-						py: 1,
-						ml: -1,
-						borderRadius: '8px',
-						'&:hover': { color: 'primary.main', bgcolor: 'action.hover' },
-					}}
-				>
-					Timeline
-				</Box>
 			</Box>
 
 			{/* Tab content */}
@@ -723,11 +702,6 @@ export default function ConsultationPage() {
 				setRescheduleHospitalId={setRescheduleHospitalId}
 				appointmentType={appointmentType}
 				setAppointmentType={setAppointmentType}
-			/>
-			<AppointmentDetailsDrawer
-				open={timelineDrawerOpen}
-				onClose={() => setTimelineDrawerOpen(false)}
-				appointmentId={appointmentId ?? null}
 			/>
 		</Box>
 	)
