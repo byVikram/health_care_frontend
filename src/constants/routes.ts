@@ -69,4 +69,15 @@ export const ROUTES = {
 		CONSULTATION: '/consultation/:patientId/:appointmentId',
 		APPOINTMENT_DETAIL: '/portal/appointments/:appointmentId',
 	},
+
+	ADMIN: {
+		LOGIN: '/admin/login',
+		DASHBOARD: '/admin',
+		VERIFICATIONS: '/admin/verifications',
+		USERS: '/admin/users',
+		APPOINTMENTS: '/admin/appointments',
+		BILLING: '/admin/billing',
+		AUDITS: '/admin/audits',
+		SPECIALITIES: '/admin/specialities',
+	},
 }
