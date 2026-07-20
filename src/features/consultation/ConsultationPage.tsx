@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 // import { customCardStyle } from '../../styles/commonStyles'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Box, Container, Typography, Avatar, Tab, Tabs, IconButton } from '@mui/material'
+import { Box, Container, Typography, Avatar, Tab, Tabs, IconButton, Card, Divider } from '@mui/material'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
 import PhoneIcon from '@mui/icons-material/Phone'
 import Grid from '@mui/material/Grid'
@@ -13,7 +13,7 @@ import ShareWith from './components/ShareWith'
 import VitalsTab from './components/VitalsTab'
 import ConsultationNotes from './components/ConsultationNotes'
 import { ConsultationPatient, ConsultationDoctor } from '../../types/consultation'
-import { getPatientDetails } from '../../services/userService'
+import { getPatientDetails, getMyPatientDetails } from '../../services/userService'
 import { Patient } from '../../types/patient'
 import { getAppointmentById } from '../../services/userService'
 import { Appointment } from '../../types/appointment'
@@ -25,6 +25,10 @@ import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { toast } from 'react-toastify'
+import { updateAppointmentsStatus } from '../dashboard/dashboardService'
+import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
+import { customCardStyle } from '../../styles/commonStyles'
+import AppointmentDetailsDrawer from '../appointments/components/AppointmentDetailsDrawer'
 
 interface PatientDetailsResponse {
 	success: boolean
@@ -181,7 +185,7 @@ const getDrawerAppointmentType = (appointmentMode?: Appointment['appointment_mod
 export default function ConsultationPage() {
 	const [activeTab, setActiveTab] = useState(0)
 	const navigate = useNavigate()
-	const { lookupData } = useAuth()
+	const { lookupData, role } = useAuth()
 
 	const { patientId, appointmentId } = useParams()
 
@@ -198,6 +202,8 @@ export default function ConsultationPage() {
 	const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false)
 	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
 	const [appointmentType, setAppointmentType] = useState<'clinic' | 'video'>('clinic')
+	const [saveConsultationLoading, setSaveConsultationLoading] = useState(false)
+	const [timelineDrawerOpen, setTimelineDrawerOpen] = useState(false)
 
 	// Patient + appointment gate the loading screen — both tabs (Info & Timeline,
 	// Vitals) depend on the header, which needs them regardless of which tab is active.
@@ -211,23 +217,34 @@ export default function ConsultationPage() {
 
 		const fetchData = async () => {
 			try {
+				// GET /api/patients/{id}/details is doctor-only on the backend -- a patient
+				// viewing their own consultation must instead hit /me/details, which
+				// resolves from the auth token and needs no id.
 				const [patientRes, appointmentRes] = await Promise.allSettled([
-					getPatientDetails(patientId) as Promise<PatientDetailsResponse>,
+					(role === 'doctor'
+						? getPatientDetails(patientId)
+						: getMyPatientDetails()) as Promise<PatientDetailsResponse>,
 					getAppointmentById(appointmentId) as Promise<AppointmentDetailsResponse>,
 				])
 
 				if (cancelled) return
 
 				if (patientRes.status === 'fulfilled') {
-					setPatient(patientRes.value.data)
+					// /me/details (patient role) omits the 'id' field entirely since a
+					// patient's own record never needs to echo its own id back; the route
+					// param already carries it, so backfill it here for the child
+					// components (PatientInfoCard, etc.) that expect Patient.id to be set.
+					setPatient({ ...patientRes.value.data, id: patientRes.value.data.id || patientId })
 				} else {
 					console.error('Error fetching patient details', patientRes.reason)
+					toast.error('Failed to load patient details. Please try again.')
 				}
 
 				if (appointmentRes.status === 'fulfilled') {
 					setAppointment(appointmentRes.value.data)
 				} else {
 					console.error('Error fetching appointment details', appointmentRes.reason)
+					toast.error('Failed to load appointment details. Please try again.')
 				}
 			} finally {
 				if (!cancelled) setLoading(false)
@@ -239,13 +256,13 @@ export default function ConsultationPage() {
 		return () => {
 			cancelled = true
 		}
-	}, [patientId, appointmentId])
+	}, [patientId, appointmentId, role])
 
 	// Doctor profile is only used by the Info tab's ConsultationNotes header and the
 	// reschedule drawer's hospital list — fetch it in the background instead of
 	// blocking the loading screen for tabs (e.g. Vitals) that don't need it.
 	useEffect(() => {
-		if (!patientId || !appointmentId) return
+		if (!patientId || !appointmentId || role !== 'doctor') return
 
 		let cancelled = false
 
@@ -267,7 +284,7 @@ export default function ConsultationPage() {
 		return () => {
 			cancelled = true
 		}
-	}, [patientId, appointmentId])
+	}, [patientId, appointmentId, role])
 
 	useEffect(() => {
 		if (!appointment) return
@@ -320,7 +337,83 @@ export default function ConsultationPage() {
 		}
 	}, [appointment, appointmentType, doctorProfile, rescheduleDate, rescheduleHospitalId, rescheduleOpen])
 
-	if (loading) return <div>Loading...</div>
+	if (loading) {
+		return (
+			<Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
+				{/* Skeleton Header */}
+				<Box
+					sx={{
+						bgcolor: 'background.paper',
+						borderBottom: '1px solid',
+						borderColor: 'divider',
+						px: 3,
+						py: 1.5,
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'space-between',
+					}}
+				>
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+						<AppSkeleton variant="circular" width={32} height={32} />
+						<AppSkeleton variant="circular" width={40} height={40} />
+						<Box>
+							<AppSkeleton variant="text" width={140} height={20} />
+							<AppSkeleton variant="text" width={200} height={16} />
+						</Box>
+					</Box>
+					<Box sx={{ display: 'flex', gap: 1.5 }}>
+						<AppSkeleton variant="rounded" width={80} height={36} sx={{ borderRadius: '20px' }} />
+						<AppSkeleton variant="rounded" width={120} height={36} sx={{ borderRadius: '20px' }} />
+					</Box>
+				</Box>
+
+				{/* Skeleton Tabs */}
+				<Box sx={{ borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', px: 3, py: 1 }}>
+					<Box sx={{ display: 'flex', gap: 3 }}>
+						<AppSkeleton variant="text" width={60} height={28} />
+						<AppSkeleton variant="text" width={60} height={28} />
+						<AppSkeleton variant="text" width={80} height={28} />
+					</Box>
+				</Box>
+
+				{/* Skeleton Content */}
+				<Container maxWidth="lg" sx={{ py: 3 }}>
+					<Grid container spacing={3}>
+						<Grid size={{ xs: 12, md: 6 }}>
+							<Card sx={{ ...customCardStyle, p: 3, mb: 3 }}>
+								<Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2 }}>
+									<AppSkeleton variant="circular" width={60} height={60} />
+									<Box>
+										<AppSkeleton variant="text" width={160} height={22} />
+										<AppSkeleton variant="text" width={120} height={16} />
+									</Box>
+								</Box>
+								<Divider sx={{ my: 2 }} />
+								<AppSkeleton variant="text" width="100%" height={18} />
+								<AppSkeleton variant="text" width="80%" height={18} />
+								<AppSkeleton variant="text" width="60%" height={18} />
+							</Card>
+							<Card sx={{ ...customCardStyle, p: 3 }}>
+								<AppSkeleton variant="text" width={160} height={24} />
+								<AppSkeleton sx={{ mt: 1 }} height={80} />
+								<AppSkeleton sx={{ mt: 1 }} height={80} />
+							</Card>
+						</Grid>
+						<Grid size={{ xs: 12, md: 6 }}>
+							<Card sx={{ ...customCardStyle, p: 3, mb: 3 }}>
+								<AppSkeleton variant="text" width={200} height={24} />
+								<AppSkeleton sx={{ mt: 2 }} height={200} />
+							</Card>
+							<Card sx={{ ...customCardStyle, p: 3 }}>
+								<AppSkeleton variant="text" width={140} height={24} />
+								<AppSkeleton sx={{ mt: 1 }} height={60} />
+							</Card>
+						</Grid>
+					</Grid>
+				</Container>
+			</Box>
+		)
+	}
 	if (!patient) return <div>Unable to load patient details.</div>
 
 	const consultationPatient = mapPatientToConsultationPatient(patient)
@@ -368,6 +461,36 @@ export default function ConsultationPage() {
 		setRescheduleOpen(true)
 	}
 
+
+	// Doctor-only: saves the consultation and marks the appointment Completed.
+	// NOTE: there is no dedicated 'save consultation notes' backend endpoint yet,
+	// so this only updates the appointment status; wiring the prescription/notes
+	// save is a follow-up once that endpoint exists.
+	const handleSaveConsultation = async () => {
+		if (!appointment) {
+			toast.warning('Appointment details are not available yet.')
+			return
+		}
+		const completedStatusId = lookupData?.appointment_statuses.find((s) => s.label === 'completed')?.id
+		if (!completedStatusId) {
+			toast.error('Could not resolve the completed status. Please try again later.')
+			return
+		}
+		setSaveConsultationLoading(true)
+		try {
+			const res = await updateAppointmentsStatus(appointment.id, completedStatusId)
+			if (res.success) {
+				toast.success(res.message || 'Consultation saved.')
+				setAppointment((prev) => (prev ? { ...prev, status: 'completed' } : prev))
+			} else {
+				toast.error(res.message || 'Failed to save consultation.')
+			}
+		} catch {
+			toast.error('Something went wrong. Please try again.')
+		} finally {
+			setSaveConsultationLoading(false)
+		}
+	}
 	const handleRescheduleConfirm = async () => {
 		if (!appointment || !rescheduleTime) {
 			toast.warning('Please select a time slot before confirming.')
@@ -475,14 +598,41 @@ export default function ConsultationPage() {
 				</Box>
 
 				{/* Right: Follow up button */}
-				<AppButton variant="contained" label="+ Reconnect" borderRadius="20px" sx={{ px: 4 }} onClick={handleOpenReconnect} />
+				<Box sx={{ display: 'flex', gap: 1.5 }}>
+					{role === 'doctor' && appointment && (() => {
+						// Clicking it again afterward is still allowed (idempotent), not disabled.
+						const isSaved = (appointment.status || '').toString().toLowerCase() === 'completed'
+						return (
+							<AppButton
+								variant='contained'
+								color='primary'
+								label={isSaved ? 'Saved' : 'Save'}
+								borderRadius='20px'
+								loading={saveConsultationLoading}
+								sx={{ px: 4 }}
+								onClick={handleSaveConsultation}
+							/>
+						)
+					})()}
+					{role === 'doctor' && (
+						<AppButton variant='contained' label=' Reconnect' borderRadius='20px' sx={{ px: 4 }} onClick={handleOpenReconnect} />
+					)}
+				</Box>
 			</Box>
 
 			{/* Tabs */}
 			<Box sx={{ borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
 				<Tabs
 					value={activeTab}
-					onChange={(_, v) => setActiveTab(v)}
+					onChange={(_, v) => {
+						// Tab 2 (Timeline) opens a drawer overlay instead of switching content,
+						// so keep the previous tab active to avoid blank space behind the drawer.
+						if (v === 2) {
+							setTimelineDrawerOpen(true)
+							return
+						}
+						setActiveTab(v)
+					}}
 					sx={{
 						'& .MuiTab-root': {
 							textTransform: 'none',
@@ -494,8 +644,9 @@ export default function ConsultationPage() {
 						'& .MuiTabs-indicator': { bgcolor: 'primary.main', height: 3, borderRadius: '2px' },
 					}}
 				>
-					<Tab label="Info & Timeline" />
+					<Tab label="Info" />
 					<Tab label="Vitals" />
+					<Tab label="Timeline" />
 				</Tabs>
 			</Box>
 
@@ -515,6 +666,11 @@ export default function ConsultationPage() {
 				)}
 				{activeTab === 1 && patientId && <VitalsTab patientPublicId={patientId} />}
 			</Container>
+			<AppointmentDetailsDrawer
+				open={timelineDrawerOpen}
+				onClose={() => setTimelineDrawerOpen(false)}
+				appointmentId={appointmentId ?? null}
+			/>
 			<RescheduleDrawer
 				rescheduleOpen={rescheduleOpen}
 				setRescheduleOpen={setRescheduleOpen}

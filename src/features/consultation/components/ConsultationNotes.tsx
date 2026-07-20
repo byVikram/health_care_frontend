@@ -306,6 +306,7 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 				display: 'flex',
 				flexGrow: 1,
 				flexDirection: 'column',
+				minHeight: 420,
 			}}
 		>
 			{/* Doctor + Clinic header */}
@@ -381,6 +382,7 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 			<Box
 				sx={{
 					flex: 1,
+					minHeight: 300,
 					position: 'relative',
 					bgcolor: 'background.paper',
 					display: 'flex',

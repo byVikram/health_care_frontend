@@ -14,6 +14,7 @@ interface AppTableProps<T extends Record<string, unknown> = Record<string, unkno
   rows?: T[];
   loading?: boolean;
   emptyMessage?: string;
+  rowSx?: (row: T) => Record<string, unknown>;
 }
 
 export default function AppTable<T extends Record<string, unknown>>(props: AppTableProps<T> & { onRowClick?: (row: T) => void }) {
@@ -22,6 +23,7 @@ export default function AppTable<T extends Record<string, unknown>>(props: AppTa
     rows = [],
     loading = false,
     emptyMessage = "No data found.",
+    rowSx,
     onRowClick,
   } = props;
   return (
@@ -67,6 +69,7 @@ export default function AppTable<T extends Record<string, unknown>>(props: AppTa
                   "&:hover": { bgcolor: "#f8fbff" },
                   transition: "background 0.15s",
                   cursor: onRowClick ? "pointer" : "default",
+                  ...(rowSx?.(row) ?? {}),
                 }}
               >
                 {columns.map((col) => (

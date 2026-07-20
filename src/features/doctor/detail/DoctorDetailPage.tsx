@@ -246,7 +246,39 @@ export default function DoctorDetailPage() {
 				})
 				if (!active) return
 				const byMode = normalizeAvailabilityByMode(res)
-				setAvailableSlotGroups(byMode[selectedType] ?? [])
+				let filteredSlots = byMode[selectedType] ?? []
+
+				// Hide expired, unbooked, available slots for the current day.
+				// Booked slots continue to show for visibility/reference.
+				const now = new Date()
+				const isToday =
+					selectedDate.getFullYear() === now.getFullYear() &&
+					selectedDate.getMonth() === now.getMonth() &&
+					selectedDate.getDate() === now.getDate()
+
+				if (isToday) {
+					const currentHour = now.getHours()
+					const currentMinute = now.getMinutes()
+
+					filteredSlots = filteredSlots
+						.map((group) => ({
+							...group,
+							slots: group.slots.filter((slot) => {
+								// Always keep booked slots visible
+								if (slot.is_booked) return true
+								// Only hide available (non-booked) slots that have passed
+								const [hStr, mStr] = slot.start_time.split(':')
+								const slotHour = parseInt(hStr, 10)
+								const slotMinute = parseInt(mStr ?? '0', 10)
+								// Keep the slot if its time has NOT yet passed
+								return slotHour > currentHour || (slotHour === currentHour && slotMinute > currentMinute)
+							}),
+						}))
+						// Remove groups that have no visible slots remaining
+						.filter((group) => group.slots.length > 0)
+				}
+
+				setAvailableSlotGroups(filteredSlots)
 			} catch (err) {
 				console.log(err)
 				if (!active) return
