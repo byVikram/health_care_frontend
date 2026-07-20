@@ -1,4 +1,4 @@
-﻿// src/components/common/DateSlotPicker/DateSlotPicker.tsx
+// src/components/common/DateSlotPicker/DateSlotPicker.tsx
 import { formatINR } from '../../../utils/Utils'
 import { useState } from 'react'
 import { Box, Typography, IconButton } from '@mui/material'
@@ -523,6 +523,18 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 										const isBooked = slot.is_booked
 										const isDisabled = !slot.is_enabled
 
+										const accentColor = isBooked
+											? 'transparent'
+											: props.multiSelect
+												? slot.status === 'BLOCKED'
+													? 'error.main'
+													: isSelected
+														? 'success.main'
+														: 'error.main'
+												: isSelected
+													? 'primary.main'
+													: 'success.main'
+
 										return (
 											<Box
 												key={slot.start_time}
@@ -531,50 +543,47 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 													handleSlotClick(slot.start_time)
 												}}
 												sx={{
-													py: 0.6,
-													px: 0.4,
+													position: 'relative',
+													display: 'flex',
+													alignItems: 'center',
+													justifyContent: 'center',
+													py: 1.1,
+													pl: '14px',
+													pr: '8px',
 													textAlign: 'center',
-													border: '1.5px solid',
-													borderColor: isSelected ? 'primary.main' : 'divider',
-													borderRadius: '8px',
+													bgcolor: isBooked ? 'rgba(0,0,0,0.04)' : 'background.paper',
+													border: '1px solid',
+													borderColor: 'divider',
+													borderRadius: '10px',
+													overflow: 'hidden',
+													boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
 													cursor: isBooked
 														? 'default'
 														: isDisabled
 															? 'not-allowed'
 															: 'pointer',
-													bgcolor: isBooked
-														? 'rgba(0,0,0,0.08)'
-														: props.multiSelect
-															? slot.status === 'BLOCKED'
-																? 'error.main'
-																: isSelected
-																	? 'success.main'
-																	: 'error.main'
-															: isSelected
-																? 'primary.main'
-																: 'background.paper',
 													transition: 'all 0.15s',
+													'&:before': {
+														content: '""',
+														position: 'absolute',
+														left: 0,
+														top: 0,
+														bottom: 0,
+														width: '4px',
+														bgcolor: accentColor,
+													},
 													'&:hover': isBooked
 														? {}
 														: {
-																borderColor: 'primary.main',
-																bgcolor: isSelected
-																	? 'primary.main'
-																	: 'rgba(43,111,113,0.06)',
+																boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
 															},
 												}}
 											>
 												<Typography
 													variant="body1"
 													sx={{
-														fontWeight: isSelected ? 600 : 400,
-														color: props.multiSelect
-															? '#fff'
-															: isSelected
-																? '#fff'
-																: isBooked
-																	? 'text.disabled'
-																	: 'text.primary',
+														fontWeight: 600,
+														color: isBooked ? 'text.disabled' : '#0f2a4a',
 													}}
 												>
 													{to12hr(slot.start_time)}

@@ -43,10 +43,10 @@ export default function AdditionalDetailTab({ data, onChange, handleSave }: Addi
 					getTreatmentOfferings() as Promise<MasterOptionResponse>,
 				])
 				if (areasRes.success) {
-					setMasterAreas(areasRes.data.map((item: any) => ({ id: item.id, label: item.label })))
+					setMasterAreas((areasRes.data ?? []).map((item) => ({ id: String(item.id), label: item.label })))
 				}
 				if (treatmentsRes.success) {
-					setMasterTreatments(treatmentsRes.data.map((item: any) => ({ id: item.id, label: item.label })))
+					setMasterTreatments((treatmentsRes.data ?? []).map((item) => ({ id: String(item.id), label: item.label })))
 				}
 			} catch (error) {
 				console.error('Failed to load master data', error)

@@ -79,6 +79,11 @@ export const API_ENDPOINTS = {
 		RADIOLOGY_REPORTS: (id: string) => `/api/patients/${id}/radiology-reports`,
 		APPOINTMENTS_HOSPITALS: '/api/patients/appointments/hospitals',
 	},
+	REVIEWS: {
+		CREATE: '/api/reviews',
+		BY_DOCTOR: (doctorId: string | number) => `/api/reviews/doctor/${doctorId}`,
+		BY_APPOINTMENT: (appointmentId: string | number) => `/api/reviews/appointment/${appointmentId}`,
+	},
 	LOOKUP: {
 		GET: '/api/lookup',
 	},

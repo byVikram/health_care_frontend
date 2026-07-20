@@ -150,10 +150,14 @@ export function DoctorAppointments({
 		// Local status override (set after an action is taken without a full page refresh)
 		const localStatus = localStatuses[apt.id]
 		const status = (localStatus ?? (typeof apt.status === 'string' ? apt.status : (apt.status?.label ?? 'pending'))).toLowerCase()
+		const rescheduledBy = (localRescheduledBy[apt.id] ?? apt.rescheduled_by ?? '').toLowerCase()
+
+		if (rescheduledBy === 'doctor' && status === 'pending') {
+			return 'Waiting for Patient Confirmation'
+		}
 
 		if (status === 'rescheduled') {
 			// Prefer local tracking of who rescheduled; fall back to API field.
-			const rescheduledBy = (localRescheduledBy[apt.id] ?? apt.rescheduled_by ?? '').toLowerCase()
 			if (rescheduledBy === 'doctor') return 'Waiting for Patient Confirmation'
 			if (rescheduledBy === 'patient') return 'Waiting for Your Confirmation'
 			return 'Rescheduled'
@@ -229,9 +233,7 @@ export function DoctorAppointments({
 				setLocalStatuses((prev) => ({ ...prev, [rescheduleAppt.id]: nextStatus }))
 				// Record that the DOCTOR was the initiator so the Confirm button is
 				// correctly hidden and the status label reads "Waiting for Patient Confirmation".
-				if (nextStatus === 'rescheduled') {
-					setLocalRescheduledBy((prev) => ({ ...prev, [rescheduleAppt.id]: 'doctor' }))
-				}
+				setLocalRescheduledBy((prev) => ({ ...prev, [rescheduleAppt.id]: 'doctor' }))
 				
 				const slot = rescheduleSlots
 					.flatMap((s) => s.slots)
@@ -257,7 +259,7 @@ export function DoctorAppointments({
 	}
 
 	// Action button handler
-	const handleAction = async (action: string, appointmentId: string, anchorEl?: HTMLElement | null) => {
+	const handleAction = async (action: string, appointmentId: string) => {
 		try {
 			if (action === 'confirm') {
 				const res = await updateAppointmentsStatus(appointmentId, '3f9a2c8e-7b61-4d2a-9a3f-5c8e1b2d4f90')
@@ -857,7 +859,6 @@ export function DoctorAppointments({
 															handleAction(
 																action.action,
 																apt.id,
-																e.currentTarget as HTMLElement
 															)
 														}}
 														sx={{
