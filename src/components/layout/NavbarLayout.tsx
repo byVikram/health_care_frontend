@@ -1,5 +1,6 @@
 // src/components/layout/NavbarLayout.tsx
-import React, { useState, useRef, useEffect, ReactNode, cloneElement } from 'react'
+import React, { useState, useRef, useEffect, cloneElement } from 'react'
+import type { ReactNode } from 'react'
 import {
 	Box,
 	Paper,
@@ -25,13 +26,15 @@ import {
 import DoctorNavBar from '../common/Navbar/DoctorNavBar'
 import AppNavBar from '../common/Navbar/AppNavBar'
 import { clearAuth, useAuth } from '../../hooks/useAuth'
+import type { LookupHospital, PatientProfile } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { USER_ROLES } from '../../constants/constants'
 import { ROUTES } from '../../constants/routes'
 import { useMemo } from 'react'
-import { LookupHospital, PatientProfile } from '../../hooks/useAuth'
 import { toast } from 'react-toastify'
 import ChatBot from '../ChatBot'
+import { buildS3Url } from '../../utils/s3'
+import { getPatientDetails } from '../../features/patient/patientService'
 
 const NAVBAR_HEIGHT = 64
 
@@ -294,7 +297,7 @@ function AccountSwitcher({
 				>
 					<Stack direction="row" spacing={2} alignItems="center" flex={1}>
 						<Avatar
-							src={account.avatar_s3_key || undefined}
+							src={buildS3Url(account.avatar_s3_key) || undefined}
 							sx={{ width: 40, height: 40, fontSize: '1rem' }}
 						>
 							{account.name.charAt(0)}
@@ -486,6 +489,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 	const [activeHospital, setActiveHospital] = useState<LookupHospital | null>(null)
 	const [accountSwitcherOpen, setAccountSwitcherOpen] = useState(false)
 	const [addUserOpen, setAddUserOpen] = useState(false)
+	const [patientAvatarKey, setPatientAvatarKey] = useState('')
 
 	const availableAccounts = useMemo(() => lookupData?.patient_profiles ?? [], [lookupData])
 	const currentAccount = useMemo(() => {
@@ -502,15 +506,40 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 			if (selfProfile) {
 				localStorage.setItem('patient_id', selfProfile.id)
 			}
+		} else if (!localStorage.getItem('patient_id') && role === USER_ROLES.PATIENT && user?.id) {
+			localStorage.setItem('patient_id', user.id)
 		}
-	}, [lookupData])
+	}, [lookupData, role, user?.id])
+
+	useEffect(() => {
+		const userId = user?.id
+		if (role !== USER_ROLES.PATIENT || !userId) return
+
+		const patientId = userId as string
+		let active = true
+		const fetchPatientAvatar = async () => {
+			try {
+				const res = await getPatientDetails(patientId)
+				if (active) {
+					setPatientAvatarKey(res.data.personal.avatar || '')
+				}
+			} catch {
+				if (active) setPatientAvatarKey('')
+			}
+		}
+
+		fetchPatientAvatar()
+		return () => {
+			active = false
+		}
+	}, [role, user?.id])
 
 	const profileAccount = {
 		id: currentAccount?.id || '',
 		name: currentAccount?.name || '',
 		email: user?.email || '',
 		relation: currentAccount?.relation || '',
-		avatar: currentAccount?.avatar_s3_key || '',
+		avatar: buildS3Url(currentAccount?.avatar_s3_key || user?.avatar || patientAvatarKey),
 	}
 
 	const handleSwitchAccount = (account: PatientProfile) => {
@@ -573,7 +602,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 							setDropdownOpen((prev) => !prev)
 						}}
 						onHospitalChange={handleHospitalChange}
-						avatarSrc={user?.avatar || undefined}
+						avatarSrc={buildS3Url(user?.avatar) || undefined}
 					/>
 				)}
 			</Box>

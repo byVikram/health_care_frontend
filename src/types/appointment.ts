@@ -68,6 +68,8 @@ export interface Appointment {
 	} | null
 	history?: AppointmentHistoryEntry[]
 	rescheduled_by?: string | null
+	// Reason selected by the doctor when rejecting (or otherwise changing the status of) the appointment.
+	reason?: string | null
 	referral?: {
 		id: string
 		referring_doctor: {

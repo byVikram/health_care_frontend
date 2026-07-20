@@ -184,6 +184,7 @@ const getDrawerAppointmentType = (appointmentMode?: Appointment['appointment_mod
 
 export default function ConsultationPage() {
 	const [activeTab, setActiveTab] = useState(0)
+	const [timelineDrawerOpen, setTimelineDrawerOpen] = useState(false)
 	const navigate = useNavigate()
 	const { lookupData, role } = useAuth()
 
@@ -203,7 +204,7 @@ export default function ConsultationPage() {
 	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
 	const [appointmentType, setAppointmentType] = useState<'clinic' | 'video'>('clinic')
 	const [saveConsultationLoading, setSaveConsultationLoading] = useState(false)
-	const [timelineDrawerOpen, setTimelineDrawerOpen] = useState(false)
+	// const [timelineDrawerOpen, setTimelineDrawerOpen] = useState(false)
 
 	// Patient + appointment gate the loading screen — both tabs (Info & Timeline,
 	// Vitals) depend on the header, which needs them regardless of which tab is active.
@@ -220,6 +221,11 @@ export default function ConsultationPage() {
 				// GET /api/patients/{id}/details is doctor-only on the backend -- a patient
 				// viewing their own consultation must instead hit /me/details, which
 				// resolves from the auth token and needs no id.
+				// const patientDetailsFetch =
+				// 	role === 'patient'
+				// 		? (getMyPatientDetails(patientId) as Promise<PatientDetailsResponse>)
+				// 		: (getPatientDetails(patientId) as Promise<PatientDetailsResponse>)
+
 				const [patientRes, appointmentRes] = await Promise.allSettled([
 					(role === 'doctor'
 						? getPatientDetails(patientId)
@@ -621,7 +627,15 @@ export default function ConsultationPage() {
 			</Box>
 
 			{/* Tabs */}
-			<Box sx={{ borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+			<Box
+				sx={{
+					borderBottom: '1px solid',
+					borderColor: 'divider',
+					bgcolor: 'background.paper',
+					display: 'flex',
+					alignItems: 'center',
+				}}
+			>
 				<Tabs
 					value={activeTab}
 					onChange={(_, v) => {
@@ -648,6 +662,27 @@ export default function ConsultationPage() {
 					<Tab label="Vitals" />
 					<Tab label="Timeline" />
 				</Tabs>
+
+				{/* Timeline -- sits right next to the Vitals tab. Opens the
+				    appointment history drawer (reuses AppointmentDetailsDrawer)
+				    instead of switching tab panels. */}
+				<Box
+					onClick={() => setTimelineDrawerOpen(true)}
+					sx={{
+						cursor: 'pointer',
+						textTransform: 'none',
+						fontWeight: 500,
+						fontSize: '14px',
+						color: 'text.secondary',
+						px: 1.5,
+						py: 1,
+						ml: -1,
+						borderRadius: '8px',
+						'&:hover': { color: 'primary.main', bgcolor: 'action.hover' },
+					}}
+				>
+					Timeline
+				</Box>
 			</Box>
 
 			{/* Tab content */}
@@ -688,6 +723,11 @@ export default function ConsultationPage() {
 				setRescheduleHospitalId={setRescheduleHospitalId}
 				appointmentType={appointmentType}
 				setAppointmentType={setAppointmentType}
+			/>
+			<AppointmentDetailsDrawer
+				open={timelineDrawerOpen}
+				onClose={() => setTimelineDrawerOpen(false)}
+				appointmentId={appointmentId ?? null}
 			/>
 		</Box>
 	)

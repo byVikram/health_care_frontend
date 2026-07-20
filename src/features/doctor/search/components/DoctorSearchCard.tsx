@@ -6,6 +6,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn'
 import AppButton from '../../../../components/common/Button/AppButton'
 import { DoctorSearchItem } from '../../../../types/doctor-search'
 import { useNavigate } from 'react-router-dom'
+import { buildS3Url } from '../../../../utils/s3'
 
 interface DoctorSearchCardProps {
 	doctor: DoctorSearchItem

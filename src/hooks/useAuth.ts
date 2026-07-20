@@ -32,6 +32,7 @@ export interface PatientProfile {
 
 export interface LookupData {
 	appointment_statuses: AppointmentStatus[]
+	appoinment_statuses?: AppointmentStatus[]
 	specialities: SpecialitiesResponse[]
 	hospitals: LookupHospital[]
 	patient_profiles: PatientProfile[]
@@ -53,10 +54,20 @@ function readAuthSnapshot(): AuthState {
 		const accessToken = localStorage.getItem('access_token')
 		const refreshToken = localStorage.getItem('refresh_token')
 		const lookupRaw = localStorage.getItem('lookup')
-		const lookupData: LookupData | null = lookupRaw ? (JSON.parse(lookupRaw) as LookupData) : null
+		const lookupData = normalizeLookupData(lookupRaw ? (JSON.parse(lookupRaw) as Partial<LookupData>) : null)
 		return { role, user, accessToken, refreshToken, lookupData }
 	} catch {
 		return { role: null, user: null, accessToken: null, refreshToken: null, lookupData: null }
+	}
+}
+
+function normalizeLookupData(data: Partial<LookupData> | null): LookupData | null {
+	if (!data) return null
+	return {
+		appointment_statuses: data.appointment_statuses ?? data.appoinment_statuses ?? [],
+		specialities: data.specialities ?? [],
+		hospitals: data.hospitals ?? [],
+		patient_profiles: data.patient_profiles ?? [],
 	}
 }
 
@@ -94,7 +105,7 @@ export function setAuth(
 	localStorage.setItem('access_token', accessToken)
 	localStorage.setItem('refresh_token', refreshToken)
 	if (lookupData != null) {
-		localStorage.setItem('lookup', JSON.stringify(lookupData))
+		localStorage.setItem('lookup', JSON.stringify(normalizeLookupData(lookupData)))
 	}
 	window.dispatchEvent(new Event('auth-changed'))
 }

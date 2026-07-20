@@ -18,6 +18,11 @@ interface AdditionalDetailTabProps {
 	handleSave: () => void | Promise<void>
 }
 
+type MasterOptionResponse = {
+	success: boolean
+	data: Array<{ id: string; label: string }>
+}
+
 export default function AdditionalDetailTab({ data, onChange, handleSave }: AdditionalDetailTabProps) {
 	const [isDirty, setIsDirty] = useState(false)
 	const [saving, setSaving] = useState(false)
@@ -30,13 +35,13 @@ export default function AdditionalDetailTab({ data, onChange, handleSave }: Addi
 		const loadMasterData = async () => {
 			setLoading(true)
 			try {
-				const [areasRes, treatmentsRes] = await Promise.all([
-					getAreaOfExpertise(),
-					getTreatmentOfferings(),
-				]) as [
-					{ success?: boolean; data?: Array<{ id: string | number; label: string }> },
-					{ success?: boolean; data?: Array<{ id: string | number; label: string }> }
-				]
+				const [areasRes, treatmentsRes] = await Promise.all<[
+					Promise<MasterOptionResponse>,
+					Promise<MasterOptionResponse>
+				]>([
+					getAreaOfExpertise() as Promise<MasterOptionResponse>,
+					getTreatmentOfferings() as Promise<MasterOptionResponse>,
+				])
 				if (areasRes.success) {
 					setMasterAreas((areasRes.data ?? []).map((item) => ({ id: String(item.id), label: item.label })))
 				}
