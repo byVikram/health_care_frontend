@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Box, Typography, Avatar, Card, Pagination, IconButton, Tooltip, Rating } from '@mui/material'
-import RejectAppointmentDialog from './components/RejectAppointmentDialog'
+import RejectAppointmentDialog, { PATIENT_REJECTION_REASONS } from './components/RejectAppointmentDialog'
 import SearchIcon from '@mui/icons-material/Search'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
@@ -1109,6 +1109,7 @@ export default function AppointmentList() {
 				onCancel={handleCancelReject}
 				onConfirm={handleConfirmReject}
 				submitting={rejectSubmitting}
+				reasons={viewAs === 'patient' ? PATIENT_REJECTION_REASONS : undefined}
 			/>
 
 			{/* Reschedule drawer */}
