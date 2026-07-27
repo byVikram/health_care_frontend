@@ -1,6 +1,6 @@
 // src/features/admin/auth/AdminLoginPage.tsx
 import { useState } from 'react'
-import { Box, Container, Typography, Card, Stack, Avatar, Alert } from '@mui/material'
+import { Box, Container, Typography, Card, Stack, Avatar, Alert, IconButton } from '@mui/material'
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 import SecurityIcon from '@mui/icons-material/Security'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
@@ -15,6 +15,11 @@ import { ADMIN_ROLES } from '../../../constants/constants'
 import { ROUTES } from '../../../constants/routes'
 import { sendOtp } from '../../auth/authService'
 
+type AdminRole = (typeof ADMIN_ROLES)[number]
+
+const isAdminRole = (value: string | null): value is AdminRole =>
+	value !== null && ADMIN_ROLES.includes(value as AdminRole)
+
 export default function AdminLoginPage() {
 	const navigate = useNavigate()
 	const { accessToken, role } = useAuth()
@@ -24,7 +29,7 @@ export default function AdminLoginPage() {
 	const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
 	// If already logged in as admin, redirect to dashboard
-	if (accessToken && role && ADMIN_ROLES.includes(role as any)) {
+	if (accessToken && isAdminRole(role)) {
 		navigate(ROUTES.ADMIN.DASHBOARD, { replace: true })
 	}
 
@@ -46,8 +51,8 @@ export default function AdminLoginPage() {
 			} else {
 				setErrorMessage(res.message || 'Failed to send OTP')
 			}
-		} catch (err: any) {
-			setErrorMessage(err?.message || 'Failed to send OTP')
+		} catch (err: unknown) {
+			setErrorMessage(err instanceof Error ? err.message : 'Failed to send OTP')
 		} finally {
 			setLoading(false)
 		}
@@ -55,7 +60,7 @@ export default function AdminLoginPage() {
 
 	const handleVerified = () => {
 		const storedRole = localStorage.getItem('role')
-		if (storedRole && ADMIN_ROLES.includes(storedRole as any)) {
+		if (isAdminRole(storedRole)) {
 			toast.success('Admin authentication successful.')
 			navigate(ROUTES.ADMIN.DASHBOARD, { replace: true })
 		} else {
@@ -79,7 +84,7 @@ export default function AdminLoginPage() {
 				p: 2,
 			}}
 		>
-			<Container maxWidth="xs">
+			<Container maxWidth={false} sx={{ maxWidth: step === 'otp' ? 520 : 444 }}>
 				<Card
 					elevation={12}
 					sx={{
@@ -161,15 +166,24 @@ export default function AdminLoginPage() {
 					) : (
 						<Box>
 							<Box sx={{ mb: 2 }}>
-								<AppButton
-									label="Back to Mobile Input"
-									variant="text"
-									startIcon={<ArrowBackIcon />}
+								<IconButton
 									onClick={() => setStep('login')}
-									sx={{ color: '#2dd4bf', p: 0, textTransform: 'none' }}
-								/>
+									aria-label="Back to mobile input"
+									sx={{ color: '#2dd4bf', p: 0.5, '&:hover': { bgcolor: 'rgba(45, 212, 191, 0.1)' } }}
+								>
+									<ArrowBackIcon />
+								</IconButton>
 							</Box>
-							<OtpForm contactNumber={contactNumber} onVerify={handleVerified} />
+							<Box
+								sx={{
+									bgcolor: '#ffffff',
+									borderRadius: 3,
+									p: 2.5,
+									overflowX: 'hidden',
+								}}
+							>
+								<OtpForm mode="modal" contactNumber={contactNumber} onVerify={handleVerified} />
+							</Box>
 						</Box>
 					)}
 				</Card>

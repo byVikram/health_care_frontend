@@ -54,7 +54,7 @@ export default function AdminDashboardPage() {
 					setUserCount(usersRes.value.data?.length || 0)
 				}
 				if (apptsRes.status === 'fulfilled' && apptsRes.value.success) {
-					setAppointmentCount(apptsRes.value.data?.length || 0)
+					setAppointmentCount(apptsRes.value.data?.total || 0)
 				}
 			} catch (err: any) {
 				setError(err?.message || 'Failed to fetch dashboard metrics')

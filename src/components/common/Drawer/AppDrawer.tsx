@@ -1,5 +1,6 @@
 import { ReactNode } from 'react'
 import { Drawer, Box, Typography, IconButton } from '@mui/material'
+import type { SxProps, Theme } from '@mui/material/styles'
 import CloseIcon from '@mui/icons-material/Close'
 import AppButton from '../Button/AppButton'
 
@@ -13,6 +14,7 @@ type AppDrawerProps = {
 	title: string
 	/** Optional secondary line under the title, e.g. patient name */
 	subtitle?: string
+	subtitleSx?: SxProps<Theme>
 
 	/** Scrollable body content — the part that differs per drawer (form fields, pickers, etc.) */
 	children: ReactNode
@@ -30,6 +32,9 @@ type AppDrawerProps = {
 
 	/** Drawer width on sm+ breakpoints. Defaults to 400 to match existing drawers. */
 	width?: number
+	/** When provided, replaces the default Cancel/Confirm footer with custom content (e.g. multiple action buttons). */
+	footerContent?: ReactNode
+	sx?: SxProps<Theme>
 }
 
 export default function AppDrawer({
@@ -37,6 +42,7 @@ export default function AppDrawer({
 	onClose,
 	title,
 	subtitle,
+	subtitleSx,
 	children,
 	cancelLabel = 'Cancel',
 	confirmLabel = 'Confirm',
@@ -44,6 +50,8 @@ export default function AppDrawer({
 	confirmLoading = false,
 	confirmDisabled = false,
 	width = 400,
+	footerContent,
+	sx
 }: AppDrawerProps) {
 	return (
 		<Drawer
@@ -61,6 +69,7 @@ export default function AppDrawer({
 						display: 'flex',
 						flexDirection: 'column',
 						boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+						...sx
 					},
 				},
 			}}
@@ -69,10 +78,11 @@ export default function AppDrawer({
 			<Box
 				sx={{
 					display: 'flex',
-					alignItems: 'center',
+					alignItems: 'flex-start',
 					justifyContent: 'space-between',
 					px: 3,
-					py: 2,
+					pt: 2.75,
+					pb: 2,
 					borderBottom: '1px solid',
 					borderColor: 'divider',
 				}}
@@ -82,12 +92,17 @@ export default function AppDrawer({
 						{title}
 					</Typography>
 					{subtitle ? (
-						<Typography sx={{ fontSize: '12px', color: 'text.secondary', mt: 0.3 }}>
+						<Typography
+							sx={[
+								{ fontSize: '12px', color: 'text.secondary', mt: 0.75 },
+								...(subtitleSx ? (Array.isArray(subtitleSx) ? subtitleSx : [subtitleSx]) : []),
+							]}
+						>
 							{subtitle}
 						</Typography>
 					) : null}
 				</Box>
-				<IconButton size="small" onClick={onClose} sx={{ color: 'text.secondary' }}>
+				<IconButton size="small" onClick={onClose} sx={{ color: 'text.secondary', mt: -0.5 }}>
 					<CloseIcon fontSize="small" />
 				</IconButton>
 			</Box>
@@ -106,32 +121,38 @@ export default function AppDrawer({
 					gap: 1.5,
 				}}
 			>
-				{cancelLabel && (
-					<AppButton
-						label={cancelLabel}
-						variant="outlined"
-						fullWidth
-						onClick={onClose}
-						sx={{
-							borderRadius: '20px',
-							color: 'text.secondary',
-							borderColor: 'divider',
-							'&:hover': {
-								bgcolor: 'action.hover',
-								borderColor: 'divider',
-							},
-						}}
-					/>
-				)}
+				{footerContent ? (
+					footerContent
+				) : (
+					<>
+						{cancelLabel && (
+							<AppButton
+								label={cancelLabel}
+								variant="outlined"
+								fullWidth
+								onClick={onClose}
+								sx={{
+									borderRadius: '20px',
+									color: 'text.secondary',
+									borderColor: 'divider',
+									'&:hover': {
+										bgcolor: 'action.hover',
+										borderColor: 'divider',
+									},
+								}}
+							/>
+						)}
 
-				<AppButton
-					label={confirmLabel}
-					fullWidth
-					loading={confirmLoading}
-					disabled={confirmDisabled}
-					onClick={onConfirm}
-					sx={{ borderRadius: '20px' }}
-				/>
+						<AppButton
+							label={confirmLabel}
+							fullWidth
+							loading={confirmLoading}
+							disabled={confirmDisabled}
+							onClick={onConfirm}
+							sx={{ borderRadius: '20px' }}
+						/>
+					</>
+				)}
 			</Box>
 		</Drawer>
 	)

@@ -63,6 +63,7 @@ type CommonProps = {
 	disablePast?: boolean
 	compactAppointmentToggle?: boolean
 	timeSlotColumns?: number
+	timeSlotVariant?: 'default' | 'availability'
 	availableSlots?: SlotGroup[]
 	loading?: boolean
 	disableBookedSlots?: boolean
@@ -88,6 +89,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		disablePast = true,
 		compactAppointmentToggle = false,
 		timeSlotColumns = 4,
+		timeSlotVariant = 'default',
 		availableSlots,
 		loading = false,
 		disableBookedSlots,
@@ -138,6 +140,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 	const slotsToRender = availableSlots ?? []
 	const isDoctorView = !!(onSelectAll && onUnselectAll)
 	const useCompactAppointmentToggle = compactAppointmentToggle || isDoctorView
+	const useAvailabilitySlotStyle = timeSlotVariant === 'availability'
 	const legendItems = [
 		{ label: 'Available', color: 'success.main' },
 		{ label: 'Blocked', color: 'error.main' },
@@ -531,9 +534,21 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 													: isSelected
 														? 'success.main'
 														: 'error.main'
+													: isSelected
+														? 'primary.main'
+														: 'success.main'
+
+										const defaultSlotBg = isBooked
+											? 'rgba(0,0,0,0.08)'
+											: props.multiSelect
+												? slot.status === 'BLOCKED'
+													? 'error.main'
+													: isSelected
+														? 'success.main'
+														: 'error.main'
 												: isSelected
 													? 'primary.main'
-													: 'success.main'
+													: 'background.paper'
 
 										return (
 											<Box
@@ -543,47 +558,72 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 													handleSlotClick(slot.start_time)
 												}}
 												sx={{
-													position: 'relative',
+													position: useAvailabilitySlotStyle ? 'relative' : undefined,
 													display: 'flex',
 													alignItems: 'center',
 													justifyContent: 'center',
-													py: 1.1,
-													pl: '14px',
-													pr: '8px',
+													py: useAvailabilitySlotStyle ? 1.1 : 0.6,
+													pl: useAvailabilitySlotStyle ? '14px' : 0.4,
+													pr: useAvailabilitySlotStyle ? '8px' : 0.4,
 													textAlign: 'center',
-													bgcolor: isBooked ? 'rgba(0,0,0,0.04)' : 'background.paper',
-													border: '1px solid',
-													borderColor: 'divider',
-													borderRadius: '10px',
-													overflow: 'hidden',
-													boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+													bgcolor: useAvailabilitySlotStyle
+														? isBooked
+															? 'rgba(0,0,0,0.04)'
+															: 'background.paper'
+														: defaultSlotBg,
+													border: useAvailabilitySlotStyle ? '1px solid' : '1.5px solid',
+													borderColor: useAvailabilitySlotStyle
+														? 'divider'
+														: isSelected
+															? 'primary.main'
+															: 'divider',
+													borderRadius: useAvailabilitySlotStyle ? '10px' : '8px',
+													overflow: useAvailabilitySlotStyle ? 'hidden' : undefined,
+													boxShadow: useAvailabilitySlotStyle ? '0 1px 2px rgba(0,0,0,0.05)' : undefined,
 													cursor: isBooked
 														? 'default'
 														: isDisabled
 															? 'not-allowed'
 															: 'pointer',
 													transition: 'all 0.15s',
-													'&:before': {
-														content: '""',
-														position: 'absolute',
-														left: 0,
-														top: 0,
-														bottom: 0,
-														width: '4px',
-														bgcolor: accentColor,
-													},
+													'&:before': useAvailabilitySlotStyle
+														? {
+																content: '""',
+																position: 'absolute',
+																left: 0,
+																top: 0,
+																bottom: 0,
+																width: '4px',
+																bgcolor: accentColor,
+															}
+														: undefined,
 													'&:hover': isBooked
 														? {}
-														: {
+														: useAvailabilitySlotStyle
+															? {
 																boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+															}
+															: {
+																borderColor: 'primary.main',
+																bgcolor: isSelected ? 'primary.main' : 'rgba(43,111,113,0.06)',
 															},
 												}}
 											>
 												<Typography
 													variant="body1"
 													sx={{
-														fontWeight: 600,
-														color: isBooked ? 'text.disabled' : '#0f2a4a',
+														fontWeight: useAvailabilitySlotStyle ? 600 : isSelected ? 600 : 400,
+														color: useAvailabilitySlotStyle
+															? isBooked
+																? 'text.disabled'
+																: '#0f2a4a'
+															: props.multiSelect
+																? '#fff'
+																: isSelected
+																	? '#fff'
+																	: isBooked
+																		? 'text.disabled'
+																		: 'text.primary',
 													}}
 												>
 													{to12hr(slot.start_time)}
