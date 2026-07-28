@@ -146,4 +146,8 @@ export const API_ENDPOINTS = {
 		LIST: '/api/notifications',
 		MARK_READ: (id: string) => `/api/notifications/${id}/read`,
 	},
+	FOLLOW_UPS: {
+		CREATE: '/api/follow-ups',
+		CANCEL: (id: string) => `/api/follow-ups/${id}/cancel`,
+	},
 }
