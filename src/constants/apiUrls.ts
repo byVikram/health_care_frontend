@@ -19,6 +19,7 @@ export const API_ENDPOINTS = {
 		LIST: '/api/pharmacies',
 	},
 	DOCTOR_PROFILE: {
+		STATUS: '/api/doctors/me/status',
 		DETAILS: '/api/doctors/details',
 		PERSONAL_DETAILS: '/api/doctors/personal-details',
 		PROFESSIONAL_DETAILS: '/api/doctors/professional-details',
@@ -98,6 +99,7 @@ export const API_ENDPOINTS = {
 		GET_BY_ID: (id: string | number) => `/api/appointments/${id}`,
 		PRE_INTAKE: (id: string) => `/api/appointments/${id}/pre-intake`,
 		RESCHEDULE: '/api/appointments/reschedule',
+		ACTIVE_CONSENT: '/api/appointments/active/consent',
 		STATUSES: '/api/appointments/statuses',
 	},
 	PHARMACY: {

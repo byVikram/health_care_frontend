@@ -643,7 +643,7 @@ export default function DoctorDetailPage() {
 			<ConsentForm
 				open={consentOpen}
 				onClose={() => setConsentOpen(false)}
-				onAgree={() => {
+				onAgree={(consentId) => {
 					setConsentOpen(false)
 					navigate('/payment', {
 						state: {
@@ -658,6 +658,7 @@ export default function DoctorDetailPage() {
 							serviceFee: 0,
 							doctorId: doctorDetail?.id ?? '',
 							hospitalId: selectedHospital,
+							consentVersionId: consentId,
 							appointmentMode: selectedType === 'clinic' ? 'clinic_visit' : 'video_call',
 							allowPayLater: selectedType === 'clinic',
 							appointmentDate: formatDateForApi(selectedDate),
