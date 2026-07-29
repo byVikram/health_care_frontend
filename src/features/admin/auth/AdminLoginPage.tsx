@@ -86,14 +86,14 @@ export default function AdminLoginPage() {
 		>
 			<Container maxWidth={false} sx={{ maxWidth: step === 'otp' ? 520 : 444 }}>
 				<Card
-					elevation={12}
+					elevation={step === 'otp' ? 0 : 12}
 					sx={{
 						borderRadius: 4,
 						p: 4,
-						bgcolor: '#1e293b',
+						bgcolor: step === 'otp' ? '#0f172a' : '#1e293b',
 						color: '#f8fafc',
-						border: '1px solid rgba(255,255,255,0.1)',
-						boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+						border: step === 'otp' ? '1px solid transparent' : '1px solid rgba(255,255,255,0.1)',
+						boxShadow: step === 'otp' ? 'none' : '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
 					}}
 				>
 					<Stack alignItems="center" spacing={2} sx={{ mb: 3 }}>
@@ -176,13 +176,12 @@ export default function AdminLoginPage() {
 							</Box>
 							<Box
 								sx={{
-									bgcolor: '#ffffff',
+									bgcolor: 'transparent',
 									borderRadius: 3,
-									p: 2.5,
 									overflowX: 'hidden',
 								}}
 							>
-								<OtpForm mode="modal" contactNumber={contactNumber} onVerify={handleVerified} />
+								<OtpForm mode="modal" contactNumber={contactNumber} onVerify={handleVerified} variant="dark" />
 							</Box>
 						</Box>
 					)}

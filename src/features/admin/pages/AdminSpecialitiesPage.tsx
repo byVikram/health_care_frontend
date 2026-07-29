@@ -1,6 +1,6 @@
 // src/features/admin/pages/AdminSpecialitiesPage.tsx
-import { useState } from 'react'
-import { Box, Typography, Stack, Grid, Alert } from '@mui/material'
+import { useCallback, useEffect, useState } from 'react'
+import { Box, Typography, Stack, Grid, Alert, CircularProgress, Chip } from '@mui/material'
 import AddCircleIcon from '@mui/icons-material/AddCircle'
 import CategoryIcon from '@mui/icons-material/Category'
 import { toast } from 'react-toastify'
@@ -8,19 +8,47 @@ import { toast } from 'react-toastify'
 import SectionCard from '../../../components/common/Card/SectionCard'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppButton from '../../../components/common/Button/AppButton'
-import { createSpeciality } from '../adminService'
+import AppTable from '../../../components/common/Table/AppTable'
+import { createSpeciality, listSpecialities, AdminSpecialityItem } from '../adminService'
 
 export default function AdminSpecialitiesPage() {
 	const [name, setName] = useState('')
 	const [description, setDescription] = useState('')
 	const [iconUrl, setIconUrl] = useState('')
+	const [specialities, setSpecialities] = useState<AdminSpecialityItem[]>([])
+	const [loading, setLoading] = useState(true)
 	const [submitting, setSubmitting] = useState(false)
 	const [error, setError] = useState<string | null>(null)
+	const [listError, setListError] = useState<string | null>(null)
+
+	const loadSpecialities = useCallback(async () => {
+		setLoading(true)
+		setListError(null)
+		try {
+			const res = await listSpecialities()
+			if (res.success) {
+				setSpecialities(res.data || [])
+			}
+		} catch (err: any) {
+			setListError(err?.message || 'Failed to load specialities.')
+		} finally {
+			setLoading(false)
+		}
+	}, [])
+
+	useEffect(() => {
+		loadSpecialities()
+	}, [loadSpecialities])
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
-		if (!name.trim()) {
+		const trimmedName = name.trim()
+		if (!trimmedName) {
 			setError('Speciality name is required.')
+			return
+		}
+		if (specialities.some((speciality) => speciality.label.toLowerCase() === trimmedName.toLowerCase())) {
+			setError('A speciality with this name already exists.')
 			return
 		}
 
@@ -28,15 +56,17 @@ export default function AdminSpecialitiesPage() {
 		setError(null)
 		try {
 			const res = await createSpeciality({
-				label: name.trim(),
+				label: trimmedName,
 				description: description.trim() || undefined,
+				icon_key: iconUrl.trim() || undefined,
 			})
 
 			if (res.success) {
-				toast.success(`Speciality "${name.trim()}" created successfully.`)
+				toast.success(`Speciality "${trimmedName}" created successfully.`)
 				setName('')
 				setDescription('')
 				setIconUrl('')
+				await loadSpecialities()
 			}
 		} catch (err: any) {
 			setError(err?.message || 'Failed to create speciality.')
@@ -44,6 +74,44 @@ export default function AdminSpecialitiesPage() {
 			setSubmitting(false)
 		}
 	}
+
+	const columns = [
+		{
+			field: 'label',
+			label: 'Speciality',
+			render: (_: any, row: AdminSpecialityItem) => (
+				<Stack spacing={0.5}>
+					<Typography variant="subtitle2" fontWeight={700}>
+						{row.label}
+					</Typography>
+					<Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+						{row.id}
+					</Typography>
+				</Stack>
+			),
+		},
+		{
+			field: 'description',
+			label: 'Description',
+			render: (_: any, row: AdminSpecialityItem) => (
+				<Typography variant="body2" color="text.secondary">
+					{row.description || 'N/A'}
+				</Typography>
+			),
+		},
+		{
+			field: 'icon_key',
+			label: 'Icon Asset',
+			render: (_: any, row: AdminSpecialityItem) =>
+				row.icon_key ? (
+					<Chip label={row.icon_key} size="small" sx={{ bgcolor: '#f1f5f9', maxWidth: 260 }} />
+				) : (
+					<Typography variant="body2" color="text.secondary">
+						N/A
+					</Typography>
+				),
+		},
+	]
 
 	return (
 		<Box>
@@ -124,6 +192,32 @@ export default function AdminSpecialitiesPage() {
 						</Box>
 					</Grid>
 				</Grid>
+			</SectionCard>
+
+			<SectionCard title="Current Specialities Catalog">
+				<Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={1.5} sx={{ mb: 2 }}>
+					<Typography variant="body2" color="text.secondary">
+						{loading ? 'Loading catalog...' : `${specialities.length} specialities available`}
+					</Typography>
+					<AppButton label="Refresh" variant="outlined" size="small" onClick={loadSpecialities} disabled={loading} />
+				</Stack>
+
+				{listError && (
+					<Alert severity="error" sx={{ mb: 2 }}>
+						{listError}
+					</Alert>
+				)}
+
+				{loading ? (
+					<Stack alignItems="center" justifyContent="center" sx={{ py: 5 }}>
+						<CircularProgress sx={{ color: '#0d9488' }} />
+						<Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+							Loading specialities catalog...
+						</Typography>
+					</Stack>
+				) : (
+					<AppTable columns={columns as any} rows={specialities as any} emptyMessage="No specialities found." />
+				)}
 			</SectionCard>
 		</Box>
 	)

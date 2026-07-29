@@ -48,7 +48,7 @@ export interface ProviderVerifyPayload {
 }
 
 export interface AdminUserItem {
-	id: number
+	id: string
 	public_id?: string
 	email?: string
 	contact_number?: string
@@ -69,6 +69,7 @@ export interface AdminUserItem {
 
 export interface AdminUserListParams {
 	role?: string
+	phoneNumber?: string
 	page?: number
 	pageSize?: number
 }
@@ -115,10 +116,21 @@ export interface AdminPatientLinkedProfile {
 	is_current: boolean
 }
 
+export interface AdminUpcomingAppointment {
+	id: string
+	appointment_date: string
+	start_time: string
+	status: string
+	doctor_name?: string | null
+	patient_name?: string | null
+	hospital_name?: string | null
+}
+
 export interface AdminPatientDetail {
 	personal_info: AdminPatientPersonalInfo
 	reviews: AdminPatientReviewItem[]
 	linked_profiles: AdminPatientLinkedProfile[]
+	upcoming_appointments: AdminUpcomingAppointment[]
 }
 
 export interface AdminProviderDetail {
@@ -202,6 +214,7 @@ export interface DoctorVerificationDetail {
 	hospital?: string
 	consultation_fee?: number
 	documents: DoctorVerificationDocument[]
+	upcoming_appointments?: AdminUpcomingAppointment[]
 }
 
 export interface AdminReschedulePayload {
@@ -239,7 +252,15 @@ export interface ChatbotSessionLogItem {
 export interface SpecialityCreatePayload {
 	label: string
 	description?: string
+	icon_key?: string
 	symptoms?: string[]
+}
+
+export interface AdminSpecialityItem {
+	id: string
+	label: string
+	description?: string | null
+	icon_key?: string | null
 }
 
 // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 2. Service API Functions ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
@@ -330,9 +351,10 @@ export const verifyProvider = async (
 
 /** GET /api/admin/users */
 export const listUsers = async (params: AdminUserListParams = {}) => {
-	const { role, page = 1, pageSize = 10 } = params
+	const { role, phoneNumber, page = 1, pageSize = 10 } = params
 	const queryParams: Record<string, unknown> = { page, page_size: pageSize }
 	if (role) queryParams.role = role
+	if (phoneNumber) queryParams.phone_number = phoneNumber
 	const res = await ApiService.getWithParams<{ success: boolean; data: AdminUserListResult }>(
 		API_ENDPOINTS.ADMIN.USERS,
 		queryParams
@@ -464,9 +486,17 @@ export const deleteReview = async (reviewPublicId: string) => {
 
 /** POST /api/admin/specialities */
 export const createSpeciality = async (payload: SpecialityCreatePayload) => {
-	const res = await ApiService.post<AdminMutationResponse>(
+	const res = await ApiService.post<AdminMutationResponse<AdminSpecialityItem>>(
 		API_ENDPOINTS.ADMIN.SPECIALITIES,
 		payload
+	)
+	return res.data
+}
+
+/** GET /api/specialities */
+export const listSpecialities = async () => {
+	const res = await ApiService.get<{ success: boolean; data: AdminSpecialityItem[] }>(
+		API_ENDPOINTS.SPECIALITIES.LIST
 	)
 	return res.data
 }

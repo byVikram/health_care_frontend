@@ -75,6 +75,7 @@ export const ROUTES = {
 		DASHBOARD: '/admin',
 		VERIFICATIONS: '/admin/verifications',
 		USERS: '/admin/users',
+		USER_DETAIL: '/admin/users/:role/:id',
 		APPOINTMENTS: '/admin/appointments',
 		BILLING: '/admin/billing',
 		AUDITS: '/admin/audits',
