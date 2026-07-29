@@ -9,8 +9,6 @@ import {
 	Stack,
 	CircularProgress,
 	Alert,
-	IconButton,
-	Tooltip,
 } from '@mui/material'
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices'
 import AssessmentIcon from '@mui/icons-material/Assessment'
@@ -18,7 +16,7 @@ import SmartToyIcon from '@mui/icons-material/SmartToy'
 import { toast } from 'react-toastify'
 
 import SectionCard from '../../../components/common/Card/SectionCard'
-import AppTable from '../../../components/common/Table/AppTable'
+import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import AppButton from '../../../components/common/Button/AppButton'
 import {
 	getOperationalLogs,
@@ -27,6 +25,8 @@ import {
 	OperationalLogItem,
 	ChatbotSessionLogItem,
 } from '../adminService'
+
+const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
 
 export default function AdminAuditsPage() {
 	const [activeTab, setActiveTab] = useState<'audits' | 'chatbot'>('audits')
@@ -47,8 +47,8 @@ export default function AdminAuditsPage() {
 			])
 			if (auditsRes.success) setOperationalLogs(auditsRes.data || [])
 			if (chatbotRes.success) setChatbotLogs(chatbotRes.data || [])
-		} catch (err: any) {
-			setError(err?.message || 'Failed to fetch audit logs')
+		} catch (err: unknown) {
+			setError(getErrorMessage(err, 'Failed to fetch audit logs'))
 		} finally {
 			setLoading(false)
 		}
@@ -66,18 +66,18 @@ export default function AdminAuditsPage() {
 				toast.success(`Session memory for ${sessionId} cleared successfully.`)
 				fetchLogs()
 			}
-		} catch (err: any) {
-			toast.error(err?.message || 'Failed to clear session memory.')
+		} catch (err: unknown) {
+			toast.error(getErrorMessage(err, 'Failed to clear session memory.'))
 		} finally {
 			setActionLoadingId(null)
 		}
 	}
 
-	const auditColumns = [
+	const auditColumns: Column<OperationalLogItem>[] = [
 		{
 			field: 'created_at',
 			label: 'Timestamp',
-			render: (_: any, row: OperationalLogItem) => (
+			render: (_: unknown, row: OperationalLogItem) => (
 				<Typography variant="body2" fontWeight={600}>
 					{row.created_at ? new Date(row.created_at).toLocaleString('en-IN') : 'N/A'}
 				</Typography>
@@ -86,7 +86,7 @@ export default function AdminAuditsPage() {
 		{
 			field: 'admin_user_id',
 			label: 'Admin User',
-			render: (_: any, row: OperationalLogItem) => (
+			render: (_: unknown, row: OperationalLogItem) => (
 				<Typography variant="subtitle2" fontWeight={700}>
 					Admin ID: #{row.admin_user_id}
 				</Typography>
@@ -95,7 +95,7 @@ export default function AdminAuditsPage() {
 		{
 			field: 'action',
 			label: 'Action',
-			render: (_: any, row: OperationalLogItem) => (
+			render: (_: unknown, row: OperationalLogItem) => (
 				<Chip
 					label={row.action}
 					size="small"
@@ -106,7 +106,7 @@ export default function AdminAuditsPage() {
 		{
 			field: 'target_table',
 			label: 'Target Table',
-			render: (_: any, row: OperationalLogItem) => (
+			render: (_: unknown, row: OperationalLogItem) => (
 				<Typography variant="body2" fontWeight={600}>
 					{row.target_table || 'N/A'}
 				</Typography>
@@ -114,11 +114,11 @@ export default function AdminAuditsPage() {
 		},
 	]
 
-	const chatbotColumns = [
+	const chatbotColumns: Column<ChatbotSessionLogItem>[] = [
 		{
 			field: 'session_id',
 			label: 'Session ID & Title',
-			render: (_: any, row: ChatbotSessionLogItem) => (
+			render: (_: unknown, row: ChatbotSessionLogItem) => (
 				<Box>
 					<Typography variant="subtitle2" fontWeight={700}>
 						{row.title || 'Chatbot Session'}
@@ -132,7 +132,7 @@ export default function AdminAuditsPage() {
 		{
 			field: 'created_at',
 			label: 'Started At',
-			render: (_: any, row: ChatbotSessionLogItem) => (
+			render: (_: unknown, row: ChatbotSessionLogItem) => (
 				<Typography variant="body2">
 					{row.created_at ? new Date(row.created_at).toLocaleString('en-IN') : 'N/A'}
 				</Typography>
@@ -141,7 +141,7 @@ export default function AdminAuditsPage() {
 		{
 			field: 'messages',
 			label: 'Messages Count',
-			render: (_: any, row: ChatbotSessionLogItem) => (
+			render: (_: unknown, row: ChatbotSessionLogItem) => (
 				<Chip
 					label={`${row.messages?.length || 0} msgs`}
 					size="small"
@@ -152,7 +152,7 @@ export default function AdminAuditsPage() {
 		{
 			field: 'actions',
 			label: 'Memory Management',
-			render: (_: any, row: ChatbotSessionLogItem) => {
+			render: (_: unknown, row: ChatbotSessionLogItem) => {
 				const isBusy = actionLoadingId === row.session_id
 				return (
 					<AppButton
@@ -210,9 +210,9 @@ export default function AdminAuditsPage() {
 						</Typography>
 					</Stack>
 				) : activeTab === 'audits' ? (
-					<AppTable columns={auditColumns as any} rows={operationalLogs as any} emptyMessage="No operational logs available." />
+					<AppTable columns={auditColumns} rows={operationalLogs} emptyMessage="No operational logs available." />
 				) : (
-					<AppTable columns={chatbotColumns as any} rows={chatbotLogs as any} emptyMessage="No chatbot session logs recorded." />
+					<AppTable columns={chatbotColumns} rows={chatbotLogs} emptyMessage="No chatbot session logs recorded." />
 				)}
 			</SectionCard>
 		</Box>

@@ -20,7 +20,7 @@ import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee'
 import { toast } from 'react-toastify'
 
 import SectionCard from '../../../components/common/Card/SectionCard'
-import AppTable from '../../../components/common/Table/AppTable'
+import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import AppButton from '../../../components/common/Button/AppButton'
 import AppInput from '../../../components/common/Input/AppInput'
 import PaginationBar from '../../../pagination/Pagination'
@@ -38,6 +38,12 @@ import {
 import { getDoctorAvailability, getDoctorById, getAvailabilityModeBlocks } from '../../doctor/doctorService'
 import { formatINR } from '../../../utils/Utils'
 import RescheduleIcon from '../../../assets/icons/reschedule.svg'
+
+type DoctorHospitalResponse = {
+	hospitals?: Array<{ hospital: { id: string; name: string } }>
+}
+
+const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
 
 export default function AdminAppointmentsPage() {
 	// ── Table data ───────────────────────────────────────────────────────────
@@ -82,8 +88,8 @@ export default function AdminAppointmentsPage() {
 				setAppointments(res.data.items || [])
 				setTotalRows(res.data.total ?? 0)
 			}
-		} catch (err: any) {
-			setError(err?.message || 'Failed to fetch appointments list')
+		} catch (err: unknown) {
+			setError(getErrorMessage(err, 'Failed to fetch appointments list'))
 		} finally {
 			setLoading(false)
 		}
@@ -114,8 +120,8 @@ export default function AdminAppointmentsPage() {
 				toast.success(`Appointment ${publicId} cancelled.`)
 				fetchAppointments()
 			}
-		} catch (err: any) {
-			toast.error(err?.message || 'Failed to cancel appointment.')
+		} catch (err: unknown) {
+			toast.error(getErrorMessage(err, 'Failed to cancel appointment.'))
 		} finally {
 			setActionLoadingId(null)
 		}
@@ -149,8 +155,8 @@ export default function AdminAppointmentsPage() {
 				toast.success(`Refund processed for appointment ${publicId}.`)
 				fetchAppointments()
 			}
-		} catch (err: any) {
-			toast.error(err?.message || 'Failed to process refund.')
+		} catch (err: unknown) {
+			toast.error(getErrorMessage(err, 'Failed to process refund.'))
 		} finally {
 			setActionLoadingId(null)
 		}
@@ -204,8 +210,9 @@ export default function AdminAppointmentsPage() {
 				try {
 					const res = await getDoctorById(rescheduleAppt.doctor.id)
 					if (res.success && res.data) {
+						const doctorData = res.data as DoctorHospitalResponse
 						setRescheduleHospitals(
-							res.data.hospitals.map((h: any) => ({ id: h.hospital.id, label: h.hospital.name }))
+							(doctorData.hospitals || []).map((h) => ({ id: h.hospital.id, label: h.hospital.name }))
 						)
 					}
 				} catch {
@@ -275,19 +282,19 @@ export default function AdminAppointmentsPage() {
 				setRescheduleOpen(false)
 				fetchAppointments()
 			}
-		} catch (err: any) {
-			toast.error(err?.message || 'Failed to reschedule appointment.')
+		} catch (err: unknown) {
+			toast.error(getErrorMessage(err, 'Failed to reschedule appointment.'))
 		} finally {
 			setRescheduleSubmitting(false)
 		}
 	}
 
 	// ── Table columns ─────────────────────────────────────────────────────────
-	const columns = [
+	const columns: Column<AdminAppointmentItem>[] = [
 		{
 			field: 'id',
 			label: 'ID & Date/Time',
-			render: (_: any, row: AdminAppointmentItem) => (
+			render: (_: unknown, row: AdminAppointmentItem) => (
 				<Box>
 					<Typography variant="subtitle2" fontWeight={700}>
 						{row.id}
@@ -301,7 +308,7 @@ export default function AdminAppointmentsPage() {
 		{
 			field: 'patient_id',
 			label: 'Patient & Doctor',
-			render: (_: any, row: AdminAppointmentItem) => (
+			render: (_: unknown, row: AdminAppointmentItem) => (
 				<Box>
 					<Typography variant="body2" fontWeight={600}>
 						Patient: {row.patient_name || 'N/A'}
@@ -321,7 +328,7 @@ export default function AdminAppointmentsPage() {
 		{
 			field: 'fees',
 			label: 'Consultation Fee',
-			render: (_: any, row: AdminAppointmentItem) => (
+			render: (_: unknown, row: AdminAppointmentItem) => (
 				<Typography variant="body2" fontWeight={700} color="#0d9488">
 					{row.fees != null ? formatINR(row.fees) : 'N/A'}
 				</Typography>
@@ -330,7 +337,7 @@ export default function AdminAppointmentsPage() {
 		{
 			field: 'status',
 			label: 'Status',
-			render: (_: any, row: AdminAppointmentItem) => (
+			render: (_: unknown, row: AdminAppointmentItem) => (
 				<Chip
 					label={(row.status || 'SCHEDULED').toUpperCase()}
 					size="small"
@@ -342,7 +349,7 @@ export default function AdminAppointmentsPage() {
 		{
 			field: 'actions',
 			label: 'Admin Overrides',
-			render: (_: any, row: AdminAppointmentItem) => {
+			render: (_: unknown, row: AdminAppointmentItem) => {
 				const isBusy = actionLoadingId === (row.id || String(row.id))
 				return (
 					<Stack direction="row" spacing={0.5} alignItems="center">
@@ -442,7 +449,7 @@ export default function AdminAppointmentsPage() {
 					</Stack>
 				) : (
 					<>
-						<AppTable columns={columns as any} rows={appointments as any} emptyMessage="No appointments found." />
+						<AppTable columns={columns} rows={appointments} emptyMessage="No appointments found." />
 						<Box sx={{ mt: 2 }}>
 							<PaginationBar
 								page={page}

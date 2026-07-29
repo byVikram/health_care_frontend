@@ -33,6 +33,8 @@ import { ROUTES } from '../../../constants/routes'
 
 type DetailRole = 'patient' | 'doctor' | 'pharmacy' | 'laboratory' | 'radiology'
 
+const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
+
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
 	return (
 		<Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.8 }}>
@@ -137,8 +139,8 @@ export default function AdminUserDetailPage() {
 			} else {
 				setError('Patient details could not be loaded.')
 			}
-		} catch (err: any) {
-			setError(err?.message || 'Failed to load patient details.')
+		} catch (err: unknown) {
+			setError(getErrorMessage(err, 'Failed to load patient details.'))
 		} finally {
 			setLoading(false)
 		}
@@ -161,7 +163,7 @@ export default function AdminUserDetailPage() {
 					if (res.success && res.data) setDoctorDetail(res.data)
 					else setError('Doctor details could not be loaded.')
 				})
-				.catch((err) => setError(err?.message || 'Failed to load doctor details.'))
+				.catch((err: unknown) => setError(getErrorMessage(err, 'Failed to load doctor details.')))
 				.finally(() => setLoading(false))
 			return
 		}
@@ -172,9 +174,8 @@ export default function AdminUserDetailPage() {
 				if (res.success && res.data) setProviderDetail(res.data)
 				else setError('Provider details could not be loaded.')
 			})
-			.catch((err) => setError(err?.message || 'Failed to load provider details.'))
+			.catch((err: unknown) => setError(getErrorMessage(err, 'Failed to load provider details.')))
 			.finally(() => setLoading(false))
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [id, detailRole])
 
 	const handleBack = () => navigate(ROUTES.ADMIN.USERS)

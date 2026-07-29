@@ -8,8 +8,10 @@ import { toast } from 'react-toastify'
 import SectionCard from '../../../components/common/Card/SectionCard'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppButton from '../../../components/common/Button/AppButton'
-import AppTable from '../../../components/common/Table/AppTable'
+import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import { createSpeciality, listSpecialities, AdminSpecialityItem } from '../adminService'
+
+const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
 
 export default function AdminSpecialitiesPage() {
 	const [name, setName] = useState('')
@@ -29,8 +31,8 @@ export default function AdminSpecialitiesPage() {
 			if (res.success) {
 				setSpecialities(res.data || [])
 			}
-		} catch (err: any) {
-			setListError(err?.message || 'Failed to load specialities.')
+		} catch (err: unknown) {
+			setListError(getErrorMessage(err, 'Failed to load specialities.'))
 		} finally {
 			setLoading(false)
 		}
@@ -68,18 +70,18 @@ export default function AdminSpecialitiesPage() {
 				setIconUrl('')
 				await loadSpecialities()
 			}
-		} catch (err: any) {
-			setError(err?.message || 'Failed to create speciality.')
+		} catch (err: unknown) {
+			setError(getErrorMessage(err, 'Failed to create speciality.'))
 		} finally {
 			setSubmitting(false)
 		}
 	}
 
-	const columns = [
+	const columns: Column<AdminSpecialityItem>[] = [
 		{
 			field: 'label',
 			label: 'Speciality',
-			render: (_: any, row: AdminSpecialityItem) => (
+			render: (_: unknown, row: AdminSpecialityItem) => (
 				<Stack spacing={0.5}>
 					<Typography variant="subtitle2" fontWeight={700}>
 						{row.label}
@@ -93,7 +95,7 @@ export default function AdminSpecialitiesPage() {
 		{
 			field: 'description',
 			label: 'Description',
-			render: (_: any, row: AdminSpecialityItem) => (
+			render: (_: unknown, row: AdminSpecialityItem) => (
 				<Typography variant="body2" color="text.secondary">
 					{row.description || 'N/A'}
 				</Typography>
@@ -102,7 +104,7 @@ export default function AdminSpecialitiesPage() {
 		{
 			field: 'icon_key',
 			label: 'Icon Asset',
-			render: (_: any, row: AdminSpecialityItem) =>
+			render: (_: unknown, row: AdminSpecialityItem) =>
 				row.icon_key ? (
 					<Chip label={row.icon_key} size="small" sx={{ bgcolor: '#f1f5f9', maxWidth: 260 }} />
 				) : (
@@ -216,7 +218,7 @@ export default function AdminSpecialitiesPage() {
 						</Typography>
 					</Stack>
 				) : (
-					<AppTable columns={columns as any} rows={specialities as any} emptyMessage="No specialities found." />
+					<AppTable columns={columns} rows={specialities} emptyMessage="No specialities found." />
 				)}
 			</SectionCard>
 		</Box>

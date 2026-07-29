@@ -94,7 +94,6 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		disablePast = true,
 		compactAppointmentToggle = false,
 		timeSlotColumns = 4,
-		timeSlotVariant = 'default',
 		availableSlots,
 		loading = false,
 		disableBookedSlots,
@@ -147,7 +146,6 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 	const isDoctorView = !!(onSelectAll && onUnselectAll)
 	const isCardSlotVariant = slotVariant === 'card'
 	const useCompactAppointmentToggle = compactAppointmentToggle || isDoctorView
-	const useAvailabilitySlotStyle = timeSlotVariant === 'availability'
 	const legendItems = [
 		{ label: 'Available', color: 'success.main' },
 		{ label: 'Blocked', color: 'error.main' },
@@ -545,18 +543,6 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 													: isSelected
 														? 'primary.main'
 														: 'success.main'
-
-										const defaultSlotBg = isBooked
-											? 'rgba(0,0,0,0.08)'
-											: props.multiSelect
-												? slot.status === 'BLOCKED'
-													? 'error.main'
-													: isSelected
-														? 'success.main'
-														: 'error.main'
-												: isSelected
-													? 'primary.main'
-													: 'background.paper'
 
 										return (
 											<Box

@@ -46,7 +46,7 @@ export default function AdminLoginPage() {
 		try {
 			const res = await sendOtp(cleaned)
 			if (res.success) {
-				toast.info(`OTP sent to ${cleaned}`)
+				toast.success(`OTP sent to ${cleaned}`)
 				setStep('otp')
 			} else {
 				setErrorMessage(res.message || 'Failed to send OTP')
@@ -143,6 +143,24 @@ export default function AdminLoginPage() {
 											'&.Mui-focused fieldset': { borderColor: '#2dd4bf' },
 										},
 										'& .MuiInputLabel-root': { color: '#94a3b8' },
+										// Prevent the browser's native autofill styling (white/yellow
+										// background) from overriding the dark theme once the user
+										// starts typing / the browser suggests a value.
+										'& input:-webkit-autofill': {
+											WebkitBoxShadow: '0 0 0 100px #0f172a inset',
+											WebkitTextFillColor: '#ffffff',
+											caretColor: '#ffffff',
+											transition: 'background-color 5000s ease-in-out 0s',
+										},
+										'& input:-webkit-autofill:hover': {
+											WebkitBoxShadow: '0 0 0 100px #0f172a inset',
+										},
+										'& input:-webkit-autofill:focus': {
+											WebkitBoxShadow: '0 0 0 100px #0f172a inset',
+										},
+										'& input:-webkit-autofill:active': {
+											WebkitBoxShadow: '0 0 0 100px #0f172a inset',
+										},
 									}}
 								/>
 

@@ -149,6 +149,7 @@ export const API_ENDPOINTS = {
 		MARK_READ: (id: string) => `/api/notifications/${id}/read`,
 	},
 	ADMIN: {
+		DASHBOARD_STATS: '/api/admin/dashboard/stats',
 		DOCTORS_VERIFICATION_QUEUE: '/api/admin/doctors/verification-queue',
 		VERIFY_DOCTOR: (doctorId: string) => `/api/admin/doctors/${doctorId}/verify`,
 		DOCTOR_VERIFICATION_DETAIL: (doctorId: string) => `/api/admin/doctors/${doctorId}/verification-detail`,

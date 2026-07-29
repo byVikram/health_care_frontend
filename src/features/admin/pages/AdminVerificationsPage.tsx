@@ -1,5 +1,6 @@
 // src/features/admin/pages/AdminVerificationsPage.tsx
 import { useEffect, useState, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
 	Box,
 	Tabs,
@@ -21,7 +22,7 @@ import DescriptionIcon from '@mui/icons-material/Description'
 import { toast } from 'react-toastify'
 
 import SectionCard from '../../../components/common/Card/SectionCard'
-import AppTable from '../../../components/common/Table/AppTable'
+import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import AppButton from '../../../components/common/Button/AppButton'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppDrawer from '../../../components/common/Drawer/AppDrawer'
@@ -37,6 +38,8 @@ import {
 	DoctorVerificationDocument,
 } from '../adminService'
 import { buildS3Url } from '../../../utils/s3'
+
+const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
 
 // ── Styled info row (same pattern as AppointmentDetailsDrawer) ─────────────
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
@@ -75,7 +78,21 @@ function SectionHeader({ title }: { title: string }) {
 }
 
 export default function AdminVerificationsPage() {
-	const [activeTab, setActiveTab] = useState<'doctors' | 'providers'>('doctors')
+	const [searchParams, setSearchParams] = useSearchParams()
+	const initialTab = searchParams.get('tab') === 'providers' ? 'providers' : 'doctors'
+	const [activeTab, setActiveTab] = useState<'doctors' | 'providers'>(initialTab)
+
+	useEffect(() => {
+		const paramTab = searchParams.get('tab')
+		if (paramTab === 'providers' || paramTab === 'doctors') {
+			setActiveTab(paramTab)
+		}
+	}, [searchParams])
+
+	const handleTabChange = (_: React.SyntheticEvent, val: 'doctors' | 'providers') => {
+		setActiveTab(val)
+		setSearchParams(val === 'providers' ? { tab: 'providers' } : {})
+	}
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
@@ -102,8 +119,8 @@ export default function AdminVerificationsPage() {
 			])
 			if (docsRes.success) setDoctorsQueue(docsRes.data || [])
 			if (provsRes.success) setProvidersQueue(provsRes.data || [])
-		} catch (err: any) {
-			setError(err?.message || 'Failed to fetch verification queues')
+		} catch (err: unknown) {
+			setError(getErrorMessage(err, 'Failed to fetch verification queues'))
 		} finally {
 			setLoading(false)
 		}
@@ -167,8 +184,8 @@ export default function AdminVerificationsPage() {
 			setSelectedItemData(null)
 			setNotes('')
 			fetchQueues()
-		} catch (err: any) {
-			toast.error(err?.message || 'Verification update failed.')
+		} catch (err: unknown) {
+			toast.error(getErrorMessage(err, 'Verification update failed.'))
 		} finally {
 			setSubmitting(false)
 		}
@@ -185,11 +202,11 @@ export default function AdminVerificationsPage() {
 	}
 
 	// ── Table columns ────────────────────────────────────────────────────────
-	const doctorColumns = [
+	const doctorColumns: Column<DoctorVerificationItem>[] = [
 		{
 			field: 'name',
 			label: 'Doctor Name',
-			render: (_: any, row: DoctorVerificationItem) => (
+			render: (_: unknown, row: DoctorVerificationItem) => (
 				<Box>
 					<Typography variant="subtitle2" fontWeight={700}>
 						{row.name}
@@ -203,7 +220,7 @@ export default function AdminVerificationsPage() {
 		{
 			field: 'speciality',
 			label: 'Speciality / Reg. No.',
-			render: (_: any, row: DoctorVerificationItem) => (
+			render: (_: unknown, row: DoctorVerificationItem) => (
 				<Box>
 					<Typography variant="body2" fontWeight={600}>
 						{row.speciality || 'General Medicine'}
@@ -217,7 +234,7 @@ export default function AdminVerificationsPage() {
 		{
 			field: 'is_verified',
 			label: 'Status',
-			render: (_: any, row: DoctorVerificationItem) => (
+			render: (_: unknown, row: DoctorVerificationItem) => (
 				<Chip
 					label={row.is_verified ? 'Verified' : 'Pending Verification'}
 					size="small"
@@ -229,7 +246,7 @@ export default function AdminVerificationsPage() {
 		{
 			field: 'actions',
 			label: 'Actions',
-			render: (_: any, row: DoctorVerificationItem) => (
+			render: (_: unknown, row: DoctorVerificationItem) => (
 				<AppButton
 					label="Review & Verify"
 					size="small"
@@ -241,11 +258,11 @@ export default function AdminVerificationsPage() {
 		},
 	]
 
-	const providerColumns = [
+	const providerColumns: Column<ProviderVerificationItem>[] = [
 		{
 			field: 'name',
 			label: 'Provider Details',
-			render: (_: any, row: ProviderVerificationItem) => (
+			render: (_: unknown, row: ProviderVerificationItem) => (
 				<Box>
 					<Typography variant="subtitle2" fontWeight={700}>
 						{row.name}
@@ -259,7 +276,7 @@ export default function AdminVerificationsPage() {
 		{
 			field: 'provider_type',
 			label: 'Type',
-			render: (_: any, row: ProviderVerificationItem) => (
+			render: (_: unknown, row: ProviderVerificationItem) => (
 				<Chip
 					label={row.provider_type.toUpperCase()}
 					size="small"
@@ -270,7 +287,7 @@ export default function AdminVerificationsPage() {
 		{
 			field: 'is_verified',
 			label: 'Status',
-			render: (_: any, row: ProviderVerificationItem) => (
+			render: (_: unknown, row: ProviderVerificationItem) => (
 				<Chip
 					label={row.is_verified ? 'Verified' : 'Pending Review'}
 					size="small"
@@ -282,7 +299,7 @@ export default function AdminVerificationsPage() {
 		{
 			field: 'actions',
 			label: 'Actions',
-			render: (_: any, row: ProviderVerificationItem) => (
+			render: (_: unknown, row: ProviderVerificationItem) => (
 				<AppButton
 					label="Review & Verify"
 					size="small"
@@ -470,7 +487,7 @@ export default function AdminVerificationsPage() {
 				</Typography>
 				<Tabs
 					value={activeTab}
-					onChange={(_, val) => setActiveTab(val)}
+					onChange={handleTabChange}
 					sx={{ mb: 3, borderBottom: '1px solid #e2e8f0' }}
 				>
 					<Tab
@@ -499,9 +516,9 @@ export default function AdminVerificationsPage() {
 						</Typography>
 					</Stack>
 				) : activeTab === 'doctors' ? (
-					<AppTable columns={doctorColumns as any} rows={doctorsQueue as any} emptyMessage="No doctors awaiting verification." />
+					<AppTable columns={doctorColumns} rows={doctorsQueue} emptyMessage="No doctors awaiting verification." />
 				) : (
-					<AppTable columns={providerColumns as any} rows={providersQueue as any} emptyMessage="No providers awaiting verification." />
+					<AppTable columns={providerColumns} rows={providersQueue} emptyMessage="No providers awaiting verification." />
 				)}
 			</SectionCard>
 

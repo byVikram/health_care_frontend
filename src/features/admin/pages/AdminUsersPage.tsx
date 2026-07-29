@@ -22,7 +22,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { toast } from 'react-toastify'
 
 import SectionCard from '../../../components/common/Card/SectionCard'
-import AppTable from '../../../components/common/Table/AppTable'
+import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import AppSelect from '../../../components/common/Select/AppSelect'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppButton from '../../../components/common/Button/AppButton'
@@ -37,6 +37,8 @@ const ROLE_OPTIONS = [
 	{ label: 'Laboratories', value: 'laboratory' },
 	{ label: 'Admins', value: 'admin' },
 ]
+
+const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
 
 /** Resolves the role-specific id (patient_id / doctor_id / provider id) that
  *  AdminUserDetailPage's route (/admin/users/:role/:id) expects to receive. */
@@ -57,14 +59,31 @@ function resolveDetailId(user: AdminUserItem): string | null {
 	}
 }
 
-const moderationActionButtonSx: SxProps<Theme> = {
-	width: 126,
-	height: 46,
-	px: 1.25,
+/** Shared base styles for moderation action buttons */
+const moderationButtonBaseSx: SxProps<Theme> = {
+	height: 30,
+	px: 1,
 	py: 0,
+	fontSize: 12,
 	justifyContent: 'center',
-	whiteSpace: 'normal',
-	lineHeight: 1.15,
+	whiteSpace: 'nowrap',
+	lineHeight: 1.1,
+}
+
+/** Fixed-width style for the Suspend / Unsuspend toggle button */
+const suspendButtonSx: SxProps<Theme> = {
+	...moderationButtonBaseSx,
+	width: 120,
+	minWidth: 120,
+	maxWidth: 120,
+}
+
+/** Fixed-width style for the Reset OTP button */
+const resetOtpButtonSx: SxProps<Theme> = {
+	...moderationButtonBaseSx,
+	width: 110,
+	minWidth: 110,
+	maxWidth: 110,
 }
 
 export default function AdminUsersPage() {
@@ -94,8 +113,8 @@ export default function AdminUsersPage() {
 				setUsers(res.data?.items || [])
 				setTotal(res.data?.total || 0)
 			}
-		} catch (err: any) {
-			setError(err?.message || 'Failed to fetch users list')
+		} catch (err: unknown) {
+			setError(getErrorMessage(err, 'Failed to fetch users list'))
 		} finally {
 			setLoading(false)
 		}
@@ -113,8 +132,8 @@ export default function AdminUsersPage() {
 				toast.success(`User ${user.email || user.contact_number} status updated.`)
 				fetchUsers()
 			}
-		} catch (err: any) {
-			toast.error(err?.message || 'Failed to update user status.')
+		} catch (err: unknown) {
+			toast.error(getErrorMessage(err, 'Failed to update user status.'))
 		} finally {
 			setActionLoadingId(null)
 		}
@@ -127,8 +146,8 @@ export default function AdminUsersPage() {
 			if (res.success) {
 				toast.success(`OTP state reset for ${user.email || user.contact_number}.`)
 			}
-		} catch (err: any) {
-			toast.error(err?.message || 'Failed to reset OTP state.')
+		} catch (err: unknown) {
+			toast.error(getErrorMessage(err, 'Failed to reset OTP state.'))
 		} finally {
 			setActionLoadingId(null)
 		}
@@ -140,11 +159,11 @@ export default function AdminUsersPage() {
 		navigate(`/admin/users/${user.role}/${detailId}`)
 	}
 
-	const columns = [
+	const columns: Column<AdminUserItem>[] = [
 		{
 			field: 'public_id',
 			label: 'ID',
-			render: (_: any, row: AdminUserItem) => (
+			render: (_: unknown, row: AdminUserItem) => (
 				<Typography variant="body2" sx={{ fontFamily: 'monospace', color: '#475569' }}>
 					{row.public_id || 'N/A'}
 				</Typography>
@@ -153,7 +172,7 @@ export default function AdminUsersPage() {
 		{
 			field: 'id',
 			label: 'User Info',
-			render: (_: any, row: AdminUserItem) => (
+			render: (_: unknown, row: AdminUserItem) => (
 				<Box>
 					<Typography variant="subtitle2" fontWeight={700}>
 						{row.email || row.contact_number}
@@ -164,7 +183,7 @@ export default function AdminUsersPage() {
 		{
 			field: 'role',
 			label: 'Role',
-			render: (_: any, row: AdminUserItem) => (
+			render: (_: unknown, row: AdminUserItem) => (
 				<Chip
 					label={(row.role || 'USER').toUpperCase()}
 					size="small"
@@ -175,14 +194,14 @@ export default function AdminUsersPage() {
 		{
 			field: 'contact_number',
 			label: 'Mobile Contact',
-			render: (_: any, row: AdminUserItem) => (
+			render: (_: unknown, row: AdminUserItem) => (
 				<Typography variant="body2">{row.contact_number || 'N/A'}</Typography>
 			),
 		},
 		{
 			field: 'is_suspended',
 			label: 'Account State',
-			render: (_: any, row: AdminUserItem) => (
+			render: (_: unknown, row: AdminUserItem) => (
 				<Chip
 					label={row.is_suspended ? 'SUSPENDED' : 'ACTIVE'}
 					size="small"
@@ -194,57 +213,66 @@ export default function AdminUsersPage() {
 		{
 			field: 'actions',
 			label: 'Moderation Actions',
-			render: (_: any, row: AdminUserItem) => {
+			render: (_: unknown, row: AdminUserItem) => {
 				const isBusy = actionLoadingId === (row.public_id || String(row.id))
 				const detailId = resolveDetailId(row)
 				return (
-					<Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 330 }}>
-						<Tooltip title={row.is_suspended ? 'Unsuspend Account' : 'Suspend Account'}>
-							<span>
-								<AppButton
-									label={row.is_suspended ? 'Unsuspend' : 'Suspend'}
-									size="small"
-									color={row.is_suspended ? 'success' : 'error'}
-									startIcon={row.is_suspended ? <CheckCircleOutlineIcon /> : <BlockIcon />}
-									onClick={() => handleToggleSuspend(row)}
-									disabled={isBusy}
-									sx={moderationActionButtonSx}
-								/>
-							</span>
-						</Tooltip>
-
-						<Tooltip title="Reset Blocked OTP State">
-							<span>
-								<AppButton
-									label="Reset OTP"
-									size="small"
-									variant="outlined"
-									startIcon={<LockResetIcon />}
-									onClick={() => handleResetOtp(row)}
-									disabled={isBusy}
-									sx={moderationActionButtonSx}
-								/>
-							</span>
-						</Tooltip>
-
-						{detailId && (
-							<Tooltip title="View Account Details">
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 300 }}>
+						{/* Fixed-width slot for Suspend / Unsuspend */}
+						<Box sx={{ width: 120, flexShrink: 0 }}>
+							<Tooltip title={row.is_suspended ? 'Unsuspend Account' : 'Suspend Account'}>
 								<span>
-									<IconButton
+									<AppButton
+										label={row.is_suspended ? 'Unsuspend' : 'Suspend'}
 										size="small"
-										onClick={() => handleViewDetails(row)}
-										sx={{
-											color: '#0d9488',
-											border: '1px solid #e2e8f0',
-											'&:hover': { bgcolor: 'rgba(13, 148, 136, 0.08)' },
-										}}
-									>
-										<ChevronRightIcon fontSize="small" />
-									</IconButton>
+										color={row.is_suspended ? 'success' : 'error'}
+										startIcon={row.is_suspended ? <CheckCircleOutlineIcon /> : <BlockIcon />}
+										onClick={() => handleToggleSuspend(row)}
+										disabled={isBusy}
+										sx={suspendButtonSx}
+									/>
 								</span>
 							</Tooltip>
+						</Box>
+
+						{/* Fixed-width slot for Reset OTP */}
+						<Box sx={{ width: 110, flexShrink: 0 }}>
+							<Tooltip title="Reset Blocked OTP State">
+								<span>
+									<AppButton
+										label="Reset OTP"
+										size="small"
+										variant="outlined"
+										startIcon={<LockResetIcon />}
+										onClick={() => handleResetOtp(row)}
+										disabled={isBusy}
+										sx={resetOtpButtonSx}
+									/>
+								</span>
+							</Tooltip>
+						</Box>
+
+						{/* Arrow with extra left spacing */}
+						{detailId && (
+							<Box sx={{ ml: 1, flexShrink: 0 }}>
+								<Tooltip title="View Account Details">
+									<span>
+										<IconButton
+											size="small"
+											onClick={() => handleViewDetails(row)}
+											sx={{
+												color: '#0d9488',
+												border: '1px solid #e2e8f0',
+												'&:hover': { bgcolor: 'rgba(13, 148, 136, 0.08)' },
+											}}
+										>
+											<ChevronRightIcon fontSize="small" />
+										</IconButton>
+									</span>
+								</Tooltip>
+							</Box>
 						)}
-					</Stack>
+					</Box>
 				)
 			},
 		},
@@ -290,7 +318,7 @@ export default function AdminUsersPage() {
 					</Stack>
 				) : (
 					<>
-						<AppTable columns={columns as any} rows={users as any} emptyMessage="No users found matching criteria." />
+						<AppTable columns={columns} rows={users} emptyMessage="No users found matching criteria." />
 						<TablePagination
 							component="div"
 							count={total}
