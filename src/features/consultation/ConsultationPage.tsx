@@ -21,6 +21,7 @@ import { useAuth, LookupHospital } from '../../hooks/useAuth'
 import { getDoctorProfile, mapDoctorProfileApi, getDoctorAvailability, getAvailabilityModeBlocks } from '../doctor/doctorService'
 import { DoctorProfile } from '../../types/doctor-profile'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
+import FollowUpModal from './components/FollowUpModal'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
@@ -194,6 +195,8 @@ export default function ConsultationPage() {
 	const [appointment, setAppointment] = useState<Appointment | null>(null)
 	const [doctorProfile, setDoctorProfile] = useState<DoctorProfile | null>(null)
 	const [loading, setLoading] = useState(true)
+	const [followUpOpen, setFollowUpOpen] = useState(false)
+	const [followUpLoading, setFollowUpLoading] = useState(false)
 
 	const [rescheduleOpen, setRescheduleOpen] = useState(false)
 	const [rescheduleDate, setRescheduleDate] = useState<Date>(new Date())
@@ -458,13 +461,36 @@ export default function ConsultationPage() {
 			toast.warning('Appointment details are not available yet.')
 			return
 		}
+		setFollowUpOpen(true)
+	}
 
-		setRescheduleDate(new Date())
-		setRescheduleTime('')
-		setRescheduleSlots([])
-		setRescheduleHospitalId(appointment.hospital?.id ?? rescheduleHospitalsMapped[0]?.id ?? '')
-		setAppointmentType(getDrawerAppointmentType(appointment.appointment_mode))
-		setRescheduleOpen(true)
+	const handleSaveFollowUpRecommendation = async (dueDate: Date, note: string) => {
+		if (!appointmentId || !patient?.id) {
+			toast.error('Missing appointment or patient details.')
+			return
+		}
+		setFollowUpLoading(true)
+		try {
+			const due_date_str = dueDate.toISOString().split('T')[0]
+			const payload = {
+				appointment_id: appointmentId,
+				patient_id: patient.id,
+				due_date: due_date_str,
+				doctor_note: note || undefined,
+			}
+			const res = await ApiService.post(API_ENDPOINTS.FOLLOW_UPS.CREATE, payload)
+			if (res.data?.success || res.status === 201 || res.status === 200) {
+				toast.success('Follow-up recommendation saved successfully.')
+				setFollowUpOpen(false)
+			} else {
+				toast.error(res.data?.message || 'Failed to save follow-up recommendation.')
+			}
+		} catch (err: any) {
+			console.error('Save follow-up error:', err)
+			toast.error(err?.response?.data?.message || 'Failed to save follow-up recommendation.')
+		} finally {
+			setFollowUpLoading(false)
+		}
 	}
 
 
@@ -662,27 +688,6 @@ export default function ConsultationPage() {
 					<Tab label="Vitals" />
 					<Tab label="Timeline" />
 				</Tabs>
-
-				{/* Timeline -- sits right next to the Vitals tab. Opens the
-				    appointment history drawer (reuses AppointmentDetailsDrawer)
-				    instead of switching tab panels. */}
-				<Box
-					onClick={() => setTimelineDrawerOpen(true)}
-					sx={{
-						cursor: 'pointer',
-						textTransform: 'none',
-						fontWeight: 500,
-						fontSize: '14px',
-						color: 'text.secondary',
-						px: 1.5,
-						py: 1,
-						ml: -1,
-						borderRadius: '8px',
-						'&:hover': { color: 'primary.main', bgcolor: 'action.hover' },
-					}}
-				>
-					Timeline
-				</Box>
 			</Box>
 
 			{/* Tab content */}
@@ -724,10 +729,12 @@ export default function ConsultationPage() {
 				appointmentType={appointmentType}
 				setAppointmentType={setAppointmentType}
 			/>
-			<AppointmentDetailsDrawer
-				open={timelineDrawerOpen}
-				onClose={() => setTimelineDrawerOpen(false)}
-				appointmentId={appointmentId ?? null}
+			<FollowUpModal
+				open={followUpOpen}
+				onClose={() => setFollowUpOpen(false)}
+				onSave={handleSaveFollowUpRecommendation}
+				loading={followUpLoading}
+				patientName={patient?.personal?.name}
 			/>
 		</Box>
 	)

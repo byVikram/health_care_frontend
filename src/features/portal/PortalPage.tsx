@@ -1,7 +1,8 @@
-import { Box, Typography, Container, Grid, Popper, Paper, keyframes, Grow } from '@mui/material'
+import { Box, Typography, Container, Grid, Popper, Paper, keyframes, Grow, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
+import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getAppointments } from '../doctor/doctorService'
+import { getAppointments, getDoctorStatus, DoctorStatusResponse } from '../doctor/doctorService'
 import { Appointment } from '../../types/appointment'
 
 import { DoctorAppointments } from '../doctor/DoctorAppointments'
@@ -436,6 +437,31 @@ export default function PortalPage() {
 		fetchAppointments()
 	}, [selectedDate, weekDays, debouncedQuery, activeHospitalId, role])
 
+	// ----- Doctor Status Fetch effect -----
+	const [doctorStatus, setDoctorStatus] = useState<DoctorStatusResponse['data'] | null>(null)
+	const [showUnverifiedBanner, setShowUnverifiedBanner] = useState(false)
+
+	useEffect(() => {
+		if (role !== USER_ROLES.DOCTOR) return
+
+		const fetchStatus = async () => {
+			try {
+				const status = await getDoctorStatus()
+				setDoctorStatus(status)
+				
+				if (status.profile_completed && !status.is_verified) {
+					setShowUnverifiedBanner(true)
+				}
+			} catch (error) {
+				console.error('Failed to fetch doctor status:', error)
+			}
+		}
+
+		fetchStatus()
+	}, [role])
+
+
+
 	// ----------------------------- Render -----------------------------
 
 	if (role === USER_ROLES.PATIENT) {
@@ -788,6 +814,60 @@ export default function PortalPage() {
 
 					{/* RIGHT COLUMN — appointments panel */}
 					<Grid size={{ xs: 12, md: 6 }}>
+						{role === USER_ROLES.DOCTOR && showUnverifiedBanner && (
+							<Box
+								sx={{
+									backgroundColor: '#FFF8E1',
+									border: '1px solid #FFE082',
+									borderRadius: '12px',
+									p: 2,
+									mb: 3,
+									display: 'flex',
+									alignItems: 'center',
+									gap: 2,
+								}}
+							>
+								<Box
+									sx={{
+										backgroundColor: '#FFECB3',
+										borderRadius: '8px',
+										width: 48,
+										height: 48,
+										display: 'flex',
+										justifyContent: 'center',
+										alignItems: 'center',
+										flexShrink: 0,
+									}}
+								>
+									<AccessTimeIcon sx={{ color: '#F57C00' }} />
+								</Box>
+								<Box sx={{ flex: 1 }}>
+									<Typography sx={{ fontWeight: 700, fontSize: 16, color: '#212121', mb: 0.5 }}>
+										Verification Pending
+									</Typography>
+									<Typography sx={{ fontSize: 14, color: '#616161', lineHeight: 1.4 }}>
+										Your profile is under review. You'll get full access once your account is verified.
+									</Typography>
+								</Box>
+								<Button
+									variant="outlined"
+									sx={{
+										borderColor: '#F57C00',
+										color: '#F57C00',
+										textTransform: 'none',
+										borderRadius: '24px',
+										px: 3,
+										whiteSpace: 'nowrap',
+										'&:hover': {
+											borderColor: '#E65100',
+											backgroundColor: 'rgba(245, 124, 0, 0.04)',
+										}
+									}}
+								>
+									Learn More
+								</Button>
+							</Box>
+						)}
 						{role === USER_ROLES.DOCTOR && (
 							<DoctorAppointments
 								selectedDate={selectedDate}
@@ -842,6 +922,24 @@ export default function PortalPage() {
 					<AnswerQuestionsSection />
 				)}
 			</Container>
+
+			{/* Complete Profile Blocking Modal */}
+			{role === USER_ROLES.DOCTOR && doctorStatus && !doctorStatus.profile_completed && (
+				<Dialog open={true} disableEscapeKeyDown>
+					<DialogTitle>Complete Your Profile</DialogTitle>
+					<DialogContent>
+						<Typography>
+							Your profile is incomplete. Please complete your profile to continue using the application.
+						</Typography>
+					</DialogContent>
+					<DialogActions>
+						<Button variant="contained" onClick={() => navigate(ROUTES.PORTAL.PROFILE)}>
+							Complete Profile
+						</Button>
+					</DialogActions>
+				</Dialog>
+			)}
+
 		</Box>
 	)
 }

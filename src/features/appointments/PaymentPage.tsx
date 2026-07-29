@@ -59,6 +59,7 @@ interface PaymentState {
 	allowPayLater?: boolean
 	/** Present only when booking from a referral */
 	referralId?: string
+	consentVersionId: string
 }
 
 interface PaymentOption {
@@ -123,6 +124,7 @@ export default function PaymentPage() {
 		startTime = '',
 		allowPayLater = true,
 		referralId,
+		consentVersionId,
 	} = state
 
 	const total = consultationFee + serviceFee
@@ -163,6 +165,7 @@ export default function PaymentPage() {
 				appointment_date: appointmentDate,
 				start_time: startTime,
 				patient_id: patientId || undefined,
+				consent_version_id: consentVersionId,
 			}
 			if (referralId) payload.referral_id = referralId
 

@@ -73,6 +73,11 @@ type CommonProps = {
 	onAppointmentTypeChange?: (type: 'clinic' | 'video') => void
 	clinicPrice?: number
 	videoPrice?: number
+	// 'pill' (default) is the original filled-pill slot design used everywhere
+	// (Doctor Details booking, Reschedule, etc). 'card' is the newer bordered
+	// card design with a left accent bar - opt-in only, used by the Doctor's
+	// Availability tab so other consumers of this shared component are unaffected.
+	slotVariant?: 'pill' | 'card'
 }
 
 type DateSlotPickerProps = CommonProps & (SingleProps | MultiProps)
@@ -99,6 +104,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		onAppointmentTypeChange,
 		clinicPrice,
 		videoPrice,
+		slotVariant = 'pill',
 	} = props
 
 	const today = new Date()
@@ -139,6 +145,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 
 	const slotsToRender = availableSlots ?? []
 	const isDoctorView = !!(onSelectAll && onUnselectAll)
+	const isCardSlotVariant = slotVariant === 'card'
 	const useCompactAppointmentToggle = compactAppointmentToggle || isDoctorView
 	const useAvailabilitySlotStyle = timeSlotVariant === 'availability'
 	const legendItems = [
@@ -526,14 +533,15 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 										const isBooked = slot.is_booked
 										const isDisabled = !slot.is_enabled
 
-										const accentColor = isBooked
-											? 'transparent'
-											: props.multiSelect
-												? slot.status === 'BLOCKED'
-													? 'error.main'
-													: isSelected
-														? 'success.main'
-														: 'error.main'
+										const accentColor =
+											isCardSlotVariant && isBooked
+												? 'transparent'
+												: props.multiSelect
+													? slot.status === 'BLOCKED'
+														? 'error.main'
+														: isSelected
+															? 'success.main'
+															: 'error.main'
 													: isSelected
 														? 'primary.main'
 														: 'success.main'
@@ -558,62 +566,76 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 													handleSlotClick(slot.start_time)
 												}}
 												sx={{
-													position: useAvailabilitySlotStyle ? 'relative' : undefined,
-													display: 'flex',
-													alignItems: 'center',
-													justifyContent: 'center',
-													py: useAvailabilitySlotStyle ? 1.1 : 0.6,
-													pl: useAvailabilitySlotStyle ? '14px' : 0.4,
-													pr: useAvailabilitySlotStyle ? '8px' : 0.4,
+													...(isCardSlotVariant && {
+														position: 'relative',
+														display: 'flex',
+														alignItems: 'center',
+														justifyContent: 'center',
+														pl: '14px',
+														pr: '8px',
+														overflow: 'hidden',
+														boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+														'&:before': {
+															content: '""',
+															position: 'absolute',
+															left: 0,
+															top: 0,
+															bottom: 0,
+															width: '4px',
+															bgcolor: accentColor,
+														},
+													}),
+													py: isCardSlotVariant ? 1.1 : 0.6,
+													px: isCardSlotVariant ? undefined : 0.4,
 													textAlign: 'center',
-													bgcolor: useAvailabilitySlotStyle
+													bgcolor: isCardSlotVariant
 														? isBooked
 															? 'rgba(0,0,0,0.04)'
 															: 'background.paper'
-														: defaultSlotBg,
-													border: useAvailabilitySlotStyle ? '1px solid' : '1.5px solid',
-													borderColor: useAvailabilitySlotStyle
+														: isBooked
+															? 'rgba(0,0,0,0.08)'
+															: props.multiSelect
+																? slot.status === 'BLOCKED'
+																	? 'error.main'
+																	: isSelected
+																		? 'success.main'
+																		: 'error.main'
+																: isSelected
+																	? 'primary.main'
+																	: 'background.paper',
+													border: isCardSlotVariant ? '1px solid' : '1.5px solid',
+													borderColor: isCardSlotVariant
 														? 'divider'
 														: isSelected
 															? 'primary.main'
 															: 'divider',
-													borderRadius: useAvailabilitySlotStyle ? '10px' : '8px',
-													overflow: useAvailabilitySlotStyle ? 'hidden' : undefined,
-													boxShadow: useAvailabilitySlotStyle ? '0 1px 2px rgba(0,0,0,0.05)' : undefined,
+													borderRadius: isCardSlotVariant ? '10px' : '8px',
 													cursor: isBooked
 														? 'default'
 														: isDisabled
 															? 'not-allowed'
 															: 'pointer',
 													transition: 'all 0.15s',
-													'&:before': useAvailabilitySlotStyle
-														? {
-																content: '""',
-																position: 'absolute',
-																left: 0,
-																top: 0,
-																bottom: 0,
-																width: '4px',
-																bgcolor: accentColor,
-															}
-														: undefined,
 													'&:hover': isBooked
 														? {}
-														: useAvailabilitySlotStyle
-															? {
-																boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-															}
-															: {
-																borderColor: 'primary.main',
-																bgcolor: isSelected ? 'primary.main' : 'rgba(43,111,113,0.06)',
-															},
+														: {
+															borderColor: 'primary.main',
+															bgcolor: isCardSlotVariant
+																? undefined
+																: isSelected
+																	? 'primary.main'
+																	: 'rgba(43,111,113,0.06)',
+															boxShadow: isCardSlotVariant
+																? '0 2px 6px rgba(0,0,0,0.1)'
+																: undefined,
+														},
 												}}
 											>
 												<Typography
 													variant="body1"
 													sx={{
-														fontWeight: useAvailabilitySlotStyle ? 600 : isSelected ? 600 : 400,
-														color: useAvailabilitySlotStyle
+														fontWeight: isCardSlotVariant ? 600 : isSelected ? 600 : 400,
+														color: isCardSlotVariant
 															? isBooked
 																? 'text.disabled'
 																: '#0f2a4a'

@@ -20,11 +20,19 @@ export const REJECTION_REASONS = [
 	'Required medical information is incomplete.',
 ] as const
 
+export const PATIENT_REJECTION_REASONS = [
+	'The rescheduled appointment time does not work for me.',
+	'I am no longer available for this appointment.',
+	'I no longer need this appointment.',
+	'I want to choose a different doctor or hospital.',
+] as const
+
 interface RejectAppointmentDialogProps {
 	open: boolean
 	onCancel: () => void
 	onConfirm: (reason: string) => void
 	submitting?: boolean
+	reasons?: readonly string[]
 }
 
 export default function RejectAppointmentDialog({
@@ -32,6 +40,7 @@ export default function RejectAppointmentDialog({
 	onCancel,
 	onConfirm,
 	submitting = false,
+	reasons = REJECTION_REASONS,
 }: RejectAppointmentDialogProps) {
 	const [selectedReason, setSelectedReason] = useState('')
 
@@ -76,7 +85,7 @@ export default function RejectAppointmentDialog({
 					onChange={(e) => setSelectedReason(e.target.value)}
 					sx={{ gap: 0.5, mb: 3 }}
 				>
-					{REJECTION_REASONS.map((reason) => (
+					{reasons.map((reason) => (
 						<FormControlLabel
 							key={reason}
 							value={reason}
