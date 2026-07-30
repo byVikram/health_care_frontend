@@ -63,6 +63,7 @@ type CommonProps = {
 	disablePast?: boolean
 	compactAppointmentToggle?: boolean
 	timeSlotColumns?: number
+	timeSlotVariant?: 'default' | 'availability'
 	availableSlots?: SlotGroup[]
 	loading?: boolean
 	disableBookedSlots?: boolean
@@ -604,16 +605,16 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 													'&:hover': isBooked
 														? {}
 														: {
-																borderColor: 'primary.main',
-																bgcolor: isCardSlotVariant
-																	? undefined
-																	: isSelected
-																		? 'primary.main'
-																		: 'rgba(43,111,113,0.06)',
-																boxShadow: isCardSlotVariant
-																	? '0 2px 6px rgba(0,0,0,0.1)'
-																	: undefined,
-															},
+															borderColor: 'primary.main',
+															bgcolor: isCardSlotVariant
+																? undefined
+																: isSelected
+																	? 'primary.main'
+																	: 'rgba(43,111,113,0.06)',
+															boxShadow: isCardSlotVariant
+																? '0 2px 6px rgba(0,0,0,0.1)'
+																: undefined,
+														},
 												}}
 											>
 												<Typography

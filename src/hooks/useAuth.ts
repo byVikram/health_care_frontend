@@ -1,10 +1,20 @@
-﻿
+
 import { useState, useEffect } from 'react'
 import { SpecialitiesResponse } from '../types/speciality'
 import { AppointmentStatus } from '../types/appointment'
 import { UserRole as OnboardingUserRole } from '../data/onboardingData'
 
-export type UserRole = 'doctor' | 'patient' | 'laboratory' | 'pharmacy' | 'radiology'
+export type UserRole =
+	| 'doctor'
+	| 'patient'
+	| 'laboratory'
+	| 'pharmacy'
+	| 'radiology'
+	| 'super_admin'
+	| 'support_admin'
+	| 'billing_admin'
+	| 'compliance_admin'
+	| 'admin'
 
 export interface AuthUser {
 	id?: string

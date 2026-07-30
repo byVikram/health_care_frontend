@@ -41,6 +41,18 @@ const FavouriteDoctorsPage = lazy(() => import('../features/doctor/favourites/Fa
 const LaboratoryOrdersList = lazy(() => import('../features/laboratory/bookings/LaboratoryOrdersList'))
 const LaboratoryBookingDetailPage = lazy(() => import('../features/laboratory/bookings/LaboratoryBookingDetailPage'))
 
+// Admin Portal Components
+const AdminLoginPage = lazy(() => import('../features/admin/auth/AdminLoginPage'))
+const AdminLayout = lazy(() => import('../components/layout/AdminLayout'))
+const AdminProtectedRoute = lazy(() => import('./AdminProtectedRoute'))
+const AdminDashboardPage = lazy(() => import('../features/admin/pages/AdminDashboardPage'))
+const AdminVerificationsPage = lazy(() => import('../features/admin/pages/AdminVerificationsPage'))
+const AdminUsersPage = lazy(() => import('../features/admin/pages/AdminUsersPage'))
+const AdminUserDetailPage = lazy(() => import('../features/admin/pages/AdminUserDetailPage'))
+const AdminAppointmentsPage = lazy(() => import('../features/admin/pages/AdminAppointmentsPage'))
+const AdminAuditsPage = lazy(() => import('../features/admin/pages/AdminAuditsPage'))
+const AdminSpecialitiesPage = lazy(() => import('../features/admin/pages/AdminSpecialitiesPage'))
+
 function ProtectedLayout() {
 	return (
 		<MainLayout>
@@ -90,6 +102,22 @@ export default function AppRoutes() {
 				<Route path={ROUTES.PUBLIC.WELCOME_DOCTOR} element={<WelcomePage role="doctor" />} />
 				<Route element={<ProtectedLayout />}>
 					<Route path={ROUTES.ROOT} element={<DashboardPage />} />
+				</Route>
+
+				{/* Admin Login Route */}
+				<Route path={ROUTES.ADMIN.LOGIN} element={<AdminLoginPage />} />
+
+				{/* Admin Protected Routes */}
+				<Route element={<AdminProtectedRoute />}>
+					<Route element={<AdminLayout />}>
+						<Route path={ROUTES.ADMIN.DASHBOARD} element={<AdminDashboardPage />} />
+						<Route path={ROUTES.ADMIN.VERIFICATIONS} element={<AdminVerificationsPage />} />
+						<Route path={ROUTES.ADMIN.USERS} element={<AdminUsersPage />} />
+						<Route path={ROUTES.ADMIN.USER_DETAIL} element={<AdminUserDetailPage />} />
+						<Route path={ROUTES.ADMIN.APPOINTMENTS} element={<AdminAppointmentsPage />} />
+						<Route path={ROUTES.ADMIN.AUDITS} element={<AdminAuditsPage />} />
+						<Route path={ROUTES.ADMIN.SPECIALITIES} element={<AdminSpecialitiesPage />} />
+					</Route>
 				</Route>
 
 				{/* Protected routes */}
