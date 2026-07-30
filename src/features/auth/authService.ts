@@ -35,6 +35,7 @@ export interface VerifyOtpResponse {
 		refresh_token: string
 		token_type: string
 		expires_in: number
+		notification_prompt_shown?: boolean
 	}
 }
 
