@@ -2,14 +2,14 @@
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Box, Skeleton } from "@mui/material";
 import { ReactNode } from "react";
 
-interface Column<T = Record<string, unknown>> {
+export interface Column<T = object> {
   field: string;
   label: string;
   align?: "left" | "right" | "center";
   render?: (value: unknown, row: T) => ReactNode;
 }
 
-interface AppTableProps<T extends Record<string, unknown> = Record<string, unknown>> {
+interface AppTableProps<T extends object = Record<string, unknown>> {
   columns?: Column<T>[];
   rows?: T[];
   loading?: boolean;
@@ -17,7 +17,7 @@ interface AppTableProps<T extends Record<string, unknown> = Record<string, unkno
   rowSx?: (row: T) => Record<string, unknown>;
 }
 
-export default function AppTable<T extends Record<string, unknown>>(props: AppTableProps<T> & { onRowClick?: (row: T) => void }) {
+export default function AppTable<T extends object>(props: AppTableProps<T> & { onRowClick?: (row: T) => void }) {
   const {
     columns = [],
     rows = [],
@@ -62,7 +62,7 @@ export default function AppTable<T extends Record<string, unknown>>(props: AppTa
           ) : (
             rows.map((row, i) => (
               <TableRow
-                key={(row.id as string | number) ?? i}
+                key={((row as Record<string, unknown>).id as string | number | undefined) ?? i}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
                 sx={{
                   "&:last-child td": { border: 0 },
@@ -74,7 +74,7 @@ export default function AppTable<T extends Record<string, unknown>>(props: AppTa
               >
                 {columns.map((col) => (
                   <TableCell key={col.field} align={col.align || "left"} sx={{ color: "text.primary", fontSize: "0.875rem", py: 1.75 }}>
-                    {col.render ? col.render(row[col.field], row) : (row[col.field] as ReactNode)}
+                    {col.render ? col.render((row as Record<string, unknown>)[col.field], row) : ((row as Record<string, unknown>)[col.field] as ReactNode)}
                   </TableCell>
                 ))}
               </TableRow>

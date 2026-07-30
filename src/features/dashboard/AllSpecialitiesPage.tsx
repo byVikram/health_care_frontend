@@ -149,12 +149,12 @@ interface EnrichedSpeciality extends SpecialityItem {
 }
 
 function enrich(s: SpecialityItem): EnrichedSpeciality {
-	const details = resolveSpecialityDetails(s.icon_key, s.label)
+	const details = resolveSpecialityDetails(s.icon_key || '', s.label)
 	return {
 		...s,
 		image: details.image,
 		objectPosition: details.objectPosition,
-		description: details.description,
+		description: s.description || details.description,
 	}
 }
 

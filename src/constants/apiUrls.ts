@@ -148,6 +148,33 @@ export const API_ENDPOINTS = {
 		LIST: '/api/notifications',
 		MARK_READ: (id: string) => `/api/notifications/${id}/read`,
 	},
+	ADMIN: {
+		DASHBOARD_STATS: '/api/admin/dashboard/stats',
+		DOCTORS_VERIFICATION_QUEUE: '/api/admin/doctors/verification-queue',
+		VERIFY_DOCTOR: (doctorId: string) => `/api/admin/doctors/${doctorId}/verify`,
+		DOCTOR_VERIFICATION_DETAIL: (doctorId: string) => `/api/admin/doctors/${doctorId}/verification-detail`,
+		PROVIDERS_VERIFICATION_QUEUE: '/api/admin/providers/verification-queue',
+		VERIFY_PROVIDER: (providerType: string, providerId: string) =>
+			`/api/admin/providers/${providerType}/${providerId}/verify`,
+		USERS: '/api/admin/users',
+		SUSPEND_USER: (userPublicId: string) => `/api/admin/users/${userPublicId}/suspend`,
+		RESET_USER_OTP: (userPublicId: string) => `/api/admin/users/${userPublicId}/reset-otp`,
+		PATIENT_ADMIN_DETAIL: (patientPublicId: string) => `/api/admin/patients/${patientPublicId}/detail`,
+		DOCTOR_ADMIN_DETAIL: (doctorId: string) => `/api/admin/doctors/${doctorId}/moderation-detail`,
+		PROVIDER_ADMIN_DETAIL: (providerType: string, providerId: string) =>
+			`/api/admin/providers/${providerType}/${providerId}/detail`,
+		APPOINTMENTS: '/api/admin/appointments',
+		CANCEL_APPOINTMENT: (appointmentPublicId: string) => `/api/admin/appointments/${appointmentPublicId}/cancel`,
+		RESCHEDULE_APPOINTMENT: (appointmentPublicId: string) =>
+			`/api/admin/appointments/${appointmentPublicId}/reschedule`,
+		BILLING_TRANSACTIONS: '/api/admin/billing/transactions',
+		REFUND_APPOINTMENT: (appointmentPublicId: string) => `/api/admin/appointments/${appointmentPublicId}/refund`,
+		OPERATIONAL_LOGS: '/api/admin/audits/operational-logs',
+		CHATBOT_SESSION_LOGS: '/api/admin/chatbot/session-logs',
+		CLEAR_CHATBOT_MEMORY: (sessionId: string) => `/api/admin/chatbot/sessions/${sessionId}/memory`,
+		DELETE_REVIEW: (reviewPublicId: string) => `/api/admin/reviews/${reviewPublicId}`,
+		SPECIALITIES: '/api/admin/specialities',
+	},
 	FOLLOW_UPS: {
 		CREATE: '/api/follow-ups',
 		CANCEL: (id: string) => `/api/follow-ups/${id}/cancel`,

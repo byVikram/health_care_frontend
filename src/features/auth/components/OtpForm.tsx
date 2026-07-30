@@ -14,15 +14,28 @@ interface OtpFormProps {
 	// Receives the 6-digit OTP string. Return true = success, false = failure.
 	onCustomVerify?: (otp: string) => Promise<boolean>
 	onEdit?: () => void
+	// Optional visual variant. 'light' (default) keeps the original look used across
+	// booking/consultation OTP modals. 'dark' is used on surfaces with a dark
+	// background (e.g. the Admin Login OTP screen) so text/inputs stay legible.
+	variant?: 'light' | 'dark'
 }
 
-export default function OtpForm({ contactNumber, onVerify, mode = 'page', onCustomVerify, onEdit }: OtpFormProps) {
+export default function OtpForm({ contactNumber, onVerify, mode = 'page', onCustomVerify, onEdit, variant = 'light' }: OtpFormProps) {
 	const [otp, setOtp] = useState<string[]>(Array(6).fill(''))
 	const [error, setError] = useState('')
 	const [apiError, setApiError] = useState('')
 	const [loading, setLoading] = useState(false)
 	const [timer, setTimer] = useState(29)
 	const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+
+	const isDark = variant === 'dark'
+	const textPrimaryColor = isDark ? '#f8fafc' : undefined
+	const textSecondaryColor = isDark ? '#94a3b8' : '#666'
+	const resendLinkColor = isDark ? '#f8fafc' : '#000'
+	const resendDisabledColor = isDark ? '#64748b' : '#999'
+	const inputBg = isDark ? '#0f172a' : '#ffffff'
+	const inputTextColor = isDark ? '#f8fafc' : '#000'
+	const inputBorderColor = isDark ? '#334155' : '#ccc'
 
 	// -- Countdown -------------------------------------------------------------
 	useEffect(() => {
@@ -168,14 +181,15 @@ export default function OtpForm({ contactNumber, onVerify, mode = 'page', onCust
 						textAlign: 'center',
 						fontSize: '18px',
 						fontWeight: '500',
-						border: error ? '1.5px solid #d32f2f' : '1.5px solid #ccc',
+						backgroundColor: inputBg,
+						border: error ? '1.5px solid #d32f2f' : `1.5px solid ${inputBorderColor}`,
 						borderRadius: '8px',
 						outline: 'none',
 						transition: 'border-color 0.2s',
-						color: '#000',
+						color: inputTextColor,
 					}}
 					onFocus={(e) => (e.target.style.borderColor = error ? '#d32f2f' : '#0d9488')}
-					onBlur={(e) => (e.target.style.borderColor = error ? '#d32f2f' : '#ccc')}
+					onBlur={(e) => (e.target.style.borderColor = error ? '#d32f2f' : inputBorderColor)}
 				/>
 			))}
 		</Box>
@@ -184,12 +198,12 @@ export default function OtpForm({ contactNumber, onVerify, mode = 'page', onCust
 	const resendSection = (
 		<>
 			<Box sx={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', marginTop: '8px' }}>
-				<Typography sx={{ fontSize: '13px', color: '#666' }}>
+				<Typography sx={{ fontSize: '13px', color: textSecondaryColor }}>
 					Didn&apos;t receive the OTP?{' '}
 					<span
 						onClick={handleResend}
 						style={{
-							color: timer > 0 ? '#999' : '#000',
+							color: timer > 0 ? resendDisabledColor : resendLinkColor,
 							fontWeight: '600',
 							cursor: timer > 0 ? 'not-allowed' : 'pointer',
 						}}
@@ -203,7 +217,7 @@ export default function OtpForm({ contactNumber, onVerify, mode = 'page', onCust
 					</Typography>
 				)}
 			</Box>
-			<Typography sx={{ fontSize: '13px', color: '#0d9488', cursor: 'pointer', marginBottom: '24px' }}>
+			<Typography sx={{ fontSize: '13px', color: isDark ? '#2dd4bf' : '#0d9488', cursor: 'pointer', marginBottom: '24px' }}>
 				Get OTP on call
 			</Typography>
 		</>
@@ -212,11 +226,11 @@ export default function OtpForm({ contactNumber, onVerify, mode = 'page', onCust
 	// -- Modal mode ------------------------------------------------------------
 	if (mode === 'modal') {
 		return (
-			<Box sx={{ width: '100%' }}>
-				<Typography variant="h5" sx={{ mb: 1 }}>
+			<Box sx={{ width: '100%', bgcolor: isDark ? '#1e293b' : 'transparent', borderRadius: isDark ? 3 : 0, p: isDark ? 3 : 0, boxSizing: 'border-box' }}>
+				<Typography variant="h5" sx={{ mb: 1, color: textPrimaryColor }}>
 					OTP Verification
 				</Typography>
-				<Typography sx={{ fontSize: '14px', color: '#666', mb: 3 }}>
+				<Typography sx={{ fontSize: '14px', color: textSecondaryColor, mb: 3 }}>
 					Enter the OTP sent to verify the consultation
 				</Typography>
 				{otpBoxes}
@@ -317,4 +331,3 @@ export default function OtpForm({ contactNumber, onVerify, mode = 'page', onCust
 		</Box>
 	)
 }
-

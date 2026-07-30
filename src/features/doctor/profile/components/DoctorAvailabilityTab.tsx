@@ -363,6 +363,7 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 				dateLabel="Select follow up date"
 				hideNavigation
 				timeSlotColumns={5}
+				timeSlotVariant="availability"
 				disableBookedSlots={false}
 				availableSlots={slotGroupsForPicker.length > 0 ? slotGroupsForPicker : undefined}
 				loading={slotsLoading || toggleRefreshing}
