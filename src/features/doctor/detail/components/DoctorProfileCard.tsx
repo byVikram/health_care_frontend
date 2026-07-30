@@ -14,6 +14,7 @@ import { useEffect } from 'react'
 import { toast } from 'react-toastify'
 import { togglePatientFavouriteDoctor, getPatientFavouriteDoctors } from '../../doctorService'
 import { useAuth } from '../../../../hooks/useAuth'
+import { buildS3Url } from '../../../../utils/s3'
 
 interface StatItemProps {
 	icon: React.ReactNode
@@ -46,6 +47,7 @@ function StatItem({ icon, value, label }: StatItemProps) {
 
 interface DoctorProfileCardProps {
 	doctor: DoctorDetailData
+	selectedHospitalId?: string
 }
 
 /** Converts a raw handle like "dr_anjali" or "https://instagram.com/dr_anjali" into "@dr_anjali" */
@@ -61,7 +63,7 @@ function formatHandle(raw: string): string {
 	}
 }
 
-export default function DoctorProfileCard({ doctor }: DoctorProfileCardProps) {
+export default function DoctorProfileCard({ doctor, selectedHospitalId }: DoctorProfileCardProps) {
 	const { role, accessToken } = useAuth()
 	const [isFavourited, setIsFavourited] = useState(doctor.is_favourited || false)
 	const [snackbarOpen, setSnackbarOpen] = useState(false)
@@ -89,11 +91,11 @@ export default function DoctorProfileCard({ doctor }: DoctorProfileCardProps) {
 	}, [doctor.id, doctor.is_favourited, role, accessToken])
 	
 	const specialization = doctor.specialities?.[0] || 'General'
-	const primaryHospital =
-		doctor.hospitals.find((h) => h.is_primary) || (doctor.hospitals.length > 0 ? doctor.hospitals[0] : null)
-	const secondaryHospital = doctor.hospitals.find((h) => h.id !== primaryHospital?.id) || null
+	const currentHospital = doctor.hospitals.find((h) => h.hospital.id === selectedHospitalId) || doctor.hospitals.find((h) => h.is_primary) || doctor.hospitals[0]
+	const secondaryHospital = doctor.hospitals.find((h) => h.id !== currentHospital?.id) || null
 
 	const social = doctor.details.social_media_handles ?? {}
+	const avatarUrl = buildS3Url(doctor.details.avatar_s3_key)
 
 	const handleFavourite = async () => {
 		const newStatus = !isFavourited
@@ -181,7 +183,7 @@ export default function DoctorProfileCard({ doctor }: DoctorProfileCardProps) {
 				{/* Top: Avatar + Info */}
 				<Box sx={{ display: 'flex', gap: 2.5, p: 1, alignItems: 'flex-start' }}>
 					<Avatar
-						src={doctor.details.avatar_s3_key || ''}
+						src={avatarUrl || undefined}
 						alt={doctor.name}
 						sx={{ width: 88, height: 88, borderRadius: '50%', flexShrink: 0 }}
 						variant="rounded"
@@ -241,13 +243,13 @@ export default function DoctorProfileCard({ doctor }: DoctorProfileCardProps) {
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
 								<LuMapPin style={{ fontSize: 14, color: 'primary.main' }} />
 								<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '12px' }}>
-									{primaryHospital?.hospital.name || doctor.details.location || 'Clinic'}
+									{currentHospital?.hospital.name || doctor.details.location || 'Clinic'}
 								</Typography>
 								<Typography
 									variant="caption"
 									sx={{ color: 'primary.main', fontWeight: 600, fontSize: '11px', ml: 0.5 }}
 								>
-									&lt;{primaryHospital?.hospital.distance || '0 km'}
+									{currentHospital?.hospital.distance || ''}
 								</Typography>
 							</Box>
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -259,7 +261,7 @@ export default function DoctorProfileCard({ doctor }: DoctorProfileCardProps) {
 									variant="caption"
 									sx={{ color: 'primary.main', fontWeight: 600, fontSize: '11px', ml: 0.5 }}
 								>
-									{secondaryHospital ? `<${secondaryHospital.hospital.distance}` : ''}
+									{secondaryHospital?.hospital.distance || ''}
 								</Typography>
 							</Box>
 						</Box>

@@ -27,6 +27,7 @@ import { DoctorSearchItem } from '../../../../types/doctor-search'
 import { toast } from 'react-toastify'
 import AppSkeleton from '../../../../components/common/Skeleton/AppSkeleton'
 import AppInput from '../../../../components/common/Input/AppInput'
+import { buildS3Url } from '../../../../utils/s3'
 
 // ---------------------------------------------------------------------------
 // Types & mappers
@@ -124,6 +125,7 @@ function DoctorCard({
 	onShare?: (d: DoctorRow) => void
 }) {
 	const specialization = doctor.specialities?.[0] || 'General Physician'
+	const avatarUrl = buildS3Url(doctor.avatar_s3_key)
 
 	return (
 		<Box
@@ -139,7 +141,7 @@ function DoctorCard({
 			}}
 		>
 			<Avatar
-				src={doctor.avatar_s3_key || ''}
+				src={avatarUrl || undefined}
 				alt={doctor.name}
 				sx={{
 					width: 52,

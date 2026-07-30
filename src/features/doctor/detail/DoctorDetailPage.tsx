@@ -28,6 +28,7 @@ import AchievementCard, { AchievementCardData } from '../../../components/common
 import HorizontalCardCarousel from '../../../components/common/Carousel/HorizontalCardCarousel'
 import ProfessionalDetailsSection from './components/ProfessionalDetailsSection'
 import AchievementDetailsModal from '../../../components/common/Modal/AchievementDetailsModal'
+import { buildS3Url } from '../../../utils/s3'
 
 type AvailabilityMode = 'clinic' | 'video'
 type ApiAvailabilityMode = 'clinic_visit' | 'video_call'
@@ -147,30 +148,70 @@ export default function DoctorDetailPage() {
 	useEffect(() => {
 		if (!id) return
 		let active = true
+		const controller = new AbortController()
 
 		const fetchDoctor = async () => {
 			try {
 				setLoading(true)
 				setError(null)
-				const res = await getDoctorById(id)
+				
+				const cachedLat = sessionStorage.getItem('user_lat')
+				const cachedLon = sessionStorage.getItem('user_lon')
+				let lat = cachedLat ? parseFloat(cachedLat) : undefined
+				let lon = cachedLon ? parseFloat(cachedLon) : undefined
+				
+				if (lat === undefined || lon === undefined) {
+					let position: GeolocationPosition | null = null
+					if (navigator.geolocation) {
+						position = await new Promise<GeolocationPosition>((resolve, reject) => {
+							navigator.geolocation.getCurrentPosition(resolve, reject, {
+								enableHighAccuracy: true,
+								timeout: 10000,
+								maximumAge: 0,
+							})
+						}).catch((err) => {
+							console.warn('Geolocation failed or denied on details page, using default coordinates.', err)
+							return null
+						})
+					}
+					if (!position) {
+						position = {
+							coords: {
+								latitude: 12.9716,
+								longitude: 77.5946,
+							}
+						} as GeolocationPosition
+					}
+					lat = position.coords.latitude
+					lon = position.coords.longitude
+					sessionStorage.setItem('user_lat', lat.toString())
+					sessionStorage.setItem('user_lon', lon.toString())
+				}
+				
+				if (!active) return
+
+				const res = await getDoctorById(id, lat, lon, controller.signal)
 				if (!active) return
 				setDoctorDetail(res.data)
-				const primaryHospitalData =
-					res.data.hospitals.find((h: { is_primary: boolean }) => h.is_primary) ||
-					(res.data.hospitals.length > 0 ? res.data.hospitals[0] : null)
-				setSelectedHospital(primaryHospitalData?.hospital.id || '')
+				if (res.data.hospitals && res.data.hospitals.length > 0) {
+					const primaryHospitalData =
+						res.data.hospitals.find((h: { is_primary: boolean }) => h.is_primary) ||
+						res.data.hospitals[0]
+					setSelectedHospital(primaryHospitalData.hospital.id)
+				}
 			} catch (err) {
-				console.log(err)
+				console.error(err)
 				if (!active) return
-				setError('Failed to load doctor details')
+				setError('Failed to fetch doctor details')
 			} finally {
-				setLoading(false)
+				if (active) setLoading(false)
 			}
 		}
 
 		fetchDoctor()
 		return () => {
 			active = false
+			controller.abort()
 		}
 	}, [id])
 
@@ -206,7 +247,39 @@ export default function DoctorDetailPage() {
 				})
 				if (!active) return
 				const byMode = normalizeAvailabilityByMode(res)
-				setAvailableSlotGroups(byMode[selectedType] ?? [])
+				let filteredSlots = byMode[selectedType] ?? []
+
+				// Hide expired, unbooked, available slots for the current day.
+				// Booked slots continue to show for visibility/reference.
+				const now = new Date()
+				const isToday =
+					selectedDate.getFullYear() === now.getFullYear() &&
+					selectedDate.getMonth() === now.getMonth() &&
+					selectedDate.getDate() === now.getDate()
+
+				if (isToday) {
+					const currentHour = now.getHours()
+					const currentMinute = now.getMinutes()
+
+					filteredSlots = filteredSlots
+						.map((group) => ({
+							...group,
+							slots: group.slots.filter((slot) => {
+								// Always keep booked slots visible
+								if (slot.is_booked) return true
+								// Only hide available (non-booked) slots that have passed
+								const [hStr, mStr] = slot.start_time.split(':')
+								const slotHour = parseInt(hStr, 10)
+								const slotMinute = parseInt(mStr ?? '0', 10)
+								// Keep the slot if its time has NOT yet passed
+								return slotHour > currentHour || (slotHour === currentHour && slotMinute > currentMinute)
+							}),
+						}))
+						// Remove groups that have no visible slots remaining
+						.filter((group) => group.slots.length > 0)
+				}
+
+				setAvailableSlotGroups(filteredSlots)
 			} catch (err) {
 				console.log(err)
 				if (!active) return
@@ -309,7 +382,7 @@ export default function DoctorDetailPage() {
 							<Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
 								{doctorDetail && (
 									<>
-										<DoctorProfileCard doctor={doctorDetail} />
+										<DoctorProfileCard doctor={doctorDetail} selectedHospitalId={selectedHospital} />
 										<Box sx={{ ...customCardStyle, p: 3 }}>
 											<Typography variant="h5" sx={{ mb: 1.5 }}>
 												About
@@ -570,12 +643,12 @@ export default function DoctorDetailPage() {
 			<ConsentForm
 				open={consentOpen}
 				onClose={() => setConsentOpen(false)}
-				onAgree={() => {
+				onAgree={(consentId) => {
 					setConsentOpen(false)
 					navigate('/payment', {
 						state: {
 							doctorName: doctorDetail?.name ?? '',
-							avatarUrl: doctorDetail?.details?.avatar_s3_key ?? '',
+							avatarUrl: buildS3Url(doctorDetail?.details?.avatar_s3_key),
 							specialty: doctorDetail?.specialities?.[0] ?? 'Doctor',
 							date: selectedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
 							time: resolvedSelectedTime,
@@ -585,6 +658,7 @@ export default function DoctorDetailPage() {
 							serviceFee: 0,
 							doctorId: doctorDetail?.id ?? '',
 							hospitalId: selectedHospital,
+							consentVersionId: consentId,
 							appointmentMode: selectedType === 'clinic' ? 'clinic_visit' : 'video_call',
 							allowPayLater: selectedType === 'clinic',
 							appointmentDate: formatDateForApi(selectedDate),

@@ -1,4 +1,4 @@
-﻿// src/components/common/DatePicker/AppDatePicker.tsx
+// src/components/common/DatePicker/AppDatePicker.tsx
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
@@ -20,6 +20,7 @@ interface AppDatePickerProps {
 	size?: 'small' | 'medium'
 	fullWidth?: boolean
 	sx?: SxProps<Theme>
+	clearable?: boolean
 }
 
 export default function AppDatePicker({
@@ -37,6 +38,7 @@ export default function AppDatePicker({
 	size = 'small',
 	fullWidth = true,
 	sx,
+	clearable = false,
 }: AppDatePickerProps) {
 	const dayjsValue = value ? dayjs(value, format) : null
 
@@ -58,23 +60,55 @@ export default function AppDatePicker({
 				maxDate={maxDate ? dayjs(maxDate, format) : undefined}
 				format={format}
 				slotProps={{
+					field: clearable ? { clearable: true, onClear: () => onChange?.(null) } : undefined,
 					textField: {
 						size,
 						fullWidth,
 						placeholder,
+						// Force the label to float above the box (never inline), matching
+						// AppSelect's InputLabelProps={{ shrink: true }} so "Date" lines up
+						// visually with "Hospital" / "Mode" / "Status" in filter rows.
+						InputLabelProps: { shrink: true },
 						sx: {
-							'& .MuiOutlinedInput-root': {
+							// MUI X v8's DatePicker renders its input via the new
+							// PickersTextField/PickersOutlinedInput components by
+							// default, which use MuiPickersOutlinedInput-* class
+							// names -- NOT the classic MuiOutlinedInput-* ones that
+							// AppSelect's plain MUI TextField uses. Target both so
+							// the Date box's background/border/padding line up with
+							// Hospital / Mode / Status regardless of which is active.
+							'& .MuiOutlinedInput-root, & .MuiPickersOutlinedInput-root': {
 								borderRadius: '6px',
 								bgcolor: 'background.paper',
 								transition: 'all 0.2s ease',
+								'&:hover .MuiOutlinedInput-notchedOutline, &:hover .MuiPickersOutlinedInput-notchedOutline': {
+									borderColor: 'primary.main',
+								},
+								'&.Mui-focused .MuiOutlinedInput-notchedOutline, &.Mui-focused .MuiPickersOutlinedInput-notchedOutline': {
+									borderWidth: '1px',
+									borderColor: 'primary.main',
+								},
 							},
-							'& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline': {
-								borderColor: 'primary.main',
-							},
-							'& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
-								borderColor: 'primary.main',
+							// Match AppSelect's input padding/height exactly so the Date
+							// box lines up pixel-for-pixel with Hospital / Mode / Status.
+							'& .MuiOutlinedInput-input, & .MuiPickersOutlinedInput-input, & .MuiPickersSectionList-root': {
+								padding: '8.5px 14px',
+								fontSize: 'inherit',
 							},
 							...sx,
+						},
+					},
+					// The calendar-icon trigger and (optional) clear-icon default to a
+					// full IconButton with ripple + hover-circle background, which reads
+					// as its own "button" next to Select's plain dropdown arrow. Strip
+					// that down to a bare icon so Date matches the other filter fields.
+					openPickerButton: {
+						size: 'small',
+						sx: {
+							color: 'action.active',
+							p: 0.5,
+							mr: -0.5,
+							'&:hover': { bgcolor: 'transparent' },
 						},
 					},
 					day: {

@@ -20,6 +20,7 @@ import AppButton from '../../components/common/Button/AppButton'
 import AppInput from '../../components/common/Input/AppInput'
 import { customScrollbar } from '../../styles/commonStyles'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
+import { buildS3Url } from '../../utils/s3'
 
 
 const STATUS_STYLES: Record<string, { color: string; bgColor: string; text: string }> = {
@@ -356,7 +357,7 @@ export function PatientAppointments() {
 											>
 												<Box
 													component="img"
-													src={appt.doctor?.avatar_s3_key ?? ''}
+													src={buildS3Url(appt.doctor?.avatar_s3_key)}
 													alt={appt.doctor?.name ?? ''}
 													sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
 												/>

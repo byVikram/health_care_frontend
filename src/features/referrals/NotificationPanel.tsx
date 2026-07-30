@@ -176,6 +176,15 @@ export default function NotificationPanel({ iconColor = 'inherit' }: Props) {
 			navigate(`/radiology/search?open_radiology_id=${notification.redirect_id}`)
 		} else if (notification.redirect_type === 'pharmacy' && notification.redirect_id) {
 			navigate(`/pharmacies?open_pharmacy_id=${notification.redirect_id}`)
+		} else if (
+			(notification.redirect_type === 'appointment' ||
+				notification.redirect_type === 'appointments' ||
+				notification.redirect_type === 'appointment_reschedule' ||
+				notification.reference_type === 'appointment') &&
+			(notification.redirect_id || notification.reference_id)
+		) {
+			const appointmentId = notification.redirect_id || notification.reference_id
+			navigate(`/portal/appointments?appointment_id=${appointmentId}`)
 		}
 	}
 

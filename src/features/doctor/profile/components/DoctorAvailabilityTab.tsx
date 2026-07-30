@@ -366,6 +366,7 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 				disableBookedSlots={false}
 				availableSlots={slotGroupsForPicker.length > 0 ? slotGroupsForPicker : undefined}
 				loading={slotsLoading || toggleRefreshing}
+				slotVariant="card"
 				onSelectAll={() => {
 					stageSlotSelection(allSelectableSlots)
 					setPendingSaveToast('Selected All Successfully')

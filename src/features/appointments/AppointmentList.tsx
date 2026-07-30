@@ -1,37 +1,56 @@
 import React, { useEffect, useState } from 'react'
-import { Box, Typography, Avatar, InputAdornment, Card, Pagination, IconButton, Tooltip, Popover } from '@mui/material'
+import { Box, Typography, Avatar, Card, Pagination, IconButton, Tooltip, Rating } from '@mui/material'
+import RejectAppointmentDialog, { PATIENT_REJECTION_REASONS } from './components/RejectAppointmentDialog'
 import SearchIcon from '@mui/icons-material/Search'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
-// import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import AppTable from '../../components/common/Table/AppTable'
 import { customCardStyle } from '../../styles/commonStyles'
 // import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { useAuth, LookupHospital } from '../../hooks/useAuth'
+import { useAuth } from '../../hooks/useAuth'
+import type { LookupHospital } from '../../hooks/useAuth'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import AppSelect from '../../components/common/Select/AppSelect'
+import AppDatePicker from '../../components/common/DatePicker/AppDatePicker'
 import Grid from '@mui/material/Grid'
 import AppInput from '../../components/common/Input/AppInput'
 import { toast } from 'react-toastify'
 import { updateAppointmentsStatus } from '../dashboard/dashboardService'
 import { getDoctorAvailability, getAvailabilityModeBlocks, getDoctorById } from '../doctor/doctorService'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
-import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
-import { Appointment } from '../../types/appointment'
+import type { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
+import type { Appointment } from '../../types/appointment'
+import AppButton from '../../components/common/Button/AppButton'
+import AppModal from '../../components/common/Modal/AppModal'
 import ConfirmIcon from '../../assets/icons/confirm.svg'
 import RejectIcon from '../../assets/icons/reject.svg'
 import RescheduleIcon from '../../assets/icons/reschedule.svg'
-import AppointmentDetailsDrawer from './components/AppointmentDetailsDrawer'
+import ConsultationNotes from '../consultation/components/ConsultationNotes'
+import AppDrawer from '../../components/common/Drawer/AppDrawer'
+import { ConsultationDoctor } from '../../types/consultation'
 import { ROUTES } from '../../constants/routes'
+import { buildS3Url } from '../../utils/s3'
+
 
 // Status IDs accepted by PATCH /api/appointments/update-status.
 // Resolved from the lookup table when available, falling back to the
 // same fixed IDs used on the doctor dashboard appointments widget.
 const FALLBACK_CONFIRMED_STATUS_ID = '3f9a2c8e-7b61-4d2a-9a3f-5c8e1b2d4f90'
 const FALLBACK_REJECTED_STATUS_ID = 'a7d4e1c2-9f6b-4c83-b2e1-6f3a9d8c7b12'
+
+// Converts AppDatePicker's 'DD/MM/YYYY' display format to the 'YYYY-MM-DD'
+// format the appointments API's `appointment_date` filter expects.
+const ddmmyyyyToIso = (value: string): string | null => {
+	const [day, month, year] = value.split('/')
+	if (!day || !month || !year) return null
+	return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+}
 
 // Types
 interface AppointmentRow extends Record<string, unknown> {
@@ -55,6 +74,8 @@ interface AppointmentRow extends Record<string, unknown> {
 	hospitalAddress: string | null
 	hospitalId: string | null
 	fees: number | null
+	prescriptionS3Key: string | null
+	reason: string | null
 }
 
 interface AppointmentMeta {
@@ -62,6 +83,19 @@ interface AppointmentMeta {
 	page: number
 	limit: number
 	pages: number
+}
+
+interface DoctorReview {
+	id: string
+	rating: number
+	comment: string | null
+	created_at: string | null
+}
+
+interface AppointmentReviewResponse {
+	success: boolean
+	message: string
+	data: DoctorReview | null
 }
 
 interface AppointmentsResponse {
@@ -74,11 +108,13 @@ interface AppointmentsResponse {
 		start_time: string
 		end_time: string | null
 		status: string
+		reason?: string | null
 		rescheduled_by?: string | null
-		doctor: { id: string; name: string; avatar_s3_key?: string | null }
-		patient: { id: string; name: string; avatar_s3_key: string | null; gender: string | null; age: number | null }
+		doctor?: { id: string; name: string; avatar_s3_key?: string | null } | null
+		patient?: { id: string; name: string; avatar_s3_key: string | null; gender: string | null; age: number | null } | null
 		hospital: { id: string; name: string; address: string } | null
 		fees?: number | null
+		prescription_s3_key?: string | null
 	}[]
 	meta: { total: number; page: number; limit: number; pages: number }
 }
@@ -90,7 +126,7 @@ type ColDef = {
 	render?: (value: unknown, row: AppointmentRow) => React.ReactNode
 }
 
-// Once an appointment reaches one of these statuses, the workflow is over —
+// Once an appointment reaches one of these statuses, the workflow is over â€”
 // no further actions and no further status changes. Every other status
 // keeps Status and Action visible side by side: Status always shows, and
 // whatever action is valid for that status (e.g. Reschedule on a confirmed
@@ -100,10 +136,17 @@ const TERMINAL_STATUSES = new Set(['cancelled'])
 export default function AppointmentList() {
 	const [searchParams] = useSearchParams()
 	const navigate = useNavigate()
-	const { role, lookupData } = useAuth()
+	const { role, user, lookupData } = useAuth()
 	const queryView = searchParams.get('view')
+	const highlightedAppointmentId = searchParams.get('appointment_id') || searchParams.get('open_appointment_id')
 	const viewAs: 'doctor' | 'patient' =
 		queryView === 'doctor' || queryView === 'patient' ? queryView : role === 'patient' ? 'patient' : 'doctor'
+	const activePatientId =
+		localStorage.getItem('patient_id') ||
+		lookupData?.patient_profiles?.find((profile) => profile.is_self)?.id ||
+		lookupData?.patient_profiles?.[0]?.id ||
+		(role === 'patient' ? user?.id : '') ||
+		''
 
 	const [search, setSearch] = useState('')
 	const [page, setPage] = useState(1)
@@ -114,13 +157,23 @@ export default function AppointmentList() {
 
 	const [filterHospital, setFilterHospital] = useState('all')
 	const [filterMode, setFilterMode] = useState('all')
-	const [filterDate, setFilterDate] = useState('all')
+	// 'DD/MM/YYYY' string (AppDatePicker's format) or null when no date filter is applied.
+	const [filterDate, setFilterDate] = useState<string | null>(null)
 	const [filterStatus, setFilterStatus] = useState('all')
-	const patientId = localStorage.getItem('patient_id')
 
-	// ── Action state (Confirm / Reject / Reschedule) ────────────────────────
-	const [rejectAnchorEl, setRejectAnchorEl] = useState<HTMLElement | null>(null)
+	// Navigate a patient directly into the consultation page for a given
+	// appointment row. Doctor's OTP-gated consultation flow (DoctorAppointments.tsx)
+	// is untouched -- this only applies to the patient's own appointments list.
+	// const goToConsultation = (row: AppointmentRow) => {
+	// 	navigate(
+	// 		ROUTES.PORTAL.CONSULTATION.replace(':patientId', row.patientId).replace(':appointmentId', row.id)
+	// 	)
+	// }
+
+	// â”€â”€ Action state (Confirm / Reject / Reschedule) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
 	const [pendingRejectId, setPendingRejectId] = useState<string | null>(null)
+	const [rejectSubmitting, setRejectSubmitting] = useState(false)
 
 	const [rescheduleOpen, setRescheduleOpen] = useState(false)
 	const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null)
@@ -133,14 +186,25 @@ export default function AppointmentList() {
 	const [rescheduleHospitalId, setRescheduleHospitalId] = useState('')
 	const [appointmentType, setAppointmentType] = useState<'clinic' | 'video'>('clinic')
 
-	// ── Appointment Details Drawer state ─────────────────────────────────────
-	const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false)
-	const [detailsAppointmentId, setDetailsAppointmentId] = useState<string | null>(null)
+	// â”€â”€ Appointment Details Drawer state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	const [notesDrawerOpen, setNotesDrawerOpen] = useState(false)
+	const [notesDrawerDoctor, setNotesDrawerDoctor] = useState<ConsultationDoctor | null>(null)
+	const [notesDrawerPrescription, setNotesDrawerPrescription] = useState<string | null>(null)
+
+	// ── Give Review modal state (patient view only) ─────────────────────────
+	const [reviewOpen, setReviewOpen] = useState(false)
+	const [reviewAppt, setReviewAppt] = useState<AppointmentRow | null>(null)
+	const [reviewRating, setReviewRating] = useState<number | null>(0)
+	const [reviewText, setReviewText] = useState('')
+	const [reviewSubmitting, setReviewSubmitting] = useState(false)
+	// This appointment's own review only (not the doctor's whole review history) - null means not yet reviewed.
+	const [existingReview, setExistingReview] = useState<DoctorReview | null>(null)
+	const [existingReviewLoading, setExistingReviewLoading] = useState(false)
 
 	const confirmedStatusId =
-		lookupData?.appointment_statuses.find((s) => s.label === 'confirmed')?.id ?? FALLBACK_CONFIRMED_STATUS_ID
+		lookupData?.appointment_statuses?.find((s) => s.label === 'confirmed')?.id ?? FALLBACK_CONFIRMED_STATUS_ID
 	const rejectedStatusId =
-		lookupData?.appointment_statuses.find((s) => s.label === 'cancelled')?.id ?? FALLBACK_REJECTED_STATUS_ID
+		lookupData?.appointment_statuses?.find((s) => s.label === 'cancelled')?.id ?? FALLBACK_REJECTED_STATUS_ID
 
 	useEffect(() => {
 		const fetchAppointments = async () => {
@@ -150,37 +214,63 @@ export default function AppointmentList() {
 				const params: Record<string, unknown> = {
 					page,
 					limit: size,
-					patient_id: patientId,
+				}
+				if (highlightedAppointmentId) params.appointment_id = highlightedAppointmentId
+
+				if (viewAs === 'patient' && activePatientId) params.patient_id = activePatientId
+				if (search) params.search = search
+
+				if (filterHospital !== 'all') {
+					params.hospital_id = filterHospital
 				}
 
-				if (search) params.search = search
+				if (filterMode !== 'all') {
+					params.appointment_mode = filterMode === 'clinic' ? 'clinic_visit' : 'video_call'
+				}
+
+				if (filterStatus !== 'all') {
+					const statusObj = lookupData?.appointment_statuses.find(
+						(s) => s.label.toLowerCase() === filterStatus.toLowerCase()
+					)
+					if (statusObj) {
+						params.status_id = statusObj.id
+					}
+				}
+
+				if (filterDate) {
+					// Backend filters at the query level via `appointment_date` (exact match).
+					const apiDate = ddmmyyyyToIso(filterDate)
+					if (apiDate) params.appointment_date = apiDate
+				}
 
 				const res = await ApiService.getWithParams<AppointmentsResponse>(API_ENDPOINTS.APPOINTMENTS.GET, params)
 
 				const mapped: AppointmentRow[] = res.data.data.map((appt) => ({
 					id: appt.id,
-					patientName: appt.patient.name,
-					patientAvatar: appt.patient.avatar_s3_key ?? '',
-					patientId: appt.patient.id,
+					patientName: appt.patient?.name ?? 'Patient',
+					patientAvatar: buildS3Url(appt.patient?.avatar_s3_key),
+					patientId: appt.patient?.id ?? activePatientId,
 					appointmentDate: appt.appointment_date,
 					startTime: appt.start_time,
 					endTime: appt.end_time,
 					appointmentMode: appt.appointment_mode,
 					status: appt.status,
+					reason: appt.reason ?? null,
 					rescheduledBy: appt.rescheduled_by ?? null,
-					doctorName: appt.doctor.name,
-					doctorAvatar: appt.doctor.avatar_s3_key ?? '',
-					doctorId: appt.doctor.id,
+					doctorName: appt.doctor?.name ?? 'Doctor',
+					doctorAvatar: buildS3Url(appt.doctor?.avatar_s3_key),
+					doctorId: appt.doctor?.id ?? '',
 					hospitalName: appt.hospital?.name ?? null,
 					hospitalAddress: appt.hospital?.address ?? null,
 					hospitalId: appt.hospital?.id ?? null,
 					fees: appt.fees ?? null,
+					prescriptionS3Key: appt.prescription_s3_key ?? null,
 				}))
 
 				// Sort by appointment date descending (latest date first).
 				// For appointments on the same date, sort by start time descending
 				// (latest time first) so the newest appointments stay on top,
-				// while all appointments — past and upcoming — remain visible.
+				// while all appointments â€” past and upcoming â€” remain visible.
 				const sorted = [...mapped].sort((a, b) => {
 					const dateDiff = b.appointmentDate.localeCompare(a.appointmentDate)
 					if (dateDiff !== 0) return dateDiff
@@ -201,9 +291,9 @@ export default function AppointmentList() {
 		}
 
 		fetchAppointments()
-	}, [page, search, size, patientId])
+	}, [activePatientId, page, search, size, highlightedAppointmentId, filterHospital, filterMode, filterDate, filterStatus, lookupData, viewAs])
 
-	// ── Reschedule: fetch slots whenever the drawer's date/hospital/mode changes ──
+	// â”€â”€ Reschedule: fetch slots whenever the drawer's date/hospital/mode changes â”€â”€
 	useEffect(() => {
 		if (!rescheduleOpen || !rescheduleAppt) return
 
@@ -269,7 +359,7 @@ export default function AppointmentList() {
 	}, [rescheduleAppt, rescheduleOpen])
 
 
-	// ── Action handlers ──────────────────────────────────────────────────────
+	// â”€â”€ Action handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 	const handleConfirm = async (row: AppointmentRow) => {
 		try {
@@ -285,29 +375,31 @@ export default function AppointmentList() {
 		}
 	}
 
-	const handleRejectClick = (rowId: string, anchorEl: HTMLElement) => {
+	const handleRejectClick = (rowId: string) => {
 		setPendingRejectId(rowId)
-		setRejectAnchorEl(anchorEl)
+		setRejectDialogOpen(true)
 	}
 
 	const handleCancelReject = () => {
-		setRejectAnchorEl(null)
+		setRejectDialogOpen(false)
 		setPendingRejectId(null)
 	}
 
-	const handleConfirmReject = async () => {
+	const handleConfirmReject = async (reason: string) => {
 		if (!pendingRejectId) return
 		const rowId = pendingRejectId
-		setRejectAnchorEl(null)
+		setRejectSubmitting(true)
 		try {
-			const res = await updateAppointmentsStatus(rowId, rejectedStatusId)
+			const res = await updateAppointmentsStatus(rowId, rejectedStatusId, reason)
 			if (res.success) {
 				toast.success(res.message || 'Appointment rejected.')
-				setRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, status: 'cancelled' } : r)))
+				setRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, status: 'cancelled', reason } : r)))
 			}
 		} catch {
 			toast.error('Something went wrong. Please try again.')
 		} finally {
+			setRejectSubmitting(false)
+			setRejectDialogOpen(false)
 			setPendingRejectId(null)
 		}
 	}
@@ -349,15 +441,15 @@ export default function AppointmentList() {
 			const dateStr = rescheduleDate.toISOString().split('T')[0]
 			const res = await ApiService.post<{ success: boolean; message: string }>(
 				`${API_ENDPOINTS.APPOINTMENTS.RESCHEDULE}`,
-				{
-					appointment_id: rescheduleAppt.id,
-					appointment_date: dateStr,
-					start_time: rescheduleTime,
-					end_time: null,
-					hospital_id: rescheduleHospitalId || rescheduleAppt.hospital?.id,
-					reason: 'Doctor unavailable',
-				}
-			)
+					{
+						appointment_id: rescheduleAppt.id,
+						appointment_date: dateStr,
+						start_time: rescheduleTime,
+						end_time: null,
+						hospital_id: rescheduleHospitalId || rescheduleAppt.hospital?.id,
+						reason: viewAs === 'patient' ? 'Patient requested reschedule' : 'Doctor unavailable',
+					}
+				)
 			if (res.data?.success) {
 				toast.success(res.data.message || 'Appointment rescheduled!')
 
@@ -380,7 +472,7 @@ export default function AppointmentList() {
 							startTime: rescheduleTime,
 							endTime: slotEndTime,
 							status: wasPending ? r.status : 'rescheduled',
-							rescheduledBy: wasPending ? r.rescheduledBy : 'patient',
+							rescheduledBy: 'patient',
 						}
 					})
 				)
@@ -395,7 +487,66 @@ export default function AppointmentList() {
 		}
 	}
 
-	// ── Name column — shown once, based on viewAs ───────────────────────────
+	// ── Give Review (patient view only) ──────────────────────────────────────
+	const handleOpenReview = (row: AppointmentRow) => {
+		setReviewAppt(row)
+		setReviewRating(0)
+		setReviewText('')
+		setReviewOpen(true)
+		fetchReviewForAppointment(row.id)
+	}
+
+	// Fetches only this patient's own review for this specific appointment
+	// (GET /api/reviews/appointment/{appointment_id}) - not the doctor's
+	// entire review history from other patients.
+	const fetchReviewForAppointment = async (appointmentId: string) => {
+		setExistingReviewLoading(true)
+		setExistingReview(null)
+		try {
+			const res = await ApiService.get<AppointmentReviewResponse>(API_ENDPOINTS.REVIEWS.BY_APPOINTMENT(appointmentId))
+			if (res.data?.success) {
+				setExistingReview(res.data.data)
+			}
+		} catch (err) {
+			console.error('Failed to fetch review for appointment:', err)
+		} finally {
+			setExistingReviewLoading(false)
+		}
+	}
+
+	const handleSubmitReview = async () => {
+		if (!reviewAppt || !reviewRating || reviewRating < 1) {
+			toast.warning('Please select a rating before submitting.')
+			return
+		}
+
+		setReviewSubmitting(true)
+		try {
+			const response = await ApiService.post<{ success: boolean; message: string; data: DoctorReview }>(
+				API_ENDPOINTS.REVIEWS.CREATE,
+				{
+					doctor_id: reviewAppt.doctorId,
+					appointment_id: reviewAppt.id,
+					rating: reviewRating,
+					comment: reviewText.trim() || undefined,
+				}
+			)
+
+			toast.success(response.data?.message || 'Thank you for your review!')
+			setReviewOpen(false)
+			setReviewAppt(null)
+			setReviewRating(0)
+			setReviewText('')
+			setExistingReview(null)
+		} catch (error: unknown) {
+			const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+			toast.error(message || 'Unable to submit your review right now. Please try again.')
+		} finally {
+			setReviewSubmitting(false)
+		}
+	}
+
+	// â”€â”€ Name column â€” shown once, based on viewAs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	// Format HH:MM:SS or HH:MM -> H:MM
 	const formatTime = (t: string | null): string => {
 		if (!t) return ''
@@ -415,15 +566,15 @@ export default function AppointmentList() {
 	}
 
 	// Backend status values never change ('pending', 'confirmed', 'rescheduled',
-	// 'cancelled', ...) — only how they're *labeled* depends on who's looking:
+	// 'cancelled', ...) â€” only how they're *labeled* depends on who's looking:
 	//
-	//   pending                          → Doctor: "Pending"
+	//   pending                          â†’ Doctor: "Pending"
 	//                                       Patient: "Waiting for Doctor Confirmation"
-	//   rescheduled, viewer is the one    → "Rescheduled"
+	//   rescheduled, viewer is the one    â†’ "Rescheduled"
 	//     who triggered it                 (they already took their action)
-	//   rescheduled, viewer is the OTHER  → "Waiting for Your Confirmation"
+	//   rescheduled, viewer is the OTHER  â†’ "Waiting for Your Confirmation"
 	//     party                             (an action is required from them)
-	//   confirmed / cancelled / completed / ...  → same label for both roles
+	//   confirmed / cancelled / completed / ...  â†’ same label for both roles
 	const formatFallbackStatus = (label: string): string =>
 		label
 			.split('_')
@@ -436,12 +587,15 @@ export default function AppointmentList() {
 		const rescheduledBy = (row.rescheduledBy || '').toLowerCase()
 
 		if (status === 'pending') {
+			if (rescheduledBy === 'doctor') {
+				return viewAs === 'doctor' ? 'Waiting for Patient Confirmation' : 'Waiting for Your Confirmation'
+			}
 			return viewAs === 'doctor' ? 'Pending' : 'Waiting for Doctor Confirmation'
 		}
 
 		if (status === 'rescheduled') {
 			if (!rescheduledBy) {
-				// No audit trail to say who rescheduled it (older data) — show a
+				// No audit trail to say who rescheduled it (older data) â€” show a
 				// neutral label instead of guessing who's being waited on.
 				return 'Rescheduled'
 			}
@@ -547,7 +701,7 @@ export default function AppointmentList() {
 				</Typography>
 			),
 		},
-		// Status is always shown for every appointment — including cancelled —
+		// Status is always shown for every appointment â€” including cancelled â€”
 		// as its own column. It never gets hidden or swapped out by the Action
 		// column (see `actionColumn` below for how the two coexist), and its
 		// text is role-aware via `getStatusDisplayLabel` even though the
@@ -556,14 +710,21 @@ export default function AppointmentList() {
 			field: 'status',
 			label: 'Status',
 			render: (_value, row) => (
-				<Typography fontSize={13} fontWeight={600}>
-					{getStatusDisplayLabel(row)}
-				</Typography>
+				<Box>
+					<Typography fontSize={13} fontWeight={600}>
+						{getStatusDisplayLabel(row)}
+					</Typography>
+					{row.status?.toLowerCase() === 'cancelled' && row.reason && (
+						<Typography fontSize={11} color="#e53935" lineHeight={1.3} mt={0.3} sx={{ maxWidth: 220 }}>
+							{row.reason}
+						</Typography>
+					)}
+				</Box>
 			),
 		},
 	]
 
-	// Action column — Patient's "My Appointments" page only (see viewAs === 'patient'
+	// Action column â€” Patient's "My Appointments" page only (see viewAs === 'patient'
 	// guard where `columns` is built). Doctor's page never gets this column.
 	//
 	// Status and Action are independent columns that always coexist: Status
@@ -572,18 +733,20 @@ export default function AppointmentList() {
 	//
 	// Visibility rules:
 	//  - Never shown once the appointment's date + time has passed.
-	//  - Never shown once the appointment is in a terminal status (cancelled) —
+	//  - Never shown once the appointment is in a terminal status (cancelled) â€”
 	//    no further actions, no further status changes.
-	//  - 'rescheduled', proposed by the doctor → the patient needs to review the
+	//  - 'rescheduled', proposed by the doctor â†’ the patient needs to review the
 	//    new slot, so Confirm (accept it) is offered alongside Reschedule / Reject.
 	//    (This is the case where the patient's Status label reads "Waiting for
-	//    Your Confirmation" — the action and the label agree.)
-	//  - 'rescheduled', proposed by the patient themselves → nothing new for the
+	//    Your Confirmation" â€” the action and the label agree.)
+	//  - 'rescheduled', proposed by the patient themselves â†’ nothing new for the
 	//    patient to accept (their Status label reads "Rescheduled"; the doctor
 	//    is the one waiting now), so only Reschedule / Reject are offered.
-	//  - any other non-terminal status (pending, confirmed, ...) → Reschedule and
+	//  - any other non-terminal status (pending, confirmed, ...) â†’ Reschedule and
 	//    Reject remain available (e.g. a confirmed appointment can still be
 	//    rescheduled or cancelled later), but Confirm is not shown.
+	//  - 'completed' â†’ the only case that ignores the past-appointment rule below:
+	//    shows a Give Review button instead of the usual action set.
 	const actionColumn: ColDef = {
 		field: 'action',
 		label: 'Action',
@@ -591,15 +754,34 @@ export default function AppointmentList() {
 			const status = (row.status || '').toLowerCase()
 			const rescheduledBy = (row.rescheduledBy || '').toLowerCase()
 
+			// Completed appointments never carry the Confirm/Reject/Reschedule set below
+			// (they're always past), but they do get their own Action-column entry:
+			// a Give Review button, so it now lives alongside the other actions
+			// instead of next to the Status text.
+			if (status === 'completed') {
+				return (
+					<AppButton
+						label='Review'
+						variant='outlined'
+						size='small'
+						borderRadius='20px'
+						onClick={(e) => {
+							e.stopPropagation()
+							handleOpenReview(row)
+						}}
+					/>
+				)
+			}
+
 			if (isAppointmentPast(row)) return null
 			if (TERMINAL_STATUSES.has(status)) return null
 
-			const showConfirm = status === 'rescheduled' && rescheduledBy === 'doctor'
+			const showAccept = rescheduledBy === 'doctor' && status !== 'confirmed'
 
 			return (
 				<Box sx={{ display: 'flex', gap: 0.75 }}>
-					{showConfirm && (
-						<Tooltip title="Confirm">
+					{showAccept && (
+						<Tooltip title="Accept">
 							<IconButton
 								size="small"
 								onClick={(e) => {
@@ -613,7 +795,7 @@ export default function AppointmentList() {
 									'&:hover': { bgcolor: '#d5ecd6' },
 								}}
 							>
-								<img src={ConfirmIcon} width={16} height={16} alt="Confirm" />
+								<img src={ConfirmIcon} width={16} height={16} alt="Accept" />
 							</IconButton>
 						</Tooltip>
 					)}
@@ -622,7 +804,7 @@ export default function AppointmentList() {
 							size="small"
 							onClick={(e) => {
 								e.stopPropagation()
-								handleRejectClick(row.id, e.currentTarget)
+								handleRejectClick(row.id)
 							}}
 							sx={{
 								bgcolor: '#ffeeee',
@@ -656,26 +838,32 @@ export default function AppointmentList() {
 		},
 	}
 
-	// ── View column ─────────────────────────────────────────────────────────
-	// Patient view opens the full appointment details page; doctor view keeps
-	// the compact details drawer for reviewing appointments in-place.
+	// â”€â”€ View column â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	// Both roles: eye icon opens the consultation notes drawer in place;
+	// clicking the row/card itself navigates to the full Consultation page.
 	const viewColumn: ColDef = {
 		field: 'view',
 		label: '',
 		render: (_value, row) => (
-			<Tooltip title="View Details">
+			<Tooltip title='View Consultation Notes'>
 				<IconButton
-					size="small"
+					size='small'
 					onClick={(e) => {
 						e.stopPropagation()
-						if (viewAs === 'patient') {
-							navigate(ROUTES.PORTAL.APPOINTMENT_DETAIL.replace(':appointmentId', row.id))
-							return
-						}
-						setDetailsAppointmentId(row.id)
-						setDetailsDrawerOpen(true)
+						// Eye icon opens the consultation notes drawer in place for both roles.
+						// Row data doesn't carry the doctor's degree/specialization, so those
+						// fall back to blank (ConsultationNotes only displays them in its header).
+						setNotesDrawerDoctor({
+							name: row.doctorName,
+							degree: '',
+							specialization: '',
+							clinicName: row.hospitalName ?? '',
+							clinicAddress: row.hospitalAddress ?? '',
+						})
+						setNotesDrawerPrescription(row.prescriptionS3Key)
+						setNotesDrawerOpen(true)
 					}}
-					aria-label="View appointment details"
+					aria-label='View appointment details'
 					sx={{
 						bgcolor: '#e8eaf6',
 						borderRadius: '8px',
@@ -683,17 +871,39 @@ export default function AppointmentList() {
 						'&:hover': { bgcolor: '#c5cae9' },
 					}}
 				>
-					<InfoOutlinedIcon sx={{ fontSize: 16, color: '#3949ab' }} />
+					{viewAs === 'patient' ? (
+						<VisibilityOutlinedIcon sx={{ fontSize: 16, color: '#3949ab' }} />
+					) : (
+						<InfoOutlinedIcon sx={{ fontSize: 16, color: '#3949ab' }} />
+					)}
 				</IconButton>
 			</Tooltip>
 		),
 	}
 
-	const hospitalOptions = [
+	const [hospitalOptions, setHospitalOptions] = useState([
 		{ value: 'all', label: 'All' },
-		{ value: 'manipal', label: 'Manipal Hospital' },
-		{ value: 'apollo', label: 'Apollo Hospital' },
-	]
+	])
+
+	useEffect(() => {
+		const fetchHospitals = async () => {
+			if (viewAs === 'patient') {
+				try {
+					const res = await ApiService.get<{ success: boolean; data: { hospital_id: number | string; hospital_name: string }[] }>(API_ENDPOINTS.PATIENT.APPOINTMENTS_HOSPITALS)
+					if (res.data?.success) {
+						const fetchedOptions = res.data.data.map((h) => ({
+							value: String(h.hospital_id),
+							label: h.hospital_name,
+						}))
+						setHospitalOptions([{ value: 'all', label: 'All' }, ...fetchedOptions])
+					}
+				} catch (err) {
+					console.error('Failed to fetch hospitals', err)
+				}
+			}
+		}
+		fetchHospitals()
+	}, [viewAs])
 
 	const modeOptions = [
 		{ value: 'all', label: 'All' },
@@ -701,13 +911,6 @@ export default function AppointmentList() {
 		{ value: 'video', label: 'Video Call' },
 	]
 
-	const dateOptions = [
-		{ value: 'all', label: 'All' },
-		{ value: 'today', label: 'Today' },
-		{ value: 'yesterday', label: 'Yesterday' },
-		{ value: 'last7', label: 'Last 7 days' },
-		{ value: 'last30', label: 'Last 30 days' },
-	]
 
 	const statusOptions = [
 		{ value: 'all', label: 'All' },
@@ -797,17 +1000,14 @@ export default function AppointmentList() {
 							</Grid>
 
 							<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-								<AppSelect
+								<AppDatePicker
 									label="Date"
 									value={filterDate}
-									onChange={(e) => {
-										setFilterDate(e.target.value)
+									onChange={(value) => {
+										setFilterDate(value)
 										setPage(1)
 									}}
-									options={dateOptions}
-									slotProps={{
-										select: getFilterSelectProps(dateOptions),
-									}}
+									clearable
 								/>
 							</Grid>
 
@@ -839,26 +1039,11 @@ export default function AppointmentList() {
 								setSearch(e.target.value)
 								setPage(1)
 							}}
+							startIcon={<SearchIcon sx={{ color: 'text.disabled', fontSize: 20 }} />}
 							enableVoiceSearch
 							onVoiceResult={(text) => {
 								setSearch(text)
 								setPage(1)
-							}}
-							InputProps={{
-								startAdornment: (
-									<InputAdornment position="start">
-										<SearchIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
-									</InputAdornment>
-								),
-							}}
-							sx={{
-								fontSize: 14,
-								height: 44,
-								borderRadius: '10px',
-								bgcolor: 'background.paper',
-								'& .MuiOutlinedInput-notchedOutline': {
-									borderColor: 'divider',
-								},
 							}}
 						/>
 					</Grid>
@@ -886,13 +1071,22 @@ export default function AppointmentList() {
 						columns={columns}
 						rows={rows}
 						emptyMessage="No appointments found"
-						onRowClick={
-							viewAs === 'patient'
-								? (row) =>
-										navigate(
-											ROUTES.PORTAL.APPOINTMENT_DETAIL.replace(':appointmentId', row.id)
-										)
-								: undefined
+						rowSx={(row) =>
+							row.id === highlightedAppointmentId
+								? {
+									bgcolor: 'rgba(12,124,124,0.08)',
+									boxShadow: 'inset 4px 0 0 #0c7c7c',
+									'&:hover': { bgcolor: 'rgba(12,124,124,0.12)' },
+								}
+								: {}
+						}
+						onRowClick={(row) =>
+							navigate(
+								ROUTES.PORTAL.CONSULTATION.replace(':patientId', row.patientId).replace(
+									':appointmentId',
+									row.id
+								)
+							)
 						}
 					/>
 					{meta.pages > 1 && (
@@ -909,75 +1103,14 @@ export default function AppointmentList() {
 				</Card>
 			)}
 
-			{/* Reject confirmation popover */}
-			<Popover
-				open={Boolean(rejectAnchorEl)}
-				anchorEl={rejectAnchorEl}
-				onClose={handleCancelReject}
-				anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-				transformOrigin={{ vertical: 'top', horizontal: 'center' }}
-				disableScrollLock
-				sx={{ zIndex: 9999 }}
-				slotProps={{
-					paper: {
-						sx: {
-							borderRadius: '16px',
-							px: 3,
-							py: 3,
-							maxWidth: 300,
-							width: 280,
-							textAlign: 'center',
-							boxShadow: '0px 8px 40px rgba(0,0,0,0.18)',
-							mt: 1,
-						},
-					},
-				}}
-			>
-				<Typography sx={{ fontWeight: 700, fontSize: '16px', color: 'text.primary', mb: 0.5 }}>
-					Are you sure?
-				</Typography>
-				<Typography sx={{ fontSize: '14px', color: 'text.primary', fontWeight: 600, mb: 3 }}>
-					You want to reject appointment
-				</Typography>
-				<Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center' }}>
-					<Box
-						onClick={handleCancelReject}
-						sx={{
-							flex: 1,
-							py: 1.2,
-							border: '2px solid #0c7c7c',
-							borderRadius: '50px',
-							color: '#0c7c7c',
-							fontWeight: 600,
-							fontSize: '13px',
-							cursor: 'pointer',
-							textAlign: 'center',
-							transition: 'background 0.2s',
-							'&:hover': { bgcolor: 'rgba(12,124,124,0.06)' },
-						}}
-					>
-						Cancel
-					</Box>
-					<Box
-						onClick={handleConfirmReject}
-						sx={{
-							flex: 1,
-							py: 1.2,
-							bgcolor: '#e53935',
-							borderRadius: '50px',
-							color: '#fff',
-							fontWeight: 600,
-							fontSize: '13px',
-							cursor: 'pointer',
-							textAlign: 'center',
-							transition: 'opacity 0.2s',
-							'&:hover': { opacity: 0.88 },
-						}}
-					>
-						Yes, Reject
-					</Box>
-				</Box>
-			</Popover>
+			{/* Reject confirmation dialog */}
+			<RejectAppointmentDialog
+				open={rejectDialogOpen}
+				onCancel={handleCancelReject}
+				onConfirm={handleConfirmReject}
+				submitting={rejectSubmitting}
+				reasons={viewAs === 'patient' ? PATIENT_REJECTION_REASONS : undefined}
+			/>
 
 			{/* Reschedule drawer */}
 			<RescheduleDrawer
@@ -999,15 +1132,132 @@ export default function AppointmentList() {
 				setAppointmentType={setAppointmentType}
 			/>
 
-			{/* Appointment Details Drawer */}
-			<AppointmentDetailsDrawer
-				open={detailsDrawerOpen}
+			{/* Consultation Notes drawer (eye icon) — reuses the shared AppDrawer */}
+			<AppDrawer
+				open={notesDrawerOpen}
 				onClose={() => {
-					setDetailsDrawerOpen(false)
-					setDetailsAppointmentId(null)
+					setNotesDrawerOpen(false)
+					setNotesDrawerDoctor(null)
+					setNotesDrawerPrescription(null)
 				}}
-				appointmentId={detailsAppointmentId}
-			/>
+				title='Consultation Notes'
+				subtitle={notesDrawerDoctor?.name}
+				cancelLabel=''
+				confirmLabel='Close'
+				onConfirm={() => {
+					setNotesDrawerOpen(false)
+					setNotesDrawerDoctor(null)
+					setNotesDrawerPrescription(null)
+				}}
+				width={520}
+			>
+				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, minHeight: 500 }}>
+					{/* Prescription — from patient_treatments.prescription_s3_key via the appointments API */}
+					<Box
+						sx={{
+							border: '1px solid',
+							borderColor: 'divider',
+							borderRadius: '12px',
+							p: 2,
+						}}
+					>
+						<Typography sx={{ fontSize: 13, fontWeight: 600, color: 'text.secondary', mb: 1 }}>
+							Prescription
+						</Typography>
+						{notesDrawerPrescription ? (
+							<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+								<DescriptionOutlinedIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+								<Typography
+									component='a'
+									href={buildS3Url(notesDrawerPrescription)}
+									target='_blank'
+									rel='noopener noreferrer'
+									sx={{
+										display: 'inline-flex',
+										alignItems: 'center',
+										gap: 0.4,
+										fontSize: 13,
+										fontWeight: 600,
+										color: 'primary.main',
+										textDecoration: 'none',
+										'&:hover': { textDecoration: 'underline' },
+									}}
+								>
+									<OpenInNewIcon sx={{ fontSize: 14 }} />
+									View / Download
+								</Typography>
+							</Box>
+						) : (
+							<Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Prescription: Not Available</Typography>
+						)}
+					</Box>
+
+					<Box sx={{ display: 'flex', flex: 1 }}>
+						{notesDrawerDoctor && <ConsultationNotes doctor={notesDrawerDoctor} />}
+					</Box>
+				</Box>
+			</AppDrawer>
+
+			{/* Give Review modal (patient view only) */}
+			<AppModal open={reviewOpen} onClose={() => setReviewOpen(false)} title={reviewAppt ? 'Review ' + reviewAppt.doctorName : 'Give Review'}>
+				{existingReviewLoading ? (
+					<Box sx={{ mb: 2.5 }}>
+						<AppSkeleton variant='rounded' width='100%' height={90} />
+					</Box>
+				) : existingReview ? (
+					// Patient already reviewed this specific appointment - show just
+					// that review (read-only), not the doctor's other patients' reviews.
+					<Box>
+						<Box
+							sx={{
+								border: '1px solid',
+								borderColor: 'divider',
+								borderRadius: '10px',
+								p: 1.5,
+								mb: 2,
+							}}
+						>
+							<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+								<Rating value={existingReview.rating} readOnly size='medium' />
+								{existingReview.created_at && (
+									<Typography sx={{ fontSize: 11, color: 'text.disabled' }}>
+										{new Date(existingReview.created_at).toLocaleDateString()}
+									</Typography>
+								)}
+							</Box>
+							{existingReview.comment && (
+								<Typography sx={{ fontSize: 13, color: 'text.primary', mt: 1 }}>
+									{existingReview.comment}
+								</Typography>
+							)}
+						</Box>
+					</Box>
+				) : (
+					// No review yet for this appointment - let the patient give one.
+					<>
+						<Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+							<Rating
+								value={reviewRating}
+								onChange={(_, value) => setReviewRating(value)}
+								size='large'
+							/>
+						</Box>
+						<AppInput
+							label='Write Review'
+							value={reviewText}
+							onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReviewText(e.target.value)}
+							multiline
+							rows={3}
+							fullWidth
+						/>
+						<Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
+							<AppButton label='Cancel' variant='outlined' onClick={() => setReviewOpen(false)} />
+							<AppButton label='Submit' loading={reviewSubmitting} onClick={handleSubmitReview} disabled={!reviewRating} />
+						</Box>
+					</>
+				)}
+			</AppModal>
+
 		</Box>
 	)
 }

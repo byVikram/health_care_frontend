@@ -19,9 +19,11 @@ export const API_ENDPOINTS = {
 		LIST: '/api/pharmacies',
 	},
 	DOCTOR_PROFILE: {
+		STATUS: '/api/doctors/me/status',
 		DETAILS: '/api/doctors/details',
 		PERSONAL_DETAILS: '/api/doctors/personal-details',
 		PROFESSIONAL_DETAILS: '/api/doctors/professional-details',
+		ADDITIONAL_DETAILS: '/api/doctors/profile/additional-details',
 		HOSPITALS: '/api/doctors/hospitals',
 		UPDATE_HOSPITAL: '/api/doctors/hospitals',
 		UPDATE_AVAILABILITY: '/api/doctors/availability',
@@ -49,6 +51,12 @@ export const API_ENDPOINTS = {
 	SPECIALITIES: {
 		LIST: '/api/specialities',
 	},
+	AREA_OF_EXPERTISE: {
+		LIST: '/api/area-of-expertise',
+	},
+	TREATMENT_OFFERINGS: {
+		LIST: '/api/treatments-offering',
+	},
 	USERS: {
 		GET: '/api/users',
 		CREATE: '/api/users',
@@ -66,10 +74,16 @@ export const API_ENDPOINTS = {
 		VITALS_HISTORY: (id: string) => `/api/patients/${id}/vitals`,
 		REPORTS: (id: string) => `/api/patients/${id}/reports`,
 		REPORTS_CREATE: '/api/patients/reports',
-		FAVOURITES: '/api/patients/me/favourites',
-		TOGGLE_FAVOURITE: (doctorPublicId: string) => `/api/patients/me/favourites/${doctorPublicId}`,
+		FAVOURITES: '/api/doctors/favourites',
+		TOGGLE_FAVOURITE: (doctorPublicId: string) => `/api/doctors/favourites/${doctorPublicId}`,
 		LABORATORY_REPORTS: (id: string) => `/api/patients/${id}/laboratory-reports`,
 		RADIOLOGY_REPORTS: (id: string) => `/api/patients/${id}/radiology-reports`,
+		APPOINTMENTS_HOSPITALS: '/api/patients/appointments/hospitals',
+	},
+	REVIEWS: {
+		CREATE: '/api/reviews',
+		BY_DOCTOR: (doctorId: string | number) => `/api/reviews/doctor/${doctorId}`,
+		BY_APPOINTMENT: (appointmentId: string | number) => `/api/reviews/appointment/${appointmentId}`,
 	},
 	LOOKUP: {
 		GET: '/api/lookup',
@@ -85,6 +99,7 @@ export const API_ENDPOINTS = {
 		GET_BY_ID: (id: string | number) => `/api/appointments/${id}`,
 		PRE_INTAKE: (id: string) => `/api/appointments/${id}/pre-intake`,
 		RESCHEDULE: '/api/appointments/reschedule',
+		ACTIVE_CONSENT: '/api/appointments/active/consent',
 		STATUSES: '/api/appointments/statuses',
 	},
 	PHARMACY: {
@@ -132,5 +147,9 @@ export const API_ENDPOINTS = {
 	NOTIFICATIONS: {
 		LIST: '/api/notifications',
 		MARK_READ: (id: string) => `/api/notifications/${id}/read`,
+	},
+	FOLLOW_UPS: {
+		CREATE: '/api/follow-ups',
+		CANCEL: (id: string) => `/api/follow-ups/${id}/cancel`,
 	},
 }

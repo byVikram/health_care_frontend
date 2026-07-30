@@ -6,6 +6,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn'
 import AppButton from '../../../../components/common/Button/AppButton'
 import { DoctorSearchItem } from '../../../../types/doctor-search'
 import { useNavigate } from 'react-router-dom'
+import { buildS3Url } from '../../../../utils/s3'
 
 interface DoctorSearchCardProps {
 	doctor: DoctorSearchItem
@@ -16,7 +17,7 @@ export default function DoctorSearchCard({ doctor }: DoctorSearchCardProps) {
 	const navigate = useNavigate()
 	const specialization = doctor.specialities?.[0] || 'General'
 	const avatar = doctor.avatar_s3_key || ''
-	const clinicName = doctor.location || 'Clinic'
+	const clinicName = doctor.hospital?.name || doctor.location || 'Clinic'
 	const experience = doctor.experience_years || 0
 
 	const handleCardClick = () => {
@@ -85,15 +86,17 @@ export default function DoctorSearchCard({ doctor }: DoctorSearchCardProps) {
 
 				{/* Clinic + Distance row */}
 				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-					<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
-						<LocationOnIcon sx={{ fontSize: 13, color: 'primary.main' }} />
-						<Typography variant="caption" sx={{ color: 'text.secondary' }}>
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, maxWidth: doctor.distance !== undefined ? '65%' : '100%' }}>
+						<LocationOnIcon sx={{ fontSize: 13, color: 'primary.main', flexShrink: 0 }} />
+						<Typography variant="caption" sx={{ color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
 							{clinicName}
 						</Typography>
 					</Box>
-					<Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 600, fontSize: '11px' }}>
-						&lt;0 km
-					</Typography>
+					{doctor.distance !== undefined && (
+						<Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 600, fontSize: '11px', flexShrink: 0 }}>
+							{doctor.distance} km away
+						</Typography>
+					)}
 				</Box>
 
 				{/* Book Now */}

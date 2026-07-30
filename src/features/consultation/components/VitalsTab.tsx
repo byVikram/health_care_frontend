@@ -1,4 +1,4 @@
-﻿// src/features/consultation/components/VitalsTab.tsx
+// src/features/consultation/components/VitalsTab.tsx
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
 	Box,
@@ -33,6 +33,7 @@ import AppModal from '../../../components/common/Modal/AppModal'
 import AppSkeleton from '../../../components/common/Skeleton/AppSkeleton'
 import AddVitals from './AddVitals'
 import { toast } from 'react-toastify'
+import { useAuth } from '../../../hooks/useAuth'
 import {
 	getLatestVitals,
 	getVitalsHistory,
@@ -435,6 +436,7 @@ function DataCell({ value, status, showDot }: { value: string; status?: 'normal'
 // -- Main component ----------------------------------------------------------
 
 export default function VitalsTab({ patientPublicId }: VitalsTabProps) {
+	const { role } = useAuth()
 	const [activeTabId, setActiveTabId] = useState('bp')
 	const [period, setPeriod] = useState('30days')
 	const [openVitalsModal, setOpenVitalsModal] = useState(false)
@@ -456,14 +458,14 @@ export default function VitalsTab({ patientPublicId }: VitalsTabProps) {
 			setSummaryLoading(true)
 			setSummaryError(false)
 
-			const data = await getLatestVitals(patientPublicId)
+			const data = await getLatestVitals(patientPublicId, role)
 			setLatestVitals(data)
 		} catch {
 			setSummaryError(true)
 		} finally {
 			setSummaryLoading(false)
 		}
-	}, [patientPublicId])
+	}, [patientPublicId, role])
 
 	useEffect(() => {
 		void fetchLatestVitals()
@@ -488,7 +490,7 @@ export default function VitalsTab({ patientPublicId }: VitalsTabProps) {
 				return
 			}
 
-			const data = await getVitalsHistory(patientPublicId, { vital_type: vitalType, ...(days !== undefined ? { days } : {}) })
+			const data = await getVitalsHistory(patientPublicId, { vital_type: vitalType, ...(days !== undefined ? { days } : {}) }, role)
 
 			setHistoryVitals(data)
 
@@ -501,7 +503,7 @@ export default function VitalsTab({ patientPublicId }: VitalsTabProps) {
 		} finally {
 			setHistoryLoading(false)
 		}
-	}, [patientPublicId, activeTabId, period])
+	}, [patientPublicId, activeTabId, period, role])
 
 	useEffect(() => {
 		void fetchHistory()

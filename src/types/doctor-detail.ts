@@ -75,6 +75,10 @@ export interface DoctorDetailData {
 	achievements: DoctorAchievement[]
 	availability: DoctorAvailability[]
 	is_favourited?: boolean
+	additionalDetail?: {
+		areas_of_expertise: { id: string; label: string }[]
+		treatments: { id: string; label: string }[]
+	}
 }
 
 export interface DoctorDetailResponse {
