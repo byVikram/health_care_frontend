@@ -24,6 +24,7 @@ import {
   Skeleton,
   IconButton,
   Container,
+  CircularProgress,
 } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
@@ -35,6 +36,9 @@ import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
 import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee'
 import SickIcon from '@mui/icons-material/Sick'
 import MedicalInformationIcon from '@mui/icons-material/MedicalInformation'
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar'
+import AppButton from '../../components/common/Button/AppButton'
+import RideTrackingCard from '../transportation/components/RideTrackingCard'
 
 import { getAppointmentById } from '../../services/appointmentService'
 import { getTreatmentByAppointment, Treatment } from '../../services/treatmentService'
@@ -203,6 +207,77 @@ export default function PatientAppointmentDetailPage() {
   const [treatmentLoading, setTreatmentLoading] = useState(Boolean(appointmentId))
   const [apptError, setApptError] = useState<string | null>(null)
 
+  // Ride details state
+  const [ride, setRide] = useState<any>(null)
+  const [rideStatus, setRideStatus] = useState<string>('scheduled')
+
+  const [returnRide, setReturnRide] = useState<any>(null)
+  const [returnRideStatus, setReturnRideStatus] = useState<string>('scheduled')
+
+  useEffect(() => {
+    if (appt?.id) {
+      const savedRideStr = localStorage.getItem(`ride_${appt.id}`)
+      if (savedRideStr) {
+        const savedRide = JSON.parse(savedRideStr)
+        setRide(savedRide)
+        setRideStatus(savedRide.status)
+      } else {
+        setRide(null)
+      }
+
+      const savedReturnRideStr = localStorage.getItem(`ride_return_${appt.id}`)
+      if (savedReturnRideStr) {
+        const savedReturnRide = JSON.parse(savedReturnRideStr)
+        setReturnRide(savedReturnRide)
+        setReturnRideStatus(savedReturnRide.status)
+      } else {
+        setReturnRide(null)
+      }
+    }
+  }, [appt?.id])
+
+  const advanceRideStatus = () => {
+    if (!ride || !appt?.id) return
+    let nextStatus = 'scheduled'
+    if (rideStatus === 'scheduled') nextStatus = 'requesting'
+    else if (rideStatus === 'requesting') nextStatus = 'dispatched'
+    else if (rideStatus === 'dispatched') nextStatus = 'in_transit'
+    else if (rideStatus === 'in_transit') nextStatus = 'completed'
+
+    setRideStatus(nextStatus)
+    const updatedRide = { ...ride, status: nextStatus }
+    setRide(updatedRide)
+    localStorage.setItem(`ride_${appt.id}`, JSON.stringify(updatedRide))
+  }
+
+  const advanceReturnRideStatus = () => {
+    if (!returnRide || !appt?.id) return
+    let nextStatus = 'scheduled'
+    if (returnRideStatus === 'scheduled') nextStatus = 'requesting'
+    else if (returnRideStatus === 'requesting') nextStatus = 'dispatched'
+    else if (returnRideStatus === 'dispatched') nextStatus = 'in_transit'
+    else if (returnRideStatus === 'in_transit') nextStatus = 'completed'
+
+    setReturnRideStatus(nextStatus)
+    const updatedRide = { ...returnRide, status: nextStatus }
+    setReturnRide(updatedRide)
+    localStorage.setItem(`ride_return_${appt.id}`, JSON.stringify(updatedRide))
+  }
+
+  // Auto-dispatch return ride when appointment status is completed (consultation complete)
+  useEffect(() => {
+    if (appt && appt.status) {
+      const rawStatus = typeof appt.status === 'string' ? appt.status.toLowerCase() : ''
+      if (rawStatus === 'completed' && returnRide && returnRideStatus === 'scheduled') {
+        const nextStatus = 'requesting'
+        setReturnRideStatus(nextStatus)
+        const updatedRide = { ...returnRide, status: nextStatus }
+        setReturnRide(updatedRide)
+        localStorage.setItem(`ride_return_${appt.id}`, JSON.stringify(updatedRide))
+      }
+    }
+  }, [appt, returnRide, returnRideStatus])
+
   // Fetch appointment details
   useEffect(() => {
     // No appointmentId: leave apptLoading/treatmentLoading at their initial
@@ -360,6 +435,94 @@ export default function PatientAppointmentDetailPage() {
         <Grid container spacing={3} alignItems="stretch">
           {/* ── LEFT COLUMN: Doctor Info + Consultation Details ───────────── */}
           <Grid size={{ xs: 12, md: 5 }}>
+            {/* Onward Ride: Promo to Book if not booked yet */}
+            {(appt?.appointment_mode === 'clinic visit' || appt?.appointment_mode === 'clinic_visit') && !ride && (
+              <Box
+                sx={{
+                  bgcolor: 'rgba(13, 148, 136, 0.02)',
+                  border: '1px dashed',
+                  borderColor: '#0c7c7c',
+                  borderRadius: '16px',
+                  p: { xs: 2, sm: 2.5 },
+                  mb: 3,
+                  textAlign: 'center',
+                }}
+              >
+                <DirectionsCarIcon sx={{ fontSize: 36, color: '#0c7c7c', mb: 1 }} />
+                <Typography fontWeight={700} fontSize={14} color="text.primary" mb={0.5}>
+                  Need a ride to the clinic?
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                  Book a safe, reliable cab to get you to your appointment on time.
+                </Typography>
+                <AppButton
+                  label="Book Ride"
+                  size="small"
+                  onClick={() => navigate(`/portal/appointments/${appt.id}/book-ride?type=onward`)}
+                  sx={{ px: 4, bgcolor: '#0c7c7c' }}
+                />
+              </Box>
+            )}
+
+            {/* Return Ride: Tracking Card (Priority Top Placement if Onward is Completed) */}
+            {returnRide && rideStatus === 'completed' && (
+              <RideTrackingCard
+                ride={returnRide}
+                status={returnRideStatus}
+                onAdvance={advanceReturnRideStatus}
+                type="return"
+              />
+            )}
+
+            {/* Onward Ride: Tracking Card */}
+            {ride && (
+              <RideTrackingCard
+                ride={ride}
+                status={rideStatus}
+                onAdvance={advanceRideStatus}
+                type="onward"
+              />
+            )}
+
+            {/* Return Ride: Promo to Book if not booked yet */}
+            {(appt?.appointment_mode === 'clinic visit' || appt?.appointment_mode === 'clinic_visit') && ride && !returnRide && (
+              <Box
+                sx={{
+                  bgcolor: 'rgba(13, 148, 136, 0.02)',
+                  border: '1px dashed',
+                  borderColor: '#0c7c7c',
+                  borderRadius: '16px',
+                  p: { xs: 2, sm: 2.5 },
+                  mb: 3,
+                  textAlign: 'center',
+                }}
+              >
+                <DirectionsCarIcon sx={{ fontSize: 32, color: '#0c7c7c', mb: 1 }} />
+                <Typography fontWeight={700} fontSize={13.5} color="text.primary" mb={0.5}>
+                  Need a ride back home?
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                  Schedule a return cab post-consultation to get back home safely.
+                </Typography>
+                <AppButton
+                  label="Book Return Ride"
+                  size="small"
+                  onClick={() => navigate(`/portal/appointments/${appt.id}/book-ride?type=return`)}
+                  sx={{ px: 3, bgcolor: '#0c7c7c' }}
+                />
+              </Box>
+            )}
+
+            {/* Return Ride: Tracking Card (Standard Placement if Onward is NOT Completed yet) */}
+            {returnRide && rideStatus !== 'completed' && (
+              <RideTrackingCard
+                ride={returnRide}
+                status={returnRideStatus}
+                onAdvance={advanceReturnRideStatus}
+                type="return"
+              />
+            )}
+
             {/* Doctor Information Card */}
             <Box
               sx={{

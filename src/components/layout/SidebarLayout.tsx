@@ -34,8 +34,8 @@ import PaymentsIcon from '../../assets/icons/payments.svg'
 import BlogsIcon from '../../assets/icons/blogs.svg'
 import HelpCenterIcon from '../../assets/icons/help-center.svg'
 import SettingsIcon from '../../assets/icons/settings.svg'
-
 import CarePlanIcon from '../../assets/icons/care-plan.svg'
+import CabIcon from '../../assets/icons/cab.svg'
 
 const SIDEBAR_WIDTH = 280
 const NAVBAR_HEIGHT = 64
@@ -78,6 +78,7 @@ const PATIENT_MENU_ITEMS = [
 	{ id: 'insurance', label: 'My Insurance Policy', icon: InsuranceIcon },
 	{ id: 'reminders', label: 'Reminders', icon: RemindersIcon },
 	{ id: 'payments', label: 'Payments', icon: PaymentsIcon },
+	{ id: 'cabs', label: 'Book a Cab', icon: CabIcon, path: '/portal/transportation' },
 	{ id: 'blogs', label: 'Blogs', icon: BlogsIcon },
 	{ id: 'help', label: 'Help Center', icon: HelpCenterIcon },
 	{ id: 'settings', label: 'Settings', icon: SettingsIcon, path: '/profile' },

@@ -18,6 +18,8 @@ const DashboardPage = lazy(() => import('../features/dashboard/DashboardPage'))
 const DoctorDetailPage = lazy(() => import('../features/doctor/detail/DoctorDetailPage'))
 const DoctorSearchPage = lazy(() => import('../features/doctor/search/DoctorSearchPage'))
 const PaymentPage = lazy(() => import('../features/appointments/PaymentPage'))
+const BookRidePage = lazy(() => import('../features/transportation/BookRidePage'))
+const TransportationLandingPage = lazy(() => import('../features/transportation/TransportationLandingPage'))
 const ProfilePage = lazy(() => import('../features/profile/ProfilePage'))
 const ConsultationPage = lazy(() => import('../features/consultation/ConsultationPage'))
 const DoctorAccountDetailsPage = lazy(() => import('../features/auth/DoctorAccountDetailsPage'))
@@ -27,9 +29,9 @@ const PortalPage = lazy(() => import('../features/portal/PortalPage'))
 const DoctorAppointmentList = lazy(() => import('../features/appointments/AppointmentList'))
 const PatientAppointmentDetailPage = lazy(() => import('../features/patient/PatientAppointmentDetailPage'))
 const WelcomePage = lazy(() => import('../features/auth/WelcomePage'))
-const OrderList = lazy(() => import('../features/pharmacy/orders/OrderList'))
-const OrderDetailPage = lazy(() => import('../features/pharmacy/orders/OrderDeatailPage'))
-const PharmacySearchPage = lazy(() => import('../features/pharmacy/components/PharmacySearchPage'))
+const OrderList = lazy(() => import('../features/Pharmacy/orders/OrderList'))
+const OrderDetailPage = lazy(() => import('../features/Pharmacy/orders/OrderDeatailPage'))
+const PharmacySearchPage = lazy(() => import('../features/Pharmacy/components/PharmacySearchPage'))
 const RadiologyProfilePage = lazy(() => import('../features/radiology/profile/RadiologyProfilePage'))
 const BookingsList = lazy(() => import('../features/radiology/bookings/BookingsList'))
 const BookingDetailPage = lazy(() => import('../features/radiology/bookings/BookingDetailPage'))
@@ -141,6 +143,8 @@ export default function AppRoutes() {
 						<Route path={ROUTES.PORTAL.HOME} element={<PortalPage />} />
 						<Route path={ROUTES.APPOINTMENTS} element={<DoctorAppointmentList />} />
 						<Route path={ROUTES.PORTAL.APPOINTMENT_DETAIL} element={<PatientAppointmentDetailPage />} />
+						<Route path={ROUTES.PORTAL.BOOK_RIDE} element={<BookRidePage />} />
+						<Route path={ROUTES.PORTAL.TRANSPORTATION} element={<TransportationLandingPage />} />
 						<Route path={ROUTES.PORTAL.PROFILE} element={<ProfilePage />} />
 						<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
 						<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />

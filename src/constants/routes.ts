@@ -68,6 +68,8 @@ export const ROUTES = {
 		FAVOURITES: '/portal/favourites',
 		CONSULTATION: '/consultation/:patientId/:appointmentId',
 		APPOINTMENT_DETAIL: '/portal/appointments/:appointmentId',
+		BOOK_RIDE: '/portal/appointments/:appointmentId/book-ride',
+		TRANSPORTATION: '/portal/transportation',
 	},
 
 	ADMIN: {

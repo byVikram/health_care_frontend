@@ -60,6 +60,7 @@ const PATIENT_PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
 	{ label: 'Lab Bookings', path: ROUTES.LABORATORY.ORDERS },
 	{ label: 'Radiology Bookings', path: ROUTES.RADIOLOGY.BOOKINGS },
 	{ label: 'My Favourite Doctors', path: ROUTES.PORTAL.FAVOURITES },
+	{ label: 'Book a Cab', path: ROUTES.PORTAL.TRANSPORTATION },
 	{ label: 'My Feedback', path: '#' },
 	{ divider: true },
 	{ label: 'Profile', path: ROUTES.PORTAL.PROFILE },
