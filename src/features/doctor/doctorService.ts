@@ -1,5 +1,6 @@
 // src/features/doctor/doctorService.ts
 import ApiService from '../../services/apiService'
+import axios from 'axios'
 import dayjs from 'dayjs'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { AppointmentsResponse } from '../../types/appointment'
@@ -155,8 +156,21 @@ export interface DoctorStatusResponse {
 }
 
 export const getDoctorStatus = async (): Promise<DoctorStatusResponse['data']> => {
-	const res = await ApiService.get<DoctorStatusResponse>(API_ENDPOINTS.DOCTOR_PROFILE.STATUS)
-	return res.data.data
+	try {
+		const res = await ApiService.get<DoctorStatusResponse>(API_ENDPOINTS.DOCTOR_PROFILE.STATUS, {
+			suppressErrorToast: true,
+		})
+		return res.data.data
+	} catch (error) {
+		if (axios.isAxiosError(error) && error.response?.status === 404) {
+			return {
+				profile_completed: true,
+				is_verified: true,
+			}
+		}
+
+		throw error
+	}
 }
 
 // ── Slot overrides ────────────────────────────────────────────────────────────
