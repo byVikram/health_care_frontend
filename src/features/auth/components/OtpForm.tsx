@@ -115,7 +115,7 @@ export default function OtpForm({ contactNumber, onVerify, mode = 'page', onCust
 				},
 			})
 			if (res.success) {
-				const { user, access_token, refresh_token } = res.data
+				const { user, access_token, refresh_token, notification_prompt_shown } = res.data
 
 				localStorage.setItem('access_token', access_token)
 
@@ -133,7 +133,8 @@ export default function OtpForm({ contactNumber, onVerify, mode = 'page', onCust
 					},
 					access_token,
 					refresh_token,
-					lookupData.data
+					lookupData.data,
+					notification_prompt_shown ?? false
 				)
 
 				onVerify()

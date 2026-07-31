@@ -54,6 +54,7 @@ export interface AuthState {
 	accessToken: string | null
 	refreshToken: string | null
 	lookupData: LookupData | null
+	notificationPromptShown: boolean | null
 }
 
 function readAuthSnapshot(): AuthState {
@@ -65,9 +66,11 @@ function readAuthSnapshot(): AuthState {
 		const refreshToken = localStorage.getItem('refresh_token')
 		const lookupRaw = localStorage.getItem('lookup')
 		const lookupData = normalizeLookupData(lookupRaw ? (JSON.parse(lookupRaw) as Partial<LookupData>) : null)
-		return { role, user, accessToken, refreshToken, lookupData }
+		const npsRaw = localStorage.getItem('notification_prompt_shown')
+		const notificationPromptShown = npsRaw === 'true'
+		return { role, user, accessToken, refreshToken, lookupData, notificationPromptShown }
 	} catch {
-		return { role: null, user: null, accessToken: null, refreshToken: null, lookupData: null }
+		return { role: null, user: null, accessToken: null, refreshToken: null, lookupData: null, notificationPromptShown: null }
 	}
 }
 
@@ -86,7 +89,7 @@ export function useAuth(): AuthState {
 
 	useEffect(() => {
 		const onStorage = (e: StorageEvent) => {
-			if (['role', 'user', 'access_token', 'refresh_token', 'lookup'].includes(e.key ?? '')) {
+			if (['role', 'user', 'access_token', 'refresh_token', 'lookup', 'notification_prompt_shown'].includes(e.key ?? '')) {
 				setAuth_(readAuthSnapshot())
 			}
 		}
@@ -108,7 +111,8 @@ export function setAuth(
 	user: AuthUser,
 	accessToken: string,
 	refreshToken: string,
-	lookupData?: LookupData | null
+	lookupData?: LookupData | null,
+	notificationPromptShown: boolean = false
 ): void {
 	localStorage.setItem('role', role)
 	localStorage.setItem('user', JSON.stringify(user))
@@ -117,6 +121,7 @@ export function setAuth(
 	if (lookupData != null) {
 		localStorage.setItem('lookup', JSON.stringify(normalizeLookupData(lookupData)))
 	}
+	localStorage.setItem('notification_prompt_shown', String(notificationPromptShown))
 	window.dispatchEvent(new Event('auth-changed'))
 }
 
@@ -126,11 +131,17 @@ export function clearAuth(): void {
 	localStorage.removeItem('access_token')
 	localStorage.removeItem('refresh_token')
 	localStorage.removeItem('lookup')
+	localStorage.removeItem('notification_prompt_shown')
 	window.dispatchEvent(new Event('auth-changed'))
 }
 
 export function getAccessToken(): string | null {
 	return localStorage.getItem('access_token')
+}
+
+export function setNotificationPromptShown(value: boolean): void {
+	localStorage.setItem('notification_prompt_shown', String(value))
+	window.dispatchEvent(new Event('auth-changed'))
 }
 
 
