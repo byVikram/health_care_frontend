@@ -180,6 +180,8 @@ export interface AdminAppointmentListParams {
 	page?: number
 	pageSize?: number
 	search?: string
+	patientId?: string
+	doctorId?: string
 }
 
 export interface AdminAppointmentListResult {
@@ -421,10 +423,16 @@ export const getProviderAdminDetail = async (providerType: string, providerId: s
 
 /** GET /api/admin/appointments */
 export const listAdminAppointments = async (params: AdminAppointmentListParams = {}) => {
-	const { page = 1, pageSize = 10, search } = params
+	const { page = 1, pageSize = 10, search, patientId, doctorId } = params
 	const res = await ApiService.getWithParams<{ success: boolean; data: AdminAppointmentListResult }>(
 		API_ENDPOINTS.ADMIN.APPOINTMENTS,
-		{ page, page_size: pageSize, ...(search ? { search } : {}) }
+		{
+			page,
+			page_size: pageSize,
+			...(search ? { search } : {}),
+			...(patientId ? { patient_id: patientId } : {}),
+			...(doctorId ? { doctor_id: doctorId } : {}),
+		}
 	)
 	return res.data
 }
