@@ -10,6 +10,7 @@ import { ROUTES } from '../constants/routes'
 
 import { useAuth } from '../hooks/useAuth'
 import AppLoader from '../components/common/Loader/AppLoader'
+import NotificationPermissionPopup from '../components/common/NotificationPermissionPopup'
 
 // Lazy-loaded route components
 const LoginPage = lazy(() => import('../features/auth/LoginPage'))
@@ -83,6 +84,7 @@ export default function AppRoutes() {
 
 	return (
 		<Suspense fallback={<AppLoader />}>
+			<NotificationPermissionPopup />
 			<Routes>
 				{/* Public routes */}
 				<Route path={ROUTES.AUTH.LOGIN} element={<LoginPage />} />
