@@ -53,6 +53,16 @@ import AdminUserDetailPage from '../features/admin/pages/AdminUserDetailPage'
 import AdminAppointmentsPage from '../features/admin/pages/AdminAppointmentsPage'
 import AdminAuditsPage from '../features/admin/pages/AdminAuditsPage'
 import AdminSpecialitiesPage from '../features/admin/pages/AdminSpecialitiesPage'
+import AdminBlogsPage from '../features/admin/pages/AdminBlogsPage'
+import AdminCommentsPage from '../features/admin/pages/AdminCommentsPage'
+import AdminAdsPage from '../features/admin/pages/AdminAdsPage'
+import AdminCommunitiesPage from '../features/admin/pages/AdminCommunitiesPage'
+
+import BlogListPage from '../features/portal/BlogListPage'
+import BlogArticlePage from '../features/portal/BlogArticlePage'
+import CommunityForumPage from '../features/portal/CommunityForumPage'
+import CommunityThreadPage from '../features/portal/CommunityThreadPage'
+import HealthQuestionsPage from '../features/portal/HealthQuestionsPage'
 
 function ProtectedLayout() {
 	return (
@@ -104,6 +114,7 @@ export default function AppRoutes() {
 				<Route path={ROUTES.PUBLIC.WELCOME_DOCTOR} element={<WelcomePage role="doctor" />} />
 				<Route element={<ProtectedLayout />}>
 					<Route path={ROUTES.ROOT} element={<DashboardPage />} />
+					<Route path={ROUTES.PUBLIC.HEALTH_QUESTIONS} element={<HealthQuestionsPage />} />
 				</Route>
 
 				{/* Admin Login Route */}
@@ -119,6 +130,10 @@ export default function AppRoutes() {
 						<Route path={ROUTES.ADMIN.APPOINTMENTS} element={<AdminAppointmentsPage />} />
 						<Route path={ROUTES.ADMIN.AUDITS} element={<AdminAuditsPage />} />
 						<Route path={ROUTES.ADMIN.SPECIALITIES} element={<AdminSpecialitiesPage />} />
+						<Route path={ROUTES.ADMIN.BLOGS} element={<AdminBlogsPage />} />
+						<Route path={ROUTES.ADMIN.COMMENTS} element={<AdminCommentsPage />} />
+						<Route path={ROUTES.ADMIN.ADS} element={<AdminAdsPage />} />
+						<Route path={ROUTES.ADMIN.COMMUNITIES} element={<AdminCommunitiesPage />} />
 					</Route>
 				</Route>
 
@@ -158,6 +173,12 @@ export default function AppRoutes() {
 						<Route path={ROUTES.PORTAL.FAVOURITES} element={<FavouriteDoctorsPage />} />
 						<Route path={ROUTES.LABORATORY.ORDERS} element={<LaboratoryOrdersList />} />
 						<Route path={ROUTES.LABORATORY.ORDER_DETAIL} element={<LaboratoryBookingDetailPage />} />
+						
+						<Route path={ROUTES.BLOGS.LIST} element={<BlogListPage />} />
+						<Route path={ROUTES.BLOGS.DETAIL} element={<BlogArticlePage />} />
+						<Route path={ROUTES.COMMUNITIES.LIST} element={<CommunityForumPage />} />
+						<Route path={ROUTES.COMMUNITIES.DETAIL} element={<CommunityForumPage />} />
+						<Route path={ROUTES.COMMUNITIES.THREAD} element={<CommunityThreadPage />} />
 					</Route>
 				</Route>
 

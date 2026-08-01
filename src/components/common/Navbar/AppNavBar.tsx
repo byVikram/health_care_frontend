@@ -27,10 +27,9 @@ const navItems = [
 	{ label: 'Home', href: '/#home' },
 	{ label: 'Services', href: '/#services' },
 	{ label: 'Find doctors', href: '/doctors/search' },
-	// { label: 'Radiology', href: '/radiology/search' },
-	{ label: 'Community', href: '/#community' },
+	{ label: 'Community', href: '/communities' },
+	{ label: 'Blogs', href: '/blogs' },
 	{ label: 'Contact', href: '/#contact' },
-	{ label: 'Demo', href: '#' },
 ]
 
 const LOCATIONS = [

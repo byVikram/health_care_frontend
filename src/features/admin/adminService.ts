@@ -515,3 +515,203 @@ export const listSpecialities = async () => {
 	)
 	return res.data
 }
+
+// ── 5. Blogs, Comments & Ads Management ─────────────────────────────────────
+
+export interface AdminBlogItem {
+	id: string
+	title: string
+	slug: string
+	category: string
+	status: string
+	image_url?: string
+	is_featured: boolean
+	published_at?: string
+	created_at: string
+	author_name: string
+	comments_count: number
+}
+
+export interface AdminCommentItem {
+	id: string
+	content: string
+	status: string
+	created_at: string
+	user_email: string
+	user_name: string
+	post_title: string
+	post_slug: string
+}
+
+export interface AdminAdItem {
+	id: string
+	title: string
+	image_url: string
+	target_url: string
+	is_active: boolean
+	start_date?: string
+	end_date?: string
+	impressions: number
+	clicks: number
+	ctr: number
+}
+
+export interface AdminAdPlacementItem {
+	id: string
+	page_route: string
+	placement_key: string
+	paragraph_index?: number
+	category?: string
+	ad: {
+		id: string
+		title: string
+		image_url: string
+	}
+}
+
+export const listAdminBlogs = async () => {
+	const res = await ApiService.get<AdminMutationResponse<AdminBlogItem[]>>(
+		API_ENDPOINTS.ADMIN.BLOGS
+	)
+	return res.data
+}
+
+export const createAdminBlog = async (payload: { title: string; content: string; category: string; status?: string; image_url?: string; is_featured?: boolean }) => {
+	const res = await ApiService.post<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.BLOGS,
+		payload
+	)
+	return res.data
+}
+
+export const updateAdminBlog = async (blogId: string, payload: { title?: string; content?: string; category?: string; status?: string; image_url?: string; is_featured?: boolean }) => {
+	const res = await ApiService.put<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.BLOG_DETAIL(blogId),
+		payload
+	)
+	return res.data
+}
+
+export const deleteAdminBlog = async (blogId: string) => {
+	const res = await ApiService.delete<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.BLOG_DETAIL(blogId)
+	)
+	return res.data
+}
+
+export const listPendingComments = async () => {
+	const res = await ApiService.get<AdminMutationResponse<AdminCommentItem[]>>(
+		API_ENDPOINTS.ADMIN.PENDING_COMMENTS
+	)
+	return res.data
+}
+
+export const approveComment = async (commentId: string) => {
+	const res = await ApiService.post<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.APPROVE_COMMENT(commentId),
+		{}
+	)
+	return res.data
+}
+
+export const moderateComment = async (commentId: string, status: 'approved' | 'flagged' | 'hidden') => {
+	const res = await ApiService.post<AdminMutationResponse>(
+		`${API_ENDPOINTS.ADMIN.MODERATE_COMMENT(commentId)}?status=${status}`,
+		{}
+	)
+	return res.data
+}
+
+export const listAllAds = async () => {
+	const res = await ApiService.get<AdminMutationResponse<AdminAdItem[]>>(
+		API_ENDPOINTS.ADMIN.ADS
+	)
+	return res.data
+}
+
+export const createAd = async (payload: { title: string; image_url: string; target_url: string; start_date?: string; end_date?: string }) => {
+	const res = await ApiService.post<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.ADS,
+		payload
+	)
+	return res.data
+}
+
+export const updateAd = async (adId: string, payload: { title: string; image_url: string; target_url: string; start_date?: string; end_date?: string }) => {
+	const res = await ApiService.put<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.AD_DETAIL(adId),
+		payload
+	)
+	return res.data
+}
+
+export const deleteAd = async (adId: string) => {
+	const res = await ApiService.delete<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.AD_DETAIL(adId)
+	)
+	return res.data
+}
+
+export const listAdPlacements = async () => {
+	const res = await ApiService.get<AdminMutationResponse<AdminAdPlacementItem[]>>(
+		API_ENDPOINTS.ADMIN.AD_PLACEMENTS
+	)
+	return res.data
+}
+
+export const createAdPlacement = async (payload: { ad_id: string; page_route: string; placement_key: string; paragraph_index?: number; category?: string }) => {
+	const res = await ApiService.post<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.AD_PLACEMENTS,
+		payload
+	)
+	return res.data
+}
+
+export const deleteAdPlacement = async (placementId: string) => {
+	const res = await ApiService.delete<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.AD_PLACEMENT_DETAIL(placementId)
+	)
+	return res.data
+}
+
+// ── 6. Admin Communities Management ──────────────────────────────────────────
+
+export interface AdminCommunityItem {
+	id: string
+	name: string
+	description?: string
+	category: string
+	icon_name?: string
+	is_featured: boolean
+}
+
+export const listAdminCommunities = async () => {
+	const res = await ApiService.get<AdminMutationResponse<AdminCommunityItem[]>>(
+		API_ENDPOINTS.ADMIN.COMMUNITIES
+	)
+	return res.data
+}
+
+export const createAdminCommunity = async (payload: { name: string; description?: string; category: string; icon_name?: string; is_featured?: boolean }) => {
+	const res = await ApiService.post<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.COMMUNITIES,
+		payload
+	)
+	return res.data
+}
+
+export const updateAdminCommunity = async (groupId: string, payload: { name?: string; description?: string; category?: string; icon_name?: string; is_featured?: boolean }) => {
+	const res = await ApiService.put<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.COMMUNITY_DETAIL(groupId),
+		payload
+	)
+	return res.data
+}
+
+export const deleteAdminCommunity = async (groupId: string) => {
+	const res = await ApiService.delete<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.COMMUNITY_DETAIL(groupId)
+	)
+	return res.data
+}
+

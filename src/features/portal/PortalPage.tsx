@@ -10,6 +10,7 @@ import { useAuth } from '../../hooks/useAuth'
 
 import drImage from '../../assets/Banner/banner.png'
 import adImage from '../../assets/blog-and-community/ad-image.png'
+import { getActiveAds, trackAdMetric, AdPlacementConfig } from '../../services/adService'
 import AnswerQuestionsSection from '../dashboard/AnswerQuestionsSection'
 import PatientHealthQuestionsSection from '../patient/components/PatientHealthQuestionsSection'
 import videoFile from '../../assets/blog-and-community/video.mp4'
@@ -323,13 +324,19 @@ export default function PortalPage() {
 	usePingPongScroll(VIDEO_SOURCES.length, 4000, autoScrollEnabled, videoScrollRef, setActiveVideoIndex)
 
 	// ----- Ad Carousel state -----
-	const AD_IMAGES = [adImage, adImage, adImage]
+	const [ads, setAds] = useState<AdPlacementConfig[]>([])
 	const [activeAdIndex, setActiveAdIndex] = useState(0)
 	const [adContainerWidth, setAdContainerWidth] = useState(0)
 	const adScrollRef = useRef<HTMLDivElement>(null)
-	const adAutoScrollEnabled = adContainerWidth > 0 && AD_IMAGES.length > 1
 
-	usePingPongScroll(AD_IMAGES.length, 3000, adAutoScrollEnabled, adScrollRef, setActiveAdIndex)
+	const displayAds = ads.length > 0 ? ads : [
+		{ id: 'fallback-1', ad: { id: 'fallback-1', title: 'Consult Online', image_url: adImage, target_url: '/portal' } },
+		{ id: 'fallback-2', ad: { id: 'fallback-2', title: 'Healthcare Support', image_url: adImage, target_url: '/portal' } }
+	]
+
+	const adAutoScrollEnabled = adContainerWidth > 0 && displayAds.length > 1
+
+	usePingPongScroll(displayAds.length, 3000, adAutoScrollEnabled, adScrollRef, setActiveAdIndex)
 
 	// ----- Handlers for video carousel -----
 	const handleVideoScroll = () => {
@@ -353,7 +360,7 @@ export default function PortalPage() {
 		if (!adScrollRef.current || adContainerWidth === 0) return
 		const scrollLeft = adScrollRef.current.scrollLeft
 		const newIndex = Math.round(scrollLeft / adContainerWidth)
-		if (newIndex !== activeAdIndex && newIndex >= 0 && newIndex < AD_IMAGES.length) {
+		if (newIndex !== activeAdIndex && newIndex >= 0 && newIndex < displayAds.length) {
 			setActiveAdIndex(newIndex)
 		}
 	}
@@ -375,6 +382,42 @@ export default function PortalPage() {
 		window.addEventListener('resize', updateWidths)
 		return () => window.removeEventListener('resize', updateWidths)
 	}, [])
+
+	// Fetch dynamic portal ads on mount
+	useEffect(() => {
+		const fetchAds = async () => {
+			try {
+				const res = await getActiveAds('/portal')
+				if (res.success && res.data) {
+					setAds(res.data)
+					// Log impressions
+					res.data.forEach((placement) => {
+						trackAdMetric(placement.ad.id, 'impression').catch(console.error)
+					})
+				}
+			} catch (err) {
+				console.error('Error fetching portal ads:', err)
+			}
+		}
+		fetchAds()
+	}, [])
+
+	const handleAdClick = (adId: string, targetUrl: string) => {
+		if (adId.startsWith('fallback')) {
+			if (targetUrl.startsWith('/')) {
+				navigate(targetUrl)
+			} else {
+				window.open(targetUrl, '_blank')
+			}
+			return
+		}
+		trackAdMetric(adId, 'click').catch(console.error)
+		if (targetUrl.startsWith('/')) {
+			navigate(targetUrl)
+		} else {
+			window.open(targetUrl, '_blank')
+		}
+	}
 
 	// ----- Appointments fetch effect -----
 	const formatDateForApi = (date: Date) => {
@@ -786,14 +829,18 @@ export default function PortalPage() {
 										scrollbarWidth: 'none',
 									}}
 								>
-									{AD_IMAGES.map((src, idx) => (
-										<Box key={idx} sx={{ scrollSnapAlign: 'start', width: '100%', flexShrink: 0 }}>
-											<AdSlide width={adContainerWidth} src={src} />
+									{displayAds.map((item, idx) => (
+										<Box
+											key={item.id || idx}
+											sx={{ scrollSnapAlign: 'start', width: '100%', flexShrink: 0, cursor: 'pointer' }}
+											onClick={() => handleAdClick(item.ad.id, item.ad.target_url)}
+										>
+											<AdSlide width={adContainerWidth} src={item.ad.image_url} />
 										</Box>
 									))}
 								</Box>
 								<Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, py: 1.5 }}>
-									{AD_IMAGES.map((_, idx) => (
+									{displayAds.map((_, idx) => (
 										<Box
 											key={idx}
 											onClick={() => handleAdDotClick(idx)}

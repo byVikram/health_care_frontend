@@ -30,6 +30,10 @@ import CategoryIcon from '@mui/icons-material/Category'
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 import LogoutIcon from '@mui/icons-material/Logout'
 import MenuIcon from '@mui/icons-material/Menu'
+import ArticleIcon from '@mui/icons-material/Article'
+import CommentIcon from '@mui/icons-material/Comment'
+import CampaignIcon from '@mui/icons-material/Campaign'
+import GroupsIcon from '@mui/icons-material/Groups'
 
 import { useAuth, clearAuth } from '../../hooks/useAuth'
 import { ROUTES } from '../../constants/routes'
@@ -47,6 +51,10 @@ const MENU_ITEMS: MenuItemDef[] = [
 	{ label: 'Verifications', path: ROUTES.ADMIN.VERIFICATIONS, icon: <VerifiedUserIcon /> },
 	{ label: 'User Moderation', path: ROUTES.ADMIN.USERS, icon: <PeopleIcon /> },
 	{ label: 'Appointments', path: ROUTES.ADMIN.APPOINTMENTS, icon: <EventNoteIcon /> },
+	{ label: 'Blog Posts', path: ROUTES.ADMIN.BLOGS, icon: <ArticleIcon /> },
+	{ label: 'Community Manager', path: ROUTES.ADMIN.COMMUNITIES, icon: <GroupsIcon /> },
+	{ label: 'Comment Moderation', path: ROUTES.ADMIN.COMMENTS, icon: <CommentIcon /> },
+	{ label: 'Advertisement Manager', path: ROUTES.ADMIN.ADS, icon: <CampaignIcon /> },
 	{ label: 'Billing & Transactions', path: ROUTES.ADMIN.BILLING, icon: <ReceiptLongIcon /> },
 	{ label: 'Audits & Chatbot Logs', path: ROUTES.ADMIN.AUDITS, icon: <AssessmentIcon /> },
 	{ label: 'Specialities Catalog', path: ROUTES.ADMIN.SPECIALITIES, icon: <CategoryIcon /> },

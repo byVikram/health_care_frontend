@@ -9,6 +9,7 @@ export const ROUTES = {
 	PUBLIC: {
 		WELCOME: '/welcome',
 		WELCOME_DOCTOR: '/welcome-doctor',
+		HEALTH_QUESTIONS: '/health-questions',
 	},
 
 	DOCTORS: {
@@ -47,6 +48,17 @@ export const ROUTES = {
 		SEARCH: '/therapeutic/search',
 	},
 
+	BLOGS: {
+		LIST: '/blogs',
+		DETAIL: '/blogs/:slug',
+	},
+
+	COMMUNITIES: {
+		LIST: '/communities',
+		DETAIL: '/communities/:groupId',
+		THREAD: '/communities/threads/:threadId',
+	},
+
 	SPECIALITIES: '/specialities',
 
 	TEST: '/test',
@@ -82,5 +94,9 @@ export const ROUTES = {
 		BILLING: '/admin/billing',
 		AUDITS: '/admin/audits',
 		SPECIALITIES: '/admin/specialities',
+		BLOGS: '/admin/blogs',
+		COMMENTS: '/admin/comments',
+		ADS: '/admin/ads',
+		COMMUNITIES: '/admin/communities',
 	},
 }
