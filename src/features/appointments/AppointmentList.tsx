@@ -150,7 +150,7 @@ export default function AppointmentList() {
 
 	const [search, setSearch] = useState('')
 	const [page, setPage] = useState(1)
-	const size = 10
+	const [size, setSize] = useState(10)
 	const [rows, setRows] = useState<AppointmentRow[]>([])
 	const [meta, setMeta] = useState<AppointmentMeta>({ total: 0, page: 1, limit: 10, pages: 0 })
 	const [loading, setLoading] = useState(true)
@@ -1088,18 +1088,15 @@ export default function AppointmentList() {
 								)
 							)
 						}
+						page={page}
+						pageSize={size}
+						totalRows={meta.total}
+						onPageChange={(value) => setPage(value)}
+						onPageSizeChange={(value) => {
+							setSize(value)
+							setPage(1)
+						}}
 					/>
-					{meta.pages > 1 && (
-						<Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-							<Pagination
-								page={page}
-								count={meta.pages}
-								color="primary"
-								shape="rounded"
-								onChange={(_, value) => setPage(value)}
-							/>
-						</Box>
-					)}
 				</Card>
 			)}
 

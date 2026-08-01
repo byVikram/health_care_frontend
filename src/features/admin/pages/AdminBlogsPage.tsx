@@ -5,13 +5,6 @@ import {
 	Typography,
 	Card,
 	CardContent,
-	Table,
-	TableBody,
-	TableCell,
-	TableContainer,
-	TableHead,
-	TableRow,
-	Paper,
 	Button,
 	IconButton,
 	Dialog,
@@ -32,6 +25,7 @@ import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import RefreshIcon from '@mui/icons-material/Refresh'
 
+import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import {
 	listAdminBlogs,
 	createAdminBlog,
@@ -167,74 +161,61 @@ export default function AdminBlogsPage() {
 					<CircularProgress sx={{ color: '#0d9488' }} />
 				</Box>
 			) : (
-				<TableContainer component={Paper} sx={{ borderRadius: 3, border: '1px solid #e2e8f0', boxShadow: 'none' }}>
-					<Table sx={{ minWidth: 650 }}>
-						<TableHead sx={{ bgcolor: '#f8fafc' }}>
-							<TableRow>
-								<TableCell sx={{ fontWeight: 700, color: '#475569' }}>Title</TableCell>
-								<TableCell sx={{ fontWeight: 700, color: '#475569' }}>Category</TableCell>
-								<TableCell sx={{ fontWeight: 700, color: '#475569' }}>Author</TableCell>
-								<TableCell sx={{ fontWeight: 700, color: '#475569' }}>Status</TableCell>
-								<TableCell sx={{ fontWeight: 700, color: '#475569' }}>Comments Count</TableCell>
-								<TableCell sx={{ fontWeight: 700, color: '#475569' }}>Created At</TableCell>
-								<TableCell align="right" sx={{ fontWeight: 700, color: '#475569', pr: 3 }}>Actions</TableCell>
-							</TableRow>
-						</TableHead>
-						<TableBody>
-							{blogs.map((blog) => (
-								<TableRow key={blog.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-									<TableCell sx={{ fontWeight: 600, color: '#0f172a' }}>
-										<Stack direction="row" spacing={1} alignItems="center">
-											<span>{blog.title}</span>
-											{blog.is_featured && (
-												<Chip
-													label="Featured"
-													size="small"
-													sx={{
-														bgcolor: '#fef3c7',
-														color: '#d97706',
-														fontWeight: 700,
-														fontSize: '0.65rem',
-														height: 18,
-													}}
-												/>
-											)}
-										</Stack>
-										<Typography variant="caption" display="block" color="text.secondary">
-											slug: {blog.slug}
-										</Typography>
-									</TableCell>
-									<TableCell>{blog.category}</TableCell>
-									<TableCell>{blog.author_name}</TableCell>
-									<TableCell>
-										<Chip
-											label={blog.status.toUpperCase()}
-											size="small"
-											sx={{
-												bgcolor: blog.status === 'published' ? '#ccfbf1' : '#f1f5f9',
-												color: blog.status === 'published' ? '#0f766e' : '#475569',
-												fontWeight: 700,
-												fontSize: '0.65rem',
-											}}
-										/>
-									</TableCell>
-									<TableCell>{blog.comments_count}</TableCell>
-									<TableCell>{new Date(blog.created_at).toLocaleDateString()}</TableCell>
-									<TableCell align="right" sx={{ pr: 3 }}>
-										<Stack direction="row" spacing={1} justifyContent="flex-end">
-											<IconButton color="primary" onClick={() => handleOpenEdit(blog)} sx={{ border: '1px solid #e2e8f0', borderRadius: 2 }}>
-												<EditIcon fontSize="small" />
-											</IconButton>
-											<IconButton color="error" onClick={() => handleDelete(blog.id)} sx={{ border: '1px solid #e2e8f0', borderRadius: 2 }}>
-												<DeleteIcon fontSize="small" />
-											</IconButton>
-										</Stack>
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				</TableContainer>
+				<AppTable<AdminBlogItem>
+					columns={[
+						{
+							field: 'title',
+							label: 'Title',
+							render: (_, blog) => (
+								<Box>
+									<Stack direction="row" spacing={1} alignItems="center">
+										<Typography fontWeight={600} color="#0f172a" fontSize={13}>{blog.title}</Typography>
+										{blog.is_featured && (
+											<Chip label="Featured" size="small" sx={{ bgcolor: '#fef3c7', color: '#d97706', fontWeight: 700, fontSize: '0.65rem', height: 18 }} />
+										)}
+									</Stack>
+									<Typography variant="caption" display="block" color="text.secondary">slug: {blog.slug}</Typography>
+								</Box>
+							),
+						},
+						{ field: 'category', label: 'Category' },
+						{ field: 'author_name', label: 'Author' },
+						{
+							field: 'status',
+							label: 'Status',
+							render: (_, blog) => (
+								<Chip
+									label={blog.status.toUpperCase()}
+									size="small"
+									sx={{ bgcolor: blog.status === 'published' ? '#ccfbf1' : '#f1f5f9', color: blog.status === 'published' ? '#0f766e' : '#475569', fontWeight: 700, fontSize: '0.65rem' }}
+								/>
+							),
+						},
+						{ field: 'comments_count', label: 'Comments Count' },
+						{
+							field: 'created_at',
+							label: 'Created At',
+							render: (_, blog) => <Typography fontSize={13}>{new Date(blog.created_at).toLocaleDateString()}</Typography>,
+						},
+						{
+							field: 'actions',
+							label: 'Actions',
+							align: 'right',
+							render: (_, blog) => (
+								<Stack direction="row" spacing={1} justifyContent="flex-end">
+									<IconButton color="primary" onClick={() => handleOpenEdit(blog)} sx={{ border: '1px solid #e2e8f0', borderRadius: 2 }}>
+										<EditIcon fontSize="small" />
+									</IconButton>
+									<IconButton color="error" onClick={() => handleDelete(blog.id)} sx={{ border: '1px solid #e2e8f0', borderRadius: 2 }}>
+										<DeleteIcon fontSize="small" />
+									</IconButton>
+								</Stack>
+							),
+						},
+					] as Column<AdminBlogItem>[]}
+					rows={blogs}
+					emptyMessage="No blog articles found."
+				/>
 			)}
 
 			{/* Create/Edit Blog Dialog */}

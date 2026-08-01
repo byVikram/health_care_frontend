@@ -72,7 +72,7 @@ export default function OrderList() {
 	const [debouncedSearch, setDebouncedSearch] = useState('')
 
 	const [page, setPage] = useState(1)
-	const [limit] = useState(10)
+	const [limit, setLimit] = useState(10)
 
 	const [dateFilter, setDateFilter] = useState('')
 
@@ -293,19 +293,15 @@ export default function OrderList() {
 						rows={rows}
 						loading={loading}
 						emptyMessage="No orders found"
+						page={page}
+						pageSize={limit}
+						totalRows={meta.total}
+						onPageChange={(value) => setPage(value)}
+						onPageSizeChange={(value) => {
+							setLimit(value)
+							setPage(1)
+						}}
 					/>
-
-					{meta.pages > 1 && (
-						<Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-							<Pagination
-								page={page}
-								count={meta.pages}
-								color="primary"
-								shape="rounded"
-								onChange={(_, value) => setPage(value)}
-							/>
-						</Box>
-					)}
 				</>
 			)}
 		</Box>

@@ -23,7 +23,6 @@ import SectionCard from '../../../components/common/Card/SectionCard'
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import AppButton from '../../../components/common/Button/AppButton'
 import AppInput from '../../../components/common/Input/AppInput'
-import PaginationBar from '../../../pagination/Pagination'
 import RescheduleDrawer from '../../doctor/search/components/RescheduleDrawer'
 import { SlotGroup } from '../../../components/common/DateSlotPicker/DateSlotPicker'
 import { LookupHospital } from '../../../hooks/useAuth'
@@ -449,19 +448,19 @@ export default function AdminAppointmentsPage() {
 					</Stack>
 				) : (
 					<>
-						<AppTable columns={columns} rows={appointments} emptyMessage="No appointments found." />
-						<Box sx={{ mt: 2 }}>
-							<PaginationBar
-								page={page}
-								pageSize={pageSize}
-								totalRows={totalRows}
-								onPageChange={(p) => setPage(p)}
-								onPageSizeChange={(s) => {
-									setPageSize(s)
-									setPage(1)
-								}}
-							/>
-						</Box>
+						<AppTable
+							columns={columns}
+							rows={appointments}
+							emptyMessage="No appointments found."
+							page={page}
+							pageSize={pageSize}
+							totalRows={totalRows}
+							onPageChange={(p) => setPage(p)}
+							onPageSizeChange={(s) => {
+								setPageSize(s)
+								setPage(1)
+							}}
+						/>
 					</>
 				)}
 			</SectionCard>

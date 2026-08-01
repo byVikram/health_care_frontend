@@ -160,15 +160,15 @@ export default function AdminUsersPage() {
 	}
 
 	const columns: Column<AdminUserItem>[] = [
-		{
-			field: 'public_id',
-			label: 'ID',
-			render: (_: unknown, row: AdminUserItem) => (
-				<Typography variant="body2" sx={{ fontFamily: 'monospace', color: '#475569' }}>
-					{row.public_id || 'N/A'}
-				</Typography>
-			),
-		},
+		// {
+		// 	field: 'public_id',
+		// 	label: 'ID',
+		// 	render: (_: unknown, row: AdminUserItem) => (
+		// 		<Typography variant="body2" sx={{ fontFamily: 'monospace', color: '#475569' }}>
+		// 			{row.public_id || 'N/A'}
+		// 		</Typography>
+		// 	),
+		// },
 		{
 			field: 'id',
 			label: 'User Info',
@@ -223,7 +223,7 @@ export default function AdminUsersPage() {
 							<Tooltip title={row.is_suspended ? 'Unsuspend Account' : 'Suspend Account'}>
 								<span>
 									<AppButton
-										label={row.is_suspended ? 'Unsuspend' : 'Suspend'}
+										// label={row.is_suspended ? 'Unsuspend' : 'Suspend'}
 										size="small"
 										color={row.is_suspended ? 'success' : 'error'}
 										startIcon={row.is_suspended ? <CheckCircleOutlineIcon /> : <BlockIcon />}
@@ -240,7 +240,7 @@ export default function AdminUsersPage() {
 							<Tooltip title="Reset Blocked OTP State">
 								<span>
 									<AppButton
-										label="Reset OTP"
+										// label="Reset OTP"
 										size="small"
 										variant="outlined"
 										startIcon={<LockResetIcon />}
@@ -318,15 +318,15 @@ export default function AdminUsersPage() {
 					</Stack>
 				) : (
 					<>
-						<AppTable columns={columns} rows={users} emptyMessage="No users found matching criteria." />
-						<TablePagination
-							component="div"
-							count={total}
-							page={page - 1}
-							onPageChange={(_, newPage) => setPage(newPage + 1)}
-							rowsPerPage={pageSize}
-							onRowsPerPageChange={(e) => { setPageSize(parseInt(e.target.value, 10)); setPage(1) }}
-							rowsPerPageOptions={[10, 25, 50]}
+						<AppTable
+							columns={columns}
+							rows={users}
+							emptyMessage="No users found matching criteria."
+							page={page}
+							pageSize={pageSize}
+							totalRows={total}
+							onPageChange={(newPage) => setPage(newPage)}
+							onPageSizeChange={(newSize) => { setPageSize(newSize); setPage(1) }}
 						/>
 					</>
 				)}

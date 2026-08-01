@@ -34,11 +34,12 @@ import ArticleIcon from '@mui/icons-material/Article'
 import CommentIcon from '@mui/icons-material/Comment'
 import CampaignIcon from '@mui/icons-material/Campaign'
 import GroupsIcon from '@mui/icons-material/Groups'
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 
 import { useAuth, clearAuth } from '../../hooks/useAuth'
 import { ROUTES } from '../../constants/routes'
-
-const SIDEBAR_WIDTH = 260
+import { customScrollbar } from '../../styles/commonStyles'
 
 interface MenuItemDef {
 	label: string
@@ -65,7 +66,10 @@ export default function AdminLayout() {
 	const location = useLocation()
 	const { user, role } = useAuth()
 	const [mobileOpen, setMobileOpen] = useState(false)
+	const [collapsed, setCollapsed] = useState(false)
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+
+	const sidebarWidth = collapsed ? 76 : 260
 
 	const handleLogout = () => {
 		clearAuth()
@@ -73,61 +77,87 @@ export default function AdminLayout() {
 	}
 
 	const drawerContent = (
-		<Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#0f172a', color: '#f8fafc' }}>
+		<Box
+			sx={{
+				height: '100%',
+				display: 'flex',
+				flexDirection: 'column',
+				bgcolor: '#0f172a',
+				color: '#f8fafc',
+				transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+			}}
+		>
 			{/* Sidebar Branding Header */}
 			<Box
 				sx={{
-					p: 2.5,
+					p: collapsed ? 1.5 : 2.5,
 					display: 'flex',
 					alignItems: 'center',
-					gap: 1.5,
+					justifyContent: collapsed ? 'center' : 'space-between',
 					borderBottom: '1px solid rgba(255,255,255,0.08)',
+					minHeight: 64,
+					boxSizing: 'border-box',
 				}}
 			>
-				<Avatar
-					sx={{
-						bgcolor: '#0d9488',
-						color: '#ffffff',
-						width: 42,
-						height: 42,
-						boxShadow: '0 4px 12px rgba(13, 148, 136, 0.4)',
-					}}
-				>
-					<AdminPanelSettingsIcon />
-				</Avatar>
-				<Box>
-					<Typography variant="subtitle1" fontWeight={800} sx={{ color: '#ffffff', lineHeight: 1.2, letterSpacing: -0.2 }}>
-						HealthAdmin
-					</Typography>
-					<Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 500 }}>
-						Management Portal
-					</Typography>
+				<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+					<Avatar
+						sx={{
+							bgcolor: '#0d9488',
+							color: '#ffffff',
+							width: 38,
+							height: 38,
+							boxShadow: '0 4px 12px rgba(13, 148, 136, 0.4)',
+						}}
+					>
+						<AdminPanelSettingsIcon sx={{ fontSize: 20 }} />
+					</Avatar>
+					{!collapsed && (
+						<Box sx={{ minWidth: 0 }}>
+							<Typography variant="subtitle1" fontWeight={800} noWrap sx={{ color: '#ffffff', lineHeight: 1.2, letterSpacing: -0.2 }}>
+								HealthAdmin
+							</Typography>
+							<Typography variant="caption" noWrap sx={{ color: '#94a3b8', fontWeight: 500, display: 'block' }}>
+								Management Portal
+							</Typography>
+						</Box>
+					)}
 				</Box>
+
+				{!collapsed && (
+					<IconButton
+						onClick={() => setCollapsed(true)}
+						size="small"
+						sx={{ color: '#94a3b8', '&:hover': { color: '#ffffff', bgcolor: 'rgba(255,255,255,0.08)' } }}
+					>
+						<ChevronLeftIcon />
+					</IconButton>
+				)}
 			</Box>
 
 			{/* Navigation Links */}
-			<Box sx={{ flex: 1, py: 2.5, px: 1.5, overflowY: 'auto' }}>
-				<Typography
-					variant="caption"
-					sx={{
-						px: 1.5,
-						pb: 1,
-						display: 'block',
-						fontSize: 10,
-						fontWeight: 700,
-						color: '#64748b',
-						textTransform: 'uppercase',
-						letterSpacing: '0.08em',
-					}}
-				>
-					Main Navigation
-				</Typography>
+			<Box sx={{ flex: 1, py: 2.5, px: collapsed ? 1 : 1.5, overflowY: 'auto', ...customScrollbar }}>
+				{!collapsed && (
+					<Typography
+						variant="caption"
+						sx={{
+							px: 1.5,
+							pb: 1.5,
+							display: 'block',
+							fontSize: 10,
+							fontWeight: 700,
+							color: '#64748b',
+							textTransform: 'uppercase',
+							letterSpacing: '0.08em',
+						}}
+					>
+						Main Navigation
+					</Typography>
+				)}
 				<List component="nav" disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
 					{MENU_ITEMS.map((item) => {
 						const active = location.pathname === item.path
-						return (
+						const buttonContent = (
 							<ListItemButton
-								key={item.path}
 								onClick={() => {
 									navigate(item.path)
 									setMobileOpen(false)
@@ -135,10 +165,11 @@ export default function AdminLayout() {
 								sx={{
 									borderRadius: 2.5,
 									py: 1.25,
-									px: 2,
+									px: collapsed ? 1.5 : 2,
+									justifyContent: collapsed ? 'center' : 'initial',
 									bgcolor: active ? 'rgba(13, 148, 136, 0.15)' : 'transparent',
 									color: active ? '#2dd4bf' : '#94a3b8',
-									borderLeft: active ? '3px solid #2dd4bf' : '3px solid transparent',
+									borderLeft: active && !collapsed ? '3px solid #2dd4bf' : '3px solid transparent',
 									transition: 'all 0.15s ease',
 									'&:hover': {
 										bgcolor: active ? 'rgba(13, 148, 136, 0.22)' : 'rgba(255, 255, 255, 0.05)',
@@ -146,38 +177,51 @@ export default function AdminLayout() {
 									},
 								}}
 							>
-								<ListItemIcon sx={{ color: 'inherit', minWidth: 36 }}>{item.icon}</ListItemIcon>
-								<ListItemText
-									primary={item.label}
-									primaryTypographyProps={{ fontSize: 13.5, fontWeight: active ? 700 : 500 }}
-								/>
+								<Tooltip title={collapsed ? item.label : ''} placement="right" arrow>
+									<ListItemIcon sx={{ color: 'inherit', minWidth: collapsed ? 'auto' : 36, justifyContent: 'center' }}>
+										{item.icon}
+									</ListItemIcon>
+								</Tooltip>
+								{!collapsed && (
+									<ListItemText
+										primary={item.label}
+										primaryTypographyProps={{ fontSize: 13.5, fontWeight: active ? 700 : 500 }}
+									/>
+								)}
 							</ListItemButton>
 						)
+						return buttonContent
 					})}
 				</List>
 			</Box>
 
 			{/* Sidebar Footer User Card */}
 			<Box sx={{ p: 2, borderTop: '1px solid rgba(255,255,255,0.08)', bgcolor: '#0b1329' }}>
-				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-					<Box sx={{ overflow: 'hidden', mr: 1 }}>
-						<Typography variant="body2" fontWeight={700} noWrap sx={{ color: '#ffffff', fontSize: 13 }}>
-							{user?.name || user?.email || 'Admin User'}
-						</Typography>
-						<Chip
-							label={(role || 'ADMIN').replace('_', ' ').toUpperCase()}
-							size="small"
-							sx={{
-								height: 18,
-								fontSize: 9,
-								fontWeight: 700,
-								bgcolor: 'rgba(13, 148, 136, 0.2)',
-								color: '#2dd4bf',
-								border: '1px solid rgba(45, 212, 191, 0.3)',
-								mt: 0.5,
-							}}
-						/>
-					</Box>
+				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between', flexDirection: collapsed ? 'column' : 'row', gap: collapsed ? 2 : 0 }}>
+					{!collapsed ? (
+						<Box sx={{ overflow: 'hidden', mr: 1 }}>
+							<Typography variant="body2" fontWeight={700} noWrap sx={{ color: '#ffffff', fontSize: 13 }}>
+								{user?.name || user?.email || 'Admin User'}
+							</Typography>
+							<Chip
+								label={(role || 'ADMIN').replace('_', ' ').toUpperCase()}
+								size="small"
+								sx={{
+									height: 18,
+									fontSize: 9,
+									fontWeight: 700,
+									bgcolor: 'rgba(13, 148, 136, 0.2)',
+									color: '#2dd4bf',
+									border: '1px solid rgba(45, 212, 191, 0.3)',
+									mt: 0.5,
+								}}
+							/>
+						</Box>
+					) : (
+						<Avatar sx={{ width: 32, height: 32, bgcolor: '#0d9488', fontSize: 12, fontWeight: 700 }}>
+							{(user?.name || user?.email || 'A').substring(0, 1).toUpperCase()}
+						</Avatar>
+					)}
 					<Tooltip title="Sign Out">
 						<IconButton onClick={handleLogout} size="small" sx={{ color: '#94a3b8', '&:hover': { color: '#ef4444' } }}>
 							<LogoutIcon fontSize="small" />
@@ -197,12 +241,13 @@ export default function AdminLayout() {
 				position="fixed"
 				elevation={0}
 				sx={{
-					width: { md: `calc(100% - ${SIDEBAR_WIDTH}px)` },
-					ml: { md: `${SIDEBAR_WIDTH}px` },
+					width: { md: `calc(100% - ${sidebarWidth}px)` },
+					ml: { md: `${sidebarWidth}px` },
 					bgcolor: '#ffffff',
 					color: '#0f172a',
 					borderBottom: '1px solid #e2e8f0',
 					zIndex: (theme) => theme.zIndex.drawer + 1,
+					transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
 				}}
 			>
 				<Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, md: 3 } }}>
@@ -214,6 +259,16 @@ export default function AdminLayout() {
 							sx={{ mr: 2, display: { md: 'none' } }}
 						>
 							<MenuIcon />
+						</IconButton>
+
+						{/* Desktop Collapse/Expand Toggle Button */}
+						<IconButton
+							color="inherit"
+							edge="start"
+							onClick={() => setCollapsed(!collapsed)}
+							sx={{ mr: 2, display: { xs: 'none', md: 'inline-flex' } }}
+						>
+							{collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
 						</IconButton>
 
 						<Typography variant="h6" fontWeight={800} sx={{ color: '#0f172a', fontSize: '1.1rem' }}>
@@ -260,7 +315,7 @@ export default function AdminLayout() {
 			</AppBar>
 
 			{/* Sidebar Drawer Container */}
-			<Box component="nav" sx={{ width: { md: SIDEBAR_WIDTH }, flexShrink: { md: 0 } }}>
+			<Box component="nav" sx={{ width: { md: sidebarWidth }, flexShrink: { md: 0 }, transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)' }}>
 				{/* Mobile Drawer */}
 				<Drawer
 					variant="temporary"
@@ -269,7 +324,7 @@ export default function AdminLayout() {
 					ModalProps={{ keepMounted: true }}
 					sx={{
 						display: { xs: 'block', md: 'none' },
-						'& .MuiDrawer-paper': { boxSizing: 'border-box', width: SIDEBAR_WIDTH },
+						'& .MuiDrawer-paper': { boxSizing: 'border-box', width: 260 },
 					}}
 				>
 					{drawerContent}
@@ -282,8 +337,9 @@ export default function AdminLayout() {
 						display: { xs: 'none', md: 'block' },
 						'& .MuiDrawer-paper': {
 							boxSizing: 'border-box',
-							width: SIDEBAR_WIDTH,
+							width: sidebarWidth,
 							borderRight: '1px solid #1e293b',
+							transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
 						},
 					}}
 					open
@@ -302,6 +358,7 @@ export default function AdminLayout() {
 					mt: '64px',
 					minHeight: 'calc(100vh - 64px)',
 					boxSizing: 'border-box',
+					transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
 				}}
 			>
 				<Outlet />
