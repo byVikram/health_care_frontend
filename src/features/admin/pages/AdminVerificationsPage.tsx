@@ -1,6 +1,6 @@
 // src/features/admin/pages/AdminVerificationsPage.tsx
 import { useEffect, useState, useCallback } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
 	Box,
 	Tabs,
@@ -13,19 +13,32 @@ import {
 	Divider,
 	IconButton,
 	Tooltip,
+	Avatar,
+	Grid,
+	Button,
 } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import DescriptionIcon from '@mui/icons-material/Description'
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
+import StorefrontIcon from '@mui/icons-material/Storefront'
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser'
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn'
+import CheckIcon from '@mui/icons-material/Check'
+import CloseIcon from '@mui/icons-material/Close'
 import { toast } from 'react-toastify'
 
-import SectionCard from '../../../components/common/Card/SectionCard'
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import AppButton from '../../../components/common/Button/AppButton'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppDrawer from '../../../components/common/Drawer/AppDrawer'
+import AdminPageHeader from '../../../components/admin/AdminPageHeader'
+import AdminStatCard from '../../../components/admin/AdminStatCard'
+import StatusBadge from '../../../components/admin/StatusBadge'
+import AdminEmptyState from '../../../components/admin/AdminEmptyState'
+
 import {
 	getDoctorsVerificationQueue,
 	getProvidersVerificationQueue,
@@ -39,31 +52,37 @@ import {
 } from '../adminService'
 import { buildS3Url } from '../../../utils/s3'
 
+const REJECTION_PRESETS = [
+	'Illegible License Document',
+	'Expired Medical Registration',
+	'Qualification Certificate Missing',
+	'Name Mismatch on Submitted ID',
+	'Incomplete Hospital Affiliation Proof',
+]
+
 const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
 
-// ── Styled info row (same pattern as AppointmentDetailsDrawer) ─────────────
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
 	return (
-		<Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.8 }}>
-			<Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, minWidth: 140 }}>
+		<Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.75 }}>
+			<Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
 				{label}
 			</Typography>
-			<Typography variant="body2" sx={{ fontWeight: 600, textAlign: 'right', wordBreak: 'break-word', maxWidth: '55%' }}>
-				{value ?? 'N/A'}
+			<Typography variant="body2" sx={{ fontWeight: 700, color: '#0f172a', textAlign: 'right', wordBreak: 'break-word', maxWidth: '60%' }}>
+				{value ?? '—'}
 			</Typography>
 		</Box>
 	)
 }
 
-// ── Section header inside the drawer ──────────────────────────────────────
 function SectionHeader({ title }: { title: string }) {
 	return (
 		<Typography
 			variant="subtitle2"
 			sx={{
-				fontWeight: 700,
+				fontWeight: 800,
 				color: '#0f172a',
-				mt: 2.5,
+				mt: 2,
 				mb: 1,
 				pb: 0.5,
 				borderBottom: '2px solid #e2e8f0',
@@ -78,6 +97,7 @@ function SectionHeader({ title }: { title: string }) {
 }
 
 export default function AdminVerificationsPage() {
+	const navigate = useNavigate()
 	const [searchParams, setSearchParams] = useSearchParams()
 	const initialTab = searchParams.get('tab') === 'providers' ? 'providers' : 'doctors'
 	const [activeTab, setActiveTab] = useState<'doctors' | 'providers'>(initialTab)
@@ -98,8 +118,9 @@ export default function AdminVerificationsPage() {
 
 	const [doctorsQueue, setDoctorsQueue] = useState<DoctorVerificationItem[]>([])
 	const [providersQueue, setProvidersQueue] = useState<ProviderVerificationItem[]>([])
+	const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
 
-	// ── Review Drawer State ──────────────────────────────────────────────────
+	// Drawer state (for fallback inline inspections)
 	const [drawerOpen, setDrawerOpen] = useState(false)
 	const [selectedItemType, setSelectedItemType] = useState<'doctor' | 'provider' | null>(null)
 	const [selectedItemData, setSelectedItemData] = useState<DoctorVerificationItem | ProviderVerificationItem | null>(null)
@@ -108,19 +129,18 @@ export default function AdminVerificationsPage() {
 	const [notes, setNotes] = useState('')
 	const [submitting, setSubmitting] = useState(false)
 
-	// ── Fetch queues ─────────────────────────────────────────────────────────
 	const fetchQueues = useCallback(async () => {
 		setLoading(true)
 		setError(null)
 		try {
-			const [docsRes, provsRes] = await Promise.all([
+			const [docRes, provRes] = await Promise.all([
 				getDoctorsVerificationQueue(),
 				getProvidersVerificationQueue(),
 			])
-			if (docsRes.success) setDoctorsQueue(docsRes.data || [])
-			if (provsRes.success) setProvidersQueue(provsRes.data || [])
+			if (docRes.success) setDoctorsQueue(docRes.data || [])
+			if (provRes.success) setProvidersQueue(provRes.data || [])
 		} catch (err: unknown) {
-			setError(getErrorMessage(err, 'Failed to fetch verification queues'))
+			setError(getErrorMessage(err, 'Failed to load verification queue.'))
 		} finally {
 			setLoading(false)
 		}
@@ -130,43 +150,59 @@ export default function AdminVerificationsPage() {
 		fetchQueues()
 	}, [fetchQueues])
 
-	// ── Open drawer ──────────────────────────────────────────────────────────
-	const handleOpenReview = async (type: 'doctor' | 'provider', data: DoctorVerificationItem | ProviderVerificationItem) => {
-		setSelectedItemType(type)
-		setSelectedItemData(data)
-		setDoctorDetail(null)
-		setNotes('')
-		setDrawerOpen(true)
+	const handleOpenReview = (type: 'doctor' | 'provider', item: DoctorVerificationItem | ProviderVerificationItem) => {
+		const targetId = item.public_id || item.id
+		const resolvedType = type === 'doctor' ? 'doctor' : (item as ProviderVerificationItem).provider_type || 'pharmacy'
+		navigate(`/admin/verifications/${resolvedType}/${targetId}`)
+	}
 
-		if (type === 'doctor') {
-			const doc = data as DoctorVerificationItem
-			setDetailLoading(true)
-			try {
-				const res = await getDoctorVerificationDetail(doc.public_id || doc.id)
-				if (res.success && res.data) {
-					setDoctorDetail(res.data)
+	const handleQuickVerify = async (
+		type: 'doctor' | 'provider',
+		item: DoctorVerificationItem | ProviderVerificationItem,
+		isApproved: boolean,
+		e?: React.MouseEvent
+	) => {
+		if (e) e.stopPropagation()
+
+		const targetId = item.public_id || item.id
+		setActionLoadingId(targetId)
+
+		try {
+			if (type === 'doctor') {
+				const doc = item as DoctorVerificationItem
+				const res = await verifyDoctor(targetId, { is_verified: isApproved })
+				if (res.success) {
+					toast.success(`Dr. ${doc.name} ${isApproved ? 'approved' : 'rejected'}.`)
 				}
-			} catch {
-				toast.error('Failed to load doctor details')
-			} finally {
-				setDetailLoading(false)
+			} else {
+				const prov = item as ProviderVerificationItem
+				const res = await verifyProvider(prov.provider_type, targetId, { is_verified: isApproved })
+				if (res.success) {
+					toast.success(`${prov.name} ${isApproved ? 'approved' : 'rejected'}.`)
+				}
 			}
+			fetchQueues()
+		} catch (err: unknown) {
+			toast.error(getErrorMessage(err, 'Quick verification failed.'))
+		} finally {
+			setActionLoadingId(null)
 		}
 	}
 
-	// ── Submit verify/reject ─────────────────────────────────────────────────
 	const handleVerifySubmit = async (isApproved: boolean) => {
-		if (!selectedItemData || !selectedItemType) return
+		if (!selectedItemType || !selectedItemData) return
+
 		setSubmitting(true)
 		try {
 			if (selectedItemType === 'doctor') {
 				const doc = selectedItemData as DoctorVerificationItem
-				const res = await verifyDoctor(doc.public_id || doc.id, {
+				const targetId = doc.public_id || doc.id
+				const res = await verifyDoctor(targetId, {
 					is_verified: isApproved,
 					rejection_reason: !isApproved ? notes.trim() || undefined : undefined,
 				})
 				if (res.success) {
-					toast.success(`Doctor ${doc.name} ${isApproved ? 'approved' : 'rejected'} successfully.`)
+					toast.success(`Dr. ${doc.name} ${isApproved ? 'approved & verified' : 'rejected'} successfully.`)
 				}
 			} else {
 				const prov = selectedItemData as ProviderVerificationItem
@@ -191,7 +227,6 @@ export default function AdminVerificationsPage() {
 		}
 	}
 
-	// ── Open document in new tab ─────────────────────────────────────────────
 	const handleOpenDocument = (doc: DoctorVerificationDocument) => {
 		const url = buildS3Url(doc.url)
 		if (url) {
@@ -201,328 +236,422 @@ export default function AdminVerificationsPage() {
 		}
 	}
 
-	// ── Table columns ────────────────────────────────────────────────────────
+	const handleOpenS3Proof = (s3Key?: string, e?: React.MouseEvent) => {
+		if (e) e.stopPropagation()
+		if (!s3Key) {
+			toast.warning('No document proof attached.')
+			return
+		}
+		const url = buildS3Url(s3Key)
+		if (url) {
+			window.open(url, '_blank')
+		} else {
+			toast.error('Document URL unavailable.')
+		}
+	}
+
+	const handleAddPresetNote = (preset: string) => {
+		setNotes((prev) => (prev ? `${prev}; ${preset}` : preset))
+	}
+
+	// ── Expanded Doctor Columns ────────────────────────────────────────────────
 	const doctorColumns: Column<DoctorVerificationItem>[] = [
 		{
 			field: 'name',
-			label: 'Doctor Name',
+			label: 'Applicant',
+			render: (_: unknown, row: DoctorVerificationItem) => (
+				<Stack direction="row" spacing={1.5} alignItems="center">
+					<Avatar sx={{ bgcolor: 'rgba(13,148,136,0.12)', color: '#0d9488', width: 38, height: 38, fontSize: 14, fontWeight: 800 }}>
+						{(row.name || 'D').substring(0, 1).toUpperCase()}
+					</Avatar>
+					<Box sx={{ minWidth: 0 }}>
+						<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
+							Dr. {row.name}
+						</Typography>
+						<Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+							ID: #{row.public_id || row.id}
+						</Typography>
+					</Box>
+				</Stack>
+			),
+		},
+		{
+			field: 'email',
+			label: 'Contact Info',
 			render: (_: unknown, row: DoctorVerificationItem) => (
 				<Box>
-					<Typography variant="subtitle2" fontWeight={700}>
-						{row.name}
+					<Typography variant="body2" color="#0f172a" fontSize={13}>
+						{row.email || '—'}
 					</Typography>
-					<Typography variant="caption" color="text.secondary">
-						{row.email} | {row.contact_number}
+					<Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+						{row.contact_number || '—'}
 					</Typography>
 				</Box>
 			),
 		},
 		{
 			field: 'speciality',
-			label: 'Speciality / Reg. No.',
+			label: 'Speciality',
 			render: (_: unknown, row: DoctorVerificationItem) => (
-				<Box>
-					<Typography variant="body2" fontWeight={600}>
-						{row.speciality || 'General Medicine'}
-					</Typography>
-					<Typography variant="caption" color="text.secondary">
-						Reg #: {row.registration_number || 'Pending'}
-					</Typography>
-				</Box>
+				<Chip
+					label={row.speciality || 'General Medicine'}
+					size="small"
+					sx={{ bgcolor: '#dbeafe', color: '#1d4ed8', fontWeight: 700, fontSize: '0.65rem', height: 22, borderRadius: '6px' }}
+				/>
+			),
+		},
+		{
+			field: 'registration_number',
+			label: 'Registration #',
+			render: (_: unknown, row: DoctorVerificationItem) => (
+				<Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 700, color: '#475569', fontSize: 12.5 }}>
+					{row.registration_number ? `#${row.registration_number}` : 'Pending'}
+				</Typography>
+			),
+		},
+		{
+			field: 'created_at',
+			label: 'Submitted Date',
+			render: (_: unknown, row: DoctorVerificationItem) => (
+				<Typography variant="caption" color="text.secondary">
+					{row.created_at ? new Date(row.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+				</Typography>
 			),
 		},
 		{
 			field: 'is_verified',
 			label: 'Status',
 			render: (_: unknown, row: DoctorVerificationItem) => (
-				<Chip
-					label={row.is_verified ? 'Verified' : 'Pending Verification'}
-					size="small"
-					color={row.is_verified ? 'success' : 'warning'}
-					sx={{ fontWeight: 700 }}
+				<StatusBadge
+					status={row.is_verified ? 'verified' : 'pending'}
+					label={row.is_verified ? 'Verified' : 'Awaiting Review'}
 				/>
 			),
 		},
 		{
 			field: 'actions',
 			label: 'Actions',
-			render: (_: unknown, row: DoctorVerificationItem) => (
-				<AppButton
-					label="Review & Verify"
-					size="small"
-					startIcon={<VisibilityIcon />}
-					onClick={() => handleOpenReview('doctor', row)}
-					sx={{ bgcolor: '#0f172a', '&:hover': { bgcolor: '#1e293b' } }}
-				/>
-			),
+			align: 'right',
+			render: (_: unknown, row: DoctorVerificationItem) => {
+				const isBusy = actionLoadingId === (row.public_id || row.id)
+				return (
+					<Stack direction="row" spacing={0.75} justifyContent="flex-end" alignItems="center">
+						{row.license_proof_s3_key && (
+							<Tooltip title="View License Proof Document">
+								<IconButton
+									size="small"
+									onClick={(e) => handleOpenS3Proof(row.license_proof_s3_key, e)}
+									sx={{ border: '1px solid #e2e8f0', borderRadius: 1.5, color: '#0d9488', '&:hover': { bgcolor: 'rgba(13,148,136,0.06)' } }}
+								>
+									<OpenInNewIcon sx={{ fontSize: 16 }} />
+								</IconButton>
+							</Tooltip>
+						)}
+
+						{!row.is_verified && (
+							<>
+								<Tooltip title="Quick Approve">
+									<span>
+										<IconButton
+											size="small"
+											disabled={isBusy}
+											onClick={(e) => handleQuickVerify('doctor', row, true, e)}
+											sx={{ border: '1px solid #bbf7d0', borderRadius: 1.5, color: '#16a34a', bgcolor: '#f0fdf4', '&:hover': { bgcolor: '#dcfce7' } }}
+										>
+											<CheckIcon sx={{ fontSize: 16 }} />
+										</IconButton>
+									</span>
+								</Tooltip>
+
+								<Tooltip title="Quick Reject">
+									<span>
+										<IconButton
+											size="small"
+											disabled={isBusy}
+											onClick={(e) => handleQuickVerify('doctor', row, false, e)}
+											sx={{ border: '1px solid #fecaca', borderRadius: 1.5, color: '#dc2626', bgcolor: '#fff1f2', '&:hover': { bgcolor: '#fee2e2' } }}
+										>
+											<CloseIcon sx={{ fontSize: 16 }} />
+										</IconButton>
+									</span>
+								</Tooltip>
+							</>
+						)}
+
+						<Button
+							variant="contained"
+							size="small"
+							startIcon={<VisibilityIcon sx={{ fontSize: 15 }} />}
+							onClick={(e) => {
+								e.stopPropagation()
+								handleOpenReview('doctor', row)
+							}}
+							sx={{ bgcolor: '#0f172a', textTransform: 'none', borderRadius: 2, fontWeight: 700, px: 1.75, py: 0.5, fontSize: 12.5, '&:hover': { bgcolor: '#1e293b' } }}
+						>
+							Review
+						</Button>
+					</Stack>
+				)
+			},
 		},
 	]
 
+	// ── Expanded Provider Columns ──────────────────────────────────────────────
 	const providerColumns: Column<ProviderVerificationItem>[] = [
 		{
 			field: 'name',
-			label: 'Provider Details',
+			label: 'Facility Name',
+			render: (_: unknown, row: ProviderVerificationItem) => (
+				<Stack direction="row" spacing={1.5} alignItems="center">
+					<Avatar sx={{ bgcolor: 'rgba(37,99,235,0.1)', color: '#2563eb', width: 38, height: 38, fontSize: 14, fontWeight: 800 }}>
+						{(row.name || 'P').substring(0, 1).toUpperCase()}
+					</Avatar>
+					<Box sx={{ minWidth: 0 }}>
+						<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
+							{row.name}
+						</Typography>
+						<Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+							Owner: {row.owner_name || 'N/A'}
+						</Typography>
+					</Box>
+				</Stack>
+			),
+		},
+		{
+			field: 'email',
+			label: 'Contact Info',
 			render: (_: unknown, row: ProviderVerificationItem) => (
 				<Box>
-					<Typography variant="subtitle2" fontWeight={700}>
-						{row.name}
+					<Typography variant="body2" color="#0f172a" fontSize={13}>
+						{row.email || '—'}
 					</Typography>
-					<Typography variant="caption" color="text.secondary">
-						Owner: {row.owner_name || 'N/A'} | {row.contact_number}
+					<Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+						{row.contact_number || '—'}
 					</Typography>
 				</Box>
 			),
 		},
 		{
 			field: 'provider_type',
-			label: 'Type',
+			label: 'Facility Type',
 			render: (_: unknown, row: ProviderVerificationItem) => (
 				<Chip
 					label={row.provider_type.toUpperCase()}
 					size="small"
-					sx={{ bgcolor: '#e2e8f0', color: '#0f172a', fontWeight: 700 }}
+					sx={{ bgcolor: '#f3e8ff', color: '#7e22ce', fontWeight: 700, fontSize: '0.65rem', height: 22, borderRadius: '6px' }}
 				/>
+			),
+		},
+		{
+			field: 'license_number',
+			label: 'License Number',
+			render: (_: unknown, row: ProviderVerificationItem) => (
+				<Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 700, color: '#475569', fontSize: 12.5 }}>
+					{row.license_number ? `#${row.license_number}` : '—'}
+				</Typography>
+			),
+		},
+		{
+			field: 'created_at',
+			label: 'Submitted Date',
+			render: (_: unknown, row: ProviderVerificationItem) => (
+				<Typography variant="caption" color="text.secondary">
+					{row.created_at ? new Date(row.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+				</Typography>
 			),
 		},
 		{
 			field: 'is_verified',
 			label: 'Status',
 			render: (_: unknown, row: ProviderVerificationItem) => (
-				<Chip
-					label={row.is_verified ? 'Verified' : 'Pending Review'}
-					size="small"
-					color={row.is_verified ? 'success' : 'warning'}
-					sx={{ fontWeight: 700 }}
+				<StatusBadge
+					status={row.is_verified ? 'verified' : 'pending'}
+					label={row.is_verified ? 'Verified' : 'Awaiting Review'}
 				/>
 			),
 		},
 		{
 			field: 'actions',
 			label: 'Actions',
-			render: (_: unknown, row: ProviderVerificationItem) => (
-				<AppButton
-					label="Review & Verify"
-					size="small"
-					startIcon={<VisibilityIcon />}
-					onClick={() => handleOpenReview('provider', row)}
-					sx={{ bgcolor: '#0f172a', '&:hover': { bgcolor: '#1e293b' } }}
-				/>
-			),
+			align: 'right',
+			render: (_: unknown, row: ProviderVerificationItem) => {
+				const isBusy = actionLoadingId === (row.public_id || row.id)
+				return (
+					<Stack direction="row" spacing={0.75} justifyContent="flex-end" alignItems="center">
+						{row.license_proof_s3_key && (
+							<Tooltip title="View License Proof Document">
+								<IconButton
+									size="small"
+									onClick={(e) => handleOpenS3Proof(row.license_proof_s3_key, e)}
+									sx={{ border: '1px solid #e2e8f0', borderRadius: 1.5, color: '#0d9488', '&:hover': { bgcolor: 'rgba(13,148,136,0.06)' } }}
+								>
+									<OpenInNewIcon sx={{ fontSize: 16 }} />
+								</IconButton>
+							</Tooltip>
+						)}
+
+						{!row.is_verified && (
+							<>
+								<Tooltip title="Quick Approve">
+									<span>
+										<IconButton
+											size="small"
+											disabled={isBusy}
+											onClick={(e) => handleQuickVerify('provider', row, true, e)}
+											sx={{ border: '1px solid #bbf7d0', borderRadius: 1.5, color: '#16a34a', bgcolor: '#f0fdf4', '&:hover': { bgcolor: '#dcfce7' } }}
+										>
+											<CheckIcon sx={{ fontSize: 16 }} />
+										</IconButton>
+									</span>
+								</Tooltip>
+
+								<Tooltip title="Quick Reject">
+									<span>
+										<IconButton
+											size="small"
+											disabled={isBusy}
+											onClick={(e) => handleQuickVerify('provider', row, false, e)}
+											sx={{ border: '1px solid #fecaca', borderRadius: 1.5, color: '#dc2626', bgcolor: '#fff1f2', '&:hover': { bgcolor: '#fee2e2' } }}
+										>
+											<CloseIcon sx={{ fontSize: 16 }} />
+										</IconButton>
+									</span>
+								</Tooltip>
+							</>
+						)}
+
+						<Button
+							variant="contained"
+							size="small"
+							startIcon={<VisibilityIcon sx={{ fontSize: 15 }} />}
+							onClick={(e) => {
+								e.stopPropagation()
+								handleOpenReview('provider', row)
+							}}
+							sx={{ bgcolor: '#0f172a', textTransform: 'none', borderRadius: 2, fontWeight: 700, px: 1.75, py: 0.5, fontSize: 12.5, '&:hover': { bgcolor: '#1e293b' } }}
+						>
+							Review
+						</Button>
+					</Stack>
+				)
+			},
 		},
 	]
 
-	// ── Drawer body for doctor ───────────────────────────────────────────────
-	const renderDoctorDrawerBody = () => {
-		if (detailLoading) {
-			return (
-				<Stack alignItems="center" sx={{ py: 6 }}>
-					<CircularProgress size={28} sx={{ color: '#0d9488' }} />
-					<Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-						Loading doctor details...
-					</Typography>
-				</Stack>
-			)
-		}
-
-		if (!doctorDetail) {
-			return (
-				<Alert severity="warning" sx={{ mt: 2 }}>
-					Doctor details could not be loaded.
-				</Alert>
-			)
-		}
-
-		const d = doctorDetail
-
-		return (
-			<Box>
-				{/* Personal Information */}
-				<SectionHeader title="Personal Information" />
-				<InfoRow label="Full Name" value={d.name} />
-				<InfoRow label="Gender" value={d.gender} />
-				<InfoRow label="Date of Birth" value={d.date_of_birth} />
-				<InfoRow label="Email" value={d.email} />
-				<InfoRow label="Phone" value={d.contact_number} />
-				<InfoRow label="Location" value={d.location} />
-
-				<Divider sx={{ my: 2 }} />
-
-				{/* Professional Information */}
-				<SectionHeader title="Professional Information" />
-				<InfoRow label="Doctor ID" value={d.id} />
-				<InfoRow label="Specialization" value={d.specialities?.join(', ')} />
-				<InfoRow label="Qualification" value={d.qualification} />
-				<InfoRow label="Experience" value={d.experience_years != null ? `${d.experience_years} years` : null} />
-				<InfoRow label="Registration No." value={d.registration_number} />
-				<InfoRow label="Hospital" value={d.hospital} />
-				<InfoRow label="Consultation Fee" value={d.consultation_fee != null ? `₹${d.consultation_fee}` : null} />
-				<InfoRow label="Languages" value={d.languages?.join(', ')} />
-				{d.about && (
-					<Box sx={{ mt: 1 }}>
-						<Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 0.5 }}>
-							About
-						</Typography>
-						<Typography
-							variant="body2"
-							sx={{
-								bgcolor: '#f8fafc',
-								p: 1.5,
-								borderRadius: 1.5,
-								border: '1px solid #e2e8f0',
-								fontSize: '13px',
-								lineHeight: 1.6,
-							}}
-						>
-							{d.about}
-						</Typography>
-					</Box>
-				)}
-
-				<Divider sx={{ my: 2 }} />
-
-				{/* Documents */}
-				<SectionHeader title="Verification Documents" />
-				{d.documents && d.documents.length > 0 ? (
-					<Stack spacing={1} sx={{ mt: 1 }}>
-						{d.documents.map((doc) => (
-							<Box
-								key={doc.id}
-								sx={{
-									display: 'flex',
-									alignItems: 'center',
-									justifyContent: 'space-between',
-									p: 1.5,
-									bgcolor: '#f8fafc',
-									borderRadius: 2,
-									border: '1px solid #e2e8f0',
-								}}
-							>
-								<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0 }}>
-									<DescriptionIcon sx={{ color: '#64748b', fontSize: 20 }} />
-									<Box sx={{ minWidth: 0 }}>
-										<Typography variant="body2" fontWeight={600} noWrap>
-											{doc.name}
-										</Typography>
-										<Typography variant="caption" color="text.secondary">
-											{doc.type.toUpperCase()}
-										</Typography>
-									</Box>
-								</Box>
-								<Tooltip title="Open in new tab">
-									<IconButton
-										size="small"
-										onClick={() => handleOpenDocument(doc)}
-										sx={{
-											color: '#0d9488',
-											'&:hover': { bgcolor: 'rgba(13, 148, 136, 0.08)' },
-										}}
-									>
-										<OpenInNewIcon fontSize="small" />
-									</IconButton>
-								</Tooltip>
-							</Box>
-						))}
-					</Stack>
-				) : (
-					<Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
-						No documents uploaded yet.
-					</Typography>
-				)}
-
-				<Divider sx={{ my: 2 }} />
-
-				{/* Admin Notes */}
-				<SectionHeader title="Admin Review Notes" />
-				<AppInput
-					label=""
-					placeholder="Enter administrative notes (optional)..."
-					value={notes}
-					onChange={(e) => setNotes(e.target.value)}
-					multiline
-					rows={3}
-					fullWidth
-				/>
-			</Box>
-		)
-	}
-
-	// ── Drawer body for provider (simpler, no extra detail endpoint) ─────────
-	const renderProviderDrawerBody = () => {
-		if (!selectedItemData) return null
-		const prov = selectedItemData as ProviderVerificationItem
-
-		return (
-			<Box>
-				<SectionHeader title="Provider Information" />
-				<InfoRow label="Name" value={prov.name} />
-				<InfoRow label="Owner" value={prov.owner_name} />
-				<InfoRow label="Email" value={prov.email} />
-				<InfoRow label="Contact" value={prov.contact_number} />
-				<InfoRow label="Provider Type" value={prov.provider_type?.toUpperCase()} />
-				<InfoRow label="License #" value={prov.license_number} />
-				<InfoRow label="Status" value={prov.is_verified ? 'Verified' : 'Pending'} />
-
-				<Divider sx={{ my: 2 }} />
-
-				<SectionHeader title="Admin Review Notes" />
-				<AppInput
-					label=""
-					placeholder="Enter administrative notes (optional)..."
-					value={notes}
-					onChange={(e) => setNotes(e.target.value)}
-					multiline
-					rows={3}
-					fullWidth
-				/>
-			</Box>
-		)
-	}
-
-	// ── Render ────────────────────────────────────────────────────────────────
 	return (
 		<Box>
-			<SectionCard title="Provider & Medical Professional Verifications">
-				<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-					Review, approve, or reject registered healthcare providers and doctors
-				</Typography>
-				<Tabs
-					value={activeTab}
-					onChange={handleTabChange}
-					sx={{ mb: 3, borderBottom: '1px solid #e2e8f0' }}
-				>
-					<Tab
-						value="doctors"
-						label={`Doctors Queue (${doctorsQueue.length})`}
-						sx={{ fontWeight: 700, textTransform: 'none' }}
-					/>
-					<Tab
-						value="providers"
-						label={`Providers Queue (${providersQueue.length})`}
-						sx={{ fontWeight: 700, textTransform: 'none' }}
-					/>
-				</Tabs>
+			<AdminPageHeader
+				title="Verifications Center"
+				subtitle="Review, audit, approve, or reject healthcare providers and doctor credential applications."
+				count={doctorsQueue.length + providersQueue.length}
+				countLabel="pending applications"
+			/>
 
-				{error && (
-					<Alert severity="error" sx={{ mb: 3 }}>
-						{error}
-					</Alert>
-				)}
+			{/* Top Metric Cards */}
+			<Grid container spacing={2.5} sx={{ mb: 3.5 }}>
+				<Grid size={{ xs: 12, sm: 4 }}>
+					<AdminStatCard
+						label="Pending Doctors Queue"
+						value={doctorsQueue.length}
+						icon={<LocalHospitalIcon />}
+						iconColor="#d97706"
+						iconBg="rgba(217,119,6,0.12)"
+						description="Doctors awaiting credential verification"
+						onClick={() => setActiveTab('doctors')}
+					/>
+				</Grid>
+				<Grid size={{ xs: 12, sm: 4 }}>
+					<AdminStatCard
+						label="Pending Providers Queue"
+						value={providersQueue.length}
+						icon={<StorefrontIcon />}
+						iconColor="#0d9488"
+						iconBg="rgba(13,148,136,0.12)"
+						description="Labs, Pharmacies & Radiology"
+						onClick={() => setActiveTab('providers')}
+					/>
+				</Grid>
+				<Grid size={{ xs: 12, sm: 4 }}>
+					<AdminStatCard
+						label="Total Applications"
+						value={doctorsQueue.length + providersQueue.length}
+						icon={<AssignmentTurnedInIcon />}
+						iconColor="#2563eb"
+						iconBg="rgba(37,99,235,0.1)"
+						description="Total pending review requests"
+					/>
+				</Grid>
+			</Grid>
 
-				{loading ? (
-					<Stack alignItems="center" justifyContent="center" sx={{ py: 6 }}>
-						<CircularProgress sx={{ color: '#0d9488' }} />
-						<Typography variant="body2" sx={{ color: '#64748b', mt: 2 }}>
-							Loading verification queue...
-						</Typography>
-					</Stack>
-				) : activeTab === 'doctors' ? (
-					<AppTable columns={doctorColumns} rows={doctorsQueue} emptyMessage="No doctors awaiting verification." />
+			{/* Main Queue Tabs & Table */}
+			<Tabs
+				value={activeTab}
+				onChange={handleTabChange}
+				sx={{
+					mb: 2.5,
+					'& .MuiTab-root': { textTransform: 'none', fontWeight: 700, fontSize: 13.5 },
+					'& .Mui-selected': { color: '#0d9488 !important' },
+					'& .MuiTabs-indicator': { bgcolor: '#0d9488', height: 3 },
+				}}
+			>
+				<Tab
+					value="doctors"
+					label={`Doctors Queue (${doctorsQueue.length})`}
+					icon={<LocalHospitalIcon sx={{ fontSize: 17 }} />}
+					iconPosition="start"
+				/>
+				<Tab
+					value="providers"
+					label={`Providers Queue (${providersQueue.length})`}
+					icon={<StorefrontIcon sx={{ fontSize: 17 }} />}
+					iconPosition="start"
+				/>
+			</Tabs>
+
+			{error && (
+				<Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+					{error}
+				</Alert>
+			)}
+
+			{loading ? (
+				<Stack alignItems="center" justifyContent="center" sx={{ py: 8 }}>
+					<CircularProgress sx={{ color: '#0d9488' }} />
+					<Typography variant="body2" sx={{ color: '#64748b', mt: 2 }}>
+						Loading verification queue...
+					</Typography>
+				</Stack>
+			) : activeTab === 'doctors' ? (
+				doctorsQueue.length === 0 ? (
+					<AdminEmptyState
+						icon={<VerifiedUserIcon />}
+						title="Doctors queue is clear"
+						description="No doctor verification applications pending at this time."
+					/>
 				) : (
-					<AppTable columns={providerColumns} rows={providersQueue} emptyMessage="No providers awaiting verification." />
-				)}
-			</SectionCard>
+					<AppTable
+						columns={doctorColumns}
+						rows={doctorsQueue}
+						emptyMessage="No doctors awaiting verification."
+						onRowClick={(doc) => handleOpenReview('doctor', doc)}
+					/>
+				)
+			) : providersQueue.length === 0 ? (
+				<AdminEmptyState
+					icon={<VerifiedUserIcon />}
+					title="Providers queue is clear"
+					description="No pharmacy, lab, or radiology applications pending."
+				/>
+			) : (
+				<AppTable
+					columns={providerColumns}
+					rows={providersQueue}
+					emptyMessage="No providers awaiting verification."
+					onRowClick={(prov) => handleOpenReview('provider', prov)}
+				/>
+			)}
 
-			{/* ── Review & Verify Drawer ──────────────────────────────────────── */}
+			{/* ── Spacious 2-Column Inspection Drawer ───────────────────────────── */}
 			<AppDrawer
 				open={drawerOpen}
 				onClose={() => {
@@ -530,22 +659,22 @@ export default function AdminVerificationsPage() {
 					setSelectedItemData(null)
 					setDoctorDetail(null)
 				}}
-				title={`Verification Review — ${selectedItemData?.name ?? ''}`}
-				subtitle={selectedItemType === 'doctor' ? 'Doctor Profile Review' : 'Provider Review'}
 				onConfirm={() => handleVerifySubmit(true)}
-				confirmLoading={submitting}
-				width={480}
-				sx={{top:'56px', height: 'calc(100% - 82px)',}}
+				title={`Application Review — ${selectedItemData?.name ?? ''}`}
+				subtitle={selectedItemType === 'doctor' ? 'Doctor License & Credential Inspection' : 'Provider Business License Inspection'}
+				width={620}
+				sx={{ top: '64px', height: 'calc(100% - 64px)' }}
 				footerContent={
-					<>
+					<Stack direction="row" spacing={1.5} sx={{ width: '100%' }}>
 						<AppButton
 							label="Reject Application"
 							color="error"
+							variant="outlined"
 							fullWidth
 							startIcon={<CancelIcon />}
 							onClick={() => handleVerifySubmit(false)}
 							disabled={submitting}
-							sx={{ borderRadius: '20px' }}
+							sx={{ borderRadius: '10px', fontWeight: 700 }}
 						/>
 						<AppButton
 							label="Approve & Verify"
@@ -555,15 +684,208 @@ export default function AdminVerificationsPage() {
 							disabled={submitting}
 							loading={submitting}
 							sx={{
-								borderRadius: '20px',
+								borderRadius: '10px',
+								fontWeight: 700,
 								bgcolor: '#0d9488',
 								'&:hover': { bgcolor: '#0f766e' },
 							}}
 						/>
-					</>
+					</Stack>
 				}
 			>
-				{selectedItemType === 'doctor' ? renderDoctorDrawerBody() : renderProviderDrawerBody()}
+				{selectedItemType === 'doctor' ? (
+					detailLoading ? (
+						<Stack alignItems="center" sx={{ py: 8 }}>
+							<CircularProgress size={32} sx={{ color: '#0d9488' }} />
+							<Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+								Loading doctor credentials & documents...
+							</Typography>
+						</Stack>
+					) : !doctorDetail ? (
+						<Alert severity="warning" sx={{ mt: 2 }}>Doctor details could not be loaded.</Alert>
+					) : (
+						<Box>
+							{/* Doctor Overview Banner */}
+							<Box sx={{ p: 2.5, bgcolor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', mb: 3 }}>
+								<Stack direction="row" spacing={2} alignItems="center">
+									<Avatar sx={{ width: 56, height: 56, bgcolor: '#0d9488', color: '#ffffff', fontSize: 22, fontWeight: 800 }}>
+										{(doctorDetail.name || 'D').substring(0, 1).toUpperCase()}
+									</Avatar>
+									<Box>
+										<Typography variant="subtitle1" fontWeight={800} color="#0f172a">
+											Dr. {doctorDetail.name}
+										</Typography>
+										<Typography variant="caption" color="text.secondary" display="block">
+											{doctorDetail.email} | {doctorDetail.contact_number}
+										</Typography>
+										<Stack direction="row" spacing={1} sx={{ mt: 0.75 }}>
+											<Chip label={doctorDetail.specialities?.join(', ') || 'General'} size="small" sx={{ bgcolor: '#dbeafe', color: '#1d4ed8', fontWeight: 700, fontSize: '0.62rem', height: 20 }} />
+											<StatusBadge status={doctorDetail.is_verified ? 'verified' : 'pending'} label={doctorDetail.is_verified ? 'Verified' : 'Pending Review'} />
+										</Stack>
+									</Box>
+								</Stack>
+							</Box>
+
+							{/* 2-Column Inspection Grid */}
+							<Grid container spacing={3}>
+								<Grid size={{ xs: 12, md: 6 }}>
+									<SectionHeader title="Personal Information" />
+									<InfoRow label="Gender" value={doctorDetail.gender} />
+									<InfoRow label="Date of Birth" value={doctorDetail.date_of_birth} />
+									<InfoRow label="Location" value={doctorDetail.location} />
+
+									<SectionHeader title="Professional Credentials" />
+									<InfoRow label="Registration #" value={doctorDetail.registration_number} />
+									<InfoRow label="Qualification" value={doctorDetail.qualification} />
+									<InfoRow label="Experience" value={doctorDetail.experience_years != null ? `${doctorDetail.experience_years} years` : null} />
+									<InfoRow label="Hospital" value={doctorDetail.hospital} />
+									<InfoRow label="Consult Fee" value={doctorDetail.consultation_fee != null ? `₹${doctorDetail.consultation_fee}` : null} />
+									<InfoRow label="Languages" value={doctorDetail.languages?.join(', ')} />
+								</Grid>
+
+								<Grid size={{ xs: 12, md: 6 }}>
+									<SectionHeader title="Submitted Documents" />
+									{doctorDetail.documents && doctorDetail.documents.length > 0 ? (
+										<Stack spacing={1.5}>
+											{doctorDetail.documents.map((doc) => (
+												<Box
+													key={doc.id}
+													sx={{
+														p: 1.75,
+														bgcolor: '#ffffff',
+														borderRadius: '10px',
+														border: '1px solid #e2e8f0',
+														transition: 'all 0.15s ease',
+														'&:hover': { borderColor: '#0d9488' },
+													}}
+												>
+													<Stack direction="row" alignItems="center" justifyContent="space-between">
+														<Stack direction="row" spacing={1.25} alignItems="center" sx={{ minWidth: 0 }}>
+															<DescriptionIcon sx={{ color: '#0d9488', fontSize: 22 }} />
+															<Box sx={{ minWidth: 0 }}>
+																<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
+																	{doc.name}
+																</Typography>
+																<Typography variant="caption" color="text.secondary">
+																	TYPE: {doc.type.toUpperCase()}
+																</Typography>
+															</Box>
+														</Stack>
+														<Tooltip title="Inspect document in new tab">
+															<IconButton
+																size="small"
+																onClick={() => handleOpenDocument(doc)}
+																sx={{ border: '1px solid #e2e8f0', borderRadius: 1.5, color: '#0d9488', '&:hover': { bgcolor: 'rgba(13,148,136,0.08)' } }}
+															>
+																<OpenInNewIcon sx={{ fontSize: 16 }} />
+															</IconButton>
+														</Tooltip>
+													</Stack>
+												</Box>
+											))}
+										</Stack>
+									) : (
+										<Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+											No verification documents attached.
+										</Typography>
+									)}
+								</Grid>
+							</Grid>
+
+							<Divider sx={{ my: 3 }} />
+
+							{/* Rejection Presets & Notes */}
+							<SectionHeader title="Reviewer Notes & Presets" />
+							<Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+								Click preset reasons below to quickly populate rejection notes:
+							</Typography>
+							<Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+								{REJECTION_PRESETS.map((preset) => (
+									<Chip
+										key={preset}
+										label={preset}
+										size="small"
+										onClick={() => handleAddPresetNote(preset)}
+										sx={{
+											bgcolor: '#f1f5f9',
+											color: '#475569',
+											fontSize: '0.68rem',
+											fontWeight: 600,
+											cursor: 'pointer',
+											'&:hover': { bgcolor: '#fee2e2', color: '#dc2626' },
+										}}
+									/>
+								))}
+							</Stack>
+							<AppInput
+								label=""
+								placeholder="Enter administrative review notes or rejection reason..."
+								value={notes}
+								onChange={(e) => setNotes(e.target.value)}
+								multiline
+								rows={3}
+								fullWidth
+							/>
+						</Box>
+					)
+				) : selectedItemData ? (
+					(() => {
+						const prov = selectedItemData as ProviderVerificationItem
+						return (
+							<Box>
+								<Box sx={{ p: 2.5, bgcolor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', mb: 3 }}>
+									<Stack direction="row" spacing={2} alignItems="center">
+										<Avatar sx={{ width: 56, height: 56, bgcolor: '#2563eb', color: '#ffffff', fontSize: 22, fontWeight: 800 }}>
+											{(prov.name || 'P').substring(0, 1).toUpperCase()}
+										</Avatar>
+										<Box>
+											<Typography variant="subtitle1" fontWeight={800} color="#0f172a">
+												{prov.name}
+											</Typography>
+											<Typography variant="caption" color="text.secondary" display="block">
+												Owner: {prov.owner_name} | {prov.email}
+											</Typography>
+											<Chip label={prov.provider_type?.toUpperCase()} size="small" sx={{ bgcolor: '#f3e8ff', color: '#7e22ce', fontWeight: 700, fontSize: '0.62rem', height: 20, mt: 0.75 }} />
+										</Box>
+									</Stack>
+								</Box>
+
+								<SectionHeader title="Provider Information" />
+								<InfoRow label="Business Name" value={prov.name} />
+								<InfoRow label="Owner Name" value={prov.owner_name} />
+								<InfoRow label="Email Address" value={prov.email} />
+								<InfoRow label="Phone Number" value={prov.contact_number} />
+								<InfoRow label="Provider Type" value={prov.provider_type?.toUpperCase()} />
+								<InfoRow label="License Number" value={prov.license_number} />
+								<InfoRow label="Status" value={prov.is_verified ? 'Verified' : 'Pending Review'} />
+
+								<Divider sx={{ my: 3 }} />
+
+								<SectionHeader title="Reviewer Notes & Presets" />
+								<Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+									{REJECTION_PRESETS.map((preset) => (
+										<Chip
+											key={preset}
+											label={preset}
+											size="small"
+											onClick={() => handleAddPresetNote(preset)}
+											sx={{ bgcolor: '#f1f5f9', color: '#475569', fontSize: '0.68rem', fontWeight: 600, cursor: 'pointer', '&:hover': { bgcolor: '#fee2e2', color: '#dc2626' } }}
+										/>
+									))}
+								</Stack>
+								<AppInput
+									label=""
+									placeholder="Enter administrative review notes or rejection reason..."
+									value={notes}
+									onChange={(e) => setNotes(e.target.value)}
+									multiline
+									rows={3}
+									fullWidth
+								/>
+							</Box>
+						)
+					})()
+				) : null}
 			</AppDrawer>
 		</Box>
 	)

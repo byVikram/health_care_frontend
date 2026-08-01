@@ -3,7 +3,6 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import {
 	Box,
 	Typography,
-	Chip,
 	Stack,
 	CircularProgress,
 	Alert,
@@ -14,15 +13,20 @@ import {
 	DialogContent,
 	DialogContentText,
 	DialogActions,
+	TextField,
+	InputAdornment,
+	Avatar,
 } from '@mui/material'
 import CancelIcon from '@mui/icons-material/Cancel'
 import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee'
+import SearchIcon from '@mui/icons-material/Search'
 import { toast } from 'react-toastify'
 
 import SectionCard from '../../../components/common/Card/SectionCard'
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import AppButton from '../../../components/common/Button/AppButton'
-import AppInput from '../../../components/common/Input/AppInput'
+import AdminPageHeader from '../../../components/admin/AdminPageHeader'
+import StatusBadge from '../../../components/admin/StatusBadge'
 import RescheduleDrawer from '../../doctor/search/components/RescheduleDrawer'
 import { SlotGroup } from '../../../components/common/DateSlotPicker/DateSlotPicker'
 import { LookupHospital } from '../../../hooks/useAuth'
@@ -61,7 +65,7 @@ export default function AdminAppointmentsPage() {
 	const [searchQuery, setSearchQuery] = useState('')
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-	// ── Reschedule drawer state (matches Patient/Doctor pattern) ─────────────
+	// ── Reschedule drawer state ───────────────────────────────────────────────
 	const [rescheduleOpen, setRescheduleOpen] = useState(false)
 	const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null)
 	const [rescheduleDate, setRescheduleDate] = useState(new Date())
@@ -151,83 +155,70 @@ export default function AdminAppointmentsPage() {
 		try {
 			const res = await refundAppointment(publicId)
 			if (res.success) {
-				toast.success(`Refund processed for appointment ${publicId}.`)
+				toast.success(`Refund triggered for appointment ${publicId}.`)
 				fetchAppointments()
 			}
 		} catch (err: unknown) {
-			toast.error(getErrorMessage(err, 'Failed to process refund.'))
+			toast.error(getErrorMessage(err, 'Failed to refund appointment.'))
 		} finally {
 			setActionLoadingId(null)
 		}
 	}
 
-	// ── Open reschedule drawer (same pattern as Patient/Doctor pages) ────────
-	const handleOpenReschedule = (appt: AdminAppointmentItem) => {
-		// Build a minimal Appointment shape so the shared RescheduleDrawer can consume it
-		const apptShim: Appointment = {
-			id: appt.id,
-			public_id: appt.public_id || appt.id,
+	// ── Open reschedule drawer ────────────────────────────────────────────────
+	const handleOpenReschedule = async (row: AdminAppointmentItem) => {
+		const targetDocId = row.doctor_id || ''
+		const targetHospitalId = row.hospital_id || ''
+
+		const apptObject: Appointment = {
+			id: row.id,
+			public_id: row.public_id || row.id,
 			appointment_mode: 'clinic visit',
-			appointment_date: appt.appointment_date,
-			start_time: appt.start_time,
-			end_time: '',
-			fees: appt.fees ?? 0,
-			created_at: '',
-			status: appt.status,
+			appointment_date: row.appointment_date,
+			start_time: row.start_time,
+			end_time: row.start_time,
+			fees: row.fees || 0,
+			created_at: new Date().toISOString(),
+			status: (row.status as Appointment['status']) || 'scheduled',
 			doctor: {
-				id: appt.doctor_id || '',
-				name: appt.doctor_name || '',
+				id: targetDocId,
+				name: row.doctor_name || 'Doctor',
 				avatar_s3_key: undefined,
+				speciality: 'General',
 			},
-			patient: {
-				id: appt.patient_id || '',
-				name: appt.patient_name || '',
-				avatar_s3_key: null,
-				age: 0,
-				gender: '',
-			},
-			hospital: appt.hospital_id
-				? { id: appt.hospital_id, name: appt.hospital_name || '', address: '' }
-				: null,
+			patient: row.patient_id ? { id: row.patient_id, name: row.patient_name || '', avatar_s3_key: null, age: 0, gender: '' } : null,
+			hospital: targetHospitalId ? { id: targetHospitalId, name: row.hospital_name || '', address: '' } : null,
 		}
 
-		setRescheduleAppt(apptShim)
-		setRescheduleHospitalId(apptShim.hospital?.id ?? '')
-		setRescheduleDate(new Date())
+		setRescheduleAppt(apptObject)
+		setRescheduleDate(new Date(row.appointment_date || Date.now()))
 		setRescheduleTime('')
 		setRescheduleSlots([])
+		setRescheduleHospitalId(targetHospitalId)
 		setRescheduleHospitals([])
 		setRescheduleOpen(true)
-	}
 
-	// ── Fetch doctor hospitals when drawer opens (same as PatientAppointments) ──
-	useEffect(() => {
-		if (!rescheduleAppt || !rescheduleOpen) return
-
-		const fetchDoctorHospitals = async () => {
-			if (rescheduleAppt.doctor?.id) {
-				try {
-					const res = await getDoctorById(rescheduleAppt.doctor.id)
-					if (res.success && res.data) {
-						const doctorData = res.data as DoctorHospitalResponse
-						setRescheduleHospitals(
-							(doctorData.hospitals || []).map((h) => ({ id: h.hospital.id, label: h.hospital.name }))
-						)
-					}
-				} catch {
-					console.log('Failed to fetch doctor hospitals')
+		if (targetDocId) {
+			try {
+				const docRes = (await getDoctorById(targetDocId)) as DoctorHospitalResponse
+				if (docRes?.hospitals?.length) {
+					const mapped: LookupHospital[] = docRes.hospitals.map((h) => ({
+						id: h.hospital.id,
+						label: h.hospital.name,
+					}))
+					setRescheduleHospitals(mapped)
 				}
+			} catch {
+				setRescheduleHospitals([])
 			}
 		}
+	}
 
-		fetchDoctorHospitals()
-	}, [rescheduleAppt, rescheduleOpen])
-
-	// ── Fetch available slots (same pattern as Patient/Doctor pages) ─────────
+	// ── Fetch slots when reschedule date/hospital changes ──────────────────────
 	useEffect(() => {
-		if (!rescheduleOpen || !rescheduleAppt) return
+		if (!rescheduleOpen || !rescheduleAppt?.doctor?.id) return
 
-		const doctorId = rescheduleAppt.doctor?.id
+		const doctorId = rescheduleAppt.doctor.id
 		const hospitalId = rescheduleHospitalId || rescheduleAppt.hospital?.id
 
 		if (!doctorId || !hospitalId) return
@@ -261,7 +252,7 @@ export default function AdminAppointmentsPage() {
 		fetchSlots()
 	}, [rescheduleDate, rescheduleOpen, rescheduleAppt, rescheduleHospitalId, appointmentType])
 
-	// ── Submit reschedule (uses admin endpoint) ──────────────────────────────
+	// ── Submit reschedule ─────────────────────────────────────────────────────
 	const handleRescheduleConfirm = async () => {
 		if (!rescheduleAppt || !rescheduleTime) {
 			toast.warning('Please select a time slot before confirming.')
@@ -292,10 +283,10 @@ export default function AdminAppointmentsPage() {
 	const columns: Column<AdminAppointmentItem>[] = [
 		{
 			field: 'id',
-			label: 'ID & Date/Time',
+			label: 'Appointment ID',
 			render: (_: unknown, row: AdminAppointmentItem) => (
 				<Box>
-					<Typography variant="subtitle2" fontWeight={700}>
+					<Typography variant="body2" fontWeight={700} sx={{ fontFamily: 'monospace', color: '#0f172a' }}>
 						{row.id}
 					</Typography>
 					<Typography variant="caption" color="text.secondary">
@@ -305,31 +296,30 @@ export default function AdminAppointmentsPage() {
 			),
 		},
 		{
-			field: 'patient_id',
+			field: 'patient_name',
 			label: 'Patient & Doctor',
 			render: (_: unknown, row: AdminAppointmentItem) => (
-				<Box>
-					<Typography variant="body2" fontWeight={600}>
-						Patient: {row.patient_name || 'N/A'}
-					</Typography>
-					<Typography variant="caption" color="text.secondary">
-						ID: {row.patient_id || 'N/A'}
-					</Typography>
-					<Typography variant="body2" fontWeight={600} sx={{ mt: 0.5 }}>
-						Doctor: {row.doctor_name || 'N/A'}
-					</Typography>
-					<Typography variant="caption" color="text.secondary">
-						ID: {row.doctor_id || 'N/A'}
-					</Typography>
-				</Box>
+				<Stack direction="row" spacing={1.5} alignItems="center">
+					<Avatar sx={{ bgcolor: 'rgba(13,148,136,0.12)', color: '#0d9488', width: 34, height: 34, fontSize: 12, fontWeight: 800 }}>
+						{(row.patient_name || 'P').substring(0, 1).toUpperCase()}
+					</Avatar>
+					<Box sx={{ minWidth: 0 }}>
+						<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
+							Patient: {row.patient_name || 'N/A'}
+						</Typography>
+						<Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+							Dr. {row.doctor_name || 'N/A'}
+						</Typography>
+					</Box>
+				</Stack>
 			),
 		},
 		{
 			field: 'fees',
-			label: 'Consultation Fee',
+			label: 'Fee',
 			render: (_: unknown, row: AdminAppointmentItem) => (
 				<Typography variant="body2" fontWeight={700} color="#0d9488">
-					{row.fees != null ? formatINR(row.fees) : 'N/A'}
+					{row.fees != null ? formatINR(row.fees) : '—'}
 				</Typography>
 			),
 		},
@@ -337,75 +327,75 @@ export default function AdminAppointmentsPage() {
 			field: 'status',
 			label: 'Status',
 			render: (_: unknown, row: AdminAppointmentItem) => (
-				<Chip
+				<StatusBadge
+					status={row.status || 'scheduled'}
 					label={(row.status || 'SCHEDULED').toUpperCase()}
-					size="small"
-					color={row.status === 'cancelled' ? 'error' : row.status === 'completed' ? 'success' : 'primary'}
-					sx={{ fontWeight: 700 }}
 				/>
 			),
 		},
 		{
 			field: 'actions',
-			label: 'Admin Overrides',
+			label: 'Actions',
+			align: 'right',
 			render: (_: unknown, row: AdminAppointmentItem) => {
 				const isBusy = actionLoadingId === (row.id || String(row.id))
 				return (
-					<Stack direction="row" spacing={0.5} alignItems="center">
-						{/* Reschedule — reuses the shared SVG icon from Patient/Doctor pages */}
+					<Stack direction="row" spacing={0.75} justifyContent="flex-end" alignItems="center">
 						<Tooltip title="Reschedule">
-							<IconButton
-								size="small"
-								onClick={() => handleOpenReschedule(row)}
-								disabled={isBusy || !row.action?.can_reschedule}
-								sx={{
-									width: 36,
-									height: 36,
-									borderRadius: '10px',
-									bgcolor: '#fff8e8',
-									'&:hover': { bgcolor: '#fef3c7' },
-								}}
-							>
-								<img src={RescheduleIcon} alt="Reschedule" width={18} height={18} />
-							</IconButton>
+							<span>
+								<IconButton
+									size="small"
+									onClick={() => handleOpenReschedule(row)}
+									disabled={isBusy || !row.action?.can_reschedule}
+									sx={{
+										border: '1px solid #fed7aa',
+										borderRadius: 1.5,
+										bgcolor: '#fff7ed',
+										p: 0.75,
+										'&:hover': { bgcolor: '#ffedd5' },
+									}}
+								>
+									<img src={RescheduleIcon} alt="Reschedule" width={16} height={16} />
+								</IconButton>
+							</span>
 						</Tooltip>
 
-						{/* Cancel — reuses the MUI CancelIcon consistent with the app */}
 						<Tooltip title="Cancel">
-							<IconButton
-								size="small"
-								onClick={() => handleRequestCancel(row)}
-								disabled={isBusy || !row.action?.can_cancel}
-								sx={{
-									width: 36,
-									height: 36,
-									borderRadius: '10px',
-									bgcolor: '#ffeeee',
-									color: '#e53935',
-									'&:hover': { bgcolor: '#fecaca' },
-								}}
-							>
-								<CancelIcon fontSize="small" />
-							</IconButton>
+							<span>
+								<IconButton
+									size="small"
+									onClick={() => handleRequestCancel(row)}
+									disabled={isBusy || !row.action?.can_cancel}
+									sx={{
+										border: '1px solid #fecaca',
+										borderRadius: 1.5,
+										color: '#dc2626',
+										bgcolor: '#fff1f2',
+										'&:hover': { bgcolor: '#fee2e2' },
+									}}
+								>
+									<CancelIcon sx={{ fontSize: 16 }} />
+								</IconButton>
+							</span>
 						</Tooltip>
 
-						{/* Refund */}
 						<Tooltip title="Refund">
-							<IconButton
-								size="small"
-								onClick={() => handleRefund(row)}
-								disabled={isBusy || !row.action?.can_refund}
-								sx={{
-									width: 36,
-									height: 36,
-									borderRadius: '10px',
-									bgcolor: '#f3e8ff',
-									color: '#7e22ce',
-									'&:hover': { bgcolor: '#e9d5ff' },
-								}}
-							>
-								<CurrencyRupeeIcon fontSize="small" />
-							</IconButton>
+							<span>
+								<IconButton
+									size="small"
+									onClick={() => handleRefund(row)}
+									disabled={isBusy || !row.action?.can_refund}
+									sx={{
+										border: '1px solid #e9d5ff',
+										borderRadius: 1.5,
+										color: '#7e22ce',
+										bgcolor: '#f3e8ff',
+										'&:hover': { bgcolor: '#e9d5ff' },
+									}}
+								>
+									<CurrencyRupeeIcon sx={{ fontSize: 16 }} />
+								</IconButton>
+							</span>
 						</Tooltip>
 					</Stack>
 				)
@@ -413,59 +403,60 @@ export default function AdminAppointmentsPage() {
 		},
 	]
 
-	// ── Render ─────────────────────────────────────────────────────────────────
 	return (
 		<Box>
-			<SectionCard title="Master Appointment Management & Overrides">
-				<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-					View all appointments, reschedule slots, override cancellations, or trigger manual refunds
-				</Typography>
+			<AdminPageHeader
+				title="Appointments Management"
+				subtitle="Monitor system-wide appointments, handle admin overrides, perform reschedules, and trigger refunds."
+				count={totalRows}
+				countLabel="appointments"
+			/>
 
-				{/* Search input */}
-				<Box sx={{ mb: 2, maxWidth: 400 }}>
-					<AppInput
-						label=""
-						placeholder="Search by patient name, doctor name, or ID..."
-						value={searchInput}
-						onChange={handleSearchChange}
-						fullWidth
-						size="small"
-					/>
-				</Box>
+			<Box sx={{ mb: 2.5, maxWidth: 360 }}>
+				<TextField
+					size="small"
+					fullWidth
+					placeholder="Search patient, doctor, or ID..."
+					value={searchInput}
+					onChange={handleSearchChange}
+					InputProps={{
+						startAdornment: (
+							<InputAdornment position="start">
+								<SearchIcon sx={{ fontSize: 18, color: '#94a3b8' }} />
+							</InputAdornment>
+						),
+					}}
+					sx={{ bgcolor: '#ffffff', borderRadius: 1 }}
+				/>
+			</Box>
 
-				{error && (
-					<Alert severity="error" sx={{ mb: 3 }}>
-						{error}
-					</Alert>
-				)}
+			{error && (
+				<Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+					{error}
+				</Alert>
+			)}
 
-				{loading ? (
-					<Stack alignItems="center" justifyContent="center" sx={{ py: 6 }}>
-						<CircularProgress sx={{ color: '#0d9488' }} />
-						<Typography variant="body2" sx={{ color: '#64748b', mt: 2 }}>
-							Loading master appointments...
-						</Typography>
-					</Stack>
-				) : (
-					<>
-						<AppTable
-							columns={columns}
-							rows={appointments}
-							emptyMessage="No appointments found."
-							page={page}
-							pageSize={pageSize}
-							totalRows={totalRows}
-							onPageChange={(p) => setPage(p)}
-							onPageSizeChange={(s) => {
-								setPageSize(s)
-								setPage(1)
-							}}
-						/>
-					</>
-				)}
-			</SectionCard>
+			{loading ? (
+				<Stack alignItems="center" justifyContent="center" sx={{ py: 8 }}>
+					<CircularProgress sx={{ color: '#0d9488' }} />
+					<Typography variant="body2" sx={{ color: '#64748b', mt: 2 }}>
+						Loading master appointments...
+					</Typography>
+				</Stack>
+			) : (
+				<AppTable
+					columns={columns}
+					rows={appointments}
+					emptyMessage="No appointments found matching criteria."
+					page={page}
+					pageSize={pageSize}
+					totalRows={totalRows}
+					onPageChange={(newPage) => setPage(newPage)}
+					onPageSizeChange={(newSize) => { setPageSize(newSize); setPage(1) }}
+				/>
+			)}
 
-			{/* Reused shared RescheduleDrawer — same component used by Patient & Doctor pages */}
+			{/* Reschedule Drawer */}
 			<RescheduleDrawer
 				rescheduleOpen={rescheduleOpen}
 				setRescheduleOpen={setRescheduleOpen}
@@ -483,48 +474,19 @@ export default function AdminAppointmentsPage() {
 				setRescheduleHospitalId={setRescheduleHospitalId}
 				appointmentType={appointmentType}
 				setAppointmentType={setAppointmentType}
-				sx={{ top: '54px', height: 'calc(100% - 52px)' }}
 			/>
 
-			{/* Cancel confirmation dialog */}
-			<Dialog
-				open={cancelConfirmOpen}
-				onClose={handleCloseCancelConfirm}
-				slotProps={{
-					paper: {
-						sx: { borderRadius: '16px', minWidth: 320 },
-					},
-				}}
-			>
-				<DialogTitle sx={{ fontWeight: 700 }}>Are You Sure?</DialogTitle>
+			{/* Cancel Dialog */}
+			<Dialog open={cancelConfirmOpen} onClose={handleCloseCancelConfirm} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+				<DialogTitle sx={{ fontWeight: 800, color: '#0f172a' }}>Cancel Appointment?</DialogTitle>
 				<DialogContent>
-					<DialogContentText>
-						This will cancel appointment {apptPendingCancel?.id || apptPendingCancel?.public_id}. This action
-						cannot be undone.
+					<DialogContentText color="text.secondary">
+						Are you sure you want to cancel appointment {apptPendingCancel?.id}? This action will update status to cancelled.
 					</DialogContentText>
 				</DialogContent>
-				<DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
-					<AppButton
-						label="Cancel"
-						variant="outlined"
-						startIcon={<CancelIcon fontSize="small" />}
-						onClick={handleCloseCancelConfirm}
-						sx={{
-							borderRadius: '20px',
-							color: 'text.secondary',
-							borderColor: 'divider',
-							'&:hover': { bgcolor: 'action.hover', borderColor: 'divider' },
-						}}
-					/>
-					<AppButton
-						label="Yes"
-						onClick={handleConfirmCancel}
-						sx={{
-							borderRadius: '20px',
-							bgcolor: '#e53935',
-							'&:hover': { bgcolor: '#c62828' },
-						}}
-					/>
+				<DialogActions sx={{ p: 3, pt: 1, gap: 1 }}>
+					<AppButton label="Keep Appointment" variant="outlined" onClick={handleCloseCancelConfirm} />
+					<AppButton label="Confirm Cancel" color="error" onClick={handleConfirmCancel} />
 				</DialogActions>
 			</Dialog>
 		</Box>

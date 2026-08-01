@@ -1,14 +1,16 @@
 // src/features/admin/pages/AdminSpecialitiesPage.tsx
 import { useCallback, useEffect, useState } from 'react'
-import { Box, Typography, Stack, Grid, Alert, CircularProgress, Chip } from '@mui/material'
+import { Box, Typography, Stack, Grid, Alert, CircularProgress, Chip, Avatar, Button } from '@mui/material'
 import AddCircleIcon from '@mui/icons-material/AddCircle'
 import CategoryIcon from '@mui/icons-material/Category'
+import RefreshIcon from '@mui/icons-material/Refresh'
 import { toast } from 'react-toastify'
 
 import SectionCard from '../../../components/common/Card/SectionCard'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppButton from '../../../components/common/Button/AppButton'
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
+import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 import { createSpeciality, listSpecialities, AdminSpecialityItem } from '../adminService'
 
 const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
@@ -82,13 +84,18 @@ export default function AdminSpecialitiesPage() {
 			field: 'label',
 			label: 'Speciality',
 			render: (_: unknown, row: AdminSpecialityItem) => (
-				<Stack spacing={0.5}>
-					<Typography variant="subtitle2" fontWeight={700}>
-						{row.label}
-					</Typography>
-					<Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
-						{row.id}
-					</Typography>
+				<Stack direction="row" spacing={1.5} alignItems="center">
+					<Avatar sx={{ bgcolor: 'rgba(13,148,136,0.12)', color: '#0d9488', width: 36, height: 36, fontSize: 13, fontWeight: 800 }}>
+						{(row.label || 'S').substring(0, 1).toUpperCase()}
+					</Avatar>
+					<Box sx={{ minWidth: 0 }}>
+						<Typography variant="subtitle2" fontWeight={700} color="#0f172a">
+							{row.label}
+						</Typography>
+						<Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: 11 }}>
+							{row.id}
+						</Typography>
+					</Box>
 				</Stack>
 			),
 		},
@@ -96,20 +103,24 @@ export default function AdminSpecialitiesPage() {
 			field: 'description',
 			label: 'Description',
 			render: (_: unknown, row: AdminSpecialityItem) => (
-				<Typography variant="body2" color="text.secondary">
-					{row.description || 'N/A'}
+				<Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+					{row.description || '—'}
 				</Typography>
 			),
 		},
 		{
 			field: 'icon_key',
-			label: 'Icon Asset',
+			label: 'Icon Reference',
 			render: (_: unknown, row: AdminSpecialityItem) =>
 				row.icon_key ? (
-					<Chip label={row.icon_key} size="small" sx={{ bgcolor: '#f1f5f9', maxWidth: 260 }} />
+					<Chip
+						label={row.icon_key}
+						size="small"
+						sx={{ bgcolor: '#f8fafc', color: '#475569', fontFamily: 'monospace', fontSize: '0.68rem', borderRadius: '6px', height: 22, border: '1px solid #e2e8f0' }}
+					/>
 				) : (
-					<Typography variant="body2" color="text.secondary">
-						N/A
+					<Typography variant="caption" color="text.secondary">
+						—
 					</Typography>
 				),
 		},
@@ -117,15 +128,22 @@ export default function AdminSpecialitiesPage() {
 
 	return (
 		<Box>
-			<SectionCard title="Medical Specialities Catalog Management">
-				<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-					Add new medical specialities to the platform catalog for doctor onboarding and search filtering
-				</Typography>
-				<Grid container spacing={4}>
-					<Grid size={{ xs: 12, md: 7 }}>
+			<AdminPageHeader
+				title="Medical Specialities Catalog"
+				subtitle="Manage the master clinical specialty registry used for doctor onboarding, search filtering, and department routing."
+				count={specialities.length}
+				countLabel="specialities"
+			/>
+
+			<Grid container spacing={3} sx={{ mb: 3.5 }}>
+				<Grid size={{ xs: 12, md: 7 }}>
+					<SectionCard
+						title="Add New Speciality"
+						subtitle="Create a new medical category entry in the catalog"
+					>
 						<form onSubmit={handleSubmit}>
 							<Stack spacing={2.5}>
-								{error && <Alert severity="error">{error}</Alert>}
+								{error && <Alert severity="error" sx={{ borderRadius: 2 }}>{error}</Alert>}
 
 								<AppInput
 									label="Speciality Name"
@@ -154,73 +172,87 @@ export default function AdminSpecialitiesPage() {
 									fullWidth
 								/>
 
-								<Box sx={{ pt: 1 }}>
+								<Box sx={{ pt: 0.5 }}>
 									<AppButton
 										label={submitting ? 'Creating Speciality...' : 'Create Speciality'}
 										type="submit"
 										disabled={submitting}
 										startIcon={<AddCircleIcon />}
-										sx={{ bgcolor: '#0d9488', py: 1.2, px: 3, '&:hover': { bgcolor: '#0f766e' } }}
+										sx={{ bgcolor: '#0d9488', py: 1.2, px: 3, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: '#0f766e' } }}
 									/>
 								</Box>
 							</Stack>
 						</form>
-					</Grid>
-
-					<Grid size={{ xs: 12, md: 5 }}>
-						<Box
-							sx={{
-								p: 3,
-								borderRadius: 3,
-								bgcolor: '#0f172a',
-								color: '#ffffff',
-								border: '1px solid #334155',
-							}}
-						>
-							<Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
-								<CategoryIcon sx={{ color: '#2dd4bf', fontSize: 32 }} />
-								<Typography variant="h6" fontWeight={700}>
-									Catalog Standard
-								</Typography>
-							</Stack>
-							<Typography variant="body2" sx={{ color: '#94a3b8', lineHeight: 1.6 }}>
-								Medical specialities created here become immediately available across the system for:
-							</Typography>
-							<Box component="ul" sx={{ pl: 2, mt: 1, color: '#cbd5e1', fontSize: 14 }}>
-								<li>Doctor profile onboarding & verification checklists.</li>
-								<li>Patient dashboard speciality search & appointment scheduling filters.</li>
-								<li>Consultation referral & ancillary service routing.</li>
-							</Box>
-						</Box>
-					</Grid>
+					</SectionCard>
 				</Grid>
-			</SectionCard>
 
-			<SectionCard title="Current Specialities Catalog">
-				<Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={1.5} sx={{ mb: 2 }}>
-					<Typography variant="body2" color="text.secondary">
-						{loading ? 'Loading catalog...' : `${specialities.length} specialities available`}
-					</Typography>
-					<AppButton label="Refresh" variant="outlined" size="small" onClick={loadSpecialities} disabled={loading} />
-				</Stack>
-
-				{listError && (
-					<Alert severity="error" sx={{ mb: 2 }}>
-						{listError}
-					</Alert>
-				)}
-
-				{loading ? (
-					<Stack alignItems="center" justifyContent="center" sx={{ py: 5 }}>
-						<CircularProgress sx={{ color: '#0d9488' }} />
-						<Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-							Loading specialities catalog...
+				<Grid size={{ xs: 12, md: 5 }}>
+					<Box
+						sx={{
+							p: 3,
+							borderRadius: '14px',
+							bgcolor: '#0f172a',
+							color: '#ffffff',
+							border: '1px solid #1e293b',
+							height: '100%',
+							boxSizing: 'border-box',
+						}}
+					>
+						<Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
+							<CategoryIcon sx={{ color: '#2dd4bf', fontSize: 28 }} />
+							<Typography variant="h6" fontWeight={800}>
+								Catalog Standard
+							</Typography>
+						</Stack>
+						<Typography variant="body2" sx={{ color: '#94a3b8', lineHeight: 1.6 }}>
+							Medical specialities registered in this master catalog are immediately available across system workflows:
 						</Typography>
-					</Stack>
-				) : (
-					<AppTable columns={columns} rows={specialities} emptyMessage="No specialities found." />
-				)}
-			</SectionCard>
+						<Box component="ul" sx={{ pl: 2, mt: 1.5, color: '#cbd5e1', fontSize: 13, lineHeight: 1.8 }}>
+							<li>Doctor profile onboarding & verification checklists.</li>
+							<li>Patient dashboard search & appointment scheduling filters.</li>
+							<li>Consultation referral & ancillary service routing.</li>
+						</Box>
+					</Box>
+				</Grid>
+			</Grid>
+
+			<Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2.5 }}>
+				<Box>
+					<Typography variant="subtitle1" fontWeight={800} color="#0f172a">
+						Registered Specialities Catalog
+					</Typography>
+					<Typography variant="caption" color="text.secondary">
+						All active clinical specialities in the system
+					</Typography>
+				</Box>
+				<Button
+					variant="outlined"
+					size="small"
+					startIcon={<RefreshIcon />}
+					onClick={loadSpecialities}
+					disabled={loading}
+					sx={{ textTransform: 'none', borderRadius: 2, borderColor: '#e2e8f0', color: '#64748b', '&:hover': { borderColor: '#0d9488', color: '#0d9488' } }}
+				>
+					Refresh Catalog
+				</Button>
+			</Stack>
+
+			{listError && (
+				<Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+					{listError}
+				</Alert>
+			)}
+
+			{loading ? (
+				<Stack alignItems="center" justifyContent="center" sx={{ py: 6 }}>
+					<CircularProgress sx={{ color: '#0d9488' }} />
+					<Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+						Loading specialities catalog...
+					</Typography>
+				</Stack>
+			) : (
+				<AppTable columns={columns} rows={specialities} emptyMessage="No specialities found." />
+			)}
 		</Box>
 	)
 }

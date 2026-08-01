@@ -3,36 +3,34 @@ import { useEffect, useState } from 'react'
 import {
 	Box,
 	Typography,
-	Card,
-	CardContent,
-	Table,
-	TableBody,
-	TableCell,
-	TableContainer,
-	TableHead,
-	TableRow,
-	Paper,
-	Button,
-	IconButton,
-	Dialog,
-	DialogTitle,
-	DialogContent,
-	DialogActions,
-	TextField,
 	Stack,
 	Chip,
+	Avatar,
 	CircularProgress,
 	MenuItem,
 	Grid,
 	Switch,
 	FormControlLabel,
+	IconButton,
+	Tooltip,
+	Button,
+	Dialog,
+	DialogTitle,
+	DialogContent,
+	DialogActions,
+	TextField,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import GroupsIcon from '@mui/icons-material/Groups'
+import StarIcon from '@mui/icons-material/Star'
 
+import AppTable, { Column } from '../../../components/common/Table/AppTable'
+import AdminPageHeader from '../../../components/admin/AdminPageHeader'
+import SectionCard from '../../../components/common/Card/SectionCard'
+import StatusBadge from '../../../components/admin/StatusBadge'
 import {
 	listAdminCommunities,
 	createAdminCommunity,
@@ -44,6 +42,14 @@ import { toast } from 'react-toastify'
 
 const COMMUNITY_CATEGORIES = ['Endocrinology', 'Oncology', 'Geriatrics', 'Physical Therapy', 'General']
 const COMMUNITY_ICONS = ['bloodtype', 'favorite', 'elderly', 'accessibility', 'forum']
+
+const CATEGORY_COLORS: Record<string, { bg: string; color: string }> = {
+	Endocrinology:    { bg: '#dbeafe', color: '#1d4ed8' },
+	Oncology:         { bg: '#fee2e2', color: '#dc2626' },
+	Geriatrics:       { bg: '#fef9c3', color: '#a16207' },
+	'Physical Therapy': { bg: '#f3e8ff', color: '#7e22ce' },
+	General:          { bg: '#ccfbf1', color: '#0f766e' },
+}
 
 export default function AdminCommunitiesPage() {
 	const [groups, setGroups] = useState<AdminCommunityItem[]>([])
@@ -96,22 +102,10 @@ export default function AdminCommunitiesPage() {
 	}
 
 	const handleSubmit = async () => {
-		if (!name.trim()) {
-			toast.warning('Name is required')
-			return
-		}
-		if (!category) {
-			toast.warning('Category is required')
-			return
-		}
+		if (!name.trim()) { toast.warning('Name is required'); return }
+		if (!category) { toast.warning('Category is required'); return }
 		try {
-			const payload = {
-				name,
-				description,
-				category,
-				icon_name: iconName,
-				is_featured: isFeatured,
-			}
+			const payload = { name, description, category, icon_name: iconName, is_featured: isFeatured }
 			if (editingGroup) {
 				await updateAdminCommunity(editingGroup.id, payload)
 				toast.success('Community group updated successfully!')
@@ -144,197 +138,198 @@ export default function AdminCommunitiesPage() {
 			const targetState = !group.is_featured
 			await updateAdminCommunity(group.id, { is_featured: targetState })
 			toast.success(`${group.name} ${targetState ? 'featured on landing page' : 'removed from featured list'}`)
-			setGroups((prev) =>
-				prev.map((g) => (g.id === group.id ? { ...g, is_featured: targetState } : g))
-			)
+			setGroups((prev) => prev.map((g) => (g.id === group.id ? { ...g, is_featured: targetState } : g)))
 		} catch (err) {
 			console.error('Error toggling featured state:', err)
 			toast.error('Failed to toggle featured state')
 		}
 	}
 
-	return (
-		<Box sx={{ p: 1 }}>
-			<Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
-				<Box>
-					<Typography variant="h5" fontWeight={800} color="#0f172a">
-						Patient Support Groups & Communities
-					</Typography>
-					<Typography variant="body2" color="text.secondary">
-						Manage interactive discussion forums, map categories, and configure featured cards for the patient home screen.
-					</Typography>
-				</Box>
-				<Stack direction="row" spacing={2}>
-					<IconButton onClick={fetchGroups} sx={{ border: '1px solid #cbd5e1', borderRadius: 2.5 }}>
-						<RefreshIcon fontSize="small" />
-					</IconButton>
-					<Button
-						variant="contained"
-						startIcon={<AddIcon />}
-						onClick={handleOpenCreate}
-						sx={{ bgcolor: '#0d9488', textTransform: 'none', borderRadius: 2.5, '&:hover': { bgcolor: '#0f766e' } }}
-					>
-						Create Group
-					</Button>
+	const columns: Column<AdminCommunityItem>[] = [
+		{
+			field: 'name',
+			label: 'Group',
+			render: (_, group) => {
+				const style = CATEGORY_COLORS[group.category] ?? { bg: '#f1f5f9', color: '#475569' }
+				return (
+					<Stack direction="row" spacing={1.5} alignItems="center">
+						<Avatar
+							sx={{ width: 36, height: 36, bgcolor: style.bg, color: style.color, flexShrink: 0 }}
+						>
+							<GroupsIcon sx={{ fontSize: 18 }} />
+						</Avatar>
+						<Box sx={{ minWidth: 0 }}>
+							<Stack direction="row" spacing={1} alignItems="center">
+								<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
+									{group.name}
+								</Typography>
+								{group.is_featured && (
+									<Chip
+										icon={<StarIcon sx={{ fontSize: '11px !important', color: '#d97706 !important' }} />}
+										label="Featured"
+										size="small"
+										sx={{ bgcolor: '#fef3c7', color: '#d97706', fontWeight: 700, fontSize: '0.6rem', height: 18 }}
+									/>
+								)}
+							</Stack>
+							<Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 260, display: 'block' }}>
+								{group.description || 'No description provided.'}
+							</Typography>
+						</Box>
+					</Stack>
+				)
+			},
+		},
+		{
+			field: 'category',
+			label: 'Category',
+			render: (_, group) => {
+				const style = CATEGORY_COLORS[group.category] ?? { bg: '#f1f5f9', color: '#475569' }
+				return (
+					<Chip
+						label={group.category}
+						size="small"
+						sx={{ bgcolor: style.bg, color: style.color, fontWeight: 700, fontSize: '0.68rem', borderRadius: '6px', height: 22 }}
+					/>
+				)
+			},
+		},
+		{
+			field: 'icon_name',
+			label: 'Icon',
+			render: (_, group) => (
+				<Typography variant="caption" sx={{ fontFamily: 'monospace', color: '#64748b', bgcolor: '#f8fafc', px: 1, py: 0.5, borderRadius: 1, border: '1px solid #e2e8f0' }}>
+					{group.icon_name || 'forum'}
+				</Typography>
+			),
+		},
+		{
+			field: 'is_featured',
+			label: 'Featured',
+			render: (_, group) => (
+				<FormControlLabel
+					control={
+						<Switch
+							size="small"
+							checked={group.is_featured}
+							onChange={() => handleToggleFeatured(group)}
+							sx={{
+								'& .MuiSwitch-switchBase.Mui-checked': { color: '#0d9488' },
+								'& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#0d9488' },
+							}}
+						/>
+					}
+					label={
+						<Typography variant="caption" fontWeight={600} color={group.is_featured ? '#0d9488' : 'text.secondary'}>
+							{group.is_featured ? 'Featured' : 'Standard'}
+						</Typography>
+					}
+					sx={{ m: 0 }}
+				/>
+			),
+		},
+		{
+			field: 'actions',
+			label: 'Actions',
+			align: 'right',
+			render: (_, group) => (
+				<Stack direction="row" spacing={0.75} justifyContent="flex-end">
+					<Tooltip title="Edit group">
+						<IconButton
+							size="small"
+							onClick={() => handleOpenEdit(group)}
+							sx={{ border: '1px solid #e2e8f0', borderRadius: 1.5, color: '#0d9488', '&:hover': { bgcolor: 'rgba(13,148,136,0.06)' } }}
+						>
+							<EditIcon sx={{ fontSize: 16 }} />
+						</IconButton>
+					</Tooltip>
+					<Tooltip title="Delete group">
+						<IconButton
+							size="small"
+							onClick={() => handleDelete(group.id)}
+							sx={{ border: '1px solid #fecaca', borderRadius: 1.5, color: '#dc2626', bgcolor: '#fff1f2', '&:hover': { bgcolor: '#fee2e2' } }}
+						>
+							<DeleteIcon sx={{ fontSize: 16 }} />
+						</IconButton>
+					</Tooltip>
 				</Stack>
-			</Stack>
+			),
+		},
+	]
+
+	return (
+		<Box>
+			<AdminPageHeader
+				title="Community Groups"
+				subtitle="Manage interactive patient support forums, categories, and featured placements."
+				count={groups.length}
+				countLabel="groups"
+				actions={
+					<>
+						<Tooltip title="Refresh list">
+							<IconButton
+								onClick={fetchGroups}
+								sx={{ border: '1px solid #e2e8f0', borderRadius: 1.5, color: '#64748b', '&:hover': { color: '#0f172a' } }}
+							>
+								<RefreshIcon fontSize="small" />
+							</IconButton>
+						</Tooltip>
+						<Button
+							variant="contained"
+							startIcon={<AddIcon />}
+							onClick={handleOpenCreate}
+							sx={{ bgcolor: '#0d9488', textTransform: 'none', borderRadius: 2, fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}
+						>
+							Create Group
+						</Button>
+					</>
+				}
+			/>
 
 			{loading ? (
-				<Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+				<Stack alignItems="center" justifyContent="center" sx={{ py: 8 }}>
 					<CircularProgress sx={{ color: '#0d9488' }} />
-				</Box>
+					<Typography variant="body2" sx={{ color: '#64748b', mt: 2 }}>Loading communities...</Typography>
+				</Stack>
 			) : (
-				<TableContainer component={Paper} sx={{ borderRadius: 3, border: '1px solid #e2e8f0', boxShadow: 'none' }}>
-					<Table sx={{ minWidth: 650 }}>
-						<TableHead sx={{ bgcolor: '#f8fafc' }}>
-							<TableRow>
-								<TableCell sx={{ fontWeight: 700, color: '#475569' }}>Group Name</TableCell>
-								<TableCell sx={{ fontWeight: 700, color: '#475569' }}>Description</TableCell>
-								<TableCell sx={{ fontWeight: 700, color: '#475569' }}>Category</TableCell>
-								<TableCell sx={{ fontWeight: 700, color: '#475569' }}>Icon Reference</TableCell>
-								<TableCell sx={{ fontWeight: 700, color: '#475569' }}>Landing Page Featured</TableCell>
-								<TableCell align="right" sx={{ fontWeight: 700, color: '#475569', pr: 3 }}>Actions</TableCell>
-							</TableRow>
-						</TableHead>
-						<TableBody>
-							{groups.length === 0 ? (
-								<TableRow>
-									<TableCell colSpan={6} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-										No community groups configured. Click "Create Group" to add one.
-									</TableCell>
-								</TableRow>
-							) : (
-								groups.map((group) => (
-									<TableRow key={group.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-										<TableCell sx={{ fontWeight: 600, color: '#0f172a' }}>
-											<Stack direction="row" spacing={1.5} alignItems="center">
-												<GroupsIcon sx={{ color: '#64748b' }} />
-												<span>{group.name}</span>
-											</Stack>
-										</TableCell>
-										<TableCell sx={{ color: 'text.secondary', fontSize: '0.85rem', maxWidth: 300 }}>
-											{group.description || 'No description provided.'}
-										</TableCell>
-										<TableCell>
-											<Chip
-												label={group.category}
-												size="small"
-												sx={{ bgcolor: '#ccfbf1', color: '#0f766e', fontWeight: 600 }}
-											/>
-										</TableCell>
-										<TableCell sx={{ fontFamily: 'monospace', color: '#64748b' }}>
-											{group.icon_name || 'forum'}
-										</TableCell>
-										<TableCell>
-											<FormControlLabel
-												control={
-													<Switch
-														checked={group.is_featured}
-														onChange={() => handleToggleFeatured(group)}
-														color="primary"
-														sx={{
-															'& .MuiSwitch-switchBase.Mui-checked': {
-																color: '#0d9488',
-															},
-															'& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-																backgroundColor: '#0d9488',
-															},
-														}}
-													/>
-												}
-												label={group.is_featured ? 'Featured' : 'Standard'}
-												sx={{ color: group.is_featured ? '#0d9488' : 'text.secondary', fontWeight: group.is_featured ? 700 : 400 }}
-											/>
-										</TableCell>
-										<TableCell align="right" sx={{ pr: 3 }}>
-											<Stack direction="row" spacing={1} justifyContent="flex-end">
-												<IconButton color="primary" onClick={() => handleOpenEdit(group)} sx={{ border: '1px solid #e2e8f0', borderRadius: 2 }}>
-													<EditIcon fontSize="small" />
-												</IconButton>
-												<IconButton color="error" onClick={() => handleDelete(group.id)} sx={{ border: '1px solid #e2e8f0', borderRadius: 2 }}>
-													<DeleteIcon fontSize="small" />
-												</IconButton>
-											</Stack>
-										</TableCell>
-									</TableRow>
-								))
-							)}
-						</TableBody>
-					</Table>
-				</TableContainer>
+				<AppTable<AdminCommunityItem>
+					columns={columns}
+					rows={groups}
+					emptyMessage='No community groups configured. Click "Create Group" to add one.'
+				/>
 			)}
 
-			{/* Create/Edit Group Dialog */}
-			<Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-				<DialogTitle sx={{ fontWeight: 700 }}>
+			{/* Create/Edit Dialog */}
+			<Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+				<DialogTitle sx={{ fontWeight: 800, color: '#0f172a', pb: 1 }}>
 					{editingGroup ? 'Edit Support Group' : 'Create New Support Group'}
 				</DialogTitle>
 				<DialogContent>
-					<Stack spacing={3} sx={{ pt: 1.5 }}>
-						<TextField
-							fullWidth
-							label="Group Name"
-							value={name}
-							onChange={(e) => setName(e.target.value)}
-							placeholder="E.g., Cardiology Support Network"
-						/>
+					<Stack spacing={2.5} sx={{ pt: 1.5 }}>
+						<TextField fullWidth label="Group Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="E.g., Cardiology Support Network" />
 						<Grid container spacing={2}>
 							<Grid size={{ xs: 6 }}>
-								<TextField
-									fullWidth
-									select
-									label="Category"
-									value={category}
-									onChange={(e) => setCategory(e.target.value)}
-								>
-									{COMMUNITY_CATEGORIES.map((cat) => (
-										<MenuItem key={cat} value={cat}>
-											{cat}
-										</MenuItem>
-									))}
+								<TextField fullWidth select label="Category" value={category} onChange={(e) => setCategory(e.target.value)}>
+									{COMMUNITY_CATEGORIES.map((cat) => <MenuItem key={cat} value={cat}>{cat}</MenuItem>)}
 								</TextField>
 							</Grid>
 							<Grid size={{ xs: 6 }}>
-								<TextField
-									fullWidth
-									select
-									label="Material Icon Reference"
-									value={iconName}
-									onChange={(e) => setIconName(e.target.value)}
-								>
-									{COMMUNITY_ICONS.map((icon) => (
-										<MenuItem key={icon} value={icon}>
-											{icon}
-										</MenuItem>
-									))}
+								<TextField fullWidth select label="Icon Reference" value={iconName} onChange={(e) => setIconName(e.target.value)}>
+									{COMMUNITY_ICONS.map((icon) => <MenuItem key={icon} value={icon}>{icon}</MenuItem>)}
 								</TextField>
 							</Grid>
 						</Grid>
-						<TextField
-							fullWidth
-							multiline
-							rows={3}
-							label="Short Description"
-							placeholder="Introduce the support group purpose and goals..."
-							value={description}
-							onChange={(e) => setDescription(e.target.value)}
-						/>
+						<TextField fullWidth multiline rows={3} label="Short Description" placeholder="Introduce the support group purpose..." value={description} onChange={(e) => setDescription(e.target.value)} />
 						<FormControlLabel
-							control={
-								<Switch
-									checked={isFeatured}
-									onChange={(e) => setIsFeatured(e.target.checked)}
-									color="primary"
-								/>
-							}
-							label="Show this support group on the patient home page banner"
+							control={<Switch checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} color="primary" />}
+							label={<Typography variant="body2">Show this group on the patient home page banner</Typography>}
 						/>
 					</Stack>
 				</DialogContent>
-				<DialogActions sx={{ p: 3, pt: 1 }}>
-					<Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-					<Button variant="contained" onClick={handleSubmit} sx={{ bgcolor: '#0d9488', '&:hover': { bgcolor: '#0f766e' } }}>
-						Save Group
+				<DialogActions sx={{ p: 3, pt: 1.5, gap: 1 }}>
+					<Button onClick={() => setDialogOpen(false)} sx={{ textTransform: 'none', color: '#64748b' }}>Cancel</Button>
+					<Button variant="contained" onClick={handleSubmit} sx={{ bgcolor: '#0d9488', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}>
+						{editingGroup ? 'Save Changes' : 'Create Group'}
 					</Button>
 				</DialogActions>
 			</Dialog>

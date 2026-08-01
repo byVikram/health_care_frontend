@@ -3,8 +3,6 @@ import { useEffect, useState } from 'react'
 import {
 	Box,
 	Typography,
-	Card,
-	CardContent,
 	Button,
 	IconButton,
 	Dialog,
@@ -19,13 +17,20 @@ import {
 	Grid,
 	Switch,
 	FormControlLabel,
+	Tooltip,
+	Avatar,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import ArticleIcon from '@mui/icons-material/Article'
+import StarIcon from '@mui/icons-material/Star'
 
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
+import AdminPageHeader from '../../../components/admin/AdminPageHeader'
+import SectionCard from '../../../components/common/Card/SectionCard'
+import StatusBadge from '../../../components/admin/StatusBadge'
 import {
 	listAdminBlogs,
 	createAdminBlog,
@@ -81,7 +86,7 @@ export default function AdminBlogsPage() {
 	const handleOpenEdit = (blog: AdminBlogItem) => {
 		setEditingBlog(blog)
 		setTitle(blog.title)
-		setContent('') // We can leave content blank to preserve it unless edited, or let the user override
+		setContent('')
 		setCategory(blog.category)
 		setStatus(blog.status)
 		setImageUrl(blog.image_url || '')
@@ -96,7 +101,6 @@ export default function AdminBlogsPage() {
 		}
 		try {
 			if (editingBlog) {
-				// Update
 				const payload: Record<string, any> = { title, category, status, image_url: imageUrl, is_featured: isFeatured }
 				if (content.trim()) {
 					payload.content = content
@@ -104,7 +108,6 @@ export default function AdminBlogsPage() {
 				await updateAdminBlog(editingBlog.id, payload)
 				toast.success('Blog article updated successfully!')
 			} else {
-				// Create
 				if (!content.trim()) {
 					toast.warning('Article content is required')
 					return
@@ -130,101 +133,164 @@ export default function AdminBlogsPage() {
 		}
 	}
 
-	return (
-		<Box sx={{ p: 1 }}>
-			<Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
-				<Box>
-					<Typography variant="h5" fontWeight={800} color="#0f172a">
-						Health Articles Library
-					</Typography>
-					<Typography variant="body2" color="text.secondary">
-						Draft, edit, publish, and delete blog posts for patient health education.
-					</Typography>
-				</Box>
-				<Stack direction="row" spacing={2}>
-					<IconButton onClick={fetchBlogs} sx={{ color: '#0d9488' }}>
-						<RefreshIcon />
-					</IconButton>
-					<Button
-						variant="contained"
-						startIcon={<AddIcon />}
-						onClick={handleOpenCreate}
-						sx={{ bgcolor: '#0d9488', textTransform: 'none', borderRadius: 2.5, '&:hover': { bgcolor: '#0f766e' } }}
-					>
-						Create Article
-					</Button>
+	const columns: Column<AdminBlogItem>[] = [
+		{
+			field: 'title',
+			label: 'Article',
+			render: (_, blog) => (
+				<Stack direction="row" spacing={1.5} alignItems="center">
+					<Avatar sx={{ bgcolor: 'rgba(13,148,136,0.12)', color: '#0d9488', width: 36, height: 36, flexShrink: 0 }}>
+						<ArticleIcon sx={{ fontSize: 18 }} />
+					</Avatar>
+					<Box sx={{ minWidth: 0 }}>
+						<Stack direction="row" spacing={1} alignItems="center">
+							<Typography fontWeight={700} color="#0f172a" fontSize={13} noWrap>
+								{blog.title}
+							</Typography>
+							{blog.is_featured && (
+								<Chip
+									icon={<StarIcon sx={{ fontSize: '11px !important', color: '#d97706 !important' }} />}
+									label="Featured"
+									size="small"
+									sx={{ bgcolor: '#fef3c7', color: '#d97706', fontWeight: 700, fontSize: '0.6rem', height: 18 }}
+								/>
+							)}
+						</Stack>
+						<Typography variant="caption" display="block" color="text.secondary" noWrap>
+							slug: {blog.slug}
+						</Typography>
+					</Box>
 				</Stack>
-			</Stack>
+			),
+		},
+		{
+			field: 'category',
+			label: 'Category',
+			render: (_, blog) => (
+				<Chip
+					label={blog.category}
+					size="small"
+					sx={{ bgcolor: '#f1f5f9', color: '#475569', fontWeight: 600, fontSize: '0.68rem', borderRadius: '6px', height: 22 }}
+				/>
+			),
+		},
+		{
+			field: 'author_name',
+			label: 'Author',
+			render: (_, blog) => (
+				<Typography variant="body2" color="#0f172a" fontWeight={600}>
+					{blog.author_name}
+				</Typography>
+			),
+		},
+		{
+			field: 'status',
+			label: 'Status',
+			render: (_, blog) => (
+				<StatusBadge
+					status={blog.status}
+					label={blog.status.toUpperCase()}
+				/>
+			),
+		},
+		{
+			field: 'comments_count',
+			label: 'Comments',
+			render: (_, blog) => (
+				<Typography variant="body2" color="text.secondary" fontWeight={600}>
+					{blog.comments_count}
+				</Typography>
+			),
+		},
+		{
+			field: 'created_at',
+			label: 'Created At',
+			render: (_, blog) => (
+				<Typography variant="caption" color="text.secondary">
+					{new Date(blog.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+				</Typography>
+			),
+		},
+		{
+			field: 'actions',
+			label: 'Actions',
+			align: 'right',
+			render: (_, blog) => (
+				<Stack direction="row" spacing={0.75} justifyContent="flex-end">
+					<Tooltip title="Edit article">
+						<IconButton
+							size="small"
+							onClick={() => handleOpenEdit(blog)}
+							sx={{ border: '1px solid #e2e8f0', borderRadius: 1.5, color: '#0d9488', '&:hover': { bgcolor: 'rgba(13,148,136,0.06)' } }}
+						>
+							<EditIcon sx={{ fontSize: 16 }} />
+						</IconButton>
+					</Tooltip>
+					<Tooltip title="Delete article">
+						<IconButton
+							size="small"
+							onClick={() => handleDelete(blog.id)}
+							sx={{ border: '1px solid #fecaca', borderRadius: 1.5, color: '#dc2626', bgcolor: '#fff1f2', '&:hover': { bgcolor: '#fee2e2' } }}
+						>
+							<DeleteIcon sx={{ fontSize: 16 }} />
+						</IconButton>
+					</Tooltip>
+				</Stack>
+			),
+		},
+	]
+
+	return (
+		<Box>
+			<AdminPageHeader
+				title="Health Articles Library"
+				subtitle="Draft, edit, publish, and manage blog posts for patient health education and medical insights."
+				count={blogs.length}
+				countLabel="articles"
+				actions={
+					<>
+						<Tooltip title="Refresh list">
+							<IconButton
+								onClick={fetchBlogs}
+								sx={{ border: '1px solid #e2e8f0', borderRadius: 1.5, color: '#64748b', '&:hover': { color: '#0f172a' } }}
+							>
+								<RefreshIcon fontSize="small" />
+							</IconButton>
+						</Tooltip>
+						<Button
+							variant="contained"
+							startIcon={<AddIcon />}
+							onClick={handleOpenCreate}
+							sx={{ bgcolor: '#0d9488', textTransform: 'none', borderRadius: 2, fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}
+						>
+							Create Article
+						</Button>
+					</>
+				}
+			/>
 
 			{loading ? (
-				<Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+				<Stack alignItems="center" justifyContent="center" sx={{ py: 8 }}>
 					<CircularProgress sx={{ color: '#0d9488' }} />
-				</Box>
+					<Typography variant="body2" sx={{ color: '#64748b', mt: 2 }}>
+						Loading blog articles...
+					</Typography>
+				</Stack>
 			) : (
 				<AppTable<AdminBlogItem>
-					columns={[
-						{
-							field: 'title',
-							label: 'Title',
-							render: (_, blog) => (
-								<Box>
-									<Stack direction="row" spacing={1} alignItems="center">
-										<Typography fontWeight={600} color="#0f172a" fontSize={13}>{blog.title}</Typography>
-										{blog.is_featured && (
-											<Chip label="Featured" size="small" sx={{ bgcolor: '#fef3c7', color: '#d97706', fontWeight: 700, fontSize: '0.65rem', height: 18 }} />
-										)}
-									</Stack>
-									<Typography variant="caption" display="block" color="text.secondary">slug: {blog.slug}</Typography>
-								</Box>
-							),
-						},
-						{ field: 'category', label: 'Category' },
-						{ field: 'author_name', label: 'Author' },
-						{
-							field: 'status',
-							label: 'Status',
-							render: (_, blog) => (
-								<Chip
-									label={blog.status.toUpperCase()}
-									size="small"
-									sx={{ bgcolor: blog.status === 'published' ? '#ccfbf1' : '#f1f5f9', color: blog.status === 'published' ? '#0f766e' : '#475569', fontWeight: 700, fontSize: '0.65rem' }}
-								/>
-							),
-						},
-						{ field: 'comments_count', label: 'Comments Count' },
-						{
-							field: 'created_at',
-							label: 'Created At',
-							render: (_, blog) => <Typography fontSize={13}>{new Date(blog.created_at).toLocaleDateString()}</Typography>,
-						},
-						{
-							field: 'actions',
-							label: 'Actions',
-							align: 'right',
-							render: (_, blog) => (
-								<Stack direction="row" spacing={1} justifyContent="flex-end">
-									<IconButton color="primary" onClick={() => handleOpenEdit(blog)} sx={{ border: '1px solid #e2e8f0', borderRadius: 2 }}>
-										<EditIcon fontSize="small" />
-									</IconButton>
-									<IconButton color="error" onClick={() => handleDelete(blog.id)} sx={{ border: '1px solid #e2e8f0', borderRadius: 2 }}>
-										<DeleteIcon fontSize="small" />
-									</IconButton>
-								</Stack>
-							),
-						},
-					] as Column<AdminBlogItem>[]}
+					columns={columns}
 					rows={blogs}
 					emptyMessage="No blog articles found."
 				/>
 			)}
 
 			{/* Create/Edit Blog Dialog */}
-			<Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
-				<DialogTitle sx={{ fontWeight: 700 }}>
+			<Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+				<DialogTitle sx={{ fontWeight: 800, color: '#0f172a' }}>
 					{editingBlog ? 'Edit Blog Article' : 'Write a New Blog Article'}
 				</DialogTitle>
 				<DialogContent>
-					<Stack spacing={3} sx={{ pt: 1.5 }}>
+					<Stack spacing={2.5} sx={{ pt: 1.5 }}>
 						<TextField
 							fullWidth
 							label="Article Title"
@@ -275,7 +341,7 @@ export default function AdminBlogsPage() {
 									color="primary"
 								/>
 							}
-							label="Feature this article on the landing page"
+							label={<Typography variant="body2">Feature this article on the landing page</Typography>}
 						/>
 						<TextField
 							fullWidth
@@ -289,9 +355,9 @@ export default function AdminBlogsPage() {
 						/>
 					</Stack>
 				</DialogContent>
-				<DialogActions sx={{ p: 3, pt: 1 }}>
-					<Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-					<Button variant="contained" onClick={handleSubmit} sx={{ bgcolor: '#0d9488', '&:hover': { bgcolor: '#0f766e' } }}>
+				<DialogActions sx={{ p: 3, pt: 1.5, gap: 1 }}>
+					<Button onClick={() => setDialogOpen(false)} sx={{ textTransform: 'none', color: '#64748b' }}>Cancel</Button>
+					<Button variant="contained" onClick={handleSubmit} sx={{ bgcolor: '#0d9488', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}>
 						Save Article
 					</Button>
 				</DialogActions>

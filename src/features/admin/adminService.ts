@@ -23,9 +23,19 @@ export interface DoctorVerificationItem {
 	license_proof_s3_key?: string
 }
 
+export interface DocumentReviewItemPayload {
+	document_id: string
+	document_name: string
+	status: 'verified' | 'requires_reupload' | 'rejected' | 'not_reviewed' | 'flagged' | 'under_review'
+	issue_tags?: string[]
+}
+
 export interface DoctorVerifyPayload {
 	is_verified: boolean
 	rejection_reason?: string
+	reviewer_notes?: string
+	issue_flags?: string[]
+	document_reviews?: DocumentReviewItemPayload[]
 }
 
 export interface ProviderVerificationItem {
@@ -45,6 +55,19 @@ export interface ProviderVerificationItem {
 export interface ProviderVerifyPayload {
 	is_verified: boolean
 	rejection_reason?: string
+	reviewer_notes?: string
+	issue_flags?: string[]
+	document_reviews?: DocumentReviewItemPayload[]
+}
+
+export interface AuditHistoryEventItem {
+	id: string
+	reviewer_name: string
+	action: string
+	document_name?: string
+	timestamp: string
+	issue_tags?: string[]
+	notes?: string
 }
 
 export interface AdminUserItem {
@@ -189,6 +212,15 @@ export interface AdminAppointmentListResult {
 	page_size: number
 }
 
+export interface DoctorDegreeItem {
+	id?: number | string
+	degree: string
+	specialization?: string
+	college?: string
+	year_of_passing?: string | number
+	qualification_proof_s3_key?: string | null
+}
+
 export interface DoctorVerificationDocument {
 	id: number | string
 	name: string
@@ -207,8 +239,11 @@ export interface DoctorVerificationDetail {
 	is_verified: boolean
 	specialities?: string[]
 	qualification?: string
+	degrees?: DoctorDegreeItem[]
 	experience_years?: number
 	registration_number?: string
+	registration_proof_s3_key?: string
+	identity_proof_s3_key?: string
 	languages?: string[]
 	about?: string
 	hospital?: string
@@ -359,6 +394,33 @@ export const verifyProvider = async (
 ) => {
 	const res = await ApiService.post<AdminMutationResponse>(
 		API_ENDPOINTS.ADMIN.VERIFY_PROVIDER(providerType, providerId),
+		payload
+	)
+	return res.data
+}
+
+/** GET /api/admin/verifications/:target_type/:target_id/audit-history */
+export const getVerificationAuditHistory = async (targetType: string, targetId: string) => {
+	const res = await ApiService.get<{ success: boolean; data: AuditHistoryEventItem[] }>(
+		API_ENDPOINTS.ADMIN.VERIFICATION_AUDIT_HISTORY(targetType, targetId)
+	)
+	return res.data
+}
+
+export interface SingleDocumentReviewPayload {
+	target_type: string
+	target_id: string
+	document_id: string
+	document_name: string
+	status: 'verified' | 'requires_reupload' | 'rejected' | 'not_reviewed' | 'flagged' | 'under_review'
+	issue_tags?: string[]
+	notes?: string
+}
+
+/** POST /api/admin/verifications/document-review */
+export const recordSingleDocumentReview = async (payload: SingleDocumentReviewPayload) => {
+	const res = await ApiService.post<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.RECORD_DOCUMENT_REVIEW,
 		payload
 	)
 	return res.data

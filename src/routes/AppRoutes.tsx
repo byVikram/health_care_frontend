@@ -48,6 +48,7 @@ import AdminLayout from '../components/layout/AdminLayout'
 import AdminProtectedRoute from './AdminProtectedRoute'
 import AdminDashboardPage from '../features/admin/pages/AdminDashboardPage'
 import AdminVerificationsPage from '../features/admin/pages/AdminVerificationsPage'
+import AdminVerificationReviewPage from '../features/admin/pages/AdminVerificationReviewPage'
 import AdminUsersPage from '../features/admin/pages/AdminUsersPage'
 import AdminUserDetailPage from '../features/admin/pages/AdminUserDetailPage'
 import AdminAppointmentsPage from '../features/admin/pages/AdminAppointmentsPage'
@@ -125,6 +126,7 @@ export default function AppRoutes() {
 					<Route element={<AdminLayout />}>
 						<Route path={ROUTES.ADMIN.DASHBOARD} element={<AdminDashboardPage />} />
 						<Route path={ROUTES.ADMIN.VERIFICATIONS} element={<AdminVerificationsPage />} />
+						<Route path={ROUTES.ADMIN.VERIFICATION_REVIEW} element={<AdminVerificationReviewPage />} />
 						<Route path={ROUTES.ADMIN.USERS} element={<AdminUsersPage />} />
 						<Route path={ROUTES.ADMIN.USER_DETAIL} element={<AdminUserDetailPage />} />
 						<Route path={ROUTES.ADMIN.APPOINTMENTS} element={<AdminAppointmentsPage />} />

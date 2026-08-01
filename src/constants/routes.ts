@@ -88,6 +88,7 @@ export const ROUTES = {
 		LOGIN: '/admin/login',
 		DASHBOARD: '/admin',
 		VERIFICATIONS: '/admin/verifications',
+		VERIFICATION_REVIEW: '/admin/verifications/:type/:id',
 		USERS: '/admin/users',
 		USER_DETAIL: '/admin/users/:role/:id',
 		APPOINTMENTS: '/admin/appointments',

@@ -156,6 +156,9 @@ export const API_ENDPOINTS = {
 		PROVIDERS_VERIFICATION_QUEUE: '/api/admin/providers/verification-queue',
 		VERIFY_PROVIDER: (providerType: string, providerId: string) =>
 			`/api/admin/providers/${providerType}/${providerId}/verify`,
+		VERIFICATION_AUDIT_HISTORY: (targetType: string, targetId: string) =>
+			`/api/admin/verifications/${targetType}/${targetId}/audit-history`,
+		RECORD_DOCUMENT_REVIEW: '/api/admin/verifications/document-review',
 		USERS: '/api/admin/users',
 		SUSPEND_USER: (userPublicId: string) => `/api/admin/users/${userPublicId}/suspend`,
 		RESET_USER_OTP: (userPublicId: string) => `/api/admin/users/${userPublicId}/reset-otp`,
