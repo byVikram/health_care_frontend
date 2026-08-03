@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
 	Box,
-	Grid,
+	Tabs,
+	Tab,
 	Typography,
 	Chip,
 	Stack,
@@ -18,6 +19,8 @@ import {
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import PersonIcon from '@mui/icons-material/Person'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import StarBorderIcon from '@mui/icons-material/StarBorder'
 import EventIcon from '@mui/icons-material/Event'
 import StarIcon from '@mui/icons-material/Star'
 import GroupsIcon from '@mui/icons-material/Groups'
@@ -37,12 +40,12 @@ import {
 	AdminPatientDetail,
 	DoctorVerificationDetail,
 	AdminProviderDetail,
-	AdminUpcomingAppointment,
 } from '../adminService'
 import { buildS3Url } from '../../../utils/s3'
 import { ROUTES } from '../../../constants/routes'
 
 type DetailRole = 'patient' | 'doctor' | 'pharmacy' | 'laboratory' | 'radiology'
+type DetailTab = 'info' | 'ratings' | 'appointments'
 
 const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
 
@@ -150,6 +153,8 @@ export default function AdminUserDetailPage() {
 
 	useEffect(() => {
 		if (!id) return
+
+		setActiveTab('info')
 
 		if (detailRole === 'patient') {
 			fetchPatient(id)
