@@ -103,7 +103,7 @@ export default function AdminDashboardPage() {
 						</Typography>
 					</Box>
 
-					<Stack direction="row" spacing={1} flexWrap="wrap">
+					{/* <Stack direction="row" spacing={1} flexWrap="wrap">
 						<Chip
 							label={(role || 'SUPER ADMIN').replace(/_/g, ' ')}
 							sx={{
@@ -127,7 +127,7 @@ export default function AdminDashboardPage() {
 								border: '1px solid rgba(16,185,129,0.3)',
 							}}
 						/>
-					</Stack>
+					</Stack> */}
 				</Stack>
 			</Box>
 
