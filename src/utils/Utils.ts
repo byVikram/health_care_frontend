@@ -10,7 +10,7 @@ export const formatINR = (amount: number | string): string => {
 /**
  * Safely formats a doctor's name with a single "Dr." prefix.
  * Works whether the API returns "Anjali Singh" OR "Dr. Anjali Singh" —
- * the output is always "Dr. Anjali Singh" (never "Dr. Dr. Anjali Singh").
+ * the output is always "Dr. Anjali Singh" (never "Dr. Anjali Singh").
  */
 export const formatDoctorName = (name?: string | null): string => {
   if (!name) return '';

@@ -51,7 +51,7 @@ export default function AdminPageHeader({
 					)}
 				</Stack>
 				{subtitle && (
-					<Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 560 }}>
+					<Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 780 }}>
 						{subtitle}
 					</Typography>
 				)}

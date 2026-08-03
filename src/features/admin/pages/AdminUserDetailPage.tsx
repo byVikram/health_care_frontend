@@ -12,9 +12,10 @@ import {
 	CircularProgress,
 	Alert,
 	Avatar,
-	Divider,
+	IconButton,
+	// Divider,
 	Rating,
-	Button,
+	// Button,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import PersonIcon from '@mui/icons-material/Person'
@@ -259,23 +260,19 @@ export default function AdminUserDetailPage() {
                                         )}
                                     </Stack>
 
-                                    <Stack direction="row" alignItems="center" spacing={2.5} sx={{ mt: 1.5, color: '#94a3b8' }} flexWrap="wrap">
+                                    <Stack direction="row" alignItems="center" spacing={2.5} sx={{ mt: 1.5, color: '#94a3b8' }} flexWrap="nowrap">
                                         {userEmail && (
-                                            <Stack direction="row" alignItems="center" spacing={0.75}>
+                                            <Stack direction="row" alignItems="center" spacing={0.75} sx={{ flexShrink: 0 }}>
                                                 <EmailIcon sx={{ fontSize: 15, color: '#2dd4bf' }} />
-                                                <Typography variant="body2" sx={{ color: '#e2e8f0', fontSize: 13 }}>{userEmail}</Typography>
+                                                <Typography variant="body2" sx={{ color: '#e2e8f0', fontSize: 13, whiteSpace: 'nowrap' }}>{userEmail}</Typography>
                                             </Stack>
                                         )}
                                         {userPhone && (
-                                            <Stack direction="row" alignItems="center" spacing={0.75}>
+                                            <Stack direction="row" alignItems="center" spacing={0.75} sx={{ flexShrink: 0 }}>
                                                 <PhoneIcon sx={{ fontSize: 15, color: '#2dd4bf' }} />
-                                                <Typography variant="body2" sx={{ color: '#e2e8f0', fontSize: 13 }}>{userPhone}</Typography>
+                                                <Typography variant="body2" sx={{ color: '#e2e8f0', fontSize: 13, whiteSpace: 'nowrap' }}>{userPhone}</Typography>
                                             </Stack>
                                         )}
-                                        <Stack direction="row" alignItems="center" spacing={0.75}>
-                                            <BadgeIcon sx={{ fontSize: 15, color: '#2dd4bf' }} />
-                                            <Typography variant="body2" sx={{ color: '#e2e8f0', fontSize: 13 }}>ID: #{id}</Typography>
-                                        </Stack>
                                     </Stack>
                                 </Box>
                             </Stack>

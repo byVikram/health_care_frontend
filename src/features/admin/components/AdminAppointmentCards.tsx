@@ -5,7 +5,6 @@ import {
 	Typography,
 	Stack,
 	CircularProgress,
-	Grid,
 	IconButton,
 	Tooltip,
 	Dialog,
@@ -13,11 +12,10 @@ import {
 	DialogContent,
 	DialogContentText,
 	DialogActions,
+	Avatar,
 } from '@mui/material'
 import EventIcon from '@mui/icons-material/Event'
-import AccessTimeIcon from '@mui/icons-material/AccessTime'
-import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
-import VisibilityIcon from '@mui/icons-material/Visibility'
+
 import CancelIcon from '@mui/icons-material/Cancel'
 import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee'
 import SearchIcon from '@mui/icons-material/Search'
@@ -25,7 +23,7 @@ import SearchIcon from '@mui/icons-material/Search'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppSelect from '../../../components/common/Select/AppSelect'
 import AppButton from '../../../components/common/Button/AppButton'
-import AppModal from '../../../components/common/Modal/AppModal'
+
 import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
 import StatusBadge from '../../../components/admin/StatusBadge'
 import AdminEmptyState from '../../../components/admin/AdminEmptyState'
@@ -57,6 +55,13 @@ const formatDate = (dateStr?: string) =>
 		? new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 		: 'N/A'
 
+/** Strip seconds from a time string: "09:30:00" → "09:30" */
+const formatTime = (time?: string) => {
+	if (!time) return 'N/A'
+	const parts = time.split(':')
+	return parts.length >= 2 ? `${parts[0]}:${parts[1]}` : time
+}
+
 interface AdminAppointmentCardsProps {
 	/** When set, only shows appointments for this patient. */
 	patientId?: string
@@ -75,7 +80,7 @@ export default function AdminAppointmentCards({
 	const [rows, setRows] = useState<AdminAppointmentItem[]>([])
 	const [total, setTotal] = useState(0)
 	const [page, setPage] = useState(1)
-	const [pageSize, setPageSize] = useState(6)
+	const [pageSize, setPageSize] = useState(10)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
@@ -86,8 +91,7 @@ export default function AdminAppointmentCards({
 	const [status, setStatus] = useState('')
 	const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest')
 
-	// ── view details modal ──────────────────────────────────────────────────
-	const [viewTarget, setViewTarget] = useState<AdminAppointmentItem | null>(null)
+
 
 	// ── fetch ───────────────────────────────────────────────────────────────
 	const fetchAppointments = useCallback(async () => {
@@ -167,7 +171,7 @@ export default function AdminAppointmentCards({
 		<Box>
 			{/* Search + filters */}
 			<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 2.5 }}>
-				<Box sx={{ flex: 1, minWidth: 220 }}>
+				<Box sx={{ width: { xs: '100%', sm: 320 }, maxWidth: '100%' }}>
 					<AppInput
 						placeholder="Search appointment ID, doctor, or hospital..."
 						value={searchInput}
@@ -176,7 +180,7 @@ export default function AdminAppointmentCards({
 						startIcon={<SearchIcon sx={{ fontSize: 18, color: '#94a3b8' }} />}
 					/>
 				</Box>
-				<Box sx={{ width: { xs: '100%', sm: 190 } }}>
+				<Box sx={{ width: { xs: '100%', sm: 160 } }}>
 					<AppSelect
 						value={sortOrder}
 						onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
@@ -184,7 +188,7 @@ export default function AdminAppointmentCards({
 						size="small"
 					/>
 				</Box>
-				<Box sx={{ width: { xs: '100%', sm: 160 } }}>
+				<Box sx={{ width: { xs: '100%', sm: 140 } }}>
 					<AppSelect
 						value={status}
 						onChange={(e) => setStatus(e.target.value as string)}
@@ -207,122 +211,186 @@ export default function AdminAppointmentCards({
 			) : rows.length === 0 ? (
 				<AdminEmptyState icon={<EventIcon />} title="No appointments found" description={emptyMessage} />
 			) : (
-				<Grid container spacing={2}>
+				<Box>
+					{/* Table-style column headers */}
+					<Stack
+						direction="row"
+						alignItems="center"
+						sx={{
+							px: 2.5,
+							py: 1.25,
+							mb: 0.5,
+							borderBottom: '2px solid #e2e8f0',
+						}}
+					>
+						<Typography
+							variant="caption"
+							fontWeight={800}
+							color="#64748b"
+							sx={{ width: '28%', minWidth: 180, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem' }}
+						>
+							Appointment ID
+						</Typography>
+						<Typography
+							variant="caption"
+							fontWeight={800}
+							color="#64748b"
+							sx={{ width: '26%', minWidth: 160, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem' }}
+						>
+							{doctorId ? 'Patient' : 'Patient & Doctor'}
+						</Typography>
+						<Typography
+							variant="caption"
+							fontWeight={800}
+							color="#64748b"
+							sx={{ width: '12%', minWidth: 80, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem' }}
+						>
+							Fee
+						</Typography>
+						<Typography
+							variant="caption"
+							fontWeight={800}
+							color="#64748b"
+							sx={{ width: '14%', minWidth: 90, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem' }}
+						>
+							Status
+						</Typography>
+						<Typography
+							variant="caption"
+							fontWeight={800}
+							color="#64748b"
+							sx={{ width: '20%', minWidth: 120, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem', textAlign: 'right' }}
+						>
+							Actions
+						</Typography>
+					</Stack>
+
+					{/* Appointment rows */}
 					{rows.map((row) => {
 						const isBusy = actionLoadingId === (row.id || row.public_id)
 						const flags = row.action
 						return (
-							<Grid size={{ xs: 12, sm: 6 }} key={row.id}>
-								<Box
-									sx={{
-										p: 2.25,
-										borderRadius: '14px',
-										border: '1px solid #e2e8f0',
-										bgcolor: '#ffffff',
-										transition: 'all 0.15s ease',
-										height: '100%',
-										display: 'flex',
-										flexDirection: 'column',
-										'&:hover': { borderColor: '#0d9488', boxShadow: '0 4px 16px rgba(15,23,42,0.06)' },
-									}}
-								>
-									{/* Header: ID + status */}
-									<Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1.25 }}>
-										<Typography
-											variant="caption"
-											sx={{ fontFamily: 'monospace', color: '#64748b', fontWeight: 600, wordBreak: 'break-all', pr: 1 }}
-										>
-											{row.id}
-										</Typography>
-										<StatusBadge status={row.status || 'pending'} label={(row.status || 'PENDING').toUpperCase()} />
-									</Stack>
+							<Stack
+								key={row.id}
+								direction="row"
+								alignItems="center"
+								sx={{
+									px: 2.5,
+									py: 1.75,
+									borderBottom: '1px solid #f1f5f9',
+									transition: 'background 0.15s ease',
+									'&:hover': { bgcolor: '#f8fafc' },
+								}}
+							>
+								{/* Appointment ID & Date/Time */}
+								<Box sx={{ width: '28%', minWidth: 180 }}>
+									<Typography variant="body2" fontWeight={700} sx={{ fontFamily: 'monospace', color: '#0f172a', fontSize: '0.8rem' }}>
+										{row.id}
+									</Typography>
+									<Typography variant="caption" color="text.secondary">
+										{formatDate(row.appointment_date)} @ {formatTime(row.start_time)}
+									</Typography>
+								</Box>
 
-									{/* Doctor / patient + hospital + speciality */}
-									<Box sx={{ mb: 1.25 }}>
-										<Typography variant="subtitle2" fontWeight={800} color="#0f172a">
-											{doctorId ? row.patient_name || 'Patient' : `Dr. ${row.doctor_name || 'Doctor'}`}
+								{/* Patient & Doctor */}
+								<Stack direction="row" spacing={1.5} alignItems="center" sx={{ width: '26%', minWidth: 160 }}>
+									<Avatar sx={{ bgcolor: 'rgba(13,148,136,0.12)', color: '#0d9488', width: 34, height: 34, fontSize: 12, fontWeight: 800 }}>
+										{(row.patient_name || 'P').substring(0, 1).toUpperCase()}
+									</Avatar>
+									<Box sx={{ minWidth: 0 }}>
+										<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
+											{doctorId ? (row.patient_name || 'N/A') : `Patient: ${row.patient_name || 'N/A'}`}
 										</Typography>
-										<Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.25 }}>
-											<LocalHospitalIcon sx={{ fontSize: 14, color: '#94a3b8' }} />
-											<Typography variant="caption" color="text.secondary">
-												{row.hospital_name || 'Clinic / Hospital'}
-												{row.doctor_speciality ? ` • ${row.doctor_speciality}` : ''}
-											</Typography>
-										</Stack>
+										<Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+											{doctorId
+												? `${row.hospital_name || 'Clinic'}${row.doctor_speciality ? ` • ${row.doctor_speciality}` : ''}`
+												: `Dr. ${row.doctor_name || 'N/A'}`}
+										</Typography>
 									</Box>
+								</Stack>
 
-									{/* Date / time / fee */}
-									<Stack direction="row" spacing={2} flexWrap="wrap" sx={{ mb: 1.5 }}>
-										<Stack direction="row" spacing={0.5} alignItems="center">
-											<EventIcon sx={{ fontSize: 14, color: '#94a3b8' }} />
-											<Typography variant="caption" color="text.secondary" fontWeight={600}>
-												{formatDate(row.appointment_date)}
-											</Typography>
-										</Stack>
-										<Stack direction="row" spacing={0.5} alignItems="center">
-											<AccessTimeIcon sx={{ fontSize: 14, color: '#94a3b8' }} />
-											<Typography variant="caption" color="text.secondary" fontWeight={600}>
-												{row.start_time || 'N/A'}
-											</Typography>
-										</Stack>
-										<Typography variant="caption" fontWeight={800} color="#0d9488">
-											{row.fees != null ? formatINR(row.fees) : 'N/A'}
-										</Typography>
-									</Stack>
+								{/* Fee */}
+								<Box sx={{ width: '12%', minWidth: 80 }}>
+									<Typography variant="body2" fontWeight={700} color="#0d9488">
+										{row.fees != null ? formatINR(row.fees) : '—'}
+									</Typography>
+								</Box>
 
-									{/* Actions */}
-									<Stack direction="row" spacing={0.75} sx={{ mt: 'auto', pt: 1, borderTop: '1px solid #f1f5f9' }}>
-										<Tooltip title="View Details">
-											<IconButton
-												size="small"
-												onClick={() => setViewTarget(row)}
-												sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: '#f1f5f9', '&:hover': { bgcolor: '#e2e8f0' } }}
-											>
-												<VisibilityIcon sx={{ fontSize: 16, color: '#475569' }} />
-											</IconButton>
-										</Tooltip>
-										{flags?.can_reschedule && (
-											<Tooltip title="Reschedule">
+								{/* Status */}
+								<Box sx={{ width: '14%', minWidth: 90 }}>
+									<StatusBadge status={row.status || 'pending'} label={(row.status || 'PENDING').toUpperCase()} />
+								</Box>
+
+								{/* Actions */}
+								<Stack direction="row" spacing={0.75} justifyContent="flex-end" alignItems="center" sx={{ width: '20%', minWidth: 120 }}>
+
+									{flags?.can_reschedule && (
+										<Tooltip title="Reschedule">
+											<span>
 												<IconButton
 													size="small"
 													disabled={isBusy}
 													onClick={() => handleOpenReschedule(row)}
-													sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: '#fff7ed', '&:hover': { bgcolor: '#ffedd5' } }}
+													sx={{
+														border: '1px solid #fed7aa',
+														borderRadius: 1.5,
+														bgcolor: '#fff7ed',
+														p: 0.75,
+														'&:hover': { bgcolor: '#ffedd5' },
+													}}
 												>
 													<img src={RescheduleIcon} alt="Reschedule" width={16} height={16} />
 												</IconButton>
-											</Tooltip>
-										)}
-										{flags?.can_cancel && (
-											<Tooltip title="Cancel">
+											</span>
+										</Tooltip>
+									)}
+									{flags?.can_cancel && (
+										<Tooltip title="Cancel">
+											<span>
 												<IconButton
 													size="small"
 													disabled={isBusy}
 													onClick={() => handleRequestCancel(row)}
-													sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: '#fff1f2', color: '#dc2626', '&:hover': { bgcolor: '#fee2e2' } }}
+													sx={{
+														border: '1px solid #fecaca',
+														borderRadius: 1.5,
+														color: '#dc2626',
+														bgcolor: '#fff1f2',
+														p: 0.75,
+														'&:hover': { bgcolor: '#fee2e2' },
+													}}
 												>
 													<CancelIcon sx={{ fontSize: 16 }} />
 												</IconButton>
-											</Tooltip>
-										)}
-										{flags?.can_refund && (
-											<Tooltip title="Refund">
+											</span>
+										</Tooltip>
+									)}
+									{flags?.can_refund && (
+										<Tooltip title="Refund">
+											<span>
 												<IconButton
 													size="small"
 													disabled={isBusy}
 													onClick={() => handleRequestRefund(row)}
-													sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: '#f3e8ff', color: '#7e22ce', '&:hover': { bgcolor: '#e9d5ff' } }}
+													sx={{
+														border: '1px solid #e9d5ff',
+														borderRadius: 1.5,
+														color: '#7e22ce',
+														bgcolor: '#f3e8ff',
+														p: 0.75,
+														'&:hover': { bgcolor: '#e9d5ff' },
+													}}
 												>
 													<CurrencyRupeeIcon sx={{ fontSize: 16 }} />
 												</IconButton>
-											</Tooltip>
-										)}
-									</Stack>
-								</Box>
-							</Grid>
+											</span>
+										</Tooltip>
+									)}
+								</Stack>
+							</Stack>
 						)
 					})}
-				</Grid>
+				</Box>
 			)}
 
 			{total > 0 && (
@@ -331,7 +399,7 @@ export default function AdminAppointmentCards({
 						page={page}
 						pageSize={pageSize}
 						totalRows={total}
-						pageSizeOptions={[6, 12, 24]}
+						pageSizeOptions={[10, 20,50]}
 						onPageChange={setPage}
 						onPageSizeChange={(size) => {
 							setPageSize(size)
@@ -341,59 +409,7 @@ export default function AdminAppointmentCards({
 				</Box>
 			)}
 
-			{/* ── View details modal ─────────────────────────────────────── */}
-			<AppModal
-				open={Boolean(viewTarget)}
-				onClose={() => setViewTarget(null)}
-				title="Appointment Details"
-				maxWidth="xs"
-				fullWidth
-			>
-				{viewTarget && (
-					<Stack spacing={1.25} sx={{ py: 0.5 }}>
-						<Stack direction="row" justifyContent="space-between">
-							<Typography variant="caption" color="text.secondary">Appointment ID</Typography>
-							<Typography variant="caption" fontWeight={700} sx={{ fontFamily: 'monospace' }}>{viewTarget.id}</Typography>
-						</Stack>
-						<Stack direction="row" justifyContent="space-between">
-							<Typography variant="caption" color="text.secondary">Doctor</Typography>
-							<Typography variant="caption" fontWeight={700}>{viewTarget.doctor_name || 'N/A'}</Typography>
-						</Stack>
-						{viewTarget.doctor_speciality && (
-							<Stack direction="row" justifyContent="space-between">
-								<Typography variant="caption" color="text.secondary">Speciality</Typography>
-								<Typography variant="caption" fontWeight={700}>{viewTarget.doctor_speciality}</Typography>
-							</Stack>
-						)}
-						<Stack direction="row" justifyContent="space-between">
-							<Typography variant="caption" color="text.secondary">Patient</Typography>
-							<Typography variant="caption" fontWeight={700}>{viewTarget.patient_name || 'N/A'}</Typography>
-						</Stack>
-						<Stack direction="row" justifyContent="space-between">
-							<Typography variant="caption" color="text.secondary">Hospital</Typography>
-							<Typography variant="caption" fontWeight={700}>{viewTarget.hospital_name || 'N/A'}</Typography>
-						</Stack>
-						<Stack direction="row" justifyContent="space-between">
-							<Typography variant="caption" color="text.secondary">Date</Typography>
-							<Typography variant="caption" fontWeight={700}>{formatDate(viewTarget.appointment_date)}</Typography>
-						</Stack>
-						<Stack direction="row" justifyContent="space-between">
-							<Typography variant="caption" color="text.secondary">Time</Typography>
-							<Typography variant="caption" fontWeight={700}>{viewTarget.start_time || 'N/A'}</Typography>
-						</Stack>
-						<Stack direction="row" justifyContent="space-between">
-							<Typography variant="caption" color="text.secondary">Fee</Typography>
-							<Typography variant="caption" fontWeight={700} color="#0d9488">
-								{viewTarget.fees != null ? formatINR(viewTarget.fees) : 'N/A'}
-							</Typography>
-						</Stack>
-						<Stack direction="row" justifyContent="space-between" alignItems="center">
-							<Typography variant="caption" color="text.secondary">Status</Typography>
-							<StatusBadge status={viewTarget.status || 'pending'} label={(viewTarget.status || 'PENDING').toUpperCase()} />
-						</Stack>
-					</Stack>
-				)}
-			</AppModal>
+
 
 			{/* ── Reschedule Drawer (shared) ─────────────────────────────── */}
 			<RescheduleDrawer
