@@ -5,6 +5,7 @@ import {
 	Box,
 	Tabs,
 	Tab,
+	Grid,
 	Typography,
 	Chip,
 	Stack,
@@ -14,8 +15,6 @@ import {
 	Divider,
 	Rating,
 	Button,
-	Tabs,
-	Tab,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import PersonIcon from '@mui/icons-material/Person'
