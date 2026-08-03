@@ -1,4 +1,4 @@
-// src/features/portal/CommunityForumPage.tsx
+﻿// src/features/portal/CommunityForumPage.tsx
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -152,7 +152,7 @@ export default function CommunityForumPage() {
 						<Typography variant="subtitle2" fontWeight={700} color="#475569" sx={{ mb: 2, px: 1, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.75rem' }}>
 							Support Networks
 						</Typography>
-						<Card sx={{ borderRadius: 3, border: '1px solid #e2e8f0', boxShadow: 'none', overflow: 'hidden' }}>
+						<Card sx={{ borderRadius: 2, border: '1px solid #e2e8f0', boxShadow: 'none', overflow: 'hidden' }}>
 							<List sx={{ p: 0 }}>
 								{groups.map((group) => {
 									const isActive = group.id === activeGroupId
@@ -190,7 +190,7 @@ export default function CommunityForumPage() {
 					{/* Center Section: Discussion Threads */}
 					<Grid size={{ xs: 12, md: 8, lg: 6 }}>
 						{activeGroup && (
-							<Box sx={{ mb: 4, p: 3, bgcolor: 'white', borderRadius: 4, border: '1px solid #e2e8f0' }}>
+							<Box sx={{ mb: 4, p: 3, bgcolor: 'white', borderRadius: 2, border: '1px solid #e2e8f0' }}>
 								<Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2} sx={{ mb: 2 }}>
 									<Box>
 										<Chip
@@ -233,7 +233,7 @@ export default function CommunityForumPage() {
 								<CircularProgress sx={{ color: '#0d9488' }} />
 							</Box>
 						) : posts.length === 0 ? (
-							<Box sx={{ textAlign: 'center', py: 8, bgcolor: 'white', borderRadius: 4, border: '1px solid #e2e8f0' }}>
+							<Box sx={{ textAlign: 'center', py: 8, bgcolor: 'white', borderRadius: 2, border: '1px solid #e2e8f0' }}>
 								<Typography variant="body1" color="text.secondary" fontWeight={600}>
 									No discussions started yet
 								</Typography>
@@ -250,7 +250,7 @@ export default function CommunityForumPage() {
 											key={post.id}
 											onClick={() => navigate(`/communities/threads/${post.id}`)}
 											sx={{
-												borderRadius: 4,
+												borderRadius: 2,
 												border: '1px solid #e2e8f0',
 												boxShadow: '0 4px 15px rgba(15, 23, 42, 0.02)',
 												cursor: 'pointer',
@@ -307,7 +307,7 @@ export default function CommunityForumPage() {
 								<Card
 									key={placement.id}
 									sx={{
-										borderRadius: 3,
+										borderRadius: 2,
 										overflow: 'hidden',
 										boxShadow: 'none',
 										border: '1px solid #cbd5e1',
@@ -334,7 +334,7 @@ export default function CommunityForumPage() {
 							))}
 
 							{/* Static Hospital Help Center */}
-							<Card sx={{ p: 2.5, bgcolor: '#e2e8f0', borderRadius: 3, boxShadow: 'none', border: '1px solid #cbd5e1' }}>
+							<Card sx={{ p: 2.5, bgcolor: '#e2e8f0', borderRadius: 2, boxShadow: 'none', border: '1px solid #cbd5e1' }}>
 								<Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1, color: '#0f766e' }}>
 									<MedicalServicesIcon sx={{ fontSize: 18 }} />
 									<Typography variant="subtitle2" fontWeight={700}>

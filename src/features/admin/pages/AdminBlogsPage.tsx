@@ -1,22 +1,14 @@
 // src/features/admin/pages/AdminBlogsPage.tsx
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
 	Box,
 	Typography,
 	Button,
 	IconButton,
-	Dialog,
-	DialogTitle,
-	DialogContent,
-	DialogActions,
-	TextField,
 	Stack,
 	Chip,
 	CircularProgress,
-	MenuItem,
-	Grid,
-	Switch,
-	FormControlLabel,
 	Tooltip,
 	Avatar,
 } from '@mui/material'
@@ -33,28 +25,18 @@ import SectionCard from '../../../components/common/Card/SectionCard'
 import StatusBadge from '../../../components/admin/StatusBadge'
 import {
 	listAdminBlogs,
-	createAdminBlog,
-	updateAdminBlog,
 	deleteAdminBlog,
 	AdminBlogItem,
 } from '../adminService'
+import { ROUTES } from '../../../constants/routes'
 import { toast } from 'react-toastify'
 
 const BLOG_CATEGORIES = ['Endocrinology', 'Oncology', 'Geriatrics', 'Physical Therapy', 'General']
 
 export default function AdminBlogsPage() {
+	const navigate = useNavigate()
 	const [blogs, setBlogs] = useState<AdminBlogItem[]>([])
 	const [loading, setLoading] = useState(true)
-	const [dialogOpen, setDialogOpen] = useState(false)
-	const [editingBlog, setEditingBlog] = useState<AdminBlogItem | null>(null)
-
-	// Form State
-	const [title, setTitle] = useState('')
-	const [content, setContent] = useState('')
-	const [category, setCategory] = useState('General')
-	const [status, setStatus] = useState('draft')
-	const [imageUrl, setImageUrl] = useState('')
-	const [isFeatured, setIsFeatured] = useState(false)
 
 	const fetchBlogs = async () => {
 		setLoading(true)
@@ -73,53 +55,11 @@ export default function AdminBlogsPage() {
 	}, [])
 
 	const handleOpenCreate = () => {
-		setEditingBlog(null)
-		setTitle('')
-		setContent('')
-		setCategory('General')
-		setStatus('draft')
-		setImageUrl('')
-		setIsFeatured(false)
-		setDialogOpen(true)
+		navigate(ROUTES.ADMIN.BLOG_CREATE)
 	}
 
 	const handleOpenEdit = (blog: AdminBlogItem) => {
-		setEditingBlog(blog)
-		setTitle(blog.title)
-		setContent('')
-		setCategory(blog.category)
-		setStatus(blog.status)
-		setImageUrl(blog.image_url || '')
-		setIsFeatured(blog.is_featured || false)
-		setDialogOpen(true)
-	}
-
-	const handleSubmit = async () => {
-		if (!title.trim()) {
-			toast.warning('Title is required')
-			return
-		}
-		try {
-			if (editingBlog) {
-				const payload: Record<string, any> = { title, category, status, image_url: imageUrl, is_featured: isFeatured }
-				if (content.trim()) {
-					payload.content = content
-				}
-				await updateAdminBlog(editingBlog.id, payload)
-				toast.success('Blog article updated successfully!')
-			} else {
-				if (!content.trim()) {
-					toast.warning('Article content is required')
-					return
-				}
-				await createAdminBlog({ title, content, category, status, image_url: imageUrl, is_featured: isFeatured })
-				toast.success('Blog article created successfully!')
-			}
-			setDialogOpen(false)
-			await fetchBlogs()
-		} catch (err) {
-			console.error('Error saving blog:', err)
-		}
+		navigate(ROUTES.ADMIN.BLOG_EDIT.replace(':id', blog.id))
 	}
 
 	const handleDelete = async (id: string) => {
@@ -283,85 +223,6 @@ export default function AdminBlogsPage() {
 					emptyMessage="No blog articles found."
 				/>
 			)}
-
-			{/* Create/Edit Blog Dialog */}
-			<Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-				<DialogTitle sx={{ fontWeight: 800, color: '#0f172a' }}>
-					{editingBlog ? 'Edit Blog Article' : 'Write a New Blog Article'}
-				</DialogTitle>
-				<DialogContent>
-					<Stack spacing={2.5} sx={{ pt: 1.5 }}>
-						<TextField
-							fullWidth
-							label="Article Title"
-							value={title}
-							onChange={(e) => setTitle(e.target.value)}
-						/>
-						<Grid container spacing={2}>
-							<Grid size={{ xs: 6 }}>
-								<TextField
-									fullWidth
-									select
-									label="Category"
-									value={category}
-									onChange={(e) => setCategory(e.target.value)}
-								>
-									{BLOG_CATEGORIES.map((cat) => (
-										<MenuItem key={cat} value={cat}>
-											{cat}
-										</MenuItem>
-									))}
-								</TextField>
-							</Grid>
-							<Grid size={{ xs: 6 }}>
-								<TextField
-									fullWidth
-									select
-									label="Publish Status"
-									value={status}
-									onChange={(e) => setStatus(e.target.value)}
-								>
-									<MenuItem value="draft">Draft</MenuItem>
-									<MenuItem value="published">Published</MenuItem>
-								</TextField>
-							</Grid>
-						</Grid>
-						<TextField
-							fullWidth
-							label="Banner Image URL"
-							placeholder="E.g., https://images.unsplash.com/... or leave empty for default"
-							value={imageUrl}
-							onChange={(e) => setImageUrl(e.target.value)}
-						/>
-						<FormControlLabel
-							control={
-								<Switch
-									checked={isFeatured}
-									onChange={(e) => setIsFeatured(e.target.checked)}
-									color="primary"
-								/>
-							}
-							label={<Typography variant="body2">Feature this article on the landing page</Typography>}
-						/>
-						<TextField
-							fullWidth
-							multiline
-							rows={10}
-							label="Content (Markdown)"
-							placeholder="Write your article body here in Markdown format..."
-							value={content}
-							onChange={(e) => setContent(e.target.value)}
-							helperText={editingBlog ? 'Leave blank to preserve the existing article content.' : ''}
-						/>
-					</Stack>
-				</DialogContent>
-				<DialogActions sx={{ p: 3, pt: 1.5, gap: 1 }}>
-					<Button onClick={() => setDialogOpen(false)} sx={{ textTransform: 'none', color: '#64748b' }}>Cancel</Button>
-					<Button variant="contained" onClick={handleSubmit} sx={{ bgcolor: '#0d9488', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}>
-						Save Article
-					</Button>
-				</DialogActions>
-			</Dialog>
 		</Box>
 	)
 }

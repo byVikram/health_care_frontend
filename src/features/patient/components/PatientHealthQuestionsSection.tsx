@@ -1,4 +1,4 @@
-// src/features/patient/components/PatientHealthQuestionsSection.tsx
+﻿// src/features/patient/components/PatientHealthQuestionsSection.tsx
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
@@ -40,7 +40,7 @@ import {
 } from '../../../services/qaService'
 import { toast } from 'react-toastify'
 
-// ─── Recursive Reply Rendering ───────────────────────────────────────────────
+// â”€â”€â”€ Recursive Reply Rendering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ReplyNode({
 	reply,
@@ -77,7 +77,7 @@ function ReplyNode({
 					}}
 				/>
 				<Typography sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
-					• {new Date(reply.created_at).toLocaleDateString()}
+					â€¢ {new Date(reply.created_at).toLocaleDateString()}
 				</Typography>
 			</Box>
 			<Typography sx={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5 }}>
@@ -121,7 +121,7 @@ function ReplyNode({
 	)
 }
 
-// ─── Question List Card ──────────────────────────────────────────────────────
+// â”€â”€â”€ Question List Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function QuestionListCard({
 	q,
@@ -191,7 +191,7 @@ function QuestionListCard({
 	)
 }
 
-// ─── Right Detail Panel ──────────────────────────────────────────────────────
+// â”€â”€â”€ Right Detail Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function QuestionDetailPanel({
 	q,
@@ -256,7 +256,7 @@ function QuestionDetailPanel({
 					}}
 				/>
 				<Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>
-					• Asked for {q.gender}, {q.age} • {q.location}
+					â€¢ Asked for {q.gender}, {q.age} â€¢ {q.location}
 				</Typography>
 			</Box>
 
@@ -323,7 +323,7 @@ function QuestionDetailPanel({
 											</Typography>
 										</Typography>
 										<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-											{ans.doctor_hospital} • {new Date(ans.created_at).toLocaleDateString()}
+											{ans.doctor_hospital} â€¢ {new Date(ans.created_at).toLocaleDateString()}
 										</Typography>
 									</Box>
 								</Box>
@@ -405,7 +405,7 @@ function QuestionDetailPanel({
 	)
 }
 
-// ─── Main Component ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface QuestionsSectionProps {
 	isPortalPage?: boolean
@@ -535,7 +535,7 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 
 	const selectedQuestion = questions.find((q) => q.id === selectedId) || questions[0]
 
-	// ─── Rendering Portal Page (Master-Detail) ───────────────────────────────
+	// â”€â”€â”€ Rendering Portal Page (Master-Detail) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	if (isPortalPage) {
 		return (
 			<Box sx={{ py: 1 }}>
@@ -650,7 +650,7 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 					<Button
 						variant="contained"
 						onClick={() => setAskDialogOpen(true)}
-						sx={{ bgcolor: '#0c7c7c', textTransform: 'none', borderRadius: 3, px: 4, py: 1.2, '&:hover': { bgcolor: '#0f766e' } }}
+						sx={{ bgcolor: '#0c7c7c', textTransform: 'none', borderRadius: 2, px: 4, py: 1.2, '&:hover': { bgcolor: '#0f766e' } }}
 					>
 						Ask a Free Question
 					</Button>
@@ -737,7 +737,7 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 		)
 	}
 
-	// ─── Rendering Landing Page (Top 6 Cards Grid) ────────────────────────────
+	// â”€â”€â”€ Rendering Landing Page (Top 6 Cards Grid) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	return (
 		<Box sx={{ py: 6 }}>
 			<Typography variant="h3" align="center" sx={{ fontWeight: 800, mb: 4, lineHeight: 1.3, fontSize: '1.5rem', color: '#0f172a' }}>
@@ -759,7 +759,7 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 										height: '100%',
 										display: 'flex',
 										flexDirection: 'column',
-										borderRadius: 4,
+										borderRadius: 2,
 										boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)',
 										border: '1px solid #e2e8f0',
 										cursor: 'pointer',
@@ -810,7 +810,7 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 						<Button
 							variant="contained"
 							onClick={() => navigate('/health-questions')}
-							sx={{ bgcolor: '#0c7c7c', textTransform: 'none', px: 4, py: 1.2, borderRadius: 3, fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}
+							sx={{ bgcolor: '#0c7c7c', textTransform: 'none', px: 4, py: 1.2, borderRadius: 2, fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}
 						>
 							View All Expert Answers
 						</Button>

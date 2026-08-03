@@ -28,6 +28,7 @@ import { toast } from 'react-toastify'
 
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import StatusBadge from '../../../components/admin/StatusBadge'
+import AppSwitch from '../../../components/common/Switch/AppSwitch'
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 import AdminStatCard from '../../../components/admin/AdminStatCard'
 import { listUsers, suspendUser, resetUserOtp, AdminUserItem } from '../adminService'
@@ -205,9 +206,23 @@ export default function AdminUsersPage() {
 		{
 			field: 'is_suspended',
 			label: 'Status',
-			render: (_: unknown, row: AdminUserItem) => (
-				<StatusBadge status={row.is_suspended ? 'suspended' : 'active'} />
-			),
+			render: (_: unknown, row: AdminUserItem) => {
+				const isBusy = actionLoadingId === (row.public_id || String(row.id))
+				return (
+					<Stack direction="row" spacing={1} alignItems="center">
+						<Tooltip title={row.is_suspended ? 'Account Suspended (Click to activate)' : 'Account Active (Click to suspend)'}>
+							<span>
+								<AppSwitch
+									checked={!row.is_suspended}
+									disabled={isBusy}
+									onChange={(e) => handleToggleSuspend(row, e as unknown as React.MouseEvent)}
+								/>
+							</span>
+						</Tooltip>
+						<StatusBadge status={row.is_suspended ? 'suspended' : 'active'} />
+					</Stack>
+				)
+			},
 		},
 		{
 			field: 'actions',

@@ -1,4 +1,4 @@
-// src/components/common/ProfileSidebar/AppProfileSidebar.tsx
+﻿// src/components/common/ProfileSidebar/AppProfileSidebar.tsx
 import { useRef } from 'react'
 import { Box, Typography, Avatar, LinearProgress, IconButton, Divider } from '@mui/material'
 import CameraAltOutlinedIcon from '@mui/icons-material/CameraAltOutlined'
@@ -139,11 +139,11 @@ export default function AppProfileSidebar({
 					sx={{
 						width: '100%',
 						height: 4,
-						borderRadius: 4,
+						borderRadius: 2,
 						mt: 2,
 						mb: 1.5,
 						bgcolor: '#e0e7ef',
-						'& .MuiLinearProgress-bar': { bgcolor: 'primary.main', borderRadius: 4 },
+						'& .MuiLinearProgress-bar': { bgcolor: 'primary.main', borderRadius: 2 },
 					}}
 				/>
 

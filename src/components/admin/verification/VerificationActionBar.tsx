@@ -1,4 +1,4 @@
-// src/components/admin/verification/VerificationActionBar.tsx
+﻿// src/components/admin/verification/VerificationActionBar.tsx
 import { useState } from 'react'
 import {
 	Box,
@@ -249,7 +249,7 @@ export default function VerificationActionBar({
 			</Stack>
 
 			{/* Safety Guard Dialog if completing verification with unreviewed/flagged docs */}
-			<Dialog open={guardOpen} onClose={() => setGuardOpen(false)} PaperProps={{ sx: { borderRadius: 3, p: 1 } }}>
+			<Dialog open={guardOpen} onClose={() => setGuardOpen(false)} PaperProps={{ sx: { borderRadius: 2, p: 1 } }}>
 				<DialogTitle sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 1 }}>
 					<RuleIcon color="warning" /> Verification Safety Guard
 				</DialogTitle>

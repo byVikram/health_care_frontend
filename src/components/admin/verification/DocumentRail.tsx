@@ -1,4 +1,4 @@
-// src/components/admin/verification/DocumentRail.tsx
+﻿// src/components/admin/verification/DocumentRail.tsx
 import React from 'react'
 import {
 	Box,
@@ -113,9 +113,9 @@ export default function DocumentRail({
 					value={progressPercent}
 					sx={{
 						height: 6,
-						borderRadius: 3,
+						borderRadius: 2,
 						bgcolor: '#e2e8f0',
-						'& .MuiLinearProgress-bar': { bgcolor: '#0d9488', borderRadius: 3 },
+						'& .MuiLinearProgress-bar': { bgcolor: '#0d9488', borderRadius: 2 },
 					}}
 				/>
 			</Box>
@@ -226,7 +226,7 @@ export default function DocumentRail({
 										fontSize: '11px',
 									}}
 								>
-									⚠️ Issue: {doc.issueTag}
+									âš ï¸ Issue: {doc.issueTag}
 								</Typography>
 							)}
 						</Box>

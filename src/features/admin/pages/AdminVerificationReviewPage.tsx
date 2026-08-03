@@ -124,6 +124,52 @@ export default function AdminVerificationReviewPage() {
 		setError(null)
 
 		try {
+			// 1. Fetch live audit history logs from backend first
+			const targetType = isDoctor ? 'doctor' : type || 'provider'
+			const auditRes = await getVerificationAuditHistory(targetType, id)
+			let fetchedAuditLogs: any[] = []
+
+			if (auditRes.success && auditRes.data) {
+				fetchedAuditLogs = auditRes.data
+				setAuditEvents(
+					auditRes.data.map((item) => ({
+						id: item.id,
+						reviewerName: item.reviewer_name || 'Admin Auditor',
+						action: item.action.replace('_', ' ').toUpperCase(),
+						documentName: item.document_name,
+						timestamp: item.timestamp ? new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+						reason: item.notes || (item.issue_tags && item.issue_tags.length > 0 ? item.issue_tags.join(', ') : undefined),
+					}))
+				)
+			}
+
+			// Helper to get doc status from audit logs
+			const getDocStatus = (docId: string, docName: string): DocumentStatus => {
+				const latestLog = fetchedAuditLogs.find(
+					(log) =>
+						log.document_id === docId ||
+						(log.document_name && log.document_name.toLowerCase() === docName.toLowerCase())
+				)
+				if (latestLog) {
+					if (latestLog.action === 'document_verified') return 'verified'
+					if (latestLog.action === 'document_rejected') return 'rejected'
+					if (latestLog.action === 'document_requires_reupload') return 'requires_reupload'
+				}
+				return 'not_reviewed'
+			}
+
+			const getDocIssueTag = (docId: string, docName: string): string | undefined => {
+				const latestLog = fetchedAuditLogs.find(
+					(log) =>
+						log.document_id === docId ||
+						(log.document_name && log.document_name.toLowerCase() === docName.toLowerCase())
+				)
+				return latestLog?.issue_tags && latestLog.issue_tags.length > 0
+					? latestLog.issue_tags.join(', ')
+					: undefined
+			}
+
+			// 2. Fetch doctor verification detail or providers
 			if (isDoctor) {
 				const res = await getDoctorVerificationDetail(id)
 				if (res.success && res.data) {
@@ -140,7 +186,8 @@ export default function AdminVerificationReviewPage() {
 								name: d.name,
 								url: d.url,
 								type: d.type,
-								status: 'not_reviewed',
+								status: getDocStatus(String(d.id), d.name),
+								issueTag: getDocIssueTag(String(d.id), d.name),
 							})
 						})
 					}
@@ -148,13 +195,16 @@ export default function AdminVerificationReviewPage() {
 					if (data.degrees && data.degrees.length > 0) {
 						data.degrees.forEach((deg, idx) => {
 							if (deg.qualification_proof_s3_key) {
+								const dId = `deg_proof_${idx}`
+								const dName = `${deg.degree} Certificate${deg.college ? ` (${deg.college})` : ''}`
 								if (!docs.some((d) => d.url === deg.qualification_proof_s3_key)) {
 									docs.push({
-										id: `deg_proof_${idx}`,
-										name: `${deg.degree} Certificate${deg.college ? ` (${deg.college})` : ''}`,
+										id: dId,
+										name: dName,
 										url: deg.qualification_proof_s3_key,
 										type: 'degree_certificate',
-										status: 'not_reviewed',
+										status: getDocStatus(dId, dName),
+										issueTag: getDocIssueTag(dId, dName),
 									})
 								}
 							}
@@ -162,22 +212,28 @@ export default function AdminVerificationReviewPage() {
 					}
 
 					if (data.registration_proof_s3_key && !docs.some((d) => d.url === data.registration_proof_s3_key)) {
+						const dId = 'reg_proof'
+						const dName = 'Medical Registration License Proof'
 						docs.push({
-							id: 'reg_proof',
-							name: 'Medical Registration License Proof',
+							id: dId,
+							name: dName,
 							url: data.registration_proof_s3_key,
 							type: 'registration_license',
-							status: 'not_reviewed',
+							status: getDocStatus(dId, dName),
+							issueTag: getDocIssueTag(dId, dName),
 						})
 					}
 
 					if (data.identity_proof_s3_key && !docs.some((d) => d.url === data.identity_proof_s3_key)) {
+						const dId = 'id_proof'
+						const dName = 'Government Photo ID Proof'
 						docs.push({
-							id: 'id_proof',
-							name: 'Government Photo ID Proof',
+							id: dId,
+							name: dName,
 							url: data.identity_proof_s3_key,
 							type: 'identity_proof',
-							status: 'not_reviewed',
+							status: getDocStatus(dId, dName),
+							issueTag: getDocIssueTag(dId, dName),
 						})
 					}
 
@@ -192,41 +248,28 @@ export default function AdminVerificationReviewPage() {
 					if (matched) {
 						setProviderItem(matched)
 						if (matched.license_proof_s3_key) {
+							const dId = 'prov_license'
+							const dName = 'Business License Proof'
 							setDocuments([
 								{
-									id: 'prov_license',
-									name: 'Business License Proof',
+									id: dId,
+									name: dName,
 									url: matched.license_proof_s3_key,
 									type: 'license',
-									status: 'not_reviewed',
+									status: getDocStatus(dId, dName),
+									issueTag: getDocIssueTag(dId, dName),
 								},
 							])
 						}
 					}
 				}
 			}
-
-			// Fetch live audit history logs from backend
-			const targetType = isDoctor ? 'doctor' : providerItem?.provider_type || (type as string)
-			const auditRes = await getVerificationAuditHistory(targetType, id)
-			if (auditRes.success && auditRes.data && auditRes.data.length > 0) {
-				setAuditEvents(
-					auditRes.data.map((item) => ({
-						id: item.id,
-						reviewerName: item.reviewer_name || 'Admin Auditor',
-						action: item.action.replace('_', ' ').toUpperCase(),
-						documentName: item.document_name,
-						timestamp: item.timestamp ? new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-						reason: item.notes || (item.issue_tags && item.issue_tags.length > 0 ? item.issue_tags.join(', ') : undefined),
-					}))
-				)
-			}
 		} catch (err: unknown) {
 			setError(getErrorMessage(err, 'Failed to load verification record.'))
 		} finally {
 			setLoading(false)
 		}
-	}, [id, isDoctor])
+	}, [id, isDoctor, type])
 
 	useEffect(() => {
 		fetchData()
@@ -245,6 +288,29 @@ export default function AdminVerificationReviewPage() {
 		window.addEventListener('keydown', handleKeyDown)
 		return () => window.removeEventListener('keydown', handleKeyDown)
 	}, [documents.length])
+
+	// Sync issue flags and reviewer notes when document is selected/switched
+	useEffect(() => {
+		const activeDoc = documents[selectedDocIndex]
+		if (activeDoc) {
+			const flags = activeDoc.issueTag
+				? activeDoc.issueTag.split(', ').map((f) => f.trim()).filter(Boolean)
+				: []
+			setSelectedFlags(flags)
+
+			// Prefill notes from the latest audit event of this document if notes are empty
+			const latestLog = auditEvents.find(
+				(evt) =>
+					evt.documentName &&
+					activeDoc.name &&
+					evt.documentName.toLowerCase() === activeDoc.name.toLowerCase()
+			)
+			setReviewerNotes(latestLog?.reason || '')
+		} else {
+			setSelectedFlags([])
+			setReviewerNotes('')
+		}
+	}, [selectedDocIndex, documents, auditEvents])
 
 	const handleBack = () => navigate(ROUTES.ADMIN.VERIFICATIONS)
 
@@ -283,7 +349,7 @@ export default function AdminVerificationReviewPage() {
 		])
 
 		try {
-			const targetType = isDoctor ? 'doctor' : providerItem?.provider_type || (type as string)
+			const targetType = isDoctor ? 'doctor' : type || 'provider'
 			await recordSingleDocumentReview({
 				target_type: targetType,
 				target_id: id,
@@ -294,6 +360,8 @@ export default function AdminVerificationReviewPage() {
 				notes: reviewerNotes.trim() || undefined,
 			})
 			toast.success(`Document "${activeDoc.name}" status saved to database.`)
+			// Refresh to update precise audit trail logs and status
+			await fetchData()
 		} catch (err: unknown) {
 			toast.error(getErrorMessage(err, 'Failed to save document status to database.'))
 		}

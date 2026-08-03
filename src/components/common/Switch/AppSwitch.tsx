@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react'
+﻿import React, { forwardRef } from 'react'
 import { Switch, SwitchProps, SxProps, Theme } from '@mui/material'
 
 export interface AppSwitchProps extends SwitchProps {
@@ -35,7 +35,7 @@ const defaultSwitchSx = {
 	},
 
 	'& .MuiSwitch-track': {
-		borderRadius: 9,
+		borderRadius: 2,
 		backgroundColor: '#E2E8F0',
 		opacity: 1,
 		transition: 'background-color 300ms',

@@ -1,4 +1,4 @@
-// src/features/admin/pages/AdminAppointmentsPage.tsx
+﻿// src/features/admin/pages/AdminAppointmentsPage.tsx
 import { useEffect, useState, useCallback, useRef } from 'react'
 import {
 	Box,
@@ -49,23 +49,23 @@ type DoctorHospitalResponse = {
 const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
 
 export default function AdminAppointmentsPage() {
-	// ── Table data ───────────────────────────────────────────────────────────
+	// â”€â”€ Table data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	const [appointments, setAppointments] = useState<AdminAppointmentItem[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 	const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
 
-	// ── Pagination ────────────────────────────────────────────────────────────
+	// â”€â”€ Pagination â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	const [page, setPage] = useState(1)
 	const [pageSize, setPageSize] = useState(10)
 	const [totalRows, setTotalRows] = useState(0)
 
-	// ── Search / filter ───────────────────────────────────────────────────────
+	// â”€â”€ Search / filter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	const [searchInput, setSearchInput] = useState('')
 	const [searchQuery, setSearchQuery] = useState('')
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-	// ── Reschedule drawer state ───────────────────────────────────────────────
+	// â”€â”€ Reschedule drawer state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	const [rescheduleOpen, setRescheduleOpen] = useState(false)
 	const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null)
 	const [rescheduleDate, setRescheduleDate] = useState(new Date())
@@ -77,11 +77,11 @@ export default function AdminAppointmentsPage() {
 	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
 	const [appointmentType, setAppointmentType] = useState<'clinic' | 'video'>('clinic')
 
-	// ── Cancel confirmation dialog state ──────────────────────────────────────
+	// â”€â”€ Cancel confirmation dialog state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
 	const [apptPendingCancel, setApptPendingCancel] = useState<AdminAppointmentItem | null>(null)
 
-	// ── Fetch appointments ────────────────────────────────────────────────────
+	// â”€â”€ Fetch appointments â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	const fetchAppointments = useCallback(async () => {
 		setLoading(true)
 		setError(null)
@@ -102,7 +102,7 @@ export default function AdminAppointmentsPage() {
 		fetchAppointments()
 	}, [fetchAppointments])
 
-	// ── Debounced search ──────────────────────────────────────────────────────
+	// â”€â”€ Debounced search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const val = e.target.value
 		setSearchInput(val)
@@ -113,7 +113,7 @@ export default function AdminAppointmentsPage() {
 		}, 400)
 	}
 
-	// ── Admin actions ─────────────────────────────────────────────────────────
+	// â”€â”€ Admin actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	const handleCancel = async (appt: AdminAppointmentItem) => {
 		const publicId = appt.id || appt.public_id || ''
 		setActionLoadingId(publicId)
@@ -130,7 +130,7 @@ export default function AdminAppointmentsPage() {
 		}
 	}
 
-	// ── Cancel confirmation flow ──────────────────────────────────────────────
+	// â”€â”€ Cancel confirmation flow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	const handleRequestCancel = (appt: AdminAppointmentItem) => {
 		setApptPendingCancel(appt)
 		setCancelConfirmOpen(true)
@@ -165,7 +165,7 @@ export default function AdminAppointmentsPage() {
 		}
 	}
 
-	// ── Open reschedule drawer ────────────────────────────────────────────────
+	// â”€â”€ Open reschedule drawer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	const handleOpenReschedule = async (row: AdminAppointmentItem) => {
 		const targetDocId = row.doctor_id || ''
 		const targetHospitalId = row.hospital_id || ''
@@ -214,7 +214,7 @@ export default function AdminAppointmentsPage() {
 		}
 	}
 
-	// ── Fetch slots when reschedule date/hospital changes ──────────────────────
+	// â”€â”€ Fetch slots when reschedule date/hospital changes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	useEffect(() => {
 		if (!rescheduleOpen || !rescheduleAppt?.doctor?.id) return
 
@@ -252,7 +252,7 @@ export default function AdminAppointmentsPage() {
 		fetchSlots()
 	}, [rescheduleDate, rescheduleOpen, rescheduleAppt, rescheduleHospitalId, appointmentType])
 
-	// ── Submit reschedule ─────────────────────────────────────────────────────
+	// â”€â”€ Submit reschedule â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	const handleRescheduleConfirm = async () => {
 		if (!rescheduleAppt || !rescheduleTime) {
 			toast.warning('Please select a time slot before confirming.')
@@ -279,7 +279,7 @@ export default function AdminAppointmentsPage() {
 		}
 	}
 
-	// ── Table columns ─────────────────────────────────────────────────────────
+	// â”€â”€ Table columns â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	const columns: Column<AdminAppointmentItem>[] = [
 		{
 			field: 'id',
@@ -319,7 +319,7 @@ export default function AdminAppointmentsPage() {
 			label: 'Fee',
 			render: (_: unknown, row: AdminAppointmentItem) => (
 				<Typography variant="body2" fontWeight={700} color="#0d9488">
-					{row.fees != null ? formatINR(row.fees) : '—'}
+					{row.fees != null ? formatINR(row.fees) : 'â€”'}
 				</Typography>
 			),
 		},
@@ -477,7 +477,7 @@ export default function AdminAppointmentsPage() {
 			/>
 
 			{/* Cancel Dialog */}
-			<Dialog open={cancelConfirmOpen} onClose={handleCloseCancelConfirm} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+			<Dialog open={cancelConfirmOpen} onClose={handleCloseCancelConfirm} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
 				<DialogTitle sx={{ fontWeight: 800, color: '#0f172a' }}>Cancel Appointment?</DialogTitle>
 				<DialogContent>
 					<DialogContentText color="text.secondary">

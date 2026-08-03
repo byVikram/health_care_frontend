@@ -37,6 +37,7 @@ import CampaignIcon from '@mui/icons-material/Campaign'
 import GroupsIcon from '@mui/icons-material/Groups'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer'
 
 import { useAuth, clearAuth } from '../../hooks/useAuth'
 import { ROUTES } from '../../constants/routes'
@@ -75,6 +76,7 @@ const NAV_GROUPS: NavGroup[] = [
 			{ label: 'Blog Posts', path: ROUTES.ADMIN.BLOGS, icon: <ArticleIcon /> },
 			{ label: 'Communities', path: ROUTES.ADMIN.COMMUNITIES, icon: <GroupsIcon /> },
 			{ label: 'Comments', path: ROUTES.ADMIN.COMMENTS, icon: <CommentIcon /> },
+			{ label: 'Q&As', path: ROUTES.ADMIN.QA, icon: <QuestionAnswerIcon /> },
 			{ label: 'Advertisements', path: ROUTES.ADMIN.ADS, icon: <CampaignIcon /> },
 		],
 	},
@@ -162,7 +164,7 @@ export default function AdminLayout() {
 					)}
 				</Box>
 
-				{!collapsed && (
+				{/* {!collapsed && (
 					<IconButton
 						onClick={() => setCollapsed(true)}
 						size="small"
@@ -170,7 +172,7 @@ export default function AdminLayout() {
 					>
 						<ChevronLeftIcon fontSize="small" />
 					</IconButton>
-				)}
+				)} */}
 			</Box>
 
 			{/* ── Navigation Groups ── */}

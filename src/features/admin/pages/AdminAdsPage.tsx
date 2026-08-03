@@ -1,4 +1,4 @@
-// src/features/admin/pages/AdminAdsPage.tsx
+﻿// src/features/admin/pages/AdminAdsPage.tsx
 import { useEffect, useState } from 'react'
 import {
 	Box,
@@ -18,6 +18,7 @@ import {
 	TextField,
 	Tab,
 	Tabs,
+	FormControlLabel,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -29,6 +30,7 @@ import MouseIcon from '@mui/icons-material/Mouse'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
+import AppSwitch from '../../../components/common/Switch/AppSwitch'
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 import AdminStatCard from '../../../components/admin/AdminStatCard'
 import SectionCard from '../../../components/common/Card/SectionCard'
@@ -72,6 +74,7 @@ export default function AdminAdsPage() {
 	const [targetUrl, setTargetUrl] = useState('')
 	const [startDate, setStartDate] = useState('')
 	const [endDate, setEndDate] = useState('')
+	const [adIsActive, setAdIsActive] = useState(true)
 
 	// Placement Modal
 	const [placementOpen, setPlacementOpen] = useState(false)
@@ -98,12 +101,12 @@ export default function AdminAdsPage() {
 	useEffect(() => { fetchData() }, [])
 
 	const handleOpenCreateCampaign = () => {
-		setEditingAd(null); setAdTitle(''); setImageUrl(''); setTargetUrl(''); setStartDate(''); setEndDate('')
+		setEditingAd(null); setAdTitle(''); setImageUrl(''); setTargetUrl(''); setStartDate(''); setEndDate(''); setAdIsActive(true)
 		setCampaignOpen(true)
 	}
 
 	const handleOpenEditCampaign = (ad: AdminAdItem) => {
-		setEditingAd(ad); setAdTitle(ad.title); setImageUrl(ad.image_url); setTargetUrl(ad.target_url)
+		setEditingAd(ad); setAdTitle(ad.title); setImageUrl(ad.image_url); setTargetUrl(ad.target_url); setAdIsActive(ad.is_active)
 		setStartDate(ad.start_date ? ad.start_date.substring(0, 16) : '')
 		setEndDate(ad.end_date ? ad.end_date.substring(0, 16) : '')
 		setCampaignOpen(true)
@@ -113,7 +116,7 @@ export default function AdminAdsPage() {
 		if (!adTitle.trim() || !imageUrl.trim() || !targetUrl.trim()) {
 			toast.warning('Please complete Title, Image URL, and Target URL'); return
 		}
-		const payload = { title: adTitle, image_url: imageUrl, target_url: targetUrl, start_date: startDate ? new Date(startDate).toISOString() : undefined, end_date: endDate ? new Date(endDate).toISOString() : undefined }
+		const payload = { title: adTitle, image_url: imageUrl, target_url: targetUrl, is_active: adIsActive, start_date: startDate ? new Date(startDate).toISOString() : undefined, end_date: endDate ? new Date(endDate).toISOString() : undefined }
 		try {
 			if (editingAd) { await updateAd(editingAd.id, payload); toast.success('Ad campaign updated successfully!') }
 			else { await createAd(payload); toast.success('Ad campaign created successfully!') }
@@ -135,9 +138,25 @@ export default function AdminAdsPage() {
 
 	const handleSavePlacement = async () => {
 		if (!selectedAdId) return
-		const payload = { ad_id: selectedAdId, page_route: pageRoute, placement_key: placementKey, paragraph_index: paragraphIndex !== '' ? Number(paragraphIndex) : undefined, category: adCategory || undefined }
-		try { await createAdPlacement(payload); toast.success('Ad placement configured successfully!'); setPlacementOpen(false); await fetchData() }
-		catch (err) { console.error('Error creating placement config:', err) }
+		let resolvedPageRoute = pageRoute
+		if (pageRoute === '/blogs/:slug' && placementKey === 'in-feed') {
+			resolvedPageRoute = '/blogs/*'
+		}
+		const payload = {
+			ad_id: selectedAdId,
+			page_route: resolvedPageRoute,
+			placement_key: placementKey,
+			paragraph_index: paragraphIndex !== '' ? Number(paragraphIndex) : undefined,
+			category: adCategory || undefined,
+		}
+		try {
+			await createAdPlacement(payload)
+			toast.success('Ad placement configured successfully!')
+			setPlacementOpen(false)
+			await fetchData()
+		} catch (err) {
+			console.error('Error creating placement config:', err)
+		}
 	}
 
 	const handleDeletePlacement = async (id: string) => {
@@ -191,7 +210,27 @@ export default function AdminAdsPage() {
 		{
 			field: 'is_active',
 			label: 'Status',
-			render: (_, ad) => <StatusBadge status={ad.is_active ? 'active' : 'draft'} label={ad.is_active ? 'Active' : 'Inactive'} />,
+			render: (_, ad) => (
+				<Stack direction="row" spacing={1} alignItems="center">
+					<Tooltip title={ad.is_active ? 'Campaign Active (Click to pause)' : 'Campaign Inactive (Click to activate)'}>
+						<span>
+							<AppSwitch
+								checked={ad.is_active}
+								onChange={async () => {
+									try {
+										await updateAd(ad.id, { is_active: !ad.is_active })
+										toast.success(`Campaign "${ad.title}" ${!ad.is_active ? 'activated' : 'paused'}`)
+										fetchData()
+									} catch {
+										toast.error('Failed to update campaign status.')
+									}
+								}}
+							/>
+						</span>
+					</Tooltip>
+					<StatusBadge status={ad.is_active ? 'active' : 'draft'} label={ad.is_active ? 'Active' : 'Inactive'} />
+				</Stack>
+			),
 		},
 		{
 			field: 'actions',
@@ -243,7 +282,7 @@ export default function AdminAdsPage() {
 			label: 'Paragraph',
 			render: (_, p) => (
 				<Typography variant="caption" color="text.secondary">
-					{p.paragraph_index !== undefined && p.paragraph_index !== null ? `After para ${p.paragraph_index}` : '—'}
+					{p.paragraph_index !== undefined && p.paragraph_index !== null ? `After para ${p.paragraph_index}` : 'â€”'}
 				</Typography>
 			),
 		},
@@ -336,7 +375,7 @@ export default function AdminAdsPage() {
 			)}
 
 			{/* Campaign Dialog */}
-			<Dialog open={campaignOpen} onClose={() => setCampaignOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+			<Dialog open={campaignOpen} onClose={() => setCampaignOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
 				<DialogTitle sx={{ fontWeight: 800, color: '#0f172a' }}>{editingAd ? 'Edit Campaign Creative' : 'New Campaign Creative'}</DialogTitle>
 				<DialogContent>
 					<Stack spacing={2.5} sx={{ pt: 1.5 }}>
@@ -351,6 +390,10 @@ export default function AdminAdsPage() {
 								<TextField fullWidth label="End Date" type="datetime-local" InputLabelProps={{ shrink: true }} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
 							</Grid>
 						</Grid>
+						<FormControlLabel
+							control={<AppSwitch checked={adIsActive} onChange={(e) => setAdIsActive(e.target.checked)} />}
+							label={<Typography variant="body2" fontWeight={600}>Set Campaign Active & Live</Typography>}
+						/>
 					</Stack>
 				</DialogContent>
 				<DialogActions sx={{ p: 3, pt: 1.5, gap: 1 }}>
@@ -360,7 +403,7 @@ export default function AdminAdsPage() {
 			</Dialog>
 
 			{/* Placement Dialog */}
-			<Dialog open={placementOpen} onClose={() => setPlacementOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+			<Dialog open={placementOpen} onClose={() => setPlacementOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
 				<DialogTitle sx={{ fontWeight: 800, color: '#0f172a' }}>Configure Placement Rules</DialogTitle>
 				<DialogContent>
 					<Stack spacing={2.5} sx={{ pt: 1.5 }}>

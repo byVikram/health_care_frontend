@@ -332,67 +332,29 @@ export default function AdminVerificationsPage() {
 			field: 'actions',
 			label: 'Actions',
 			align: 'right',
-			render: (_: unknown, row: DoctorVerificationItem) => {
-				const isBusy = actionLoadingId === (row.public_id || row.id)
-				return (
-					<Stack direction="row" spacing={0.75} justifyContent="flex-end" alignItems="center">
-						{row.license_proof_s3_key && (
-							<Tooltip title="View License Proof Document">
-								<IconButton
-									size="small"
-									onClick={(e) => handleOpenS3Proof(row.license_proof_s3_key, e)}
-									sx={{ border: '1px solid #e2e8f0', borderRadius: 1.5, color: '#0d9488', '&:hover': { bgcolor: 'rgba(13,148,136,0.06)' } }}
-								>
-									<OpenInNewIcon sx={{ fontSize: 16 }} />
-								</IconButton>
-							</Tooltip>
-						)}
-
-						{!row.is_verified && (
-							<>
-								<Tooltip title="Quick Approve">
-									<span>
-										<IconButton
-											size="small"
-											disabled={isBusy}
-											onClick={(e) => handleQuickVerify('doctor', row, true, e)}
-											sx={{ border: '1px solid #bbf7d0', borderRadius: 1.5, color: '#16a34a', bgcolor: '#f0fdf4', '&:hover': { bgcolor: '#dcfce7' } }}
-										>
-											<CheckIcon sx={{ fontSize: 16 }} />
-										</IconButton>
-									</span>
-								</Tooltip>
-
-								<Tooltip title="Quick Reject">
-									<span>
-										<IconButton
-											size="small"
-											disabled={isBusy}
-											onClick={(e) => handleQuickVerify('doctor', row, false, e)}
-											sx={{ border: '1px solid #fecaca', borderRadius: 1.5, color: '#dc2626', bgcolor: '#fff1f2', '&:hover': { bgcolor: '#fee2e2' } }}
-										>
-											<CloseIcon sx={{ fontSize: 16 }} />
-										</IconButton>
-									</span>
-								</Tooltip>
-							</>
-						)}
-
-						<Button
-							variant="contained"
-							size="small"
-							startIcon={<VisibilityIcon sx={{ fontSize: 15 }} />}
-							onClick={(e) => {
-								e.stopPropagation()
-								handleOpenReview('doctor', row)
-							}}
-							sx={{ bgcolor: '#0f172a', textTransform: 'none', borderRadius: 2, fontWeight: 700, px: 1.75, py: 0.5, fontSize: 12.5, '&:hover': { bgcolor: '#1e293b' } }}
-						>
-							Review
-						</Button>
-					</Stack>
-				)
-			},
+			render: (_: unknown, row: DoctorVerificationItem) => (
+				<Stack direction="row" spacing={0.75} justifyContent="flex-end" alignItems="center">
+					<Tooltip title="Review Application">
+						<span>
+							<IconButton
+								size="small"
+								onClick={(e) => {
+									e.stopPropagation()
+									handleOpenReview('doctor', row)
+								}}
+								sx={{
+									border: '1px solid #e2e8f0',
+									borderRadius: 1.5,
+									color: '#0d9488',
+									'&:hover': { borderColor: '#0d9488', bgcolor: 'rgba(13,148,136,0.06)' },
+								}}
+							>
+								<OpenInNewIcon sx={{ fontSize: 16 }} />
+							</IconButton>
+						</span>
+					</Tooltip>
+				</Stack>
+			),
 		},
 	]
 
@@ -474,67 +436,29 @@ export default function AdminVerificationsPage() {
 			field: 'actions',
 			label: 'Actions',
 			align: 'right',
-			render: (_: unknown, row: ProviderVerificationItem) => {
-				const isBusy = actionLoadingId === (row.public_id || row.id)
-				return (
-					<Stack direction="row" spacing={0.75} justifyContent="flex-end" alignItems="center">
-						{row.license_proof_s3_key && (
-							<Tooltip title="View License Proof Document">
-								<IconButton
-									size="small"
-									onClick={(e) => handleOpenS3Proof(row.license_proof_s3_key, e)}
-									sx={{ border: '1px solid #e2e8f0', borderRadius: 1.5, color: '#0d9488', '&:hover': { bgcolor: 'rgba(13,148,136,0.06)' } }}
-								>
-									<OpenInNewIcon sx={{ fontSize: 16 }} />
-								</IconButton>
-							</Tooltip>
-						)}
-
-						{!row.is_verified && (
-							<>
-								<Tooltip title="Quick Approve">
-									<span>
-										<IconButton
-											size="small"
-											disabled={isBusy}
-											onClick={(e) => handleQuickVerify('provider', row, true, e)}
-											sx={{ border: '1px solid #bbf7d0', borderRadius: 1.5, color: '#16a34a', bgcolor: '#f0fdf4', '&:hover': { bgcolor: '#dcfce7' } }}
-										>
-											<CheckIcon sx={{ fontSize: 16 }} />
-										</IconButton>
-									</span>
-								</Tooltip>
-
-								<Tooltip title="Quick Reject">
-									<span>
-										<IconButton
-											size="small"
-											disabled={isBusy}
-											onClick={(e) => handleQuickVerify('provider', row, false, e)}
-											sx={{ border: '1px solid #fecaca', borderRadius: 1.5, color: '#dc2626', bgcolor: '#fff1f2', '&:hover': { bgcolor: '#fee2e2' } }}
-										>
-											<CloseIcon sx={{ fontSize: 16 }} />
-										</IconButton>
-									</span>
-								</Tooltip>
-							</>
-						)}
-
-						<Button
-							variant="contained"
-							size="small"
-							startIcon={<VisibilityIcon sx={{ fontSize: 15 }} />}
-							onClick={(e) => {
-								e.stopPropagation()
-								handleOpenReview('provider', row)
-							}}
-							sx={{ bgcolor: '#0f172a', textTransform: 'none', borderRadius: 2, fontWeight: 700, px: 1.75, py: 0.5, fontSize: 12.5, '&:hover': { bgcolor: '#1e293b' } }}
-						>
-							Review
-						</Button>
-					</Stack>
-				)
-			},
+			render: (_: unknown, row: ProviderVerificationItem) => (
+				<Stack direction="row" spacing={0.75} justifyContent="flex-end" alignItems="center">
+					<Tooltip title="Review Application">
+						<span>
+							<IconButton
+								size="small"
+								onClick={(e) => {
+									e.stopPropagation()
+									handleOpenReview('provider', row)
+								}}
+								sx={{
+									border: '1px solid #e2e8f0',
+									borderRadius: 1.5,
+									color: '#0d9488',
+									'&:hover': { borderColor: '#0d9488', bgcolor: 'rgba(13,148,136,0.06)' },
+								}}
+							>
+								<OpenInNewIcon sx={{ fontSize: 16 }} />
+							</IconButton>
+						</span>
+					</Tooltip>
+				</Stack>
+			),
 		},
 	]
 
