@@ -1,5 +1,5 @@
 ﻿// src/features/patient/components/PatientHealthQuestionsSection.tsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
 	Box,
@@ -19,7 +19,6 @@ import {
 	DialogTitle,
 	DialogContent,
 	DialogActions,
-	MenuItem,
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined'
@@ -32,13 +31,12 @@ import {
 	listHealthQuestions,
 	likeDoctorAnswer,
 	submitAnswerReply,
-	submitDoctorAnswer,
 	submitHealthQuestion,
 	PatientQuestion,
-	DoctorAnswer,
 	DoctorAnswerReply,
 } from '../../../services/qaService'
 import { toast } from 'react-toastify'
+import { getPatientDetails } from '../patientService'
 
 // â”€â”€â”€ Recursive Reply Rendering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -411,6 +409,22 @@ interface QuestionsSectionProps {
 	isPortalPage?: boolean
 }
 
+const formatProfileAge = (dateOfBirth?: string) => {
+	if (!dateOfBirth) return ''
+
+	const birthDate = new Date(dateOfBirth)
+	if (Number.isNaN(birthDate.getTime())) return ''
+
+	const today = new Date()
+	let age = today.getFullYear() - birthDate.getFullYear()
+	const monthDiff = today.getMonth() - birthDate.getMonth()
+	if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+		age -= 1
+	}
+
+	return age >= 0 ? `${age} Years` : ''
+}
+
 export default function PatientHealthQuestionsSection({ isPortalPage = false }: QuestionsSectionProps) {
 	const navigate = useNavigate()
 	const [searchParams] = useSearchParams()
@@ -422,15 +436,16 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 
 	// Submission state variables
 	const [askDialogOpen, setAskDialogOpen] = useState(false)
-	const [askGender, setAskGender] = useState('Female')
-	const [askAge, setAskAge] = useState('30 Years')
-	const [askLocation, setAskLocation] = useState('Bengaluru')
+	const [askGender, setAskGender] = useState('')
+	const [askAge, setAskAge] = useState('')
+	const [askLocation, setAskLocation] = useState('')
 	const [askTag, setAskTag] = useState('General')
 	const [askQuestion, setAskQuestion] = useState('')
 	const [askDesc, setAskDesc] = useState('')
 	const [askHistory, setAskHistory] = useState('')
+	const [profileLoading, setProfileLoading] = useState(false)
 
-	const loadQuestions = async (query = '') => {
+	const loadQuestions = useCallback(async (query = '') => {
 		setLoading(true)
 		try {
 			// Limit to 6 on homepage, otherwise load 30
@@ -452,11 +467,35 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 		} finally {
 			setLoading(false)
 		}
-	}
+	}, [isPortalPage, searchParams])
 
 	useEffect(() => {
 		loadQuestions(search)
-	}, [search, isPortalPage, searchParams])
+	}, [loadQuestions, search])
+
+	useEffect(() => {
+		const loadPatientProfile = async () => {
+			const patientId = localStorage.getItem('patient_id')
+			if (!patientId) return
+
+			setProfileLoading(true)
+			try {
+				const res = await getPatientDetails(patientId)
+				const personal = res.data?.personal
+				setAskGender(personal?.gender || '')
+				setAskAge(formatProfileAge(personal?.date_of_birth))
+				setAskLocation(personal?.location || '')
+			} catch (err) {
+				console.error('Failed to load patient profile for question form:', err)
+			} finally {
+				setProfileLoading(false)
+			}
+		}
+
+		if (askDialogOpen) {
+			loadPatientProfile()
+		}
+	}, [askDialogOpen])
 
 	const handleSearchChange = (val: string) => {
 		setSearch(val)
@@ -534,6 +573,78 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 	}
 
 	const selectedQuestion = questions.find((q) => q.id === selectedId) || questions[0]
+
+	const askQuestionDialog = (
+		<Dialog open={askDialogOpen} onClose={() => setAskDialogOpen(false)} maxWidth="sm" fullWidth>
+			<DialogTitle sx={{ fontWeight: 800 }}>Ask a Medical Question</DialogTitle>
+			<DialogContent>
+				<Stack spacing={3} sx={{ pt: 1.5 }}>
+					<Grid container spacing={2}>
+						<Grid size={{ xs: 4 }}>
+							<TextField
+								fullWidth
+								label="Gender"
+								value={profileLoading ? 'Loading...' : askGender}
+								disabled
+							/>
+						</Grid>
+						<Grid size={{ xs: 4 }}>
+							<TextField
+								fullWidth
+								label="Age"
+								value={profileLoading ? 'Loading...' : askAge}
+								disabled
+							/>
+						</Grid>
+						<Grid size={{ xs: 4 }}>
+							<TextField
+								fullWidth
+								label="Location"
+								value={profileLoading ? 'Loading...' : askLocation}
+								disabled
+							/>
+						</Grid>
+					</Grid>
+					<TextField
+						fullWidth
+						label="Question Tag / Speciality"
+						value={askTag}
+						placeholder="e.g. Cardiology, Pediatrics"
+						onChange={(e) => setAskTag(e.target.value)}
+					/>
+					<TextField
+						fullWidth
+						label="Subject Question"
+						value={askQuestion}
+						placeholder="What is your main question or symptom?"
+						onChange={(e) => setAskQuestion(e.target.value)}
+					/>
+					<TextField
+						fullWidth
+						multiline
+						rows={4}
+						label="Detailed Description"
+						placeholder="Explain when it started, details of symptoms..."
+						value={askDesc}
+						onChange={(e) => setAskDesc(e.target.value)}
+					/>
+					{/* <TextField
+						fullWidth
+						label="Medical History (Optional)"
+						value={askHistory}
+						placeholder="e.g. Family Hx, GERD, Hypertension"
+						onChange={(e) => setAskHistory(e.target.value)}
+					/> */}
+				</Stack>
+			</DialogContent>
+			<DialogActions sx={{ p: 3, pt: 1 }}>
+				<Button onClick={() => setAskDialogOpen(false)}>Cancel</Button>
+				<Button variant="contained" onClick={handleAskSubmit} sx={{ bgcolor: '#0c7c7c', '&:hover': { bgcolor: '#0f766e' } }}>
+					Submit Question
+				</Button>
+			</DialogActions>
+		</Dialog>
+	)
 
 	// â”€â”€â”€ Rendering Portal Page (Master-Detail) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	if (isPortalPage) {
@@ -645,94 +756,6 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 						</Box>
 					</Box>
 				)}
-
-				<Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-					<Button
-						variant="contained"
-						onClick={() => setAskDialogOpen(true)}
-						sx={{ bgcolor: '#0c7c7c', textTransform: 'none', borderRadius: 2, px: 4, py: 1.2, '&:hover': { bgcolor: '#0f766e' } }}
-					>
-						Ask a Free Question
-					</Button>
-				</Box>
-
-				{/* Ask Question Dialog */}
-				<Dialog open={askDialogOpen} onClose={() => setAskDialogOpen(false)} maxWidth="sm" fullWidth>
-					<DialogTitle sx={{ fontWeight: 800 }}>Ask a Medical Question</DialogTitle>
-					<DialogContent>
-						<Stack spacing={3} sx={{ pt: 1.5 }}>
-							<Grid container spacing={2}>
-								<Grid size={{ xs: 4 }}>
-									<TextField
-										fullWidth
-										select
-										label="Gender"
-										value={askGender}
-										onChange={(e) => setAskGender(e.target.value)}
-									>
-										<MenuItem value="Male">Male</MenuItem>
-										<MenuItem value="Female">Female</MenuItem>
-										<MenuItem value="Other">Other</MenuItem>
-									</TextField>
-								</Grid>
-								<Grid size={{ xs: 4 }}>
-									<TextField
-										fullWidth
-										label="Age"
-										value={askAge}
-										placeholder="e.g. 30 Years"
-										onChange={(e) => setAskAge(e.target.value)}
-									/>
-								</Grid>
-								<Grid size={{ xs: 4 }}>
-									<TextField
-										fullWidth
-										label="Location"
-										value={askLocation}
-										placeholder="e.g. Mumbai"
-										onChange={(e) => setAskLocation(e.target.value)}
-									/>
-								</Grid>
-							</Grid>
-							<TextField
-								fullWidth
-								label="Question Tag / Speciality"
-								value={askTag}
-								placeholder="e.g. Cardiology, Pediatrics"
-								onChange={(e) => setAskTag(e.target.value)}
-							/>
-							<TextField
-								fullWidth
-								label="Subject Question"
-								value={askQuestion}
-								placeholder="What is your main question or symptom?"
-								onChange={(e) => setAskQuestion(e.target.value)}
-							/>
-							<TextField
-								fullWidth
-								multiline
-								rows={4}
-								label="Detailed Description"
-								placeholder="Explain when it started, details of symptoms..."
-								value={askDesc}
-								onChange={(e) => setAskDesc(e.target.value)}
-							/>
-							<TextField
-								fullWidth
-								label="Medical History (Optional)"
-								value={askHistory}
-								placeholder="e.g. Family Hx, GERD, Hypertension"
-								onChange={(e) => setAskHistory(e.target.value)}
-							/>
-						</Stack>
-					</DialogContent>
-					<DialogActions sx={{ p: 3, pt: 1 }}>
-						<Button onClick={() => setAskDialogOpen(false)}>Cancel</Button>
-						<Button variant="contained" onClick={handleAskSubmit} sx={{ bgcolor: '#0c7c7c', '&:hover': { bgcolor: '#0f766e' } }}>
-							Submit Question
-						</Button>
-					</DialogActions>
-				</Dialog>
 			</Box>
 		)
 	}
@@ -740,9 +763,30 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 	// â”€â”€â”€ Rendering Landing Page (Top 6 Cards Grid) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	return (
 		<Box sx={{ py: 6 }}>
-			<Typography variant="h3" align="center" sx={{ fontWeight: 800, mb: 4, lineHeight: 1.3, fontSize: '1.5rem', color: '#0f172a' }}>
-				Health expert answers to your health questions
-			</Typography>
+			<Grid
+				container
+				sx={{
+					alignItems: 'center',
+					justifyContent: 'space-between',
+					mb: 4,
+				}}
+			>
+				<Grid size={{ xs: 12, md: 8 }}>
+					<Typography variant="h3" sx={{ fontWeight: 800, lineHeight: 1.3, fontSize: '1.5rem', color: '#0f172a' }}>
+						Health expert answers to your health questions
+					</Typography>
+				</Grid>
+				<Grid size={{ xs: 12, md: 2 }}>
+					<Button
+						fullWidth
+						variant="outlined"
+						onClick={() => navigate('/health-questions')}
+						sx={{ mt: { xs: 2, md: 0 }, textTransform: 'none', borderRadius: '30px', py: 1.2, color: '#0c7c7c', borderColor: '#0c7c7c', '&:hover': { borderColor: '#0f766e', bgcolor: 'rgba(12, 124, 124, 0.04)' } }}
+					>
+						View All
+					</Button>
+				</Grid>
+			</Grid>
 
 			{loading && questions.length === 0 ? (
 				<Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -809,10 +853,10 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 					<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 5, gap: 1.5 }}>
 						<Button
 							variant="contained"
-							onClick={() => navigate('/health-questions')}
+							onClick={() => setAskDialogOpen(true)}
 							sx={{ bgcolor: '#0c7c7c', textTransform: 'none', px: 4, py: 1.2, borderRadius: 2, fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}
 						>
-							View All Expert Answers
+							Ask a Free Question
 						</Button>
 						<Typography variant="caption" color="text.secondary" align="center" sx={{ maxWidth: '600px', px: 2 }}>
 							Medical advice disclaimer: Information on this site is not a substitute for professional medical care. Consult a physician for specific health problems.
@@ -820,6 +864,7 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 					</Box>
 				</>
 			)}
+			{askQuestionDialog}
 		</Box>
 	)
 }

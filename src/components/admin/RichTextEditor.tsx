@@ -122,13 +122,13 @@ export default function RichTextEditor({
 					borderBottom: '1px solid #ccfbf1',
 				}}
 			>
-				<Stack direction="row" alignItems="center" spacing={1}>
+				{/* <Stack direction="row" alignItems="center" spacing={1}>
 					<AutoAwesomeIcon sx={{ fontSize: 18, color: '#0d9488' }} />
 					<Typography variant="subtitle2" fontWeight={800} color="#0f766e">
 						WYSIWYG Rich Text Article Composer
 					</Typography>
 					<Chip label="Rich Formatting Mode" size="small" sx={{ bgcolor: '#0d9488', color: '#fff', fontWeight: 700, height: 20, fontSize: '0.65rem' }} />
-				</Stack>
+				</Stack> */}
 
 				<Tabs
 					value={activeTab}

@@ -13,6 +13,7 @@ import {
 	InputBase,
 	Paper,
 	CircularProgress,
+	IconButton,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import SaveIcon from '@mui/icons-material/Save'
@@ -132,7 +133,9 @@ export default function AdminBlogEditPage() {
 						sx={{
 							borderColor: '#cbd5e1',
 							color: '#64748b',
-							'&:hover': { borderColor: '#0f172a', color: '#0f172a' },
+							border: '1px solid #cbd5e1',
+							borderRadius: 2,
+							'&:hover': { borderColor: '#0f172a', color: '#0f172a', bgcolor: 'transparent' },
 						}}
 					/>
 				}

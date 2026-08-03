@@ -20,7 +20,6 @@ import AppInput from '../../../components/common/Input/AppInput'
 import CancelIcon from '@mui/icons-material/Cancel'
 import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee'
 import SearchIcon from '@mui/icons-material/Search'
-import { toast } from 'react-toastify'
 
 import SectionCard from '../../../components/common/Card/SectionCard'
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
@@ -28,60 +27,31 @@ import AppButton from '../../../components/common/Button/AppButton'
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 import StatusBadge from '../../../components/admin/StatusBadge'
 import RescheduleDrawer from '../../doctor/search/components/RescheduleDrawer'
-import { SlotGroup } from '../../../components/common/DateSlotPicker/DateSlotPicker'
-import { LookupHospital } from '../../../hooks/useAuth'
-import { Appointment } from '../../../types/appointment'
-import {
-	listAdminAppointments,
-	cancelAdminAppointment,
-	rescheduleAdminAppointment,
-	refundAppointment,
-	AdminAppointmentItem,
-} from '../adminService'
-import { getDoctorAvailability, getDoctorById, getAvailabilityModeBlocks } from '../../doctor/doctorService'
+import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
+import { listAdminAppointments, AdminAppointmentItem } from '../adminService'
+import { useAdminAppointmentActions } from '../hooks/useAdminAppointmentActions'
 import { formatINR } from '../../../utils/Utils'
 import RescheduleIcon from '../../../assets/icons/reschedule.svg'
-
-type DoctorHospitalResponse = {
-	hospitals?: Array<{ hospital: { id: string; name: string } }>
-}
 
 const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
 
 export default function AdminAppointmentsPage() {
-	// â”€â”€ Table data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	// ── Table data ──────────────────────────────────────────────────────────
 	const [appointments, setAppointments] = useState<AdminAppointmentItem[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
-	const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
 
-	// â”€â”€ Pagination â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	// ── Pagination ──────────────────────────────────────────────────────────
 	const [page, setPage] = useState(1)
 	const [pageSize, setPageSize] = useState(10)
 	const [totalRows, setTotalRows] = useState(0)
 
-	// â”€â”€ Search / filter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	// ── Search / filter ─────────────────────────────────────────────────────
 	const [searchInput, setSearchInput] = useState('')
 	const [searchQuery, setSearchQuery] = useState('')
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-	// â”€â”€ Reschedule drawer state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-	const [rescheduleOpen, setRescheduleOpen] = useState(false)
-	const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null)
-	const [rescheduleDate, setRescheduleDate] = useState(new Date())
-	const [rescheduleTime, setRescheduleTime] = useState('')
-	const [rescheduleSlots, setRescheduleSlots] = useState<SlotGroup[]>([])
-	const [rescheduleSlotsLoading, setRescheduleSlotsLoading] = useState(false)
-	const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false)
-	const [rescheduleHospitals, setRescheduleHospitals] = useState<LookupHospital[]>([])
-	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
-	const [appointmentType, setAppointmentType] = useState<'clinic' | 'video'>('clinic')
-
-	// â”€â”€ Cancel confirmation dialog state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-	const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
-	const [apptPendingCancel, setApptPendingCancel] = useState<AdminAppointmentItem | null>(null)
-
-	// â”€â”€ Fetch appointments â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	// ── Fetch appointments ──────────────────────────────────────────────────
 	const fetchAppointments = useCallback(async () => {
 		setLoading(true)
 		setError(null)
@@ -102,7 +72,39 @@ export default function AdminAppointmentsPage() {
 		fetchAppointments()
 	}, [fetchAppointments])
 
-	// â”€â”€ Debounced search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	// ── Shared reschedule / cancel / refund logic ──────────────────────────
+	const {
+		actionLoadingId,
+		cancelConfirmOpen,
+		apptPendingCancel,
+		handleRequestCancel,
+		handleCloseCancelConfirm,
+		handleConfirmCancel,
+		refundConfirmOpen,
+		apptPendingRefund,
+		handleRequestRefund,
+		handleCloseRefundConfirm,
+		handleConfirmRefund,
+		rescheduleOpen,
+		setRescheduleOpen,
+		rescheduleAppt,
+		rescheduleDate,
+		setRescheduleDate,
+		rescheduleTime,
+		setRescheduleTime,
+		rescheduleSlots,
+		rescheduleSlotsLoading,
+		rescheduleSubmitting,
+		rescheduleHospitals,
+		rescheduleHospitalId,
+		setRescheduleHospitalId,
+		appointmentType,
+		setAppointmentType,
+		handleOpenReschedule,
+		handleRescheduleConfirm,
+	} = useAdminAppointmentActions(fetchAppointments)
+
+	// ── Debounced search ────────────────────────────────────────────────────
 	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const val = e.target.value
 		setSearchInput(val)
@@ -113,173 +115,7 @@ export default function AdminAppointmentsPage() {
 		}, 400)
 	}
 
-	// â”€â”€ Admin actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-	const handleCancel = async (appt: AdminAppointmentItem) => {
-		const publicId = appt.id || appt.public_id || ''
-		setActionLoadingId(publicId)
-		try {
-			const res = await cancelAdminAppointment(publicId)
-			if (res.success) {
-				toast.success(`Appointment ${publicId} cancelled.`)
-				fetchAppointments()
-			}
-		} catch (err: unknown) {
-			toast.error(getErrorMessage(err, 'Failed to cancel appointment.'))
-		} finally {
-			setActionLoadingId(null)
-		}
-	}
-
-	// â”€â”€ Cancel confirmation flow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-	const handleRequestCancel = (appt: AdminAppointmentItem) => {
-		setApptPendingCancel(appt)
-		setCancelConfirmOpen(true)
-	}
-
-	const handleCloseCancelConfirm = () => {
-		setCancelConfirmOpen(false)
-		setApptPendingCancel(null)
-	}
-
-	const handleConfirmCancel = async () => {
-		if (!apptPendingCancel) return
-		const appt = apptPendingCancel
-		setCancelConfirmOpen(false)
-		setApptPendingCancel(null)
-		await handleCancel(appt)
-	}
-
-	const handleRefund = async (appt: AdminAppointmentItem) => {
-		const publicId = appt.id || appt.public_id || ''
-		setActionLoadingId(publicId)
-		try {
-			const res = await refundAppointment(publicId)
-			if (res.success) {
-				toast.success(`Refund triggered for appointment ${publicId}.`)
-				fetchAppointments()
-			}
-		} catch (err: unknown) {
-			toast.error(getErrorMessage(err, 'Failed to refund appointment.'))
-		} finally {
-			setActionLoadingId(null)
-		}
-	}
-
-	// â”€â”€ Open reschedule drawer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-	const handleOpenReschedule = async (row: AdminAppointmentItem) => {
-		const targetDocId = row.doctor_id || ''
-		const targetHospitalId = row.hospital_id || ''
-
-		const apptObject: Appointment = {
-			id: row.id,
-			public_id: row.public_id || row.id,
-			appointment_mode: 'clinic visit',
-			appointment_date: row.appointment_date,
-			start_time: row.start_time,
-			end_time: row.start_time,
-			fees: row.fees || 0,
-			created_at: new Date().toISOString(),
-			status: (row.status as Appointment['status']) || 'scheduled',
-			doctor: {
-				id: targetDocId,
-				name: row.doctor_name || 'Doctor',
-				avatar_s3_key: undefined,
-				speciality: 'General',
-			},
-			patient: row.patient_id ? { id: row.patient_id, name: row.patient_name || '', avatar_s3_key: null, age: 0, gender: '' } : null,
-			hospital: targetHospitalId ? { id: targetHospitalId, name: row.hospital_name || '', address: '' } : null,
-		}
-
-		setRescheduleAppt(apptObject)
-		setRescheduleDate(new Date(row.appointment_date || Date.now()))
-		setRescheduleTime('')
-		setRescheduleSlots([])
-		setRescheduleHospitalId(targetHospitalId)
-		setRescheduleHospitals([])
-		setRescheduleOpen(true)
-
-		if (targetDocId) {
-			try {
-				const docRes = (await getDoctorById(targetDocId)) as DoctorHospitalResponse
-				if (docRes?.hospitals?.length) {
-					const mapped: LookupHospital[] = docRes.hospitals.map((h) => ({
-						id: h.hospital.id,
-						label: h.hospital.name,
-					}))
-					setRescheduleHospitals(mapped)
-				}
-			} catch {
-				setRescheduleHospitals([])
-			}
-		}
-	}
-
-	// â”€â”€ Fetch slots when reschedule date/hospital changes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-	useEffect(() => {
-		if (!rescheduleOpen || !rescheduleAppt?.doctor?.id) return
-
-		const doctorId = rescheduleAppt.doctor.id
-		const hospitalId = rescheduleHospitalId || rescheduleAppt.hospital?.id
-
-		if (!doctorId || !hospitalId) return
-
-		const dateStr = rescheduleDate.toISOString().split('T')[0]
-
-		const fetchSlots = async () => {
-			setRescheduleSlotsLoading(true)
-			setRescheduleSlots([])
-			setRescheduleTime('')
-			try {
-				const responseData = await getDoctorAvailability({
-					doctor_id: doctorId,
-					hospital_id: hospitalId,
-					date: dateStr,
-				})
-				const selectedTypeMode = appointmentType === 'clinic' ? 'clinic_visit' : 'video_call'
-				const selectedModeData = getAvailabilityModeBlocks(responseData).find(
-					(item) => item.appointment_mode === selectedTypeMode
-				)
-
-				const processedData = selectedModeData?.sessions || []
-				setRescheduleSlots(processedData)
-			} catch {
-				toast.error('Could not load available slots.')
-			} finally {
-				setRescheduleSlotsLoading(false)
-			}
-		}
-
-		fetchSlots()
-	}, [rescheduleDate, rescheduleOpen, rescheduleAppt, rescheduleHospitalId, appointmentType])
-
-	// â”€â”€ Submit reschedule â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-	const handleRescheduleConfirm = async () => {
-		if (!rescheduleAppt || !rescheduleTime) {
-			toast.warning('Please select a time slot before confirming.')
-			return
-		}
-		setRescheduleSubmitting(true)
-		try {
-			const dateStr = rescheduleDate.toISOString().split('T')[0]
-			const res = await rescheduleAdminAppointment(rescheduleAppt.id, {
-				appointment_date: dateStr,
-				start_time: rescheduleTime,
-				hospital_id: rescheduleHospitalId || rescheduleAppt.hospital?.id,
-				reason: 'Admin rescheduled',
-			})
-			if (res.success) {
-				toast.success('Appointment rescheduled successfully.')
-				setRescheduleOpen(false)
-				fetchAppointments()
-			}
-		} catch (err: unknown) {
-			toast.error(getErrorMessage(err, 'Failed to reschedule appointment.'))
-		} finally {
-			setRescheduleSubmitting(false)
-		}
-	}
-
-	// â”€â”€ Table columns â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	// ── Table columns ───────────────────────────────────────────────────────
 	const columns: Column<AdminAppointmentItem>[] = [
 		{
 			field: 'id',
@@ -319,7 +155,7 @@ export default function AdminAppointmentsPage() {
 			label: 'Fee',
 			render: (_: unknown, row: AdminAppointmentItem) => (
 				<Typography variant="body2" fontWeight={700} color="#0d9488">
-					{row.fees != null ? formatINR(row.fees) : 'â€”'}
+					{row.fees != null ? formatINR(row.fees) : '—'}
 				</Typography>
 			),
 		},
@@ -383,7 +219,7 @@ export default function AdminAppointmentsPage() {
 							<span>
 								<IconButton
 									size="small"
-									onClick={() => handleRefund(row)}
+									onClick={() => handleRequestRefund(row)}
 									disabled={isBusy || !row.action?.can_refund}
 									sx={{
 										border: '1px solid #e9d5ff',
@@ -489,6 +325,22 @@ export default function AdminAppointmentsPage() {
 					<AppButton label="Confirm Cancel" color="error" onClick={handleConfirmCancel} />
 				</DialogActions>
 			</Dialog>
+
+			{/* Refund Dialog */}
+			<ConfirmModal
+				open={refundConfirmOpen}
+				onClose={handleCloseRefundConfirm}
+				onConfirm={handleConfirmRefund}
+				variant="confirm"
+				title="Process Refund"
+				description={
+					apptPendingRefund
+						? `Process a refund for ${apptPendingRefund.patient_name || 'this patient'}'s appointment${apptPendingRefund.fees != null ? ` (${formatINR(apptPendingRefund.fees)})` : ''}?`
+						: ''
+				}
+				confirmLabel="Confirm Refund"
+				loading={actionLoadingId === (apptPendingRefund?.id || apptPendingRefund?.public_id)}
+			/>
 		</Box>
 	)
 }
