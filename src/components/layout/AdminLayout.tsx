@@ -260,7 +260,7 @@ export default function AdminLayout() {
 			</Box>
 
 			{/* ── User Profile Footer ── */}
-			<Box
+			{/* <Box
 				sx={{
 					borderTop: '1px solid rgba(255,255,255,0.06)',
 					bgcolor: 'rgba(0,0,0,0.2)',
@@ -333,7 +333,7 @@ export default function AdminLayout() {
 						</Tooltip>
 					</Stack>
 				)}
-			</Box>
+			</Box> */}
 		</Box>
 	)
 
