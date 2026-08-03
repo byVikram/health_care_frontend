@@ -195,6 +195,7 @@ export interface AdminAppointmentItem {
 	doctor_id?: string
 	patient_name?: string
 	doctor_name?: string
+	doctor_speciality?: string
 	hospital_id?: string
 	hospital_name?: string
 	action?: AppointmentActionFlags
@@ -206,6 +207,8 @@ export interface AdminAppointmentListParams {
 	search?: string
 	patientId?: string
 	doctorId?: string
+	status?: string
+	sortOrder?: 'newest' | 'oldest'
 }
 
 export interface AdminAppointmentListResult {
@@ -231,6 +234,15 @@ export interface DoctorVerificationDocument {
 	type: string
 }
 
+export interface AdminDoctorReviewItem {
+	id: string
+	patient_name?: string
+	hospital_name?: string | null
+	rating: number
+	comment?: string | null
+	review_date?: string
+}
+
 export interface DoctorVerificationDetail {
 	id: string
 	name: string
@@ -252,6 +264,7 @@ export interface DoctorVerificationDetail {
 	hospital?: string
 	consultation_fee?: number
 	documents: DoctorVerificationDocument[]
+	reviews?: AdminDoctorReviewItem[]
 	upcoming_appointments?: AdminUpcomingAppointment[]
 }
 
@@ -486,7 +499,7 @@ export const getProviderAdminDetail = async (providerType: string, providerId: s
 
 /** GET /api/admin/appointments */
 export const listAdminAppointments = async (params: AdminAppointmentListParams = {}) => {
-	const { page = 1, pageSize = 10, search, patientId, doctorId } = params
+	const { page = 1, pageSize = 10, search, patientId, doctorId, status, sortOrder } = params
 	const res = await ApiService.getWithParams<{ success: boolean; data: AdminAppointmentListResult }>(
 		API_ENDPOINTS.ADMIN.APPOINTMENTS,
 		{
@@ -495,6 +508,8 @@ export const listAdminAppointments = async (params: AdminAppointmentListParams =
 			...(search ? { search } : {}),
 			...(patientId ? { patient_id: patientId } : {}),
 			...(doctorId ? { doctor_id: doctorId } : {}),
+			...(status ? { status } : {}),
+			...(sortOrder ? { sort_order: sortOrder } : {}),
 		}
 	)
 	return res.data

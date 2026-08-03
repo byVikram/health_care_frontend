@@ -4,6 +4,7 @@ import { Box, Typography, Chip, Stack, SxProps, Theme } from '@mui/material'
 
 interface AdminPageHeaderProps {
 	title: string
+	leading?: ReactNode
 	subtitle?: string
 	count?: number
 	countLabel?: string
@@ -13,6 +14,7 @@ interface AdminPageHeaderProps {
 
 export default function AdminPageHeader({
 	title,
+	leading,
 	subtitle,
 	count,
 	countLabel = 'total',
@@ -29,6 +31,7 @@ export default function AdminPageHeader({
 		>
 			<Box>
 				<Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap">
+					{leading}
 					<Typography variant="h5" fontWeight={800} color="#0f172a" sx={{ letterSpacing: -0.4 }}>
 						{title}
 					</Typography>
