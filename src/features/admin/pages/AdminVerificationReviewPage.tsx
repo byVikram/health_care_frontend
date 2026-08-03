@@ -11,10 +11,10 @@ import {
 	Alert,
 	Avatar,
 	Divider,
-	Button,
 	IconButton,
 	Tooltip,
 } from '@mui/material'
+import AppButton from '../../../components/common/Button/AppButton'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore'
 import NavigateNextIcon from '@mui/icons-material/NavigateNext'
@@ -441,15 +441,14 @@ export default function AdminVerificationReviewPage() {
 				<Box sx={{ px: 3, py: 1.5 }}>
 					<Stack direction="row" justifyContent="space-between" alignItems="center">
 						<Stack direction="row" spacing={2} alignItems="center">
-							<Button
+							<AppButton
 								variant="outlined"
 								size="small"
 								startIcon={<ArrowBackIcon />}
 								onClick={handleBack}
-								sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 600, borderColor: '#334155', color: '#94a3b8', '&:hover': { borderColor: '#ffffff', color: '#ffffff' } }}
-							>
-								Back to Queue
-							</Button>
+								label="Back to Queue"
+								sx={{ borderRadius: 1.5, borderColor: '#334155', color: '#94a3b8', '&:hover': { borderColor: '#ffffff', color: '#ffffff' } }}
+							/>
 
 							<Stack direction="row" spacing={1.25} alignItems="center">
 								<Typography variant="h6" fontWeight={800} color="#ffffff" sx={{ fontSize: 17 }}>

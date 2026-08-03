@@ -1,4 +1,4 @@
-﻿// src/features/admin/pages/AdminQAPage.tsx
+// src/features/admin/pages/AdminQAPage.tsx
 import { useState, useEffect, useCallback } from "react"
 import {
 	Box,
@@ -12,13 +12,13 @@ import {
 	Divider,
 	Tab,
 	Tabs,
-	TextField,
 	InputAdornment,
 	Avatar,
 	Button,
 	CircularProgress,
 	ButtonGroup,
 } from "@mui/material"
+import AppInput from "../../../components/common/Input/AppInput"
 import SearchIcon from "@mui/icons-material/Search"
 import OpenInNewIcon from "@mui/icons-material/OpenInNew"
 import QuestionAnswerIcon from "@mui/icons-material/QuestionAnswer"
@@ -559,7 +559,7 @@ export default function AdminQAPage() {
 						<Tab key={t.value} value={t.value} label={t.label} />
 					))}
 				</Tabs>
-				<TextField
+				<AppInput
 					size="small"
 					placeholder="Search questions or tags... (Enter)"
 					value={searchInput}

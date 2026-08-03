@@ -1,4 +1,4 @@
-﻿// src/features/admin/pages/AdminCommunitiesPage.tsx
+// src/features/admin/pages/AdminCommunitiesPage.tsx
 import { useEffect, useState } from 'react'
 import {
 	Box,
@@ -7,18 +7,15 @@ import {
 	Chip,
 	Avatar,
 	CircularProgress,
-	MenuItem,
 	Grid,
 	Switch,
 	FormControlLabel,
 	IconButton,
 	Tooltip,
-	Button,
 	Dialog,
 	DialogTitle,
 	DialogContent,
 	DialogActions,
-	TextField,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
@@ -32,6 +29,10 @@ import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 import SectionCard from '../../../components/common/Card/SectionCard'
 import StatusBadge from '../../../components/admin/StatusBadge'
+import AppButton from '../../../components/common/Button/AppButton'
+import AppInput from '../../../components/common/Input/AppInput'
+import AppSelect from '../../../components/common/Select/AppSelect'
+
 import {
 	listAdminCommunities,
 	createAdminCommunity,
@@ -270,14 +271,13 @@ export default function AdminCommunitiesPage() {
 								<RefreshIcon fontSize="small" />
 							</IconButton>
 						</Tooltip>
-						<Button
+						<AppButton
 							variant="contained"
 							startIcon={<AddIcon />}
 							onClick={handleOpenCreate}
-							sx={{ bgcolor: '#0d9488', textTransform: 'none', borderRadius: 2, fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}
-						>
-							Create Group
-						</Button>
+							label="Create Group"
+							sx={{ bgcolor: '#0d9488', fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}
+						/>
 					</>
 				}
 			/>
@@ -302,20 +302,28 @@ export default function AdminCommunitiesPage() {
 				</DialogTitle>
 				<DialogContent>
 					<Stack spacing={2.5} sx={{ pt: 1.5 }}>
-						<TextField fullWidth label="Group Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="E.g., Cardiology Support Network" />
+						<AppInput fullWidth label="Group Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="E.g., Cardiology Support Network" />
 						<Grid container spacing={2}>
 							<Grid size={{ xs: 6 }}>
-								<TextField fullWidth select label="Category" value={category} onChange={(e) => setCategory(e.target.value)}>
-									{COMMUNITY_CATEGORIES.map((cat) => <MenuItem key={cat} value={cat}>{cat}</MenuItem>)}
-								</TextField>
+								<AppSelect
+									fullWidth
+									label="Category"
+									value={category}
+									onChange={(e) => setCategory(e.target.value)}
+									options={COMMUNITY_CATEGORIES.map((cat) => ({ value: cat, label: cat }))}
+								/>
 							</Grid>
 							<Grid size={{ xs: 6 }}>
-								<TextField fullWidth select label="Icon Reference" value={iconName} onChange={(e) => setIconName(e.target.value)}>
-									{COMMUNITY_ICONS.map((icon) => <MenuItem key={icon} value={icon}>{icon}</MenuItem>)}
-								</TextField>
+								<AppSelect
+									fullWidth
+									label="Icon Reference"
+									value={iconName}
+									onChange={(e) => setIconName(e.target.value)}
+									options={COMMUNITY_ICONS.map((icon) => ({ value: icon, label: icon }))}
+								/>
 							</Grid>
 						</Grid>
-						<TextField fullWidth multiline rows={3} label="Short Description" placeholder="Introduce the support group purpose..." value={description} onChange={(e) => setDescription(e.target.value)} />
+						<AppInput fullWidth multiline rows={3} label="Short Description" placeholder="Introduce the support group purpose..." value={description} onChange={(e) => setDescription(e.target.value)} />
 						<FormControlLabel
 							control={<AppSwitch checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />}
 							label={<Typography variant="body2">Show this group on the patient home page banner</Typography>}
@@ -323,10 +331,8 @@ export default function AdminCommunitiesPage() {
 					</Stack>
 				</DialogContent>
 				<DialogActions sx={{ p: 3, pt: 1.5, gap: 1 }}>
-					<Button onClick={() => setDialogOpen(false)} sx={{ textTransform: 'none', color: '#64748b' }}>Cancel</Button>
-					<Button variant="contained" onClick={handleSubmit} sx={{ bgcolor: '#0d9488', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}>
-						{editingGroup ? 'Save Changes' : 'Create Group'}
-					</Button>
+					<AppButton variant="text" onClick={() => setDialogOpen(false)} label="Cancel" sx={{ color: '#64748b' }} />
+					<AppButton variant="contained" onClick={handleSubmit} label={editingGroup ? 'Save Changes' : 'Create Group'} sx={{ bgcolor: '#0d9488', fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }} />
 				</DialogActions>
 			</Dialog>
 		</Box>

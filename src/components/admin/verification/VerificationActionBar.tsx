@@ -1,9 +1,8 @@
-﻿// src/components/admin/verification/VerificationActionBar.tsx
+// src/components/admin/verification/VerificationActionBar.tsx
 import { useState } from 'react'
 import {
 	Box,
 	Stack,
-	Button,
 	Dialog,
 	DialogTitle,
 	DialogContent,
@@ -20,7 +19,9 @@ import ReplayIcon from '@mui/icons-material/Replay'
 import RuleIcon from '@mui/icons-material/Rule'
 import DescriptionIcon from '@mui/icons-material/Description'
 
+import AppButton from '../../common/Button/AppButton'
 import { VerificationDocumentItem } from './DocumentRail'
+
 
 interface VerificationActionBarProps {
 	activeDocument: VerificationDocumentItem | null
@@ -105,19 +106,18 @@ export default function VerificationActionBar({
 					{/* 3-Column Action Buttons Bar */}
 					<Grid container spacing={1}>
 						<Grid size={{ xs: 4 }}>
-							<Button
+							<AppButton
 								size="small"
 								fullWidth
 								startIcon={<CheckCircleIcon sx={{ fontSize: 15 }} />}
 								onClick={() => onDocAction('approve')}
 								disabled={submitting}
+								label="Approve"
 								sx={{
 									bgcolor: isApproved ? '#16a34a' : '#ffffff',
 									color: isApproved ? '#ffffff' : '#15803d',
 									border: '1px solid',
 									borderColor: isApproved ? '#16a34a' : '#bbf7d0',
-									textTransform: 'none',
-									fontWeight: 800,
 									fontSize: '12px',
 									py: 0.8,
 									px: 0.5,
@@ -128,25 +128,22 @@ export default function VerificationActionBar({
 										bgcolor: isApproved ? '#15803d' : '#f0fdf4',
 									},
 								}}
-							>
-								Approve
-							</Button>
+							/>
 						</Grid>
 
 						<Grid size={{ xs: 4 }}>
-							<Button
+							<AppButton
 								size="small"
 								fullWidth
 								startIcon={<ReplayIcon sx={{ fontSize: 15 }} />}
 								onClick={() => onDocAction('reupload')}
 								disabled={submitting}
+								label="Re-upload"
 								sx={{
 									bgcolor: isReupload ? '#9333ea' : '#ffffff',
 									color: isReupload ? '#ffffff' : '#7e22ce',
 									border: '1px solid',
 									borderColor: isReupload ? '#9333ea' : '#e9d5ff',
-									textTransform: 'none',
-									fontWeight: 800,
 									fontSize: '12px',
 									py: 0.8,
 									px: 0.5,
@@ -157,25 +154,22 @@ export default function VerificationActionBar({
 										bgcolor: isReupload ? '#7e22ce' : '#faf5ff',
 									},
 								}}
-							>
-								Re-upload
-							</Button>
+							/>
 						</Grid>
 
 						<Grid size={{ xs: 4 }}>
-							<Button
+							<AppButton
 								size="small"
 								fullWidth
 								startIcon={<CancelIcon sx={{ fontSize: 15 }} />}
 								onClick={() => onDocAction('reject')}
 								disabled={submitting}
+								label="Reject"
 								sx={{
 									bgcolor: isRejected ? '#dc2626' : '#ffffff',
 									color: isRejected ? '#ffffff' : '#b91c1c',
 									border: '1px solid',
 									borderColor: isRejected ? '#dc2626' : '#fecaca',
-									textTransform: 'none',
-									fontWeight: 800,
 									fontSize: '12px',
 									py: 0.8,
 									px: 0.5,
@@ -186,9 +180,7 @@ export default function VerificationActionBar({
 										bgcolor: isRejected ? '#b91c1c' : '#fff1f2',
 									},
 								}}
-							>
-								Reject
-							</Button>
+							/>
 						</Grid>
 					</Grid>
 				</Box>
@@ -202,49 +194,45 @@ export default function VerificationActionBar({
 			</Typography>
 
 			<Stack spacing={1}>
-				<Button
+				<AppButton
 					variant="contained"
 					fullWidth
 					startIcon={<CheckCircleIcon />}
 					onClick={handleTryComplete}
 					disabled={submitting}
+					label="Complete Verification"
 					sx={{
 						bgcolor: '#0d9488',
-						textTransform: 'none',
 						fontWeight: 800,
 						py: 1,
 						borderRadius: 2,
 						boxShadow: '0 4px 14px rgba(13,148,136,0.3)',
 						'&:hover': { bgcolor: '#0f766e' },
 					}}
-				>
-					Complete Verification
-				</Button>
+				/>
 
 				<Stack direction="row" spacing={1}>
-					<Button
+					<AppButton
 						variant="outlined"
 						color="warning"
 						fullWidth
 						startIcon={<ReplayIcon />}
 						onClick={() => onApplicantAction('request_changes')}
 						disabled={submitting}
-						sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700, fontSize: 12 }}
-					>
-						Request Changes
-					</Button>
+						label="Request Changes"
+						sx={{ borderRadius: 2, fontWeight: 700, fontSize: 12 }}
+					/>
 
-					<Button
+					<AppButton
 						variant="outlined"
 						color="error"
 						fullWidth
 						startIcon={<CancelIcon />}
 						onClick={() => onApplicantAction('reject')}
 						disabled={submitting}
-						sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700, fontSize: 12 }}
-					>
-						Reject Application
-					</Button>
+						label="Reject Application"
+						sx={{ borderRadius: 2, fontWeight: 700, fontSize: 12 }}
+					/>
 				</Stack>
 			</Stack>
 
@@ -271,19 +259,16 @@ export default function VerificationActionBar({
 					)}
 				</DialogContent>
 				<DialogActions sx={{ px: 3, pb: 2 }}>
-					<Button onClick={() => setGuardOpen(false)} sx={{ textTransform: 'none', fontWeight: 700 }}>
-						Review Remaining Docs
-					</Button>
-					<Button
+					<AppButton variant="text" onClick={() => setGuardOpen(false)} label="Review Remaining Docs" sx={{ fontWeight: 700 }} />
+					<AppButton
 						variant="contained"
 						onClick={() => {
 							setGuardOpen(false)
 							onApplicantAction('approve')
 						}}
-						sx={{ bgcolor: '#0d9488', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}
-					>
-						Force Complete Anyway
-					</Button>
+						label="Force Complete Anyway"
+						sx={{ bgcolor: '#0d9488', fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}
+					/>
 				</DialogActions>
 			</Dialog>
 		</Box>

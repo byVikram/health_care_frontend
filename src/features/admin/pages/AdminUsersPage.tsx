@@ -13,7 +13,6 @@ import {
 	IconButton,
 	Avatar,
 	InputAdornment,
-	TextField,
 } from '@mui/material'
 import BlockIcon from '@mui/icons-material/Block'
 import LockResetIcon from '@mui/icons-material/LockReset'
@@ -28,6 +27,8 @@ import { toast } from 'react-toastify'
 
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import StatusBadge from '../../../components/admin/StatusBadge'
+import AppInput from '../../../components/common/Input/AppInput'
+
 import AppSwitch from '../../../components/common/Switch/AppSwitch'
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 import AdminStatCard from '../../../components/admin/AdminStatCard'
@@ -381,7 +382,7 @@ export default function AdminUsersPage() {
 				</Stack>
 
 				<Box sx={{ maxWidth: 360 }}>
-					<TextField
+					<AppInput
 						fullWidth
 						size="small"
 						placeholder="Search by phone number..."

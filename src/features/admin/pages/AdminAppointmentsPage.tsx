@@ -1,4 +1,4 @@
-﻿// src/features/admin/pages/AdminAppointmentsPage.tsx
+// src/features/admin/pages/AdminAppointmentsPage.tsx
 import { useEffect, useState, useCallback, useRef } from 'react'
 import {
 	Box,
@@ -13,10 +13,10 @@ import {
 	DialogContent,
 	DialogContentText,
 	DialogActions,
-	TextField,
 	InputAdornment,
 	Avatar,
 } from '@mui/material'
+import AppInput from '../../../components/common/Input/AppInput'
 import CancelIcon from '@mui/icons-material/Cancel'
 import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee'
 import SearchIcon from '@mui/icons-material/Search'
@@ -413,7 +413,7 @@ export default function AdminAppointmentsPage() {
 			/>
 
 			<Box sx={{ mb: 2.5, maxWidth: 360 }}>
-				<TextField
+				<AppInput
 					size="small"
 					fullWidth
 					placeholder="Search patient, doctor, or ID..."

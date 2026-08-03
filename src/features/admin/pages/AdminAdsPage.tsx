@@ -1,4 +1,4 @@
-﻿// src/features/admin/pages/AdminAdsPage.tsx
+// src/features/admin/pages/AdminAdsPage.tsx
 import { useEffect, useState } from 'react'
 import {
 	Box,
@@ -6,16 +6,13 @@ import {
 	Stack,
 	Chip,
 	CircularProgress,
-	MenuItem,
 	Grid,
 	IconButton,
 	Tooltip,
-	Button,
 	Dialog,
 	DialogTitle,
 	DialogContent,
 	DialogActions,
-	TextField,
 	Tab,
 	Tabs,
 	FormControlLabel,
@@ -35,6 +32,10 @@ import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 import AdminStatCard from '../../../components/admin/AdminStatCard'
 import SectionCard from '../../../components/common/Card/SectionCard'
 import StatusBadge from '../../../components/admin/StatusBadge'
+import AppButton from '../../../components/common/Button/AppButton'
+import AppInput from '../../../components/common/Input/AppInput'
+import AppSelect from '../../../components/common/Select/AppSelect'
+
 
 import {
 	listAllAds,
@@ -355,13 +356,21 @@ export default function AdminAdsPage() {
 
 						<Box>
 							{activeTab === 'campaigns' ? (
-								<Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreateCampaign} sx={{ bgcolor: '#0d9488', textTransform: 'none', fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: '#0f766e' } }}>
-									Create Campaign
-								</Button>
+								<AppButton
+									variant="contained"
+									startIcon={<AddIcon />}
+									onClick={handleOpenCreateCampaign}
+									label="Create Campaign"
+									sx={{ bgcolor: '#0d9488', fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}
+								/>
 							) : (
-								<Button variant="contained" startIcon={<DynamicFeedIcon />} onClick={handleOpenPlacement} sx={{ bgcolor: '#0d9488', textTransform: 'none', fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: '#0f766e' } }}>
-									Configure Placement
-								</Button>
+								<AppButton
+									variant="contained"
+									startIcon={<DynamicFeedIcon />}
+									onClick={handleOpenPlacement}
+									label="Configure Placement"
+									sx={{ bgcolor: '#0d9488', fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}
+								/>
 							)}
 						</Box>
 					</Stack>
@@ -379,15 +388,15 @@ export default function AdminAdsPage() {
 				<DialogTitle sx={{ fontWeight: 800, color: '#0f172a' }}>{editingAd ? 'Edit Campaign Creative' : 'New Campaign Creative'}</DialogTitle>
 				<DialogContent>
 					<Stack spacing={2.5} sx={{ pt: 1.5 }}>
-						<TextField fullWidth label="Campaign Title" value={adTitle} onChange={(e) => setAdTitle(e.target.value)} placeholder="E.g., Elder Mobility Wheelchair Rentals" />
-						<TextField fullWidth label="Creative Banner Image URL" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Enter image URL..." />
-						<TextField fullWidth label="Click Redirect Destination URL" value={targetUrl} onChange={(e) => setTargetUrl(e.target.value)} placeholder="E.g., /pharmacies or https://example.com" />
+						<AppInput fullWidth label="Campaign Title" value={adTitle} onChange={(e) => setAdTitle(e.target.value)} placeholder="E.g., Elder Mobility Wheelchair Rentals" />
+						<AppInput fullWidth label="Creative Banner Image URL" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Enter image URL..." />
+						<AppInput fullWidth label="Click Redirect Destination URL" value={targetUrl} onChange={(e) => setTargetUrl(e.target.value)} placeholder="E.g., /pharmacies or https://example.com" />
 						<Grid container spacing={2}>
 							<Grid size={{ xs: 6 }}>
-								<TextField fullWidth label="Start Date" type="datetime-local" InputLabelProps={{ shrink: true }} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+								<AppInput fullWidth label="Start Date" type="datetime-local" InputLabelProps={{ shrink: true }} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
 							</Grid>
 							<Grid size={{ xs: 6 }}>
-								<TextField fullWidth label="End Date" type="datetime-local" InputLabelProps={{ shrink: true }} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+								<AppInput fullWidth label="End Date" type="datetime-local" InputLabelProps={{ shrink: true }} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
 							</Grid>
 						</Grid>
 						<FormControlLabel
@@ -397,8 +406,8 @@ export default function AdminAdsPage() {
 					</Stack>
 				</DialogContent>
 				<DialogActions sx={{ p: 3, pt: 1.5, gap: 1 }}>
-					<Button onClick={() => setCampaignOpen(false)} sx={{ textTransform: 'none', color: '#64748b' }}>Cancel</Button>
-					<Button variant="contained" onClick={handleSaveCampaign} sx={{ bgcolor: '#0d9488', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}>Save Campaign</Button>
+					<AppButton variant="text" onClick={() => setCampaignOpen(false)} label="Cancel" sx={{ color: '#64748b' }} />
+					<AppButton variant="contained" onClick={handleSaveCampaign} label="Save Campaign" sx={{ bgcolor: '#0d9488', fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }} />
 				</DialogActions>
 			</Dialog>
 
@@ -407,27 +416,46 @@ export default function AdminAdsPage() {
 				<DialogTitle sx={{ fontWeight: 800, color: '#0f172a' }}>Configure Placement Rules</DialogTitle>
 				<DialogContent>
 					<Stack spacing={2.5} sx={{ pt: 1.5 }}>
-						<TextField fullWidth select label="Select Campaign" value={selectedAdId} onChange={(e) => setSelectedAdId(e.target.value)}>
-							{ads.map((ad) => <MenuItem key={ad.id} value={ad.id}>{ad.title}</MenuItem>)}
-						</TextField>
-						<TextField fullWidth select label="Target Screen/Route" value={pageRoute} onChange={(e) => setPageRoute(e.target.value)}>
-							{PAGE_ROUTES.map((route) => <MenuItem key={route.value} value={route.value}>{route.label}</MenuItem>)}
-						</TextField>
-						<TextField fullWidth select label="Placement Location" value={placementKey} onChange={(e) => setPlacementKey(e.target.value)}>
-							{PLACEMENT_KEYS.map((key) => <MenuItem key={key} value={key}>{key.toUpperCase()}</MenuItem>)}
-						</TextField>
+						<AppSelect
+							fullWidth
+							label="Select Campaign"
+							value={selectedAdId}
+							onChange={(e) => setSelectedAdId(e.target.value)}
+							options={ads.map((ad) => ({ value: ad.id, label: ad.title }))}
+						/>
+						<AppSelect
+							fullWidth
+							label="Target Screen/Route"
+							value={pageRoute}
+							onChange={(e) => setPageRoute(e.target.value)}
+							options={PAGE_ROUTES.map((route) => ({ value: route.value, label: route.label }))}
+						/>
+						<AppSelect
+							fullWidth
+							label="Placement Location"
+							value={placementKey}
+							onChange={(e) => setPlacementKey(e.target.value)}
+							options={PLACEMENT_KEYS.map((key) => ({ value: key, label: key.toUpperCase() }))}
+						/>
 						{placementKey === 'in-feed' && (
-							<TextField fullWidth label="Paragraph Offset Index" type="number" placeholder="E.g., 2 (inserts after paragraph 2)" value={paragraphIndex} onChange={(e) => setParagraphIndex(e.target.value !== '' ? Number(e.target.value) : '')} />
+							<AppInput fullWidth label="Paragraph Offset Index" type="number" placeholder="E.g., 2 (inserts after paragraph 2)" value={paragraphIndex} onChange={(e) => setParagraphIndex(e.target.value !== '' ? Number(e.target.value) : '')} />
 						)}
-						<TextField fullWidth select label="Medical Category Match (Optional)" value={adCategory} onChange={(e) => setAdCategory(e.target.value)} helperText="Matches ad to articles/posts of this medical specialty.">
-							<MenuItem value="">Global / Any Category</MenuItem>
-							{AD_CATEGORIES.filter((cat) => cat !== 'All').map((cat) => <MenuItem key={cat} value={cat}>{cat}</MenuItem>)}
-						</TextField>
+						<AppSelect
+							fullWidth
+							label="Medical Category Match (Optional)"
+							value={adCategory}
+							onChange={(e) => setAdCategory(e.target.value)}
+							options={[
+								{ value: '', label: 'Global / Any Category' },
+								...AD_CATEGORIES.filter((cat) => cat !== 'All').map((cat) => ({ value: cat, label: cat }))
+							]}
+							helperText="Matches ad to articles/posts of this medical specialty."
+						/>
 					</Stack>
 				</DialogContent>
 				<DialogActions sx={{ p: 3, pt: 1.5, gap: 1 }}>
-					<Button onClick={() => setPlacementOpen(false)} sx={{ textTransform: 'none', color: '#64748b' }}>Cancel</Button>
-					<Button variant="contained" onClick={handleSavePlacement} sx={{ bgcolor: '#0d9488', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}>Add Rule</Button>
+					<AppButton variant="text" onClick={() => setPlacementOpen(false)} label="Cancel" sx={{ color: '#64748b' }} />
+					<AppButton variant="contained" onClick={handleSavePlacement} label="Add Rule" sx={{ bgcolor: '#0d9488', fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }} />
 				</DialogActions>
 			</Dialog>
 		</Box>

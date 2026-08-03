@@ -5,9 +5,6 @@ import {
 	Box,
 	Typography,
 	Stack,
-	Button,
-	TextField,
-	MenuItem,
 	Grid,
 	FormControlLabel,
 	Card,
@@ -29,6 +26,9 @@ import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 import SectionCard from '../../../components/common/Card/SectionCard'
 import { getAdminBlog, updateAdminBlog } from '../adminService'
 import { ROUTES } from '../../../constants/routes'
+import AppInput from '../../../components/common/Input/AppInput'
+import AppButton from '../../../components/common/Button/AppButton'
+import AppSelect from '../../../components/common/Select/AppSelect'
 
 const BLOG_CATEGORIES = ['Endocrinology', 'Oncology', 'Geriatrics', 'Physical Therapy', 'General']
 
@@ -120,26 +120,21 @@ export default function AdminBlogEditPage() {
 
 	return (
 		<Box sx={{ pb: 6 }}>
-			{/* Page Header */}
 			<AdminPageHeader
 				title="Edit Health Article"
 				subtitle="Modify, update settings, or change formatting and layout configuration for the medical guide."
 				actions={
-					<Button
+					<AppButton
 						variant="outlined"
 						startIcon={<ArrowBackIcon />}
 						onClick={handleBack}
+						label="Cancel"
 						sx={{
-							borderRadius: 2,
-							textTransform: 'none',
-							fontWeight: 600,
 							borderColor: '#cbd5e1',
 							color: '#64748b',
 							'&:hover': { borderColor: '#0f172a', color: '#0f172a' },
 						}}
-					>
-						Cancel
-					</Button>
+					/>
 				}
 			/>
 
@@ -197,52 +192,45 @@ export default function AdminBlogEditPage() {
 									Publish Actions
 								</Typography>
 								<Stack spacing={1.5}>
-									<Button
+									<AppButton
 										variant="contained"
 										fullWidth
 										disabled={submitting}
 										startIcon={<PublishIcon />}
 										onClick={() => handleSave('published')}
+										label="Publish Instantly"
 										sx={{
 											bgcolor: '#0d9488',
-											textTransform: 'none',
 											fontWeight: 700,
 											py: 1.25,
-											borderRadius: 2,
 											'&:hover': { bgcolor: '#0f766e' },
 										}}
-									>
-										Publish Instantly
-									</Button>
-									<Button
+									/>
+									<AppButton
 										variant="outlined"
 										fullWidth
 										disabled={submitting}
 										startIcon={<SaveIcon />}
 										onClick={() => handleSave('draft')}
+										label="Save as Draft"
 										sx={{
 											borderColor: '#0d9488',
 											color: '#0d9488',
-											textTransform: 'none',
 											fontWeight: 700,
 											py: 1.25,
-											borderRadius: 2,
 											'&:hover': { bgcolor: 'rgba(13,148,136,0.04)', borderColor: '#0d9488' },
 										}}
-									>
-										Save as Draft
-									</Button>
-									<Button
+									/>
+									<AppButton
 										fullWidth
+										variant="text"
 										onClick={handleBack}
+										label="Cancel Changes"
 										sx={{
-											textTransform: 'none',
 											fontWeight: 600,
 											color: '#64748b',
 										}}
-									>
-										Cancel Changes
-									</Button>
+									/>
 								</Stack>
 							</CardContent>
 						</Card>
@@ -255,41 +243,25 @@ export default function AdminBlogEditPage() {
 								</Typography>
 								<Stack spacing={2.5}>
 									{/* Category */}
-									<TextField
-										fullWidth
-										select
+									<AppSelect
 										label="Specialty Category"
 										value={category}
 										onChange={(e) => setCategory(e.target.value)}
-										slotProps={{
-											select: {
-												sx: { borderRadius: 2 },
-											},
-										}}
-									>
-										{BLOG_CATEGORIES.map((cat) => (
-											<MenuItem key={cat} value={cat}>
-												{cat}
-											</MenuItem>
-										))}
-									</TextField>
+										options={BLOG_CATEGORIES.map((cat) => ({ value: cat, label: cat }))}
+										fullWidth
+									/>
 
 									{/* Status */}
-									<TextField
-										fullWidth
-										select
+									<AppSelect
 										label="Save Status"
 										value={status}
 										onChange={(e) => setStatus(e.target.value)}
-										slotProps={{
-											select: {
-												sx: { borderRadius: 2 },
-											},
-										}}
-									>
-										<MenuItem value="draft">Draft</MenuItem>
-										<MenuItem value="published">Published</MenuItem>
-									</TextField>
+										options={[
+											{ value: 'draft', label: 'Draft' },
+											{ value: 'published', label: 'Published' },
+										]}
+										fullWidth
+									/>
 
 									{/* Featured Switch */}
 									<Box sx={{ px: 0.5 }}>
@@ -300,6 +272,7 @@ export default function AdminBlogEditPage() {
 													onChange={(e) => setIsFeatured(e.target.checked)}
 												/>
 											}
+
 											label={
 												<Box sx={{ ml: 1 }}>
 													<Typography variant="body2" fontWeight={700} color="#0f172a">
@@ -317,17 +290,13 @@ export default function AdminBlogEditPage() {
 
 									{/* Banner Image URL */}
 									<Stack spacing={1.5}>
-										<TextField
-											fullWidth
+
+										<AppInput
 											label="Banner Image URL"
-											placeholder="https://images.unsplash.com/..."
 											value={imageUrl}
 											onChange={(e) => setImageUrl(e.target.value)}
-											slotProps={{
-												input: {
-													sx: { borderRadius: 2 },
-												},
-											}}
+											required
+											fullWidth
 										/>
 										{imageUrl.trim() && (
 											<Box>
@@ -339,7 +308,7 @@ export default function AdminBlogEditPage() {
 													src={imageUrl}
 													alt="Banner Preview"
 													onError={(e) => {
-														;(e.target as HTMLElement).style.display = 'none'
+														; (e.target as HTMLElement).style.display = 'none'
 													}}
 													sx={{
 														width: '100%',
