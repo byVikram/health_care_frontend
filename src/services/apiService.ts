@@ -63,24 +63,24 @@ const ApiService = {
 		return axiosInstance.get<T>(url, { params, ...config })
 	},
 
-	post<T = unknown>(url: string, body: unknown): Promise<AxiosResponse<T>> {
-		return axiosInstance.post<T>(url, body)
+	post<T = unknown>(url: string, body: unknown, config?: ApiRequestConfig): Promise<AxiosResponse<T>> {
+		return axiosInstance.post<T>(url, body, config)
 	},
 
-	patch<T = unknown>(url: string, body: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+	patch<T = unknown>(url: string, body: unknown, config?: ApiRequestConfig): Promise<AxiosResponse<T>> {
 		return axiosInstance.patch<T>(url, body, config)
 	},
 
-	put<T = unknown>(url: string, body: unknown): Promise<AxiosResponse<T>> {
-		return axiosInstance.put<T>(url, body)
+	put<T = unknown>(url: string, body: unknown, config?: ApiRequestConfig): Promise<AxiosResponse<T>> {
+		return axiosInstance.put<T>(url, body, config)
 	},
 
-	delete<T = unknown>(url: string): Promise<AxiosResponse<T>> {
-		return axiosInstance.delete<T>(url)
+	delete<T = unknown>(url: string, config?: ApiRequestConfig): Promise<AxiosResponse<T>> {
+		return axiosInstance.delete<T>(url, config)
 	},
 
-	deleteWithBody<T = unknown>(url: string, body: unknown): Promise<AxiosResponse<T>> {
-		return axiosInstance.delete<T>(url, { data: body })
+	deleteWithBody<T = unknown>(url: string, body: unknown, config?: ApiRequestConfig): Promise<AxiosResponse<T>> {
+		return axiosInstance.delete<T>(url, { data: body, ...config })
 	},
 }
 

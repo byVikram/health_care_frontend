@@ -156,6 +156,9 @@ export const API_ENDPOINTS = {
 		PROVIDERS_VERIFICATION_QUEUE: '/api/admin/providers/verification-queue',
 		VERIFY_PROVIDER: (providerType: string, providerId: string) =>
 			`/api/admin/providers/${providerType}/${providerId}/verify`,
+		VERIFICATION_AUDIT_HISTORY: (targetType: string, targetId: string) =>
+			`/api/admin/verifications/${targetType}/${targetId}/audit-history`,
+		RECORD_DOCUMENT_REVIEW: '/api/admin/verifications/document-review',
 		USERS: '/api/admin/users',
 		SUSPEND_USER: (userPublicId: string) => `/api/admin/users/${userPublicId}/suspend`,
 		RESET_USER_OTP: (userPublicId: string) => `/api/admin/users/${userPublicId}/reset-otp`,
@@ -174,6 +177,17 @@ export const API_ENDPOINTS = {
 		CLEAR_CHATBOT_MEMORY: (sessionId: string) => `/api/admin/chatbot/sessions/${sessionId}/memory`,
 		DELETE_REVIEW: (reviewPublicId: string) => `/api/admin/reviews/${reviewPublicId}`,
 		SPECIALITIES: '/api/admin/specialities',
+		PENDING_COMMENTS: '/api/admin/comments/pending',
+		APPROVE_COMMENT: (commentId: string) => `/api/admin/comments/${commentId}/approve`,
+		MODERATE_COMMENT: (commentId: string) => `/api/admin/comments/${commentId}/moderate`,
+		BLOGS: '/api/admin/blogs',
+		BLOG_DETAIL: (blogId: string) => `/api/admin/blogs/${blogId}`,
+		ADS: '/api/admin/ads',
+		AD_DETAIL: (adId: string) => `/api/admin/ads/${adId}`,
+		AD_PLACEMENTS: '/api/admin/ads/placements',
+		AD_PLACEMENT_DETAIL: (placementId: string) => `/api/admin/ads/placements/${placementId}`,
+		COMMUNITIES: '/api/admin/communities',
+		COMMUNITY_DETAIL: (id: string) => `/api/admin/communities/${id}`,
 	},
 	FOLLOW_UPS: {
 		CREATE: '/api/follow-ups',

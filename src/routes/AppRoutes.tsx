@@ -1,5 +1,4 @@
 // src/routes/AppRoutes.tsx
-import { lazy, Suspense } from 'react'
 import { Routes, Route, Outlet } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
 import NotFoundPage from '../components/common/NotFoundPage'
@@ -9,52 +8,62 @@ import NavbarLayout from '../components/layout/NavbarLayout'
 import { ROUTES } from '../constants/routes'
 
 import { useAuth } from '../hooks/useAuth'
-import AppLoader from '../components/common/Loader/AppLoader'
 import NotificationPermissionPopup from '../components/common/NotificationPermissionPopup'
 
-// Lazy-loaded route components
-const LoginPage = lazy(() => import('../features/auth/LoginPage'))
-const RegisterPage = lazy(() => import('../features/auth/RegisterPage'))
-const DashboardPage = lazy(() => import('../features/dashboard/DashboardPage'))
-const DoctorDetailPage = lazy(() => import('../features/doctor/detail/DoctorDetailPage'))
-const DoctorSearchPage = lazy(() => import('../features/doctor/search/DoctorSearchPage'))
-const PaymentPage = lazy(() => import('../features/appointments/PaymentPage'))
-const BookRidePage = lazy(() => import('../features/transportation/BookRidePage'))
-const TransportationLandingPage = lazy(() => import('../features/transportation/TransportationLandingPage'))
-const ProfilePage = lazy(() => import('../features/profile/ProfilePage'))
-const ConsultationPage = lazy(() => import('../features/consultation/ConsultationPage'))
-const DoctorAccountDetailsPage = lazy(() => import('../features/auth/DoctorAccountDetailsPage'))
-const TestPage = lazy(() => import('../features/auth/test/TestPage'))
-const TestRegister = lazy(() => import('../features/auth/test/TestRegister'))
-const PortalPage = lazy(() => import('../features/portal/PortalPage'))
-const DoctorAppointmentList = lazy(() => import('../features/appointments/AppointmentList'))
-const PatientAppointmentDetailPage = lazy(() => import('../features/patient/PatientAppointmentDetailPage'))
-const WelcomePage = lazy(() => import('../features/auth/WelcomePage'))
-const OrderList = lazy(() => import('../features/Pharmacy/orders/OrderList'))
-const OrderDetailPage = lazy(() => import('../features/Pharmacy/orders/OrderDeatailPage'))
-const PharmacySearchPage = lazy(() => import('../features/Pharmacy/components/PharmacySearchPage'))
-const RadiologyProfilePage = lazy(() => import('../features/radiology/profile/RadiologyProfilePage'))
-const BookingsList = lazy(() => import('../features/radiology/bookings/BookingsList'))
-const BookingDetailPage = lazy(() => import('../features/radiology/bookings/BookingDetailPage'))
-const AllSpecialitiesPage = lazy(() => import('../features/dashboard/AllSpecialitiesPage'))
-const RadiologySearchPage = lazy(() => import('../features/radiology/search/RadiologySearchPage'))
-const LaboratorySearchPage = lazy(() => import('../features/laboratory/search/LaboratorySearchPage'))
-const FavouriteDoctorsPage = lazy(() => import('../features/doctor/favourites/FavouriteDoctorsPage'))
+// Static route components imports
+import LoginPage from '../features/auth/LoginPage'
+import RegisterPage from '../features/auth/RegisterPage'
+import DashboardPage from '../features/dashboard/DashboardPage'
+import DoctorDetailPage from '../features/doctor/detail/DoctorDetailPage'
+import DoctorSearchPage from '../features/doctor/search/DoctorSearchPage'
+import PaymentPage from '../features/appointments/PaymentPage'
+import BookRidePage from '../features/transportation/BookRidePage'
+import TransportationLandingPage from '../features/transportation/TransportationLandingPage'
+import ProfilePage from '../features/profile/ProfilePage'
+import ConsultationPage from '../features/consultation/ConsultationPage'
+import DoctorAccountDetailsPage from '../features/auth/DoctorAccountDetailsPage'
+import TestPage from '../features/auth/test/TestPage'
+import TestRegister from '../features/auth/test/TestRegister'
+import PortalPage from '../features/portal/PortalPage'
+import DoctorAppointmentList from '../features/appointments/AppointmentList'
+import PatientAppointmentDetailPage from '../features/patient/PatientAppointmentDetailPage'
+import WelcomePage from '../features/auth/WelcomePage'
+import OrderList from '../features/Pharmacy/orders/OrderList'
+import OrderDetailPage from '../features/Pharmacy/orders/OrderDeatailPage'
+import PharmacySearchPage from '../features/Pharmacy/components/PharmacySearchPage'
+import RadiologyProfilePage from '../features/radiology/profile/RadiologyProfilePage'
+import BookingsList from '../features/radiology/bookings/BookingsList'
+import BookingDetailPage from '../features/radiology/bookings/BookingDetailPage'
+import AllSpecialitiesPage from '../features/dashboard/AllSpecialitiesPage'
+import RadiologySearchPage from '../features/radiology/search/RadiologySearchPage'
+import LaboratorySearchPage from '../features/laboratory/search/LaboratorySearchPage'
+import FavouriteDoctorsPage from '../features/doctor/favourites/FavouriteDoctorsPage'
 
-const LaboratoryOrdersList = lazy(() => import('../features/laboratory/bookings/LaboratoryOrdersList'))
-const LaboratoryBookingDetailPage = lazy(() => import('../features/laboratory/bookings/LaboratoryBookingDetailPage'))
+import LaboratoryOrdersList from '../features/laboratory/bookings/LaboratoryOrdersList'
+import LaboratoryBookingDetailPage from '../features/laboratory/bookings/LaboratoryBookingDetailPage'
 
 // Admin Portal Components
-const AdminLoginPage = lazy(() => import('../features/admin/auth/AdminLoginPage'))
-const AdminLayout = lazy(() => import('../components/layout/AdminLayout'))
-const AdminProtectedRoute = lazy(() => import('./AdminProtectedRoute'))
-const AdminDashboardPage = lazy(() => import('../features/admin/pages/AdminDashboardPage'))
-const AdminVerificationsPage = lazy(() => import('../features/admin/pages/AdminVerificationsPage'))
-const AdminUsersPage = lazy(() => import('../features/admin/pages/AdminUsersPage'))
-const AdminUserDetailPage = lazy(() => import('../features/admin/pages/AdminUserDetailPage'))
-const AdminAppointmentsPage = lazy(() => import('../features/admin/pages/AdminAppointmentsPage'))
-const AdminAuditsPage = lazy(() => import('../features/admin/pages/AdminAuditsPage'))
-const AdminSpecialitiesPage = lazy(() => import('../features/admin/pages/AdminSpecialitiesPage'))
+import AdminLoginPage from '../features/admin/auth/AdminLoginPage'
+import AdminLayout from '../components/layout/AdminLayout'
+import AdminProtectedRoute from './AdminProtectedRoute'
+import AdminDashboardPage from '../features/admin/pages/AdminDashboardPage'
+import AdminVerificationsPage from '../features/admin/pages/AdminVerificationsPage'
+import AdminVerificationReviewPage from '../features/admin/pages/AdminVerificationReviewPage'
+import AdminUsersPage from '../features/admin/pages/AdminUsersPage'
+import AdminUserDetailPage from '../features/admin/pages/AdminUserDetailPage'
+import AdminAppointmentsPage from '../features/admin/pages/AdminAppointmentsPage'
+import AdminAuditsPage from '../features/admin/pages/AdminAuditsPage'
+import AdminSpecialitiesPage from '../features/admin/pages/AdminSpecialitiesPage'
+import AdminBlogsPage from '../features/admin/pages/AdminBlogsPage'
+import AdminCommentsPage from '../features/admin/pages/AdminCommentsPage'
+import AdminAdsPage from '../features/admin/pages/AdminAdsPage'
+import AdminCommunitiesPage from '../features/admin/pages/AdminCommunitiesPage'
+
+import BlogListPage from '../features/portal/BlogListPage'
+import BlogArticlePage from '../features/portal/BlogArticlePage'
+import CommunityForumPage from '../features/portal/CommunityForumPage'
+import CommunityThreadPage from '../features/portal/CommunityThreadPage'
+import HealthQuestionsPage from '../features/portal/HealthQuestionsPage'
 
 function ProtectedLayout() {
 	return (
@@ -85,7 +94,7 @@ export default function AppRoutes() {
 	const isAuthenticated = !!accessToken
 
 	return (
-		<Suspense fallback={<AppLoader />}>
+		<>
 			<NotificationPermissionPopup />
 			<Routes>
 				{/* Public routes */}
@@ -106,6 +115,7 @@ export default function AppRoutes() {
 				<Route path={ROUTES.PUBLIC.WELCOME_DOCTOR} element={<WelcomePage role="doctor" />} />
 				<Route element={<ProtectedLayout />}>
 					<Route path={ROUTES.ROOT} element={<DashboardPage />} />
+					<Route path={ROUTES.PUBLIC.HEALTH_QUESTIONS} element={<HealthQuestionsPage />} />
 				</Route>
 
 				{/* Admin Login Route */}
@@ -116,11 +126,16 @@ export default function AppRoutes() {
 					<Route element={<AdminLayout />}>
 						<Route path={ROUTES.ADMIN.DASHBOARD} element={<AdminDashboardPage />} />
 						<Route path={ROUTES.ADMIN.VERIFICATIONS} element={<AdminVerificationsPage />} />
+						<Route path={ROUTES.ADMIN.VERIFICATION_REVIEW} element={<AdminVerificationReviewPage />} />
 						<Route path={ROUTES.ADMIN.USERS} element={<AdminUsersPage />} />
 						<Route path={ROUTES.ADMIN.USER_DETAIL} element={<AdminUserDetailPage />} />
 						<Route path={ROUTES.ADMIN.APPOINTMENTS} element={<AdminAppointmentsPage />} />
 						<Route path={ROUTES.ADMIN.AUDITS} element={<AdminAuditsPage />} />
 						<Route path={ROUTES.ADMIN.SPECIALITIES} element={<AdminSpecialitiesPage />} />
+						<Route path={ROUTES.ADMIN.BLOGS} element={<AdminBlogsPage />} />
+						<Route path={ROUTES.ADMIN.COMMENTS} element={<AdminCommentsPage />} />
+						<Route path={ROUTES.ADMIN.ADS} element={<AdminAdsPage />} />
+						<Route path={ROUTES.ADMIN.COMMUNITIES} element={<AdminCommunitiesPage />} />
 					</Route>
 				</Route>
 
@@ -159,8 +174,14 @@ export default function AppRoutes() {
 						<Route path={ROUTES.RADIOLOGY.BOOKING_DETAIL} element={<BookingDetailPage />} />
 						<Route path={ROUTES.PORTAL.FAVOURITES} element={<FavouriteDoctorsPage />} />
 						<Route path={ROUTES.LABORATORY.ORDERS} element={<LaboratoryOrdersList />} />
-					<Route path={ROUTES.LABORATORY.ORDER_DETAIL} element={<LaboratoryBookingDetailPage />} />
-				</Route>
+						<Route path={ROUTES.LABORATORY.ORDER_DETAIL} element={<LaboratoryBookingDetailPage />} />
+						
+						<Route path={ROUTES.BLOGS.LIST} element={<BlogListPage />} />
+						<Route path={ROUTES.BLOGS.DETAIL} element={<BlogArticlePage />} />
+						<Route path={ROUTES.COMMUNITIES.LIST} element={<CommunityForumPage />} />
+						<Route path={ROUTES.COMMUNITIES.DETAIL} element={<CommunityForumPage />} />
+						<Route path={ROUTES.COMMUNITIES.THREAD} element={<CommunityThreadPage />} />
+					</Route>
 				</Route>
 
 				{/* <Route path={ROUTES.LABORATORY.PROFILE} element={<LaboratoryProfilePage />} /> */}
@@ -168,6 +189,6 @@ export default function AppRoutes() {
 
 				<Route path="*" element={<NotFoundPage />} />
 			</Routes>
-		</Suspense>
+		</>
 	)
 }
