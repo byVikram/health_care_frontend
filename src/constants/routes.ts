@@ -96,8 +96,11 @@ export const ROUTES = {
 		AUDITS: '/admin/audits',
 		SPECIALITIES: '/admin/specialities',
 		BLOGS: '/admin/blogs',
+		BLOG_CREATE: '/admin/blogs/create',
+		BLOG_EDIT: '/admin/blogs/edit/:id',
 		COMMENTS: '/admin/comments',
 		ADS: '/admin/ads',
 		COMMUNITIES: '/admin/communities',
+		QA: '/admin/qa',
 	},
 }

@@ -1,4 +1,4 @@
-// src/features/admin/pages/AdminCommunitiesPage.tsx
+﻿// src/features/admin/pages/AdminCommunitiesPage.tsx
 import { useEffect, useState } from 'react'
 import {
 	Box,
@@ -27,6 +27,7 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import GroupsIcon from '@mui/icons-material/Groups'
 import StarIcon from '@mui/icons-material/Star'
 
+import AppSwitch from '../../../components/common/Switch/AppSwitch'
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 import SectionCard from '../../../components/common/Card/SectionCard'
@@ -209,14 +210,9 @@ export default function AdminCommunitiesPage() {
 			render: (_, group) => (
 				<FormControlLabel
 					control={
-						<Switch
-							size="small"
+						<AppSwitch
 							checked={group.is_featured}
 							onChange={() => handleToggleFeatured(group)}
-							sx={{
-								'& .MuiSwitch-switchBase.Mui-checked': { color: '#0d9488' },
-								'& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#0d9488' },
-							}}
 						/>
 					}
 					label={
@@ -300,7 +296,7 @@ export default function AdminCommunitiesPage() {
 			)}
 
 			{/* Create/Edit Dialog */}
-			<Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+			<Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
 				<DialogTitle sx={{ fontWeight: 800, color: '#0f172a', pb: 1 }}>
 					{editingGroup ? 'Edit Support Group' : 'Create New Support Group'}
 				</DialogTitle>
@@ -321,7 +317,7 @@ export default function AdminCommunitiesPage() {
 						</Grid>
 						<TextField fullWidth multiline rows={3} label="Short Description" placeholder="Introduce the support group purpose..." value={description} onChange={(e) => setDescription(e.target.value)} />
 						<FormControlLabel
-							control={<Switch checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} color="primary" />}
+							control={<AppSwitch checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />}
 							label={<Typography variant="body2">Show this group on the patient home page banner</Typography>}
 						/>
 					</Stack>

@@ -338,38 +338,66 @@ export default function AdminUserDetailPage() {
 
 					{/* Tabbed Detail Section */}
 					<SectionCard title="Account Navigation" noPadding>
-						<Tabs
-							value={activeTab}
-							onChange={(_, v) => setActiveTab(v)}
-							sx={{
-								px: 3,
-								pt: 2,
-								borderBottom: '1px solid #e2e8f0',
-								'& .MuiTab-root': { textTransform: 'none', fontWeight: 600, fontSize: 13.5, pb: 1.75 },
-								'& .Mui-selected': { color: '#0d9488 !important' },
-								'& .MuiTabs-indicator': { bgcolor: '#0d9488', height: 3 },
-							}}
-						>
-							<Tab value="profile" label="Profile Overview" icon={<PersonIcon sx={{ fontSize: 17 }} />} iconPosition="start" />
-							<Tab
-								value="appointments"
-								label={
-									detailRole === 'patient'
-										? `Appointments (${patientDetail?.upcoming_appointments?.length || 0})`
-										: detailRole === 'doctor'
-											? `Appointments (${doctorDetail?.upcoming_appointments?.length || 0})`
-											: 'Appointments'
-								}
-								icon={<EventIcon sx={{ fontSize: 17 }} />}
-								iconPosition="start"
-							/>
-							{detailRole === 'patient' && (
-								<Tab value="reviews" label={`Reviews (${patientDetail?.reviews?.length || 0})`} icon={<StarIcon sx={{ fontSize: 17 }} />} iconPosition="start" />
-							)}
-							{detailRole === 'patient' && (
-								<Tab value="linked" label={`Linked Family (${patientDetail?.linked_profiles?.length || 0})`} icon={<GroupsIcon sx={{ fontSize: 17 }} />} iconPosition="start" />
-							)}
-						</Tabs>
+						{(() => {
+							const appointmentsCount =
+								detailRole === 'patient'
+									? patientDetail?.upcoming_appointments?.length || 0
+									: detailRole === 'doctor'
+										? doctorDetail?.upcoming_appointments?.length || 0
+										: 0
+							return (
+								<Tabs
+									value={activeTab}
+									onChange={(_, v) => setActiveTab(v)}
+									sx={{
+										px: 3,
+										borderBottom: '1px solid #e2e8f0',
+										minHeight: 40,
+										'& .MuiTab-root': {
+											textTransform: 'none',
+											fontWeight: 600,
+											fontSize: 13.5,
+											minHeight: 40,
+											py: 0,
+											px: 1.5,
+										},
+										'& .Mui-selected': { color: '#0d9488 !important' },
+										'& .MuiTabs-indicator': { bgcolor: '#0d9488', height: 2 },
+									}}
+								>
+									<Tab value="profile" label="Profile Overview" icon={<PersonIcon sx={{ fontSize: 17 }} />} iconPosition="start" />
+									<Tab
+										value="appointments"
+										label={
+											<Stack direction="row" spacing={0.75} alignItems="center">
+												<Typography variant="body2" sx={{ fontWeight: 600, fontSize: 13.5 }}>
+													Appointments
+												</Typography>
+												<Chip
+													size="small"
+													label={appointmentsCount}
+													sx={{
+														bgcolor: 'rgba(13,148,136,0.1)',
+														color: '#0d9488',
+														fontWeight: 700,
+														fontSize: 11,
+														height: 20,
+													}}
+												/>
+											</Stack>
+										}
+										icon={<EventIcon sx={{ fontSize: 17 }} />}
+										iconPosition="start"
+									/>
+									{detailRole === 'patient' && (
+										<Tab value="reviews" label={`Reviews (${patientDetail?.reviews?.length || 0})`} icon={<StarIcon sx={{ fontSize: 17 }} />} iconPosition="start" />
+									)}
+									{detailRole === 'patient' && (
+										<Tab value="linked" label={`Linked Family (${patientDetail?.linked_profiles?.length || 0})`} icon={<GroupsIcon sx={{ fontSize: 17 }} />} iconPosition="start" />
+									)}
+								</Tabs>
+							)
+						})()}
 
 						<Box sx={{ p: 3 }}>
 							{/* TAB 1: Profile Overview */}

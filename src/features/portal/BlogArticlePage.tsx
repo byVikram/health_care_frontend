@@ -30,91 +30,144 @@ import { getActiveAds, trackAdMetric, AdPlacementConfig } from '../../services/a
 import { toast } from 'react-toastify'
 import { useAuth } from '../../hooks/useAuth'
 
-// Simple custom renderer for Markdown content
+const renderInFeedAd = (matchingAd: AdPlacementConfig, idx: number, onAdClick: (adId: string, url: string) => void) => (
+	<Card
+		key={`ad-card-${idx}`}
+		sx={{
+			my: 4,
+			mx: 'auto',
+			maxWidth: '100%',
+			borderRadius: 2,
+			border: '1px solid #cbd5e1',
+			overflow: 'hidden',
+			boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+			cursor: 'pointer',
+			'&:hover': { transform: 'scale(1.005)' },
+			transition: 'transform 0.15s',
+		}}
+		onClick={() => onAdClick(matchingAd.ad.id, matchingAd.ad.target_url)}
+	>
+		<Grid container>
+			<Grid size={{ xs: 12, sm: 4 }}>
+				<CardMedia component="img" image={matchingAd.ad.image_url} alt={matchingAd.ad.title} sx={{ height: 140 }} />
+			</Grid>
+			<Grid size={{ xs: 12, sm: 8 }} sx={{ display: 'flex', alignItems: 'center' }}>
+				<CardContent sx={{ p: 3, width: '100%' }}>
+					<Chip
+						label="Sponsored"
+						size="small"
+						sx={{ mb: 1, fontSize: '0.65rem', fontWeight: 700, bgcolor: '#e2e8f0' }}
+					/>
+					<Typography variant="subtitle1" fontWeight={700} sx={{ color: '#0f172a', mb: 1 }}>
+						{matchingAd.ad.title}
+					</Typography>
+					<Typography variant="caption" color="text.secondary">
+						Click to learn more about this service.
+					</Typography>
+				</CardContent>
+			</Grid>
+		</Grid>
+	</Card>
+)
+
+// Simple custom renderer for Markdown or WYSIWYG HTML content
 const renderContentParagraphs = (content: string, ads: AdPlacementConfig[], onAdClick: (adId: string, url: string) => void) => {
-	const paragraphs = content.split('\n\n').filter((p) => p.trim() !== '')
+	const isHtml = /<[a-z][\s\S]*>/i.test(content)
 
-	return paragraphs.map((para, idx) => {
-		let element = null
+	if (!isHtml) {
+		const paragraphs = content.split('\n\n').filter((p) => p.trim() !== '')
+		return paragraphs.map((para, idx) => {
+			let element = null
+			if (para.startsWith('#### ')) {
+				element = (
+					<Typography key={idx} variant="h6" fontWeight={700} sx={{ mt: 3, mb: 1, color: '#0f172a' }}>
+						{para.replace('#### ', '')}
+					</Typography>
+				)
+			} else if (para.startsWith('### ')) {
+				element = (
+					<Typography key={idx} variant="h5" fontWeight={800} sx={{ mt: 4, mb: 1.5, color: '#0f172a' }}>
+						{para.replace('### ', '')}
+					</Typography>
+				)
+			} else if (para.startsWith('- ')) {
+				const items = para.split('\n').map((line) => line.replace('- ', '').trim())
+				element = (
+					<Box key={idx} component="ul" sx={{ pl: 3, mb: 2, color: '#334155' }}>
+						{items.map((item, i) => (
+							<li key={i} style={{ marginBottom: '8px' }}>
+								<Typography variant="body1">{item}</Typography>
+							</li>
+						))}
+					</Box>
+				)
+			} else {
+				element = (
+					<Typography key={idx} variant="body1" sx={{ mb: 2.5, lineHeight: 1.7, color: '#334155' }}>
+						{para}
+					</Typography>
+				)
+			}
 
-		if (para.startsWith('#### ')) {
-			element = (
-				<Typography key={idx} variant="h6" fontWeight={700} sx={{ mt: 3, mb: 1, color: '#0f172a' }}>
-					{para.replace('#### ', '')}
-				</Typography>
-			)
-		} else if (para.startsWith('### ')) {
-			element = (
-				<Typography key={idx} variant="h5" fontWeight={800} sx={{ mt: 4, mb: 1.5, color: '#0f172a' }}>
-					{para.replace('### ', '')}
-				</Typography>
-			)
-		} else if (para.startsWith('- ')) {
-			const items = para.split('\n').map((line) => line.replace('- ', '').trim())
-			element = (
-				<Box key={idx} component="ul" sx={{ pl: 3, mb: 2, color: '#334155' }}>
-					{items.map((item, i) => (
-						<li key={i} style={{ marginBottom: '8px' }}>
-							<Typography variant="body1">{item}</Typography>
-						</li>
-					))}
-				</Box>
-			)
-		} else {
-			element = (
-				<Typography key={idx} variant="body1" sx={{ mb: 2.5, lineHeight: 1.7, color: '#334155' }}>
-					{para}
-				</Typography>
-			)
-		}
+			const matchingAd = ads.find((ad) => ad.placement_key === 'in-feed' && ad.paragraph_index === idx + 1)
+			if (matchingAd) {
+				return (
+					<Box key={`para-ad-${idx}`}>
+						{element}
+						{renderInFeedAd(matchingAd, idx, onAdClick)}
+					</Box>
+				)
+			}
+			return element
+		})
+	}
 
-		// Inject active in-feed ad if index matches (1-based index matching paragraph completion)
+	const parts = content.split('</p>')
+	const paragraphs = parts.map((part, idx) => {
+		if (idx === parts.length - 1 && part.trim() === '') return ''
+		return part.trim() ? part + '</p>' : ''
+	}).filter((p) => p !== '')
+
+	return paragraphs.map((paraHtml, idx) => {
+		const element = (
+			<Box
+				key={idx}
+				dangerouslySetInnerHTML={{ __html: paraHtml }}
+				sx={{
+					color: '#334155',
+					lineHeight: 1.8,
+					fontSize: '1.05rem',
+					mb: 2.5,
+					'& h1': { fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', mt: 3, mb: 1.5 },
+					'& h2': { fontSize: '1.4rem', fontWeight: 700, color: '#0f172a', mt: 3, mb: 1.5 },
+					'& h3': { fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', mt: 2, mb: 1 },
+					'& blockquote': {
+						borderLeft: '4px solid #0d9488',
+						pl: 2,
+						ml: 0,
+						my: 2,
+						color: '#475569',
+						fontStyle: 'italic',
+						bgcolor: '#f0fdf4',
+						py: 1,
+						borderRadius: '0 8px 8px 0',
+					},
+					'& a': { color: '#0d9488', textDecoration: 'underline', fontWeight: 700 },
+					'& ul, & ol': { pl: 3, mb: 2 },
+					'& li': { mb: 1 },
+				}}
+			/>
+		)
+
 		const matchingAd = ads.find((ad) => ad.placement_key === 'in-feed' && ad.paragraph_index === idx + 1)
-
 		if (matchingAd) {
 			return (
 				<Box key={`para-ad-${idx}`}>
 					{element}
-					<Card
-						sx={{
-							my: 4,
-							mx: 'auto',
-							maxWidth: '100%',
-							borderRadius: 3,
-							border: '1px solid #cbd5e1',
-							overflow: 'hidden',
-							boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
-							cursor: 'pointer',
-							'&:hover': { transform: 'scale(1.005)' },
-							transition: 'transform 0.15s',
-						}}
-						onClick={() => onAdClick(matchingAd.ad.id, matchingAd.ad.target_url)}
-					>
-						<Grid container>
-							<Grid size={{ xs: 12, sm: 4 }}>
-								<CardMedia component="img" image={matchingAd.ad.image_url} alt={matchingAd.ad.title} sx={{ height: 140 }} />
-							</Grid>
-							<Grid size={{ xs: 12, sm: 8 }} sx={{ display: 'flex', alignItems: 'center' }}>
-								<CardContent sx={{ p: 3, width: '100%' }}>
-									<Chip
-										label="Sponsored"
-										size="small"
-										sx={{ mb: 1, fontSize: '0.65rem', fontWeight: 700, bgcolor: '#e2e8f0' }}
-									/>
-									<Typography variant="subtitle1" fontWeight={700} sx={{ color: '#0f172a', mb: 1 }}>
-										{matchingAd.ad.title}
-									</Typography>
-									<Typography variant="caption" color="text.secondary">
-										Click to learn more about this service.
-									</Typography>
-								</CardContent>
-							</Grid>
-						</Grid>
-					</Card>
+					{renderInFeedAd(matchingAd, idx, onAdClick)}
 				</Box>
 			)
 		}
-
 		return element
 	})
 }
@@ -139,7 +192,7 @@ const CommentNode = ({
 	const isReplyFormOpen = activeReplyId === comment.id
 
 	return (
-		<Paper elevation={0} sx={{ p: 2.5, mb: 2, bgcolor: '#f8fafc', borderRadius: 3, border: '1px solid #e2e8f0' }}>
+		<Paper elevation={0} sx={{ p: 2.5, mb: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
 			<Stack direction="row" spacing={2} sx={{ mb: 1.5 }}>
 				<Avatar sx={{ bgcolor: isDoctor ? '#0d9488' : '#64748b' }}>
 					{comment.user_name.charAt(0).toUpperCase()}
@@ -350,7 +403,7 @@ export default function BlogArticlePage() {
 				<Grid container spacing={4}>
 					{/* Article Main Content */}
 					<Grid size={{ xs: 12, lg: 8 }}>
-						<Card sx={{ borderRadius: 4, overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: 'none', mb: 5 }}>
+						<Card sx={{ borderRadius: 2, overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: 'none', mb: 5 }}>
 							<CardMedia
 								component="img"
 								height="380"
@@ -403,7 +456,7 @@ export default function BlogArticlePage() {
 
 						{/* Add Comment Box */}
 						{accessToken ? (
-							<Paper elevation={0} sx={{ p: 3, mb: 4, borderRadius: 4, border: '1px solid #e2e8f0', bgcolor: 'white' }}>
+							<Paper elevation={0} sx={{ p: 3, mb: 4, borderRadius: 2, border: '1px solid #e2e8f0', bgcolor: 'white' }}>
 								<Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5, color: '#0f172a' }}>
 									Share your thoughts
 								</Typography>
@@ -428,7 +481,7 @@ export default function BlogArticlePage() {
 								</Stack>
 							</Paper>
 						) : (
-							<Paper elevation={0} sx={{ p: 3, mb: 4, textAlign: 'center', bgcolor: '#f1f5f9', borderRadius: 4 }}>
+							<Paper elevation={0} sx={{ p: 3, mb: 4, textAlign: 'center', bgcolor: '#f1f5f9', borderRadius: 2 }}>
 								<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
 									You must be logged in to post or reply to comments.
 								</Typography>
@@ -472,7 +525,7 @@ export default function BlogArticlePage() {
 									<Card
 										key={placement.id}
 										sx={{
-											borderRadius: 4,
+											borderRadius: 2,
 											overflow: 'hidden',
 											boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
 											border: '1px solid #cbd5e1',
@@ -525,7 +578,7 @@ export default function BlogArticlePage() {
 									</Card>
 								))
 							) : (
-								<Paper sx={{ p: 3, borderRadius: 4, bgcolor: '#f8fafc', border: '1px dashed #cbd5e1', textAlign: 'center' }}>
+								<Paper sx={{ p: 3, borderRadius: 2, bgcolor: '#f8fafc', border: '1px dashed #cbd5e1', textAlign: 'center' }}>
 									<Typography variant="body2" color="text.secondary">
 										Health advertisements align with your interests.
 									</Typography>

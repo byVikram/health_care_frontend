@@ -44,7 +44,7 @@ export default function SectionCard({
 					direction="row"
 					justifyContent="space-between"
 					alignItems={subtitle ? 'flex-start' : 'center'}
-					sx={{ mb: 2 }}
+				// sx={{ mb: 2 }}
 				>
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
 						{stepNumber !== undefined && (
@@ -65,7 +65,7 @@ export default function SectionCard({
 							</Box>
 						)}
 						<Box>
-							<Typography variant="subtitle1" fontWeight={800} color="#0f172a">
+							<Typography variant="subtitle1" sx={{ p: 2 }} fontWeight={900} color="#0f172a">
 								{title}
 							</Typography>
 							{subtitle && (

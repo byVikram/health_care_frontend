@@ -188,6 +188,11 @@ export const API_ENDPOINTS = {
 		AD_PLACEMENT_DETAIL: (placementId: string) => `/api/admin/ads/placements/${placementId}`,
 		COMMUNITIES: '/api/admin/communities',
 		COMMUNITY_DETAIL: (id: string) => `/api/admin/communities/${id}`,
+		QA_QUESTIONS: '/api/admin/qa/questions',
+		QA_QUESTION_DETAIL: (id: string) => `/api/admin/qa/questions/${id}`,
+		QA_QUESTION_STATUS: (id: string) => `/api/admin/qa/questions/${id}/status`,
+		QA_ANSWER_STATUS: (id: string) => `/api/admin/qa/answers/${id}/status`,
+		QA_REPLY_STATUS: (id: string) => `/api/admin/qa/replies/${id}/status`,
 	},
 	FOLLOW_UPS: {
 		CREATE: '/api/follow-ups',

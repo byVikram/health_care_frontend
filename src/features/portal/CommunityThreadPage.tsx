@@ -1,4 +1,4 @@
-// src/features/portal/CommunityThreadPage.tsx
+﻿// src/features/portal/CommunityThreadPage.tsx
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
@@ -55,7 +55,7 @@ const CommentNode = ({
 	const isReplyFormOpen = activeReplyId === comment.id
 
 	return (
-		<Paper elevation={0} sx={{ p: 2.5, mb: 2, bgcolor: '#f8fafc', borderRadius: 3, border: '1px solid #e2e8f0' }}>
+		<Paper elevation={0} sx={{ p: 2.5, mb: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
 			<Stack direction="row" spacing={2} sx={{ mb: 1.5 }}>
 				<Avatar sx={{ bgcolor: isDoctor ? '#0d9488' : '#64748b' }}>
 					{comment.user_name.charAt(0).toUpperCase()}
@@ -261,7 +261,7 @@ export default function CommunityThreadPage() {
 				<Grid container spacing={4}>
 					{/* Main Thread Content */}
 					<Grid size={{ xs: 12, lg: 8 }}>
-						<Card sx={{ borderRadius: 4, border: '1px solid #e2e8f0', boxShadow: 'none', mb: 5 }}>
+						<Card sx={{ borderRadius: 2, border: '1px solid #e2e8f0', boxShadow: 'none', mb: 5 }}>
 							<CardContent sx={{ p: { xs: 3, md: 5 } }}>
 								{/* Thread Header */}
 								<Box sx={{ mb: 3 }}>
@@ -305,7 +305,7 @@ export default function CommunityThreadPage() {
 
 						{/* Post Comment Box */}
 						{accessToken ? (
-							<Paper elevation={0} sx={{ p: 3, mb: 4, borderRadius: 4, border: '1px solid #e2e8f0', bgcolor: 'white' }}>
+							<Paper elevation={0} sx={{ p: 3, mb: 4, borderRadius: 2, border: '1px solid #e2e8f0', bgcolor: 'white' }}>
 								<Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5, color: '#0f172a' }}>
 									Join the discussion
 								</Typography>
@@ -330,7 +330,7 @@ export default function CommunityThreadPage() {
 								</Stack>
 							</Paper>
 						) : (
-							<Paper elevation={0} sx={{ p: 3, mb: 4, textAlign: 'center', bgcolor: '#f1f5f9', borderRadius: 4 }}>
+							<Paper elevation={0} sx={{ p: 3, mb: 4, textAlign: 'center', bgcolor: '#f1f5f9', borderRadius: 2 }}>
 								<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
 									You must be logged in to post responses.
 								</Typography>
@@ -373,7 +373,7 @@ export default function CommunityThreadPage() {
 								<Card
 									key={placement.id}
 									sx={{
-										borderRadius: 4,
+										borderRadius: 2,
 										overflow: 'hidden',
 										boxShadow: 'none',
 										border: '1px solid #cbd5e1',

@@ -1,4 +1,4 @@
-// src/features/admin/auth/AdminLoginPage.tsx
+﻿// src/features/admin/auth/AdminLoginPage.tsx
 import { useState } from 'react'
 import { Box, Container, Typography, Card, Stack, Avatar, Alert, IconButton } from '@mui/material'
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
@@ -88,7 +88,7 @@ export default function AdminLoginPage() {
 				<Card
 					elevation={step === 'otp' ? 0 : 12}
 					sx={{
-						borderRadius: 4,
+						borderRadius: 2,
 						p: 4,
 						bgcolor: step === 'otp' ? '#0f172a' : '#1e293b',
 						color: '#f8fafc',
@@ -195,7 +195,7 @@ export default function AdminLoginPage() {
 							<Box
 								sx={{
 									bgcolor: 'transparent',
-									borderRadius: 3,
+									borderRadius: 2,
 									overflowX: 'hidden',
 								}}
 							>

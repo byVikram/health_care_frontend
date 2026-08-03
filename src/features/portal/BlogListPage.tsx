@@ -25,7 +25,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { listBlogs, BlogPost } from '../../services/blogService'
 import { getActiveAds, trackAdMetric, AdPlacementConfig } from '../../services/adService'
 
-const CATEGORIES = ['All', 'Endocrinology', 'Oncology', 'Geriatrics', 'Physical Therapy', 'General']
+const CATEGORIES = ['All', 'Endocrinology', 'Oncology', 'Geriatrics', 'General']
 
 export default function BlogListPage() {
 	const navigate = useNavigate()
@@ -155,7 +155,7 @@ export default function BlogListPage() {
 						{/* Blogs Grid */}
 						<Grid size={{ xs: 12, lg: 8 }}>
 							{filteredBlogs.length === 0 ? (
-								<Box sx={{ textAlign: 'center', py: 8, bgcolor: 'white', borderRadius: 4, border: '1px solid #e2e8f0' }}>
+								<Box sx={{ textAlign: 'center', py: 8, bgcolor: 'white', borderRadius: 2, border: '1px solid #e2e8f0' }}>
 									<Typography variant="h6" color="text.secondary" fontWeight={600}>
 										No health articles found
 									</Typography>
@@ -172,7 +172,7 @@ export default function BlogListPage() {
 													height: '100%',
 													display: 'flex',
 													flexDirection: 'column',
-													borderRadius: 4,
+													borderRadius: 2,
 													boxShadow: '0 4px 20px rgba(15, 23, 42, 0.04)',
 													border: '1px solid #e2e8f0',
 													transition: 'transform 0.2s, box-shadow 0.2s',
@@ -242,7 +242,7 @@ export default function BlogListPage() {
 									<Card
 										key={placement.id}
 										sx={{
-											borderRadius: 4,
+											borderRadius: 2,
 											overflow: 'hidden',
 											boxShadow: '0 4px 20px rgba(15, 23, 42, 0.05)',
 											border: '1px solid #cbd5e1',
@@ -300,7 +300,7 @@ export default function BlogListPage() {
 								<Box
 									sx={{
 										p: 3,
-										borderRadius: 4,
+										borderRadius: 2,
 										background: 'linear-gradient(135deg, #115e59 0%, #0f172a 100%)',
 										color: 'white',
 										boxShadow: '0 4px 25px rgba(13, 148, 136, 0.15)',

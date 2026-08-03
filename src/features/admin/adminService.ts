@@ -64,6 +64,7 @@ export interface AuditHistoryEventItem {
 	id: string
 	reviewer_name: string
 	action: string
+	document_id?: string
 	document_name?: string
 	timestamp: string
 	issue_tags?: string[]
@@ -592,6 +593,7 @@ export interface AdminBlogItem {
 	id: string
 	title: string
 	slug: string
+	content?: string
 	category: string
 	status: string
 	image_url?: string
@@ -642,6 +644,13 @@ export interface AdminAdPlacementItem {
 export const listAdminBlogs = async () => {
 	const res = await ApiService.get<AdminMutationResponse<AdminBlogItem[]>>(
 		API_ENDPOINTS.ADMIN.BLOGS
+	)
+	return res.data
+}
+
+export const getAdminBlog = async (blogId: string) => {
+	const res = await ApiService.get<AdminMutationResponse<AdminBlogItem>>(
+		API_ENDPOINTS.ADMIN.BLOG_DETAIL(blogId)
 	)
 	return res.data
 }
@@ -699,7 +708,7 @@ export const listAllAds = async () => {
 	return res.data
 }
 
-export const createAd = async (payload: { title: string; image_url: string; target_url: string; start_date?: string; end_date?: string }) => {
+export const createAd = async (payload: { title: string; image_url: string; target_url: string; is_active?: boolean; start_date?: string; end_date?: string }) => {
 	const res = await ApiService.post<AdminMutationResponse>(
 		API_ENDPOINTS.ADMIN.ADS,
 		payload
@@ -707,7 +716,7 @@ export const createAd = async (payload: { title: string; image_url: string; targ
 	return res.data
 }
 
-export const updateAd = async (adId: string, payload: { title: string; image_url: string; target_url: string; start_date?: string; end_date?: string }) => {
+export const updateAd = async (adId: string, payload: { title?: string; image_url?: string; target_url?: string; is_active?: boolean; start_date?: string; end_date?: string }) => {
 	const res = await ApiService.put<AdminMutationResponse>(
 		API_ENDPOINTS.ADMIN.AD_DETAIL(adId),
 		payload
@@ -785,3 +794,101 @@ export const deleteAdminCommunity = async (groupId: string) => {
 	return res.data
 }
 
+// ── Q&A Moderation ────────────────────────────────────────────────────────────
+
+export type QAStatus = 'pending' | 'approved' | 'flagged' | 'hidden'
+
+export interface AdminQAReply {
+	id: string
+	content: string
+	status: QAStatus
+	user_name: string
+	created_at: string | null
+}
+
+export interface AdminQAAnswer {
+	id: string
+	answer: string
+	likes: number
+	status: QAStatus
+	doctor_name: string
+	doctor_id: string | null
+	created_at: string | null
+	replies: AdminQAReply[]
+	replies_count: number
+}
+
+export interface AdminQAQuestion {
+	id: string
+	gender: string
+	age: string
+	location: string
+	tag: string
+	question: string
+	short_description: string
+	full_description: string
+	history: string | null
+	patient_avatar: string | null
+	status: QAStatus
+	answers_count: number
+	created_at: string | null
+}
+
+export interface AdminQAQuestionDetail extends AdminQAQuestion {
+	answers: AdminQAAnswer[]
+}
+
+export interface AdminQAListResult {
+	questions: AdminQAQuestion[]
+	total: number
+	page: number
+	pages: number
+}
+
+export const listAdminQAQuestions = async (params: {
+	search?: string
+	status?: string
+	page?: number
+	page_size?: number
+} = {}) => {
+	const { search, status, page = 1, page_size = 20 } = params
+	const query: Record<string, unknown> = { page, page_size }
+	if (search) query.search = search
+	if (status) query.status = status
+	const res = await ApiService.getWithParams<{ success: boolean; data: AdminQAListResult }>(
+		API_ENDPOINTS.ADMIN.QA_QUESTIONS,
+		query
+	)
+	return res.data
+}
+
+export const getAdminQAQuestionDetail = async (questionId: string) => {
+	const res = await ApiService.get<{ success: boolean; data: AdminQAQuestionDetail }>(
+		API_ENDPOINTS.ADMIN.QA_QUESTION_DETAIL(questionId)
+	)
+	return res.data
+}
+
+export const updateAdminQAQuestionStatus = async (questionId: string, status: QAStatus) => {
+	const res = await ApiService.patch<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.QA_QUESTION_STATUS(questionId),
+		{ status }
+	)
+	return res.data
+}
+
+export const updateAdminQAAnswerStatus = async (answerId: string, status: QAStatus) => {
+	const res = await ApiService.patch<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.QA_ANSWER_STATUS(answerId),
+		{ status }
+	)
+	return res.data
+}
+
+export const updateAdminQAReplyStatus = async (replyId: string, status: QAStatus) => {
+	const res = await ApiService.patch<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.QA_REPLY_STATUS(replyId),
+		{ status }
+	)
+	return res.data
+}
