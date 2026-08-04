@@ -19,6 +19,7 @@ import DoctorSearchPage from '../features/doctor/search/DoctorSearchPage'
 import PaymentPage from '../features/appointments/PaymentPage'
 import BookRidePage from '../features/transportation/BookRidePage'
 import TransportationLandingPage from '../features/transportation/TransportationLandingPage'
+import RideTrackingPage from '../features/careTransit/pages/RideTrackingPage'
 import ProfilePage from '../features/profile/ProfilePage'
 import ConsultationPage from '../features/consultation/ConsultationPage'
 import DoctorAccountDetailsPage from '../features/auth/DoctorAccountDetailsPage'
@@ -168,6 +169,7 @@ export default function AppRoutes() {
 						<Route path={ROUTES.PORTAL.APPOINTMENT_DETAIL} element={<PatientAppointmentDetailPage />} />
 						<Route path={ROUTES.PORTAL.BOOK_RIDE} element={<BookRidePage />} />
 						<Route path={ROUTES.PORTAL.TRANSPORTATION} element={<TransportationLandingPage />} />
+						<Route path={ROUTES.PORTAL.TRACK_RIDE} element={<RideTrackingPage />} />
 						<Route path={ROUTES.PORTAL.PROFILE} element={<ProfilePage />} />
 						<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
 						<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
@@ -178,6 +180,7 @@ export default function AppRoutes() {
 						<Route path={ROUTES.RADIOLOGY.PROFILE} element={<RadiologyProfilePage />} />
 						<Route path={ROUTES.RADIOLOGY.BOOKINGS} element={<BookingsList />} />
 						<Route path={ROUTES.RADIOLOGY.BOOKING_DETAIL} element={<BookingDetailPage />} />
+						<Route path={ROUTES.RADIOLOGY.BOOK_RIDE} element={<BookRidePage />} />
 						<Route path={ROUTES.PORTAL.FAVOURITES} element={<FavouriteDoctorsPage />} />
 						<Route path={ROUTES.LABORATORY.ORDERS} element={<LaboratoryOrdersList />} />
 						<Route path={ROUTES.LABORATORY.ORDER_DETAIL} element={<LaboratoryBookingDetailPage />} />

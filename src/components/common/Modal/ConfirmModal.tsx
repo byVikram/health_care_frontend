@@ -52,8 +52,8 @@ const VARIANT_CONFIG: Record<
 	},
 	info: {
 		icon: <InfoOutlined fontSize="inherit" />,
-		iconBg: '#0288d1',
-		confirmColor: 'info',
+		iconBg: '#2B6F71',
+		confirmColor: 'primary',
 	},
 	confirm: {
 		icon: <HelpOutline fontSize="inherit" />,
@@ -137,8 +137,8 @@ export default function ConfirmModal({
 					</Typography>
 				)}
 
-			<Box sx={{ display: 'flex', gap: 1.5, mt: 1, width: '100%', justifyContent: 'center', }}>
-				{!hideCancelButton && <AppButton variant='outlined' label={cancelLabel} fullWidth onClick={onClose} />}
+				<Box sx={{ display: 'flex', gap: 1.5, mt: 1, width: '100%', justifyContent: 'center', }}>
+					{!hideCancelButton && <AppButton variant='outlined' label={cancelLabel} fullWidth onClick={onClose} />}
 
 					<AppButton
 						color={config.confirmColor}
@@ -146,7 +146,7 @@ export default function ConfirmModal({
 						fullWidth
 						loading={loading}
 						onClick={onConfirm}
-						sx={{maxWidth:'280px'}}
+						sx={{ maxWidth: '280px' }}
 					/>
 				</Box>
 			</Box>

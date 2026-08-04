@@ -248,7 +248,7 @@ export default function TransportationLandingPage() {
 													<Button
 														variant="outlined"
 														size="small"
-														onClick={() => navigate(`/portal/appointments/${appt.id}`)}
+														onClick={() => navigate(`/portal/transit/track/doctor/${appt.id}?type=onward`)}
 														sx={{
 															borderColor: 'divider',
 															color: 'text.primary',
@@ -277,21 +277,38 @@ export default function TransportationLandingPage() {
 													</Button>
 												</Box>
 											) : (
-												<Button
-													variant="outlined"
-													size="small"
-													onClick={() => navigate(`/portal/appointments/${appt.id}`)}
-													sx={{
-														borderColor: '#0c7c7c',
-														color: '#0c7c7c',
-														textTransform: 'none',
-														fontWeight: 700,
-														borderRadius: '8px',
-														'&:hover': { bgcolor: 'rgba(12, 124, 124, 0.04)', borderColor: '#0c7c7c' }
-													}}
-												>
-													Track Cabs
-												</Button>
+												<Box sx={{ display: 'flex', gap: 1 }}>
+													<Button
+														variant="outlined"
+														size="small"
+														onClick={() => navigate(`/portal/transit/track/doctor/${appt.id}?type=onward`)}
+														sx={{
+															borderColor: '#0c7c7c',
+															color: '#0c7c7c',
+															textTransform: 'none',
+															fontWeight: 700,
+															borderRadius: '8px',
+															'&:hover': { bgcolor: 'rgba(12, 124, 124, 0.04)', borderColor: '#0c7c7c' }
+														}}
+													>
+														Track Onward
+													</Button>
+													<Button
+														variant="outlined"
+														size="small"
+														onClick={() => navigate(`/portal/transit/track/doctor/${appt.id}?type=return`)}
+														sx={{
+															borderColor: '#0c7c7c',
+															color: '#0c7c7c',
+															textTransform: 'none',
+															fontWeight: 700,
+															borderRadius: '8px',
+															'&:hover': { bgcolor: 'rgba(12, 124, 124, 0.04)', borderColor: '#0c7c7c' }
+														}}
+													>
+														Track Return
+													</Button>
+												</Box>
 											)}
 										</Box>
 									</Box>
