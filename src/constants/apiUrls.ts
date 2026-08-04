@@ -194,6 +194,13 @@ export const API_ENDPOINTS = {
 		QA_ANSWER_STATUS: (id: string) => `/api/admin/qa/answers/${id}/status`,
 		QA_REPLY_STATUS: (id: string) => `/api/admin/qa/replies/${id}/status`,
 	},
+	EVENTS: {
+		LIST: '/api/events',
+		CREATE: '/api/events',
+		DETAIL: (id: string) => `/api/events/${id}`,
+		UPDATE: (id: string) => `/api/events/${id}`,
+		DELETE: (id: string) => `/api/events/${id}`,
+	},
 	FOLLOW_UPS: {
 		CREATE: '/api/follow-ups',
 		CANCEL: (id: string) => `/api/follow-ups/${id}/cancel`,

@@ -71,6 +71,12 @@ export const ROUTES = {
 
 	DOCTOR_ACCOUNT_DETAILS: '/doctor/account-details',
 
+	DOCTOR: {
+		EVENTS: '/doctor/events',
+		EVENT_CREATE: '/doctor/events/create',
+		EVENT_EDIT: '/doctor/events/:id/edit',
+	},
+
 	PAYMENT: '/payment',
 
 	APPOINTMENTS: '/portal/appointments',

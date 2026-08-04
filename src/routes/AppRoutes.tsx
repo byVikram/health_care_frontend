@@ -69,6 +69,10 @@ import CommunityForumPage from '../features/portal/CommunityForumPage'
 import CommunityThreadPage from '../features/portal/CommunityThreadPage'
 import HealthQuestionsPage from '../features/portal/HealthQuestionsPage'
 
+// Doctor Events
+import DoctorEventListPage from '../features/doctor/events/DoctorEventListPage'
+import DoctorEventFormPage from '../features/doctor/events/DoctorEventFormPage'
+
 function ProtectedLayout() {
 	return (
 		<MainLayout>
@@ -184,6 +188,11 @@ export default function AppRoutes() {
 						<Route path={ROUTES.PORTAL.FAVOURITES} element={<FavouriteDoctorsPage />} />
 						<Route path={ROUTES.LABORATORY.ORDERS} element={<LaboratoryOrdersList />} />
 						<Route path={ROUTES.LABORATORY.ORDER_DETAIL} element={<LaboratoryBookingDetailPage />} />
+						
+						{/* Doctor Events */}
+						<Route path={ROUTES.DOCTOR.EVENTS} element={<DoctorEventListPage />} />
+						<Route path={ROUTES.DOCTOR.EVENT_CREATE} element={<DoctorEventFormPage />} />
+						<Route path={ROUTES.DOCTOR.EVENT_EDIT} element={<DoctorEventFormPage />} />
 						
 						<Route path={ROUTES.BLOGS.LIST} element={<BlogListPage />} />
 						<Route path={ROUTES.BLOGS.DETAIL} element={<BlogArticlePage />} />

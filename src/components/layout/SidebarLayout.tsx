@@ -52,6 +52,7 @@ const DOCTOR_MENU_ITEMS = [
 	{ id: 'lab', label: 'Lab', icon: LabIcon },
 	{ id: 'radiology', label: 'Radiology', icon: RadiologyIcon },
 	{ id: 'reminders', label: 'Reminders', icon: RemindersIcon },
+	{ id: 'events', label: 'Events & Seminars', icon: AppointmentIcon, path: ROUTES.DOCTOR.EVENTS },
 	// { id: 'patients', label: 'My Patients', icon: , path: '/doctor/patients' },
 	// { id: 'hospitals', label: 'My Hospitals', icon: , path: '/profile' },
 	// { id: 'availability', label: 'Availability', icon: <EventAvailableOutlinedIcon />, path: '/profile' },
