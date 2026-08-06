@@ -62,13 +62,20 @@ import AdminCommentsPage from '../features/admin/pages/AdminCommentsPage'
 import AdminReviewsPage from '../features/admin/pages/AdminReviewsPage'
 import AdminAdsPage from '../features/admin/pages/AdminAdsPage'
 import AdminCommunitiesPage from '../features/admin/pages/AdminCommunitiesPage'
+import AdminEventsPage from '../features/admin/pages/AdminEventsPage'
 import AdminQAPage from '../features/admin/pages/AdminQAPage'
 
 import BlogListPage from '../features/portal/BlogListPage'
 import BlogArticlePage from '../features/portal/BlogArticlePage'
 import CommunityForumPage from '../features/portal/CommunityForumPage'
 import CommunityThreadPage from '../features/portal/CommunityThreadPage'
+import EventDetailsPage from '../features/portal/EventDetailsPage'
+import EventsListPage from '../features/portal/EventsListPage'
 import HealthQuestionsPage from '../features/portal/HealthQuestionsPage'
+
+// Doctor Events
+import DoctorEventListPage from '../features/doctor/events/DoctorEventListPage'
+import DoctorEventFormPage from '../features/doctor/events/DoctorEventFormPage'
 
 function ProtectedLayout() {
 	return (
@@ -144,6 +151,7 @@ export default function AppRoutes() {
 						<Route path={ROUTES.ADMIN.REVIEWS} element={<AdminReviewsPage />} />
 						<Route path={ROUTES.ADMIN.ADS} element={<AdminAdsPage />} />
 						<Route path={ROUTES.ADMIN.COMMUNITIES} element={<AdminCommunitiesPage />} />
+						<Route path={ROUTES.ADMIN.EVENTS} element={<AdminEventsPage />} />
 						<Route path={ROUTES.ADMIN.QA} element={<AdminQAPage />} />
 					</Route>
 				</Route>
@@ -187,11 +195,19 @@ export default function AppRoutes() {
 						<Route path={ROUTES.LABORATORY.ORDERS} element={<LaboratoryOrdersList />} />
 						<Route path={ROUTES.LABORATORY.ORDER_DETAIL} element={<LaboratoryBookingDetailPage />} />
 						
+						{/* Doctor Events */}
+						<Route path={ROUTES.DOCTOR.EVENTS} element={<DoctorEventListPage />} />
+						<Route path={ROUTES.DOCTOR.EVENT_CREATE} element={<DoctorEventFormPage />} />
+						<Route path={ROUTES.DOCTOR.EVENT_EDIT} element={<DoctorEventFormPage />} />
+						
 						<Route path={ROUTES.BLOGS.LIST} element={<BlogListPage />} />
 						<Route path={ROUTES.BLOGS.DETAIL} element={<BlogArticlePage />} />
 						<Route path={ROUTES.COMMUNITIES.LIST} element={<CommunityForumPage />} />
-						<Route path={ROUTES.COMMUNITIES.DETAIL} element={<CommunityForumPage />} />
+						<Route path={ROUTES.COMMUNITIES.DETAIL} element={<CommunityThreadPage />} />
 						<Route path={ROUTES.COMMUNITIES.THREAD} element={<CommunityThreadPage />} />
+						
+						<Route path={ROUTES.EVENTS.LIST} element={<EventsListPage />} />
+						<Route path={ROUTES.EVENTS.DETAIL} element={<EventDetailsPage />} />
 					</Route>
 				</Route>
 

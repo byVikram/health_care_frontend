@@ -77,6 +77,7 @@ const NAV_GROUPS: NavGroup[] = [
 		items: [
 			{ label: 'Blog Posts', path: ROUTES.ADMIN.BLOGS, icon: <ArticleIcon /> },
 			{ label: 'Communities', path: ROUTES.ADMIN.COMMUNITIES, icon: <GroupsIcon /> },
+			{ label: 'Events', path: ROUTES.ADMIN.EVENTS, icon: <EventNoteIcon /> },
 			{ label: 'Comments', path: ROUTES.ADMIN.COMMENTS, icon: <CommentIcon /> },
 			{ label: 'Q&As', path: ROUTES.ADMIN.QA, icon: <QuestionAnswerIcon /> },
 			{ label: 'Advertisements', path: ROUTES.ADMIN.ADS, icon: <CampaignIcon /> },

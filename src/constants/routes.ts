@@ -60,6 +60,11 @@ export const ROUTES = {
 		THREAD: '/communities/threads/:threadId',
 	},
 
+	EVENTS: {
+		LIST: '/events',
+		DETAIL: '/events/:id',
+	},
+
 	SPECIALITIES: '/specialities',
 
 	TEST: '/test',
@@ -70,6 +75,12 @@ export const ROUTES = {
 	ONBOARDING_REGISTER: '/onboarding/register',
 
 	DOCTOR_ACCOUNT_DETAILS: '/doctor/account-details',
+
+	DOCTOR: {
+		EVENTS: '/doctor/events',
+		EVENT_CREATE: '/doctor/events/create',
+		EVENT_EDIT: '/doctor/events/:id/edit',
+	},
 
 	PAYMENT: '/payment',
 
@@ -104,6 +115,7 @@ export const ROUTES = {
 		REVIEWS: '/admin/reviews',
 		ADS: '/admin/ads',
 		COMMUNITIES: '/admin/communities',
+		EVENTS: '/admin/events',
 		QA: '/admin/qa',
 	},
 }
