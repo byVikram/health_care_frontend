@@ -716,6 +716,59 @@ export const moderateComment = async (commentId: string, status: 'approved' | 'f
 	return res.data
 }
 
+export type ReviewStatus = 'pending' | 'approved' | 'hidden' | 'deleted'
+
+export interface AdminReviewItem {
+	id: string
+	patient_name?: string
+	doctor_name?: string
+	hospital_name?: string | null
+	rating: number
+	comment?: string | null
+	status: ReviewStatus
+	review_date?: string
+}
+
+export interface AdminReviewListParams {
+	page?: number
+	pageSize?: number
+	search?: string
+	status?: ReviewStatus | ''
+	sortOrder?: 'newest' | 'oldest'
+}
+
+export interface AdminReviewListResult {
+	items: AdminReviewItem[]
+	total: number
+	page: number
+	page_size: number
+}
+
+/** GET /api/admin/reviews */
+export const listReviews = async (params: AdminReviewListParams = {}) => {
+	const { page = 1, pageSize = 10, search, status, sortOrder } = params
+	const res = await ApiService.getWithParams<{ success: boolean; data: AdminReviewListResult }>(
+		API_ENDPOINTS.ADMIN.REVIEWS,
+		{
+			page,
+			page_size: pageSize,
+			...(search ? { search } : {}),
+			...(status ? { status } : {}),
+			...(sortOrder ? { sort_order: sortOrder } : {}),
+		}
+	)
+	return res.data
+}
+
+/** PATCH /api/admin/reviews/:review_public_id/status */
+export const updateReviewStatus = async (reviewId: string, status: ReviewStatus) => {
+	const res = await ApiService.patch<AdminMutationResponse<{ id: string; status: ReviewStatus }>>(
+		API_ENDPOINTS.ADMIN.REVIEW_STATUS(reviewId),
+		{ status }
+	)
+	return res.data
+}
+
 export const listAllAds = async () => {
 	const res = await ApiService.get<AdminMutationResponse<AdminAdItem[]>>(
 		API_ENDPOINTS.ADMIN.ADS

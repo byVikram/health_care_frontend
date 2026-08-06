@@ -15,19 +15,18 @@ import {
 	Tooltip,
 	Avatar,
 	Grid,
-	Button,
 } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
-import VisibilityIcon from '@mui/icons-material/Visibility'
+// import VisibilityIcon from '@mui/icons-material/Visibility'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import DescriptionIcon from '@mui/icons-material/Description'
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
 import StorefrontIcon from '@mui/icons-material/Storefront'
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser'
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn'
-import CheckIcon from '@mui/icons-material/Check'
-import CloseIcon from '@mui/icons-material/Close'
+// import CheckIcon from '@mui/icons-material/Check'
+// import CloseIcon from '@mui/icons-material/Close'
 import { toast } from 'react-toastify'
 
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
@@ -44,7 +43,7 @@ import {
 	getProvidersVerificationQueue,
 	verifyDoctor,
 	verifyProvider,
-	getDoctorVerificationDetail,
+	// getDoctorVerificationDetail,
 	DoctorVerificationItem,
 	ProviderVerificationItem,
 	DoctorVerificationDetail,
@@ -118,14 +117,13 @@ export default function AdminVerificationsPage() {
 
 	const [doctorsQueue, setDoctorsQueue] = useState<DoctorVerificationItem[]>([])
 	const [providersQueue, setProvidersQueue] = useState<ProviderVerificationItem[]>([])
-	const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
 
 	// Drawer state (for fallback inline inspections)
 	const [drawerOpen, setDrawerOpen] = useState(false)
-	const [selectedItemType, setSelectedItemType] = useState<'doctor' | 'provider' | null>(null)
+	const [selectedItemType] = useState<'doctor' | 'provider' | null>(null)
 	const [selectedItemData, setSelectedItemData] = useState<DoctorVerificationItem | ProviderVerificationItem | null>(null)
 	const [doctorDetail, setDoctorDetail] = useState<DoctorVerificationDetail | null>(null)
-	const [detailLoading, setDetailLoading] = useState(false)
+	const [detailLoading] = useState(false)
 	const [notes, setNotes] = useState('')
 	const [submitting, setSubmitting] = useState(false)
 
@@ -154,39 +152,6 @@ export default function AdminVerificationsPage() {
 		const targetId = item.public_id || item.id
 		const resolvedType = type === 'doctor' ? 'doctor' : (item as ProviderVerificationItem).provider_type || 'pharmacy'
 		navigate(`/admin/verifications/${resolvedType}/${targetId}`)
-	}
-
-	const handleQuickVerify = async (
-		type: 'doctor' | 'provider',
-		item: DoctorVerificationItem | ProviderVerificationItem,
-		isApproved: boolean,
-		e?: React.MouseEvent
-	) => {
-		if (e) e.stopPropagation()
-
-		const targetId = item.public_id || item.id
-		setActionLoadingId(targetId)
-
-		try {
-			if (type === 'doctor') {
-				const doc = item as DoctorVerificationItem
-				const res = await verifyDoctor(targetId, { is_verified: isApproved })
-				if (res.success) {
-					toast.success(`Dr. ${doc.name} ${isApproved ? 'approved' : 'rejected'}.`)
-				}
-			} else {
-				const prov = item as ProviderVerificationItem
-				const res = await verifyProvider(prov.provider_type, targetId, { is_verified: isApproved })
-				if (res.success) {
-					toast.success(`${prov.name} ${isApproved ? 'approved' : 'rejected'}.`)
-				}
-			}
-			fetchQueues()
-		} catch (err: unknown) {
-			toast.error(getErrorMessage(err, 'Quick verification failed.'))
-		} finally {
-			setActionLoadingId(null)
-		}
 	}
 
 	const handleVerifySubmit = async (isApproved: boolean) => {
@@ -233,20 +198,6 @@ export default function AdminVerificationsPage() {
 			window.open(url, '_blank')
 		} else {
 			toast.error('Document URL is not available')
-		}
-	}
-
-	const handleOpenS3Proof = (s3Key?: string, e?: React.MouseEvent) => {
-		if (e) e.stopPropagation()
-		if (!s3Key) {
-			toast.warning('No document proof attached.')
-			return
-		}
-		const url = buildS3Url(s3Key)
-		if (url) {
-			window.open(url, '_blank')
-		} else {
-			toast.error('Document URL unavailable.')
 		}
 	}
 

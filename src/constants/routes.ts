@@ -101,6 +101,7 @@ export const ROUTES = {
 		BLOG_CREATE: '/admin/blogs/create',
 		BLOG_EDIT: '/admin/blogs/edit/:id',
 		COMMENTS: '/admin/comments',
+		REVIEWS: '/admin/reviews',
 		ADS: '/admin/ads',
 		COMMUNITIES: '/admin/communities',
 		QA: '/admin/qa',

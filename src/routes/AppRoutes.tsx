@@ -59,6 +59,7 @@ import AdminBlogsPage from '../features/admin/pages/AdminBlogsPage'
 import AdminBlogCreatePage from '../features/admin/pages/AdminBlogCreatePage'
 import AdminBlogEditPage from '../features/admin/pages/AdminBlogEditPage'
 import AdminCommentsPage from '../features/admin/pages/AdminCommentsPage'
+import AdminReviewsPage from '../features/admin/pages/AdminReviewsPage'
 import AdminAdsPage from '../features/admin/pages/AdminAdsPage'
 import AdminCommunitiesPage from '../features/admin/pages/AdminCommunitiesPage'
 import AdminQAPage from '../features/admin/pages/AdminQAPage'
@@ -140,6 +141,7 @@ export default function AppRoutes() {
 						<Route path={ROUTES.ADMIN.BLOG_CREATE} element={<AdminBlogCreatePage />} />
 						<Route path={ROUTES.ADMIN.BLOG_EDIT} element={<AdminBlogEditPage />} />
 						<Route path={ROUTES.ADMIN.COMMENTS} element={<AdminCommentsPage />} />
+						<Route path={ROUTES.ADMIN.REVIEWS} element={<AdminReviewsPage />} />
 						<Route path={ROUTES.ADMIN.ADS} element={<AdminAdsPage />} />
 						<Route path={ROUTES.ADMIN.COMMUNITIES} element={<AdminCommunitiesPage />} />
 						<Route path={ROUTES.ADMIN.QA} element={<AdminQAPage />} />

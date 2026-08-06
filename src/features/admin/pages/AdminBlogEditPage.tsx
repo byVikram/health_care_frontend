@@ -18,14 +18,14 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import SaveIcon from '@mui/icons-material/Save'
 import PublishIcon from '@mui/icons-material/Publish'
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
+// import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import { toast } from 'react-toastify'
 
 import AppSwitch from '../../../components/common/Switch/AppSwitch'
 import RichTextEditor from '../../../components/admin/RichTextEditor'
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
-import SectionCard from '../../../components/common/Card/SectionCard'
-import { getAdminBlog, updateAdminBlog } from '../adminService'
+// import SectionCard from '../../../components/common/Card/SectionCard'
+import { getAdminBlog, updateAdminBlog, AdminBlogItem } from '../adminService'
 import { ROUTES } from '../../../constants/routes'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppButton from '../../../components/common/Button/AppButton'
@@ -85,7 +85,7 @@ export default function AdminBlogEditPage() {
 
 		setSubmitting(true)
 		try {
-			const payload: Record<string, any> = {
+			const payload: Partial<Pick<AdminBlogItem, 'title' | 'content' | 'category' | 'status' | 'image_url' | 'is_featured'>> = {
 				title: trimmedTitle,
 				category,
 				status: finalStatus,
@@ -124,20 +124,21 @@ export default function AdminBlogEditPage() {
 			<AdminPageHeader
 				title="Edit Health Article"
 				subtitle="Modify, update settings, or change formatting and layout configuration for the medical guide."
-				actions={
-					<AppButton
-						variant="outlined"
-						startIcon={<ArrowBackIcon />}
+				leading={
+					<IconButton
 						onClick={handleBack}
-						label="Cancel"
+						size="small"
 						sx={{
-							borderColor: '#cbd5e1',
-							color: '#64748b',
-							border: '1px solid #cbd5e1',
-							borderRadius: 2,
-							'&:hover': { borderColor: '#0f172a', color: '#0f172a', bgcolor: 'transparent' },
+							color: '#475569',
+							border: '1px solid #e2e8f0',
+							borderRadius: 1.5,
+							bgcolor: '#ffffff',
+							p: 0.75,
+							'&:hover': { bgcolor: '#f1f5f9', color: '#0f172a' },
 						}}
-					/>
+					>
+						<ArrowBackIcon sx={{ fontSize: 18 }} />
+					</IconButton>
 				}
 			/>
 
