@@ -22,7 +22,7 @@ import PersonIcon from '@mui/icons-material/Person'
 import EventIcon from '@mui/icons-material/Event'
 import StarIcon from '@mui/icons-material/Star'
 import GroupsIcon from '@mui/icons-material/Groups'
-import BadgeIcon from '@mui/icons-material/Badge'
+// import BadgeIcon from '@mui/icons-material/Badge'
 import EmailIcon from '@mui/icons-material/Email'
 import PhoneIcon from '@mui/icons-material/Phone'
 // import LocationOnIcon from '@mui/icons-material/LocationOn'
@@ -185,7 +185,7 @@ export default function AdminUserDetailPage() {
         <Box>
             <AdminPageHeader
                 title={userName ? userName : 'User Account Details'}
-                subtitle={`Detailed profile and activity insights for ${detailRole.toUpperCase()} account #${id}`}
+                // subtitle={`Detailed profile and activity insights for ${detailRole.toUpperCase()} account #${id}`}
                 leading={
                     <IconButton
                         onClick={handleBack}

@@ -21,7 +21,7 @@ import StarIcon from '@mui/icons-material/Star'
 
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
-import SectionCard from '../../../components/common/Card/SectionCard'
+// import SectionCard from '../../../components/common/Card/SectionCard'
 import StatusBadge from '../../../components/admin/StatusBadge'
 import {
 	listAdminBlogs,
@@ -30,8 +30,6 @@ import {
 } from '../adminService'
 import { ROUTES } from '../../../constants/routes'
 import { toast } from 'react-toastify'
-
-const BLOG_CATEGORIES = ['Endocrinology', 'Oncology', 'Geriatrics', 'Physical Therapy', 'General']
 
 export default function AdminBlogsPage() {
 	const navigate = useNavigate()

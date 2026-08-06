@@ -21,12 +21,12 @@ import CancelIcon from '@mui/icons-material/Cancel'
 import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee'
 import SearchIcon from '@mui/icons-material/Search'
 
-import SectionCard from '../../../components/common/Card/SectionCard'
+// import SectionCard from '../../../components/common/Card/SectionCard'
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import AppButton from '../../../components/common/Button/AppButton'
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 import StatusBadge from '../../../components/admin/StatusBadge'
-import RescheduleDrawer from '../../doctor/search/components/RescheduleDrawer'
+import AdminRescheduleDrawer from '../components/AdminRescheduleDrawer'
 import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
 import { listAdminAppointments, AdminAppointmentItem } from '../adminService'
 import { useAdminAppointmentActions } from '../hooks/useAdminAppointmentActions'
@@ -293,7 +293,7 @@ export default function AdminAppointmentsPage() {
 			)}
 
 			{/* Reschedule Drawer */}
-			<RescheduleDrawer
+			<AdminRescheduleDrawer
 				rescheduleOpen={rescheduleOpen}
 				setRescheduleOpen={setRescheduleOpen}
 				rescheduleAppt={rescheduleAppt}

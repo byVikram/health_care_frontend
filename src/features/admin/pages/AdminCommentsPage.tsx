@@ -8,10 +8,10 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble'
 
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
-import StatusBadge from '../../../components/admin/StatusBadge'
+// import StatusBadge from '../../../components/admin/StatusBadge'
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 import AdminEmptyState from '../../../components/admin/AdminEmptyState'
-import SectionCard from '../../../components/common/Card/SectionCard'
+// import SectionCard from '../../../components/common/Card/SectionCard'
 import { listPendingComments, approveComment, moderateComment, AdminCommentItem } from '../adminService'
 import { toast } from 'react-toastify'
 

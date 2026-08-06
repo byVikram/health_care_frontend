@@ -1,7 +1,7 @@
 // src/features/admin/pages/AdminDashboardPage.tsx
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Box, Grid, Typography, Stack, CircularProgress, Alert, Chip, Divider, Button } from '@mui/material'
+import { Box, Grid, Typography, Stack, CircularProgress, Alert, Divider, Button } from '@mui/material'
 import PeopleIcon from '@mui/icons-material/People'
 import EventNoteIcon from '@mui/icons-material/EventNote'
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
@@ -16,7 +16,7 @@ import { getDashboardStats } from '../adminService'
 import AdminStatCard from '../../../components/admin/AdminStatCard'
 
 export default function AdminDashboardPage() {
-	const { user, role } = useAuth()
+	const { user} = useAuth()
 	const navigate = useNavigate()
 
 	const [loading, setLoading] = useState(true)

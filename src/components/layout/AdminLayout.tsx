@@ -33,6 +33,7 @@ import LogoutIcon from '@mui/icons-material/Logout'
 import MenuIcon from '@mui/icons-material/Menu'
 import ArticleIcon from '@mui/icons-material/Article'
 import CommentIcon from '@mui/icons-material/Comment'
+import RateReviewIcon from '@mui/icons-material/RateReview'
 import CampaignIcon from '@mui/icons-material/Campaign'
 import GroupsIcon from '@mui/icons-material/Groups'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
@@ -66,6 +67,7 @@ const NAV_GROUPS: NavGroup[] = [
 		items: [
 			{ label: 'Verifications', path: ROUTES.ADMIN.VERIFICATIONS, icon: <VerifiedUserIcon /> },
 			{ label: 'Users', path: ROUTES.ADMIN.USERS, icon: <PeopleIcon /> },
+			{ label: 'Reviews', path: ROUTES.ADMIN.REVIEWS, icon: <RateReviewIcon /> },
 			{ label: 'Appointments', path: ROUTES.ADMIN.APPOINTMENTS, icon: <EventNoteIcon /> },
 			{ label: 'Billing', path: ROUTES.ADMIN.BILLING, icon: <ReceiptLongIcon /> },
 		],
