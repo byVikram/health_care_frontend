@@ -233,7 +233,7 @@ export default function DoctorEventFormPage() {
 							elevation={0}
 							sx={{
 								p: { xs: 2.5, sm: 3.5 },
-								borderRadius: 3.5,
+								borderRadius: 2,
 								border: '1px solid #e2e8f0',
 								bgcolor: '#ffffff',
 								boxShadow: '0 4px 16px rgba(15, 23, 42, 0.03)',
@@ -350,7 +350,7 @@ export default function DoctorEventFormPage() {
 					<Grid size={{ xs: 12, md: 4 }}>
 						<Stack spacing={3}>
 							{/* Actions Card */}
-							<Card elevation={0} sx={{ borderRadius: 3.5, border: '1px solid #e2e8f0', boxShadow: '0 4px 16px rgba(15, 23, 42, 0.03)', bgcolor: '#ffffff' }}>
+							<Card elevation={0} sx={{ borderRadius: 2, border: '1px solid #e2e8f0', boxShadow: '0 4px 16px rgba(15, 23, 42, 0.03)', bgcolor: '#ffffff' }}>
 								<CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
 									<Typography variant="subtitle2" fontWeight={800} color="#0f172a" sx={{ mb: 2 }}>
 										Actions
@@ -404,7 +404,7 @@ export default function DoctorEventFormPage() {
 							</Card>
 
 							{/* Cover Photo Card */}
-							<Card elevation={0} sx={{ borderRadius: 3.5, border: '1px solid #e2e8f0', boxShadow: '0 4px 16px rgba(15, 23, 42, 0.03)', bgcolor: '#ffffff' }}>
+							<Card elevation={0} sx={{ borderRadius: 2, border: '1px solid #e2e8f0', boxShadow: '0 4px 16px rgba(15, 23, 42, 0.03)', bgcolor: '#ffffff' }}>
 								<CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
 									<Typography variant="subtitle2" fontWeight={800} color="#0f172a" sx={{ mb: 2 }}>
 										Cover Photo
@@ -433,7 +433,7 @@ export default function DoctorEventFormPage() {
 														width: '100%',
 														height: 150,
 														objectFit: 'cover',
-														borderRadius: 2.5,
+														borderRadius: 2,
 														border: '1px solid #e2e8f0',
 													}}
 												/>
@@ -443,7 +443,7 @@ export default function DoctorEventFormPage() {
 												sx={{
 													width: '100%',
 													height: 120,
-													borderRadius: 2.5,
+													borderRadius: 2,
 													border: '1px dashed #cbd5e1',
 													display: 'flex',
 													flexDirection: 'column',
