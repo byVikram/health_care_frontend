@@ -60,6 +60,11 @@ export const ROUTES = {
 		THREAD: '/communities/threads/:threadId',
 	},
 
+	EVENTS: {
+		LIST: '/events',
+		DETAIL: '/events/:id',
+	},
+
 	SPECIALITIES: '/specialities',
 
 	TEST: '/test',
@@ -109,6 +114,7 @@ export const ROUTES = {
 		COMMENTS: '/admin/comments',
 		ADS: '/admin/ads',
 		COMMUNITIES: '/admin/communities',
+		EVENTS: '/admin/events',
 		QA: '/admin/qa',
 	},
 }

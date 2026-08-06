@@ -49,6 +49,8 @@ export default function DoctorEventFormPage() {
 	const [endTime, setEndTime] = useState('')
 	const [registrationLink, setRegistrationLink] = useState('')
 	const [description, setDescription] = useState('')
+	const [locationType, setLocationType] = useState('offline')
+	const [location, setLocation] = useState('')
 
 	// Role guard
 	useEffect(() => {
@@ -71,6 +73,8 @@ export default function DoctorEventFormPage() {
 				setEndTime(event.end_time.substring(0, 5))
 				setRegistrationLink(event.registration_link || '')
 				setDescription(event.description)
+				setLocationType(event.location_type || 'offline')
+				setLocation(event.location || '')
 			} catch (err) {
 				console.error('Error loading event:', err)
 				toast.error('Failed to load event details')
@@ -119,12 +123,23 @@ export default function DoctorEventFormPage() {
 			return
 		}
 
+		const trimmedLocation = location.trim()
+
 		// URL Validation for registration link
-		if (trimmedReg) {
+		if (locationType === 'online') {
+			if (!trimmedReg) {
+				toast.warning('Please enter a valid Registration/Meeting Link for online events')
+				return
+			}
 			if (!trimmedReg.startsWith('http://') && !trimmedReg.startsWith('https://')) {
 				toast.warning('Registration link must be a valid URL starting with http:// or https://')
 				return
 			}
+		}
+
+		if (locationType === 'offline' && !trimmedLocation) {
+			toast.warning('Please enter the event location')
+			return
 		}
 
 		// End Time must be later than Start Time
@@ -149,7 +164,9 @@ export default function DoctorEventFormPage() {
 			event_date: eventDate,
 			event_time: eventTime,
 			end_time: endTime,
-			registration_link: trimmedReg || undefined,
+			location_type: locationType,
+			location: locationType === 'offline' ? trimmedLocation : undefined,
+			registration_link: locationType === 'online' ? trimmedReg : undefined,
 			description: trimmedDesc,
 			cover_image_url: trimmedCover || undefined,
 			status,
@@ -259,6 +276,32 @@ export default function DoctorEventFormPage() {
 
 								<Grid container spacing={2}>
 									<Grid size={{ xs: 12, sm: 6 }}>
+										<AppSelect
+											label="Event Mode"
+											value={locationType}
+											onChange={(e) => setLocationType(e.target.value)}
+											options={[
+												{ value: 'offline', label: 'Offline' },
+												{ value: 'online', label: 'Online' },
+											]}
+											fullWidth
+										/>
+									</Grid>
+									{locationType === 'offline' && (
+										<Grid size={{ xs: 12, sm: 6 }}>
+											<AppInput
+												label="Location"
+												placeholder="Enter event venue/location..."
+												value={location}
+												onChange={(e) => setLocation(e.target.value)}
+												fullWidth
+											/>
+										</Grid>
+									)}
+								</Grid>
+
+								<Grid container spacing={2}>
+									<Grid size={{ xs: 12, sm: 6 }}>
 										<AppInput
 											label="Start Time"
 											type="time"
@@ -280,13 +323,15 @@ export default function DoctorEventFormPage() {
 									</Grid>
 								</Grid>
 
-								<AppInput
-									label="Registration Link (Optional)"
-									placeholder="https://example.com/register"
-									value={registrationLink}
-									onChange={(e) => setRegistrationLink(e.target.value)}
-									fullWidth
-								/>
+								{locationType === 'online' && (
+									<AppInput
+										label="Registration / Meeting Link"
+										placeholder="https://zoom.us/j/123456789"
+										value={registrationLink}
+										onChange={(e) => setRegistrationLink(e.target.value)}
+										fullWidth
+									/>
+								)}
 
 								<AppInput
 									label="Event Description"

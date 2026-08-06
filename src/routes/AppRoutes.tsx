@@ -61,12 +61,15 @@ import AdminBlogEditPage from '../features/admin/pages/AdminBlogEditPage'
 import AdminCommentsPage from '../features/admin/pages/AdminCommentsPage'
 import AdminAdsPage from '../features/admin/pages/AdminAdsPage'
 import AdminCommunitiesPage from '../features/admin/pages/AdminCommunitiesPage'
+import AdminEventsPage from '../features/admin/pages/AdminEventsPage'
 import AdminQAPage from '../features/admin/pages/AdminQAPage'
 
 import BlogListPage from '../features/portal/BlogListPage'
 import BlogArticlePage from '../features/portal/BlogArticlePage'
 import CommunityForumPage from '../features/portal/CommunityForumPage'
 import CommunityThreadPage from '../features/portal/CommunityThreadPage'
+import EventDetailsPage from '../features/portal/EventDetailsPage'
+import EventsListPage from '../features/portal/EventsListPage'
 import HealthQuestionsPage from '../features/portal/HealthQuestionsPage'
 
 // Doctor Events
@@ -146,6 +149,7 @@ export default function AppRoutes() {
 						<Route path={ROUTES.ADMIN.COMMENTS} element={<AdminCommentsPage />} />
 						<Route path={ROUTES.ADMIN.ADS} element={<AdminAdsPage />} />
 						<Route path={ROUTES.ADMIN.COMMUNITIES} element={<AdminCommunitiesPage />} />
+						<Route path={ROUTES.ADMIN.EVENTS} element={<AdminEventsPage />} />
 						<Route path={ROUTES.ADMIN.QA} element={<AdminQAPage />} />
 					</Route>
 				</Route>
@@ -197,8 +201,11 @@ export default function AppRoutes() {
 						<Route path={ROUTES.BLOGS.LIST} element={<BlogListPage />} />
 						<Route path={ROUTES.BLOGS.DETAIL} element={<BlogArticlePage />} />
 						<Route path={ROUTES.COMMUNITIES.LIST} element={<CommunityForumPage />} />
-						<Route path={ROUTES.COMMUNITIES.DETAIL} element={<CommunityForumPage />} />
+						<Route path={ROUTES.COMMUNITIES.DETAIL} element={<CommunityThreadPage />} />
 						<Route path={ROUTES.COMMUNITIES.THREAD} element={<CommunityThreadPage />} />
+						
+						<Route path={ROUTES.EVENTS.LIST} element={<EventsListPage />} />
+						<Route path={ROUTES.EVENTS.DETAIL} element={<EventDetailsPage />} />
 					</Route>
 				</Route>
 

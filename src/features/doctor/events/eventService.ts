@@ -14,6 +14,9 @@ export interface DoctorEvent {
 	description: string
 	cover_image_url?: string
 	status: 'draft' | 'published'
+	location_type: 'online' | 'offline'
+	location?: string
+	is_expired?: boolean
 	created_at: string
 	updated_at: string
 }

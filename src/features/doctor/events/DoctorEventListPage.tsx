@@ -49,7 +49,7 @@ export default function DoctorEventListPage() {
 	const [events, setEvents] = useState<DoctorEvent[]>([])
 	const [loading, setLoading] = useState(true)
 	const [searchQuery, setSearchQuery] = useState('')
-	const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all')
+	const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft' | 'expired'>('all')
 
 	// Delete State
 	const [deleteOpen, setDeleteOpen] = useState(false)
@@ -136,10 +136,13 @@ export default function DoctorEventListPage() {
 				ev.category_label.toLowerCase().includes(searchQuery.toLowerCase()) ||
 				ev.description.toLowerCase().includes(searchQuery.toLowerCase())
 
+			const isExpired = Boolean((ev as any).is_expired)
+
 			const matchesStatus =
-				statusFilter === 'all' ||
-				(statusFilter === 'published' && ev.status === 'published') ||
-				(statusFilter === 'draft' && ev.status === 'draft')
+				(statusFilter === 'all' && !isExpired) ||
+				(statusFilter === 'published' && ev.status === 'published' && !isExpired) ||
+				(statusFilter === 'draft' && ev.status === 'draft' && !isExpired) ||
+				(statusFilter === 'expired' && isExpired)
 
 			return matchesSearch && matchesStatus
 		})
@@ -257,9 +260,10 @@ export default function DoctorEventListPage() {
 										},
 									}}
 								>
-									<Tab label={`All (${events.length})`} value="all" />
-									<Tab label={`Published (${events.filter((e) => e.status === 'published').length})`} value="published" />
-									<Tab label={`Drafts (${events.filter((e) => e.status === 'draft').length})`} value="draft" />
+									<Tab label={`All (${events.filter(e => !(e as any).is_expired).length})`} value="all" />
+									<Tab label={`Published (${events.filter((e) => e.status === 'published' && !(e as any).is_expired).length})`} value="published" />
+									<Tab label={`Drafts (${events.filter((e) => e.status === 'draft' && !(e as any).is_expired).length})`} value="draft" />
+									<Tab label={`Expired (${events.filter((e) => (e as any).is_expired).length})`} value="expired" />
 								</Tabs>
 							</Grid>
 						</Grid>

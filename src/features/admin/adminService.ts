@@ -907,3 +907,54 @@ export const updateAdminQAReplyStatus = async (replyId: string, status: QAStatus
 	)
 	return res.data
 }
+
+// -- 10. Admin Events Management ------------------------------------------
+
+export interface AdminEventItem {
+	id: string
+	title: string
+	category: string
+	category_label?: string
+	event_date: string
+	event_time: string
+	end_time: string
+	registration_link?: string
+	description: string
+	cover_image_url?: string
+	status: string
+	location_type: string
+	location?: string
+	is_expired?: boolean
+	created_at: string
+	updated_at?: string
+}
+
+export const listAdminEvents = async () => {
+	const res = await ApiService.get<AdminMutationResponse<AdminEventItem[]>>(
+		API_ENDPOINTS.ADMIN.EVENTS
+	)
+	return res.data
+}
+
+export const createAdminEvent = async (payload: Partial<AdminEventItem>) => {
+	const res = await ApiService.post<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.EVENTS,
+		payload
+	)
+	return res.data
+}
+
+export const updateAdminEvent = async (eventId: string, payload: Partial<AdminEventItem>) => {
+	const res = await ApiService.put<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.EVENT_DETAIL(eventId),
+		payload
+	)
+	return res.data
+}
+
+export const deleteAdminEvent = async (eventId: string) => {
+	const res = await ApiService.delete<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.EVENT_DETAIL(eventId)
+	)
+	return res.data
+}
