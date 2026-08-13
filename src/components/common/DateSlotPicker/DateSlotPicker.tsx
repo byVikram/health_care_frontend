@@ -240,20 +240,20 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 				<>
 					{/* Date label - only shown when non-empty */}
 					{dateLabel && (
-						<Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
+						<Typography variant="h6" sx={{ fontWeight: 600, mb: 1, fontSize: '15.5px', color: 'text.primary' }}>
 							{dateLabel}
 						</Typography>
 					)}
 
 					{/* Week calendar */}
-					<Box sx={{ p: 2, pt: 0, mb: 3 }}>
+					<Box sx={{ mb: 2.25 }}>
 						{/* Month nav */}
 						<Box
 							sx={{
 								display: 'flex',
 								alignItems: 'center',
 								justifyContent: hideNavigation ? 'center' : 'space-between',
-								mb: 1.5,
+								mb: 1,
 							}}
 						>
 							{!hideNavigation && (
@@ -275,7 +275,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 								sx={{
 									fontWeight: 600,
 									color: 'text.primary',
-									fontSize: hideNavigation ? '16px' : undefined,
+									fontSize: hideNavigation ? '15px' : undefined,
 								}}
 							>
 								{monthLabel}
@@ -309,8 +309,8 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 										sx={{
 											flex: 1,
 											textAlign: 'center',
-											py: 0.8,
-											minHeight: '58px',
+											py: 0.6,
+											minHeight: '56px',
 											borderRadius: '10px',
 											bgcolor: isSelected ? '#0c7c7c' : 'transparent',
 											border: isSelected ? '' : '1px solid #33333366',
@@ -327,7 +327,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 										<Typography
 											variant="caption"
 											sx={{
-												fontSize: '13px',
+												fontSize: '12px',
 												fontWeight: 600,
 												color: isSelected
 													? 'rgba(255,255,255,0.8)'
@@ -343,7 +343,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 											variant="body2"
 											sx={{
 												fontWeight: 700,
-												fontSize: '15px',
+												fontSize: '14px',
 												color: isSelected
 													? '#fff'
 													: past
@@ -363,10 +363,10 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 
 					{/* Appointment type pill toggle */}
 					{onAppointmentTypeChange && (
-						<Box sx={{ mb: 2, mt: 1 }}>
+						<Box sx={{ mb: 2.25, mt: 0.5 }}>
 							<Typography
 								variant="body2"
-								sx={{ fontWeight: 500, mb: 1.5, color: 'text.secondary', fontSize: '13px' }}
+								sx={{ fontWeight: 600, mb: 1, color: 'text.primary', fontSize: '15.5px' }}
 							>
 								Type of Appointment
 							</Typography>
@@ -396,7 +396,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 											justifyContent: 'center',
 											flex: useCompactAppointmentToggle ? '0 0 auto' : 1,
 											px: 3,
-											py: 1,
+											py: 0.85,
 											borderRadius: '50px',
 											cursor: 'pointer',
 											bgcolor: selectedAppointmentType === 'clinic' ? '#fff' : 'transparent',
@@ -439,7 +439,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 											justifyContent: 'center',
 											flex: useCompactAppointmentToggle ? '0 0 auto' : 1,
 											px: 3,
-											py: 1,
+											py: 0.85,
 											borderRadius: '50px',
 											cursor: 'pointer',
 											bgcolor: selectedAppointmentType === 'video' ? '#fff' : 'transparent',
@@ -485,12 +485,12 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 								display: 'flex',
 								alignItems: 'center',
 								justifyContent: 'space-between',
-								mb: 2,
+								mb: 1.25,
 								flexWrap: 'wrap',
 								gap: 1,
 							}}
 						>
-							<Typography variant="h5" sx={{ fontWeight: 600 }}>
+							<Typography variant="h6" sx={{ fontWeight: 600, fontSize: '15.5px' }}>
 								{timeLabel}
 							</Typography>
 							{timeLegend}
@@ -498,14 +498,14 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 
 						{/* No slots message */}
 						{availableSlots && availableSlots.length === 0 && (
-							<Typography variant="body2" sx={{ color: 'text.secondary', mt: 2 }}>
+							<Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
 								No slots available for the selected day.
 							</Typography>
 						)}
 
 						{/* Time slots grouped by period */}
 						{slotsToRender.map((group, index) => (
-							<Box key={`${group.label}-${index}`} sx={{ mb: 2 }}>
+							<Box key={`${group.label}-${index}`} sx={{ mb: 1.25 }}>
 								<Typography
 									variant="caption"
 									sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.5, display: 'block' }}

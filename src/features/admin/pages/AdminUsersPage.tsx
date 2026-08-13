@@ -17,7 +17,7 @@ import {
 import BlockIcon from '@mui/icons-material/Block'
 import LockResetIcon from '@mui/icons-material/LockReset'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
-import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import VisibilityIcon from '@mui/icons-material/Visibility'
 import SearchIcon from '@mui/icons-material/Search'
 import PeopleIcon from '@mui/icons-material/People'
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
@@ -290,7 +290,7 @@ export default function AdminUsersPage() {
 											'&:hover': { borderColor: '#0d9488', bgcolor: 'rgba(13,148,136,0.06)' },
 										}}
 									>
-										<OpenInNewIcon sx={{ fontSize: 16 }} />
+										<VisibilityIcon sx={{ fontSize: 16 }} />
 									</IconButton>
 								</span>
 							</Tooltip>
