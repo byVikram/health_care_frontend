@@ -67,7 +67,7 @@ function ReviewCard({
 		}
 	}
 
-	const isRejected = review.status === 'hidden' || review.status === 'rejected' || review.status === 'deleted'
+	const isRejected = review.status === 'hidden' || review.status === 'deleted'
 
 	return (
 		<Box
@@ -187,7 +187,7 @@ export default function AdminReviewsPage() {
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 	const [page, setPage] = useState(1)
-	const pageSize = 10
+	const [pageSize, setPageSize] = useState(10)
 
 	const fetchReviews = useCallback(async () => {
 		setLoading(true)

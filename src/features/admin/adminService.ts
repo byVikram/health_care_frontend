@@ -1011,3 +1011,61 @@ export const deleteAdminEvent = async (eventId: string) => {
 	)
 	return res.data
 }
+
+// ── 11. Admin Articles Management ──────────────────────────────────────────
+
+export interface AdminArticleItem {
+	id: string
+	title: string
+	summary: string
+	content: string
+	category: string
+	cover_image?: string
+	coverImage?: string
+	author: string
+	tags?: string
+	status: 'draft' | 'published' | string
+	publish_date?: string
+	publishDate?: string
+	created_at: string
+	createdAt?: string
+}
+
+export const listAdminArticles = async () => {
+	const res = await ApiService.get<AdminMutationResponse<AdminArticleItem[]>>(
+		API_ENDPOINTS.ADMIN.ARTICLES
+	)
+	return res.data
+}
+
+export const getAdminArticle = async (articleId: string) => {
+	const res = await ApiService.get<AdminMutationResponse<AdminArticleItem>>(
+		API_ENDPOINTS.ADMIN.ARTICLE_DETAIL(articleId)
+	)
+	return res.data
+}
+
+export const createAdminArticle = async (payload: Partial<AdminArticleItem>) => {
+	const res = await ApiService.post<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.ARTICLES,
+		payload
+	)
+	return res.data
+}
+
+export const updateAdminArticle = async (articleId: string, payload: Partial<AdminArticleItem>) => {
+	const res = await ApiService.put<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.ARTICLE_DETAIL(articleId),
+		payload
+	)
+	return res.data
+}
+
+export const deleteAdminArticle = async (articleId: string) => {
+	const res = await ApiService.delete<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.ARTICLE_DETAIL(articleId)
+	)
+	return res.data
+}
+
+

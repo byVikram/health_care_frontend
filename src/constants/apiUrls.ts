@@ -197,6 +197,8 @@ export const API_ENDPOINTS = {
 		QA_QUESTION_STATUS: (id: string) => `/api/admin/qa/questions/${id}/status`,
 		QA_ANSWER_STATUS: (id: string) => `/api/admin/qa/answers/${id}/status`,
 		QA_REPLY_STATUS: (id: string) => `/api/admin/qa/replies/${id}/status`,
+		ARTICLES: '/api/admin/articles',
+		ARTICLE_DETAIL: (id: string) => `/api/admin/articles/${id}`,
 	},
 	EVENTS: {
 		PUBLIC: '/api/events/public',

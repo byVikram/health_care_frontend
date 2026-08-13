@@ -1,6 +1,6 @@
 // src/components/common/Select/AppSelect.tsx
 import React, { forwardRef, ReactNode } from 'react'
-import { TextField, MenuItem, InputAdornment, SxProps, Theme, TextFieldProps, Chip, Box, Checkbox } from '@mui/material'
+import { TextField, MenuItem, InputAdornment, Typography, SxProps, Theme, TextFieldProps, Chip, Box, Checkbox } from '@mui/material'
 
 interface SelectOption {
 	value: string | number
@@ -62,11 +62,10 @@ const AppSelect = forwardRef<HTMLDivElement, AppSelectProps>((props, ref) => {
 		? Array.isArray(value) ? (value as string[]) : []
 		: []
 
-	return (
+	const selectField = (
 		<TextField
 			select
 			ref={ref}
-			label={label}
 			value={multiple ? selectedValues : (value ?? '')}
 			onChange={onChange}
 			error={error}
@@ -76,7 +75,6 @@ const AppSelect = forwardRef<HTMLDivElement, AppSelectProps>((props, ref) => {
 			size={size}
 			variant={variant}
 			InputProps={inputProps}
-			InputLabelProps={{ shrink: true }}
 			SelectProps={{
 				displayEmpty: true,
 				multiple,
@@ -156,6 +154,29 @@ const AppSelect = forwardRef<HTMLDivElement, AppSelectProps>((props, ref) => {
 				</MenuItem>
 			))}
 		</TextField>
+	)
+
+	if (!label) {
+		return selectField
+	}
+
+	return (
+		<Box sx={{ width: fullWidth ? '100%' : 'auto', display: 'flex', flexDirection: 'column' }}>
+			<Typography
+				variant="caption"
+				sx={{
+					display: 'block',
+					fontWeight: 400,
+					fontSize: '0.8rem',
+					color: disabled ? 'text.disabled' : error ? 'error.main' : '#0f172a',
+					mb: 0.75,
+					letterSpacing: '0.01em',
+				}}
+			>
+				{label}
+			</Typography>
+			{selectField}
+		</Box>
 	)
 })
 

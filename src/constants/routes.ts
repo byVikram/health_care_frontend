@@ -117,5 +117,8 @@ export const ROUTES = {
 		COMMUNITIES: '/admin/communities',
 		EVENTS: '/admin/events',
 		QA: '/admin/qa',
+		ARTICLES: '/admin/articles',
+		ARTICLE_CREATE: '/admin/articles/create',
+		ARTICLE_EDIT: '/admin/articles/edit/:id',
 	},
 }
