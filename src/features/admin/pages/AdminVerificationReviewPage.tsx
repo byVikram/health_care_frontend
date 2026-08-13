@@ -244,7 +244,8 @@ export default function AdminVerificationReviewPage() {
 			} else {
 				const res = await getProvidersVerificationQueue()
 				if (res.success && res.data) {
-					const matched = res.data.find((p) => p.id === id || p.public_id === id)
+					const items = Array.isArray(res.data) ? res.data : (res.data as { items?: ProviderVerificationItem[] }).items || []
+					const matched = items.find((p: ProviderVerificationItem) => p.id === id || p.public_id === id)
 					if (matched) {
 						setProviderItem(matched)
 						if (matched.license_proof_s3_key) {
