@@ -13,6 +13,7 @@ type StatusVariant =
 	| 'approved'
 	| 'flagged'
 	| 'hidden'
+	| 'deleted'
 	| string
 
 const STATUS_MAP: Record<
@@ -30,6 +31,7 @@ const STATUS_MAP: Record<
 	approved:  { bg: '#dcfce7', color: '#15803d' },
 	flagged:   { bg: '#fff7ed', color: '#ea580c' },
 	hidden:    { bg: '#fee2e2', color: '#dc2626' },
+	deleted:   { bg: '#f1f5f9', color: '#475569' },
 }
 
 interface StatusBadgeProps {

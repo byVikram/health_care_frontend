@@ -58,15 +58,22 @@ import AdminSpecialitiesPage from '../features/admin/pages/AdminSpecialitiesPage
 import AdminBlogsPage from '../features/admin/pages/AdminBlogsPage'
 import AdminBlogCreatePage from '../features/admin/pages/AdminBlogCreatePage'
 import AdminBlogEditPage from '../features/admin/pages/AdminBlogEditPage'
+import AdminArticlesPage from '../features/admin/pages/AdminArticlesPage'
+import AdminArticleCreatePage from '../features/admin/pages/AdminArticleCreatePage'
+import AdminArticleEditPage from '../features/admin/pages/AdminArticleEditPage'
 import AdminCommentsPage from '../features/admin/pages/AdminCommentsPage'
+import AdminReviewsPage from '../features/admin/pages/AdminReviewsPage'
 import AdminAdsPage from '../features/admin/pages/AdminAdsPage'
 import AdminCommunitiesPage from '../features/admin/pages/AdminCommunitiesPage'
+import AdminEventsPage from '../features/admin/pages/AdminEventsPage'
 import AdminQAPage from '../features/admin/pages/AdminQAPage'
 
 import BlogListPage from '../features/portal/BlogListPage'
 import BlogArticlePage from '../features/portal/BlogArticlePage'
 import CommunityForumPage from '../features/portal/CommunityForumPage'
 import CommunityThreadPage from '../features/portal/CommunityThreadPage'
+import EventDetailsPage from '../features/portal/EventDetailsPage'
+import EventsListPage from '../features/portal/EventsListPage'
 import HealthQuestionsPage from '../features/portal/HealthQuestionsPage'
 
 // Doctor Events
@@ -143,9 +150,14 @@ export default function AppRoutes() {
 						<Route path={ROUTES.ADMIN.BLOGS} element={<AdminBlogsPage />} />
 						<Route path={ROUTES.ADMIN.BLOG_CREATE} element={<AdminBlogCreatePage />} />
 						<Route path={ROUTES.ADMIN.BLOG_EDIT} element={<AdminBlogEditPage />} />
+						<Route path={ROUTES.ADMIN.ARTICLES} element={<AdminArticlesPage />} />
+						<Route path={ROUTES.ADMIN.ARTICLE_CREATE} element={<AdminArticleCreatePage />} />
+						<Route path={ROUTES.ADMIN.ARTICLE_EDIT} element={<AdminArticleEditPage />} />
 						<Route path={ROUTES.ADMIN.COMMENTS} element={<AdminCommentsPage />} />
+						<Route path={ROUTES.ADMIN.REVIEWS} element={<AdminReviewsPage />} />
 						<Route path={ROUTES.ADMIN.ADS} element={<AdminAdsPage />} />
 						<Route path={ROUTES.ADMIN.COMMUNITIES} element={<AdminCommunitiesPage />} />
+						<Route path={ROUTES.ADMIN.EVENTS} element={<AdminEventsPage />} />
 						<Route path={ROUTES.ADMIN.QA} element={<AdminQAPage />} />
 					</Route>
 				</Route>
@@ -197,8 +209,11 @@ export default function AppRoutes() {
 						<Route path={ROUTES.BLOGS.LIST} element={<BlogListPage />} />
 						<Route path={ROUTES.BLOGS.DETAIL} element={<BlogArticlePage />} />
 						<Route path={ROUTES.COMMUNITIES.LIST} element={<CommunityForumPage />} />
-						<Route path={ROUTES.COMMUNITIES.DETAIL} element={<CommunityForumPage />} />
+						<Route path={ROUTES.COMMUNITIES.DETAIL} element={<CommunityThreadPage />} />
 						<Route path={ROUTES.COMMUNITIES.THREAD} element={<CommunityThreadPage />} />
+						
+						<Route path={ROUTES.EVENTS.LIST} element={<EventsListPage />} />
+						<Route path={ROUTES.EVENTS.DETAIL} element={<EventDetailsPage />} />
 					</Route>
 				</Route>
 

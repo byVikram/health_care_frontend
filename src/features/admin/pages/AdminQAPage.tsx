@@ -544,7 +544,7 @@ export default function AdminQAPage() {
 				</Grid>
 			</Grid>
 
-			<Stack direction={{ xs: "column", sm: "row" }} alignItems={{ sm: "center" }} justifyContent="space-between" spacing={2} sx={{ mb: 2 }}>
+			<Stack spacing={2} sx={{ mb: 2.5 }}>
 				<Tabs
 					value={statusFilter}
 					onChange={(_, v) => setStatusFilter(v)}
@@ -559,21 +559,24 @@ export default function AdminQAPage() {
 						<Tab key={t.value} value={t.value} label={t.label} />
 					))}
 				</Tabs>
-				<AppInput
-					size="small"
-					placeholder="Search questions or tags... (Enter)"
-					value={searchInput}
-					onChange={(e) => setSearchInput(e.target.value)}
-					onKeyDown={(e) => { if (e.key === "Enter") setSearch(searchInput) }}
-					InputProps={{
-						startAdornment: (
-							<InputAdornment position="start">
-								<SearchIcon sx={{ fontSize: 17, color: "#94a3b8" }} />
-							</InputAdornment>
-						),
-					}}
-					sx={{ minWidth: 260, "& .MuiOutlinedInput-root": { borderRadius: 2, fontSize: 13 } }}
-				/>
+				<Box sx={{ maxWidth: 360, width: '100%' }}>
+					<AppInput
+						fullWidth
+						size="small"
+						placeholder="Search questions or tags... (Enter)"
+						value={searchInput}
+						onChange={(e) => setSearchInput(e.target.value)}
+						onKeyDown={(e) => { if (e.key === "Enter") setSearch(searchInput) }}
+						InputProps={{
+							startAdornment: (
+								<InputAdornment position="start">
+									<SearchIcon sx={{ fontSize: 18, color: "#94a3b8" }} />
+								</InputAdornment>
+							),
+						}}
+						sx={{ bgcolor: "#ffffff", borderRadius: 1 }}
+					/>
+				</Box>
 			</Stack>
 
 			{loading ? (

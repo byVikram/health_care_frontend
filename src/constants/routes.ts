@@ -60,6 +60,11 @@ export const ROUTES = {
 		THREAD: '/communities/threads/:threadId',
 	},
 
+	EVENTS: {
+		LIST: '/events',
+		DETAIL: '/events/:id',
+	},
+
 	SPECIALITIES: '/specialities',
 
 	TEST: '/test',
@@ -107,8 +112,13 @@ export const ROUTES = {
 		BLOG_CREATE: '/admin/blogs/create',
 		BLOG_EDIT: '/admin/blogs/edit/:id',
 		COMMENTS: '/admin/comments',
+		REVIEWS: '/admin/reviews',
 		ADS: '/admin/ads',
 		COMMUNITIES: '/admin/communities',
+		EVENTS: '/admin/events',
 		QA: '/admin/qa',
+		ARTICLES: '/admin/articles',
+		ARTICLE_CREATE: '/admin/articles/create',
+		ARTICLE_EDIT: '/admin/articles/edit/:id',
 	},
 }

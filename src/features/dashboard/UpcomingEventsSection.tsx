@@ -1,181 +1,222 @@
 // src/features/dashboard/UpcomingEventsSection.tsx
-import { Box, Typography, Grid } from '@mui/material'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ROUTES } from '../../constants/routes'
+import { Box, Typography, Grid, CircularProgress, Stack, Chip } from '@mui/material'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
+import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import VideocamOutlinedIcon from '@mui/icons-material/VideocamOutlined'
+import CategoryIcon from '@mui/icons-material/Category'
 import AppButton from '../../components/common/Button/AppButton'
+import ApiService from '../../services/apiService'
+import { API_ENDPOINTS } from '../../constants/apiUrls'
+import { toast } from 'react-toastify'
 
-const eventList = [
-	{ id: 1, day: '20', month: 'JUN', name: 'Free Diabetes Screening Camp', location: 'City Community Hall' },
-	{ id: 2, day: '25', month: 'JUL', name: 'Online Yoga & Wellness Workshop', location: 'Virtual Event' },
-	{ id: 3, day: '04', month: 'AUG', name: 'Online Yoga & Wellness Workshop', location: 'Virtual Event' },
-	{ id: 4, day: '04', month: 'AUG', name: 'Online Yoga & Wellness Workshop', location: 'Virtual Event' },
-]
-
-const featuredEvents = [
-	{
-		id: 1,
-		title: 'Annual Health & Wellness Expo',
-		date: 'August 10, 2024',
-		location: 'City Park, Health Center',
-		image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&h=200&fit=crop',
-	},
-	{
-		id: 2,
-		title: 'Community Blood Donation Drive',
-		date: 'September 5, 2024',
-		location: 'Central Hospital, Main Hall',
-		image: 'https://images.unsplash.com/photo-1615461066841-6116e61058f4?w=400&h=200&fit=crop',
-	},
-]
+export interface EventItem {
+	id: string
+	title: string
+	category: string
+	category_label: string
+	event_date: string
+	event_time: string
+	end_time: string
+	location_type?: string
+	location?: string
+	registration_link?: string
+	description: string
+	cover_image_url?: string
+	status: string
+	created_at: string
+	updated_at?: string
+}
 
 interface UpcommingEventProps {
 	variant?: string
 }
 
+const DEFAULT_COVER_IMAGE = 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&h=200&fit=crop'
+
 export default function UpcomingEventsSection({ variant = 'row' }: UpcommingEventProps) {
+	const navigate = useNavigate()
+	const [events, setEvents] = useState<EventItem[]>([])
+	const [loading, setLoading] = useState(true)
+
+	useEffect(() => {
+		const fetchEvents = async () => {
+			try {
+				const res = await ApiService.get<any>(API_ENDPOINTS.EVENTS.PUBLIC)
+				setEvents(res.data?.data || [])
+			} catch (err) {
+				console.error('Failed to fetch events', err)
+				toast.error('Could not load upcoming events')
+			} finally {
+				setLoading(false)
+			}
+		}
+
+		fetchEvents()
+	}, [])
+
+	const formatDate = (dateString: string) => {
+		const d = new Date(dateString)
+		return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+	}
+
+	const formatTime = (timeString: string) => {
+		if (!timeString) return ''
+		const [h, m] = timeString.split(':')
+		const hr = parseInt(h, 10)
+		const suffix = hr >= 12 ? 'PM' : 'AM'
+		const hr12 = hr % 12 || 12
+		return `${hr12}:${m} ${suffix}`
+	}
+
+	if (loading) {
+		return (
+			<Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+				<CircularProgress color="primary" />
+			</Box>
+		)
+	}
+
+	if (events.length === 0) {
+		return null
+	}
+
 	return (
-		<Box>
+		<Box sx={{ py: 2 }}>
 			<Typography
-				variant={'h3'}
+				variant="h3"
 				align={variant === 'column' ? 'left' : 'center'}
-				mb={variant === 'column' ? 2 : 3}
-				// fontWeight={variant === 'column' ? 400 : 500}
-				fontWeight={500}
-				fontSize={variant === 'column' ? '16px' : '1.5rem'}
+				mb={4}
+				fontWeight={600}
+				fontSize={variant === 'column' ? '1.25rem' : '1.75rem'}
+				color="#0f172a"
 			>
 				Upcoming Events
 			</Typography>
 
-			<Grid container spacing={3} alignItems="stretch">
-				{/* Left: Event List */}
-				<Grid container size={{ xs: 12, md: variant === 'column' ? 12 : 4 }} spacing={2}>
-					{eventList.map((event) => (
+			<Grid container spacing={3}>
+				{events.map((event) => {
+					const dateStr = formatDate(event.event_date)
+					const timeStr = `${formatTime(event.event_time)} - ${formatTime(event.end_time)}`
+					
+					return (
 						<Grid
 							key={event.id}
-							sx={{
-								display: 'flex',
-								alignItems: 'center',
-								gap: 2,
-								borderRadius: '12px',
-								px: 2,
-								py: 1,
-								cursor: 'pointer',
-								bgcolor: '#fff',
-								// mb: 1.5,
-								width: '100%',
-								boxShadow: '0px 0px 9.65px 0px #00000029',
-								transition: '0.2s',
-								'&:hover': { transform: 'scale(1.01)' },
-							}}
+							size={{ xs: 12, sm: 6, md: 4 }}
+							sx={{ display: 'flex' }}
 						>
 							<Box
 								sx={{
-									minWidth: 44,
-									textAlign: 'center',
-									bgcolor: '#f0f4f8',
-									borderRadius: '8px',
-									py: 0.6,
-									px: 1,
+									display: 'flex',
+									flexDirection: 'column',
+									flex: 1,
+									bgcolor: '#ffffff',
+									borderRadius: '12px',
+									overflow: 'hidden',
+									border: '1px solid #e2e8f0',
+									boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05)',
+									transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+									'&:hover': { 
+										transform: 'translateY(-4px)',
+										boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05)'
+									},
 								}}
 							>
-								<Typography variant="body1" color="primary.main" fontWeight={700}>
-									{event.day}
-								</Typography>
-								<Typography variant="body1" color="primary.main" fontWeight={400} fontSize="10px">
-									{event.month}
-								</Typography>
-							</Box>
-
-							<Box sx={{ flex: 1, py: 1.5 }}>
-								<Typography sx={{ fontWeight: 600, fontSize: '13px' }}>{event.name}</Typography>
-								<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
-									{event.location}
-								</Typography>
-							</Box>
-
-							<ChevronRightIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
-						</Grid>
-					))}
-				</Grid>
-
-				{/* Right: Featured Events */}
-				<Grid size={{ xs: 12, md: variant === 'column' ? 12 : 8 }}>
-					<Box
-						sx={{
-							bgcolor: variant === 'column' ? '' : '#e4e7e7',
-							borderRadius: '8px',
-							p: variant === 'column' ? 0 : 3,
-							height: '100%',
-						}}
-					>
-						<Grid container spacing={2} alignItems="stretch">
-							{featuredEvents.map((event) => (
-								<Grid
-									key={event.id}
-									// size={{ xs: 12, sm: 6, md: variant === 'column' ? 12 : 6 }}
-									size={{ xs: 12, sm: 6 }}
-									sx={{ display: 'flex' }}
-								>
+								<Box sx={{ position: 'relative' }}>
 									<Box
+										component="img"
+										src={event.cover_image_url || DEFAULT_COVER_IMAGE}
+										alt={event.title}
 										sx={{
-											display: 'flex',
-											flexDirection: 'column',
-											flex: 1,
-											bgcolor: '#fff',
-											borderRadius: '6px',
+											width: '100%',
+											objectFit: 'cover',
+											height: 160,
+										}}
+									/>
+									<Chip
+										icon={<CategoryIcon sx={{ fontSize: '14px !important' }} />}
+										label={event.category_label}
+										size="small"
+										sx={{
+											position: 'absolute',
+											top: 12,
+											left: 12,
+											bgcolor: 'rgba(15, 23, 42, 0.75)',
+											color: 'white',
+											fontWeight: 600,
+											fontSize: '0.7rem',
+											backdropFilter: 'blur(4px)',
+											'& .MuiChip-icon': { color: 'white' },
+										}}
+									/>
+								</Box>
+
+								<Box sx={{ p: 2.5, display: 'flex', flexDirection: 'column', flex: 1 }}>
+
+									<Typography variant="h6" fontWeight={700} color="#0f172a" sx={{ mb: 2, fontSize: '1.1rem', lineHeight: 1.3 }}>
+										{event.title}
+									</Typography>
+
+									<Stack spacing={1.5} sx={{ mb: 2 }}>
+										<Stack direction="row" spacing={1.5} alignItems="flex-start">
+											<CalendarTodayIcon sx={{ fontSize: 18, color: '#64748b', mt: 0.2 }} />
+											<Box>
+												<Typography variant="body2" color="#334155" fontWeight={500}>
+													{dateStr} • {timeStr}
+												</Typography>
+											</Box>
+										</Stack>
+
+										<Stack direction="row" spacing={1.5} alignItems="flex-start">
+											<LocationOnOutlinedIcon sx={{ fontSize: 18, color: '#64748b', mt: 0.2 }} />
+											<Box>
+												<Typography variant="body2" color="#334155" fontWeight={500}>
+													{event.location_type === 'online' ? 'Online' : (event.location || 'Location not provided')}
+												</Typography>
+											</Box>
+										</Stack>
+									</Stack>
+
+									<Typography 
+										variant="body2" 
+										color="text.secondary"
+										sx={{ 
+											mb: 3, 
+											display: '-webkit-box',
+											WebkitLineClamp: 2,
+											WebkitBoxOrient: 'vertical',
 											overflow: 'hidden',
-											height: variant === 'column' ? '320px' : 'auto',
+											textOverflow: 'ellipsis',
+											flex: 1
 										}}
 									>
-										<Box
-											component="img"
-											src={event.image}
-											alt={event.title}
-											sx={{
-												width: '100%',
-												objectFit: 'cover',
-												height: variant === 'column' ? '140px' : '40%',
-											}}
+										{event.description}
+									</Typography>
+
+									<Stack direction="column" spacing={1.5} mt="auto">
+										<AppButton
+											label="Register Now"
+											fullWidth
+											onClick={() => event.registration_link && window.open(event.registration_link, '_blank')}
+											disabled={!event.registration_link}
+											sx={{ bgcolor: '#0d9488', '&:hover': { bgcolor: '#0f766e' }, borderRadius: 2 }}
 										/>
-
-										<Box
-											sx={{
-												p: 1.5,
-												display: 'flex',
-												flexDirection: 'column',
-												gap: 0.8,
-												flex: 1,
-											}}
-										>
-											<Typography variant="body1" fontWeight={600}>
-												{event.title}
-											</Typography>
-
-											<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-												<CalendarTodayIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
-												<Typography variant="body2">{event.date}</Typography>
-											</Box>
-
-											<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-												<LocationOnOutlinedIcon
-													sx={{ fontSize: 12, color: 'text.secondary' }}
-												/>
-												<Typography variant="body2">{event.location}</Typography>
-											</Box>
-
-											<AppButton
-												label="Register Now"
-												borderRadius="30px"
-												sx={{ mt: 'auto' }} // 🔥 aligns buttons
-											/>
-										</Box>
-									</Box>
-								</Grid>
-							))}
+										<AppButton
+											label="View Details"
+											fullWidth
+											variant="outlined"
+											onClick={() => navigate(ROUTES.EVENTS.DETAIL.replace(':id', event.id))}
+											sx={{ borderColor: '#0d9488', color: '#0d9488', borderRadius: 2 }}
+										/>
+									</Stack>
+								</Box>
+							</Box>
 						</Grid>
-					</Box>
-				</Grid>
+					)
+				})}
 			</Grid>
 		</Box>
 	)

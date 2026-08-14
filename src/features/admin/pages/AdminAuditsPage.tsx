@@ -19,7 +19,7 @@ import SmartToyIcon from '@mui/icons-material/SmartToy'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { toast } from 'react-toastify'
 
-import SectionCard from '../../../components/common/Card/SectionCard'
+// import SectionCard from '../../../components/common/Card/SectionCard'
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import AppButton from '../../../components/common/Button/AppButton'
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'

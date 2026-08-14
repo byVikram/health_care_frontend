@@ -8,7 +8,6 @@ import {
 	Avatar,
 	CircularProgress,
 	Grid,
-	Switch,
 	FormControlLabel,
 	IconButton,
 	Tooltip,
@@ -27,8 +26,8 @@ import StarIcon from '@mui/icons-material/Star'
 import AppSwitch from '../../../components/common/Switch/AppSwitch'
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
-import SectionCard from '../../../components/common/Card/SectionCard'
-import StatusBadge from '../../../components/admin/StatusBadge'
+// import SectionCard from '../../../components/common/Card/SectionCard'
+// import StatusBadge from '../../../components/admin/StatusBadge'
 import AppButton from '../../../components/common/Button/AppButton'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppSelect from '../../../components/common/Select/AppSelect'

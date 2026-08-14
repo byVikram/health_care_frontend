@@ -49,7 +49,7 @@ export default function DoctorEventListPage() {
 	const [events, setEvents] = useState<DoctorEvent[]>([])
 	const [loading, setLoading] = useState(true)
 	const [searchQuery, setSearchQuery] = useState('')
-	const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all')
+	const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft' | 'expired'>('all')
 
 	// Delete State
 	const [deleteOpen, setDeleteOpen] = useState(false)
@@ -136,10 +136,13 @@ export default function DoctorEventListPage() {
 				ev.category_label.toLowerCase().includes(searchQuery.toLowerCase()) ||
 				ev.description.toLowerCase().includes(searchQuery.toLowerCase())
 
+			const isExpired = Boolean((ev as any).is_expired)
+
 			const matchesStatus =
-				statusFilter === 'all' ||
-				(statusFilter === 'published' && ev.status === 'published') ||
-				(statusFilter === 'draft' && ev.status === 'draft')
+				(statusFilter === 'all' && !isExpired) ||
+				(statusFilter === 'published' && ev.status === 'published' && !isExpired) ||
+				(statusFilter === 'draft' && ev.status === 'draft' && !isExpired) ||
+				(statusFilter === 'expired' && isExpired)
 
 			return matchesSearch && matchesStatus
 		})
@@ -229,7 +232,7 @@ export default function DoctorEventListPage() {
 									}}
 									sx={{
 										'& .MuiOutlinedInput-root': {
-											borderRadius: 2,
+											borderRadius: '12px',
 											bgcolor: '#f8fafc',
 											'& fieldset': { borderColor: '#e2e8f0' },
 											'&:hover fieldset': { borderColor: '#cbd5e1' },
@@ -246,7 +249,7 @@ export default function DoctorEventListPage() {
 									scrollButtons="auto"
 									sx={{
 										minHeight: 40,
-										'& .MuiTabs-indicator': { bgcolor: '#0d9488', height: 3, borderRadius: '3px 3px 0 0' },
+										'& .MuiTabs-indicator': { bgcolor: '#0d9488', height: 3, borderRadius: '2px 2px 0 0' },
 										'& .MuiTab-root': {
 											textTransform: 'none',
 											fontWeight: 600,
@@ -257,9 +260,10 @@ export default function DoctorEventListPage() {
 										},
 									}}
 								>
-									<Tab label={`All (${events.length})`} value="all" />
-									<Tab label={`Published (${events.filter((e) => e.status === 'published').length})`} value="published" />
-									<Tab label={`Drafts (${events.filter((e) => e.status === 'draft').length})`} value="draft" />
+									<Tab label={`All (${events.filter(e => !(e as any).is_expired).length})`} value="all" />
+									<Tab label={`Published (${events.filter((e) => e.status === 'published' && !(e as any).is_expired).length})`} value="published" />
+									<Tab label={`Drafts (${events.filter((e) => e.status === 'draft' && !(e as any).is_expired).length})`} value="draft" />
+									<Tab label={`Expired (${events.filter((e) => (e as any).is_expired).length})`} value="expired" />
 								</Tabs>
 							</Grid>
 						</Grid>
@@ -281,7 +285,7 @@ export default function DoctorEventListPage() {
 							py: { xs: 8, sm: 10 },
 							px: 3,
 							bgcolor: 'white',
-							borderRadius: 4,
+							borderRadius: 2,
 							border: '1px solid #e2e8f0',
 							boxShadow: '0 4px 16px rgba(15, 23, 42, 0.03)',
 						}}
@@ -318,7 +322,7 @@ export default function DoctorEventListPage() {
 								bgcolor: '#0d9488',
 								color: '#ffffff',
 								textTransform: 'none',
-								borderRadius: 2.5,
+								borderRadius: 2,
 								fontWeight: 700,
 								px: 3.5,
 								py: 1.25,
@@ -337,7 +341,7 @@ export default function DoctorEventListPage() {
 							py: 8,
 							px: 3,
 							bgcolor: 'white',
-							borderRadius: 3,
+							borderRadius: 2,
 							border: '1px solid #e2e8f0',
 						}}
 					>
@@ -368,7 +372,7 @@ export default function DoctorEventListPage() {
 										height: '100%',
 										display: 'flex',
 										flexDirection: 'column',
-										borderRadius: 3.5,
+										borderRadius: 2,
 										boxShadow: '0 4px 18px rgba(15, 23, 42, 0.04)',
 										border: '1px solid #e2e8f0',
 										bgcolor: '#ffffff',
@@ -425,7 +429,7 @@ export default function DoctorEventListPage() {
 													fontWeight: 700,
 													fontSize: '0.72rem',
 													height: 23,
-													borderRadius: 1.5,
+													borderRadius: '6px',
 												}}
 											/>
 										</Box>
@@ -451,7 +455,7 @@ export default function DoctorEventListPage() {
 										</Typography>
 
 										{/* Event Details: Date, Time & Registration */}
-										<Stack spacing={1.25} sx={{ mb: 2.5, bgcolor: '#f8fafc', p: 1.75, borderRadius: 2.5, border: '1px solid #f1f5f9' }}>
+										<Stack spacing={1.25} sx={{ mb: 2.5, bgcolor: '#f8fafc', p: 1.75, borderRadius: 2, border: '1px solid #f1f5f9' }}>
 											<Stack direction="row" spacing={1.25} alignItems="center">
 												<CalendarTodayIcon sx={{ fontSize: 16, color: '#0d9488' }} />
 												<Typography variant="body2" sx={{ fontWeight: 600, color: '#334155', fontSize: '0.825rem' }}>
@@ -507,7 +511,7 @@ export default function DoctorEventListPage() {
 														onClick={() => handleEditClick(event.id)}
 														sx={{
 															border: '1px solid #e2e8f0',
-															borderRadius: 1.75,
+															borderRadius: 2,
 															color: '#0d9488',
 															bgcolor: '#f0fdfa',
 															'&:hover': { bgcolor: '#ccfbf1', borderColor: '#0d9488' },
@@ -522,7 +526,7 @@ export default function DoctorEventListPage() {
 														onClick={() => handleDeleteClick(event.id)}
 														sx={{
 															border: '1px solid #fecaca',
-															borderRadius: 1.75,
+															borderRadius: 2,
 															color: '#dc2626',
 															bgcolor: '#fff1f2',
 															'&:hover': { bgcolor: '#fee2e2', borderColor: '#f87171' },

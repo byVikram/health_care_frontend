@@ -28,7 +28,7 @@ import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
 import StatusBadge from '../../../components/admin/StatusBadge'
 import AdminEmptyState from '../../../components/admin/AdminEmptyState'
 import PaginationBar from '../../../pagination/Pagination'
-import RescheduleDrawer from '../../doctor/search/components/RescheduleDrawer'
+import AdminRescheduleDrawer from './AdminRescheduleDrawer'
 import { listAdminAppointments, AdminAppointmentItem } from '../adminService'
 import { useAdminAppointmentActions } from '../hooks/useAdminAppointmentActions'
 import { formatINR } from '../../../utils/Utils'
@@ -55,11 +55,17 @@ const formatDate = (dateStr?: string) =>
 		? new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 		: 'N/A'
 
-/** Strip seconds from a time string: "09:30:00" → "09:30" */
+/** Convert a 24-hour time string to 12-hour format with AM/PM: "14:00:00" → "2:00 PM" */
 const formatTime = (time?: string) => {
 	if (!time) return 'N/A'
 	const parts = time.split(':')
-	return parts.length >= 2 ? `${parts[0]}:${parts[1]}` : time
+	if (parts.length < 2) return time
+	let hours = parseInt(parts[0], 10)
+	const minutes = parts[1]
+	const period = hours >= 12 ? 'PM' : 'AM'
+	hours = hours % 12
+	if (hours === 0) hours = 12
+	return `${hours}:${minutes} ${period}`
 }
 
 interface AdminAppointmentCardsProps {
@@ -229,7 +235,7 @@ export default function AdminAppointmentCards({
 							color="#64748b"
 							sx={{ width: '28%', minWidth: 180, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem' }}
 						>
-							Appointment ID
+							Date & Time
 						</Typography>
 						<Typography
 							variant="caption"
@@ -237,7 +243,7 @@ export default function AdminAppointmentCards({
 							color="#64748b"
 							sx={{ width: '26%', minWidth: 160, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem' }}
 						>
-							{doctorId ? 'Patient' : 'Patient & Doctor'}
+							{doctorId ? 'Patient' : 'Doctor & Hospital'}
 						</Typography>
 						<Typography
 							variant="caption"
@@ -282,33 +288,32 @@ export default function AdminAppointmentCards({
 									'&:hover': { bgcolor: '#f8fafc' },
 								}}
 							>
-								{/* Appointment ID & Date/Time */}
+								{/* Date & Time */}
 								<Box sx={{ width: '28%', minWidth: 180 }}>
-									<Typography variant="body2" fontWeight={700} sx={{ fontFamily: 'monospace', color: '#0f172a', fontSize: '0.8rem' }}>
-										{row.id}
+									<Typography variant="body2" fontWeight={700} color="#0f172a">
+										{formatDate(row.appointment_date)}
 									</Typography>
 									<Typography variant="caption" color="text.secondary">
-										{formatDate(row.appointment_date)} @ {formatTime(row.start_time)}
+										{formatTime(row.start_time)}
 									</Typography>
 								</Box>
 
-								{/* Patient & Doctor */}
+								{/* Doctor */}
 								<Stack direction="row" spacing={1.5} alignItems="center" sx={{ width: '26%', minWidth: 160 }}>
 									<Avatar sx={{ bgcolor: 'rgba(13,148,136,0.12)', color: '#0d9488', width: 34, height: 34, fontSize: 12, fontWeight: 800 }}>
-										{(row.patient_name || 'P').substring(0, 1).toUpperCase()}
+										{(doctorId ? (row.patient_name || 'P') : (row.doctor_name || 'D')).substring(0, 1).toUpperCase()}
 									</Avatar>
 									<Box sx={{ minWidth: 0 }}>
 										<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
-											{doctorId ? (row.patient_name || 'N/A') : `Patient: ${row.patient_name || 'N/A'}`}
+											{doctorId ? (row.patient_name || 'N/A') : `Dr. ${row.doctor_name || 'N/A'}`}
 										</Typography>
 										<Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
 											{doctorId
 												? `${row.hospital_name || 'Clinic'}${row.doctor_speciality ? ` • ${row.doctor_speciality}` : ''}`
-												: `Dr. ${row.doctor_name || 'N/A'}`}
+												: (row.hospital_name || 'Clinic')}
 										</Typography>
 									</Box>
 								</Stack>
-
 								{/* Fee */}
 								<Box sx={{ width: '12%', minWidth: 80 }}>
 									<Typography variant="body2" fontWeight={700} color="#0d9488">
@@ -412,7 +417,7 @@ export default function AdminAppointmentCards({
 
 
 			{/* ── Reschedule Drawer (shared) ─────────────────────────────── */}
-			<RescheduleDrawer
+			<AdminRescheduleDrawer
 				rescheduleOpen={rescheduleOpen}
 				setRescheduleOpen={setRescheduleOpen}
 				rescheduleAppt={rescheduleAppt}

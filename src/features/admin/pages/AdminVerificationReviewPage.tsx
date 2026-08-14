@@ -25,8 +25,8 @@ import SchoolIcon from '@mui/icons-material/School'
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
 import PersonIcon from '@mui/icons-material/Person'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
-import WorkIcon from '@mui/icons-material/Work'
-import TranslateIcon from '@mui/icons-material/Translate'
+// import WorkIcon from '@mui/icons-material/Work'
+// import TranslateIcon from '@mui/icons-material/Translate'
 import PaymentsIcon from '@mui/icons-material/Payments'
 import { toast } from 'react-toastify'
 
@@ -48,6 +48,7 @@ import {
 	recordSingleDocumentReview,
 	DoctorVerificationDetail,
 	ProviderVerificationItem,
+	AuditHistoryEventItem,
 } from '../adminService'
 import { ROUTES } from '../../../constants/routes'
 
@@ -127,7 +128,7 @@ export default function AdminVerificationReviewPage() {
 			// 1. Fetch live audit history logs from backend first
 			const targetType = isDoctor ? 'doctor' : type || 'provider'
 			const auditRes = await getVerificationAuditHistory(targetType, id)
-			let fetchedAuditLogs: any[] = []
+			let fetchedAuditLogs: AuditHistoryEventItem[] = []
 
 			if (auditRes.success && auditRes.data) {
 				fetchedAuditLogs = auditRes.data

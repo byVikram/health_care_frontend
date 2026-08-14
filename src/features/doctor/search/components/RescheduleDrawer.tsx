@@ -91,7 +91,6 @@ export default function RescheduleDrawer({
 				}}
 				selectedTime={rescheduleTime}
 				onTimeChange={setRescheduleTime}
-				// availableSlots={rescheduleSlots.length > 0 ? rescheduleSlots : undefined}
 				availableSlots={rescheduleSlots}
 				loading={rescheduleSlotsLoading}
 				disableBookedSlots={true}
