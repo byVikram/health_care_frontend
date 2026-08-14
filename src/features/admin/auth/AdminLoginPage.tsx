@@ -1,4 +1,4 @@
-﻿// src/features/admin/auth/AdminLoginPage.tsx
+// src/features/admin/auth/AdminLoginPage.tsx
 import { useState } from 'react'
 import { Box, Container, Typography, Card, Stack, Avatar, Alert, IconButton } from '@mui/material'
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
@@ -75,51 +75,51 @@ export default function AdminLoginPage() {
 		<Box
 			sx={{
 				minHeight: '100vh',
-				bgcolor: '#0f172a',
+				bgcolor: '#f8fafc',
 				backgroundImage:
-					'radial-gradient(at 40% 20%, rgba(30, 58, 138, 0.4) 0px, transparent 50%), radial-gradient(at 80% 0%, rgba(13, 148, 136, 0.3) 0px, transparent 50%)',
+					'radial-gradient(at 20% 20%, rgba(13, 148, 136, 0.06) 0px, transparent 50%), radial-gradient(at 80% 80%, rgba(15, 23, 42, 0.04) 0px, transparent 50%)',
 				display: 'flex',
 				alignItems: 'center',
 				justifyContent: 'center',
-				p: 2,
+				p: 2.5,
 			}}
 		>
-			<Container maxWidth={false} sx={{ maxWidth: step === 'otp' ? 520 : 444 }}>
+			<Container maxWidth={false} sx={{ maxWidth: step === 'otp' ? 500 : 440 }}>
 				<Card
-					elevation={step === 'otp' ? 0 : 12}
+					elevation={0}
 					sx={{
-						borderRadius: 2,
-						p: 4,
-						bgcolor: step === 'otp' ? '#0f172a' : '#1e293b',
-						color: '#f8fafc',
-						border: step === 'otp' ? '1px solid transparent' : '1px solid rgba(255,255,255,0.1)',
-						boxShadow: step === 'otp' ? 'none' : '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+						borderRadius: '16px',
+						p: { xs: 3.5, sm: 4.5 },
+						bgcolor: '#ffffff',
+						color: '#0f172a',
+						border: '1px solid #e2e8f0',
+						boxShadow: '0 10px 30px -5px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.04)',
 					}}
 				>
-					<Stack alignItems="center" spacing={2} sx={{ mb: 3 }}>
+					<Stack alignItems="center" spacing={2} sx={{ mb: 3.5 }}>
 						<Avatar
 							sx={{
-								width: 64,
-								height: 64,
-								bgcolor: 'rgba(13, 148, 136, 0.2)',
+								width: 60,
+								height: 60,
+								bgcolor: 'rgba(13, 148, 136, 0.08)',
 								border: '2px solid #0d9488',
-								color: '#2dd4bf',
+								color: '#0d9488',
 							}}
 						>
-							<AdminPanelSettingsIcon sx={{ fontSize: 36 }} />
+							<AdminPanelSettingsIcon sx={{ fontSize: 34 }} />
 						</Avatar>
 						<Box textAlign="center">
-							<Typography variant="h5" fontWeight={700} sx={{ color: '#f8fafc', letterSpacing: -0.5 }}>
+							<Typography variant="h5" fontWeight={700} sx={{ color: '#0f172a', letterSpacing: -0.4 }}>
 								Admin Portal Login
 							</Typography>
-							<Typography variant="body2" sx={{ color: '#94a3b8', mt: 0.5 }}>
+							<Typography variant="body2" sx={{ color: '#64748b', mt: 0.5, fontSize: '0.875rem' }}>
 								Healthcare Management & Oversight System
 							</Typography>
 						</Box>
 					</Stack>
 
 					{errorMessage && (
-						<Alert severity="error" sx={{ mb: 2.5, borderRadius: 2 }}>
+						<Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
 							{errorMessage}
 						</Alert>
 					)}
@@ -136,30 +136,18 @@ export default function AdminLoginPage() {
 									size="medium"
 									sx={{
 										'& .MuiOutlinedInput-root': {
-											bgcolor: '#0f172a',
-											color: '#ffffff',
-											'& fieldset': { borderColor: '#334155' },
+											bgcolor: '#ffffff',
+											color: '#0f172a',
+											borderRadius: '10px',
+											'& fieldset': { borderColor: '#cbd5e1' },
 											'&:hover fieldset': { borderColor: '#0d9488' },
-											'&.Mui-focused fieldset': { borderColor: '#2dd4bf' },
+											'&.Mui-focused fieldset': { borderColor: '#0d9488' },
 										},
-										'& .MuiInputLabel-root': { color: '#94a3b8' },
-										// Prevent the browser's native autofill styling (white/yellow
-										// background) from overriding the dark theme once the user
-										// starts typing / the browser suggests a value.
+										'& .MuiInputLabel-root': { color: '#475569', fontWeight: 500 },
 										'& input:-webkit-autofill': {
-											WebkitBoxShadow: '0 0 0 100px #0f172a inset',
-											WebkitTextFillColor: '#ffffff',
-											caretColor: '#ffffff',
-											transition: 'background-color 5000s ease-in-out 0s',
-										},
-										'& input:-webkit-autofill:hover': {
-											WebkitBoxShadow: '0 0 0 100px #0f172a inset',
-										},
-										'& input:-webkit-autofill:focus': {
-											WebkitBoxShadow: '0 0 0 100px #0f172a inset',
-										},
-										'& input:-webkit-autofill:active': {
-											WebkitBoxShadow: '0 0 0 100px #0f172a inset',
+											WebkitBoxShadow: '0 0 0 100px #ffffff inset',
+											WebkitTextFillColor: '#0f172a',
+											caretColor: '#0f172a',
 										},
 									}}
 								/>
@@ -173,9 +161,10 @@ export default function AdminLoginPage() {
 									sx={{
 										py: 1.4,
 										bgcolor: '#0d9488',
+										color: '#ffffff',
 										fontWeight: 700,
 										fontSize: 15,
-										borderRadius: 2,
+										borderRadius: '10px',
 										'&:hover': { bgcolor: '#0f766e' },
 									}}
 								/>
@@ -187,7 +176,7 @@ export default function AdminLoginPage() {
 								<IconButton
 									onClick={() => setStep('login')}
 									aria-label="Back to mobile input"
-									sx={{ color: '#2dd4bf', p: 0.5, '&:hover': { bgcolor: 'rgba(45, 212, 191, 0.1)' } }}
+									sx={{ color: '#0d9488', p: 0.5, '&:hover': { bgcolor: 'rgba(13, 148, 136, 0.08)' } }}
 								>
 									<ArrowBackIcon />
 								</IconButton>
@@ -199,7 +188,7 @@ export default function AdminLoginPage() {
 									overflowX: 'hidden',
 								}}
 							>
-								<OtpForm mode="modal" contactNumber={contactNumber} onVerify={handleVerified} variant="dark" />
+								<OtpForm mode="modal" contactNumber={contactNumber} onVerify={handleVerified} variant="light" />
 							</Box>
 						</Box>
 					)}
