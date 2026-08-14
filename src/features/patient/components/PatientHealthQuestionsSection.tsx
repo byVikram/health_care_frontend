@@ -1,4 +1,4 @@
-﻿// src/features/patient/components/PatientHealthQuestionsSection.tsx
+// src/features/patient/components/PatientHealthQuestionsSection.tsx
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
@@ -146,18 +146,7 @@ function QuestionListCard({
 				'&:hover': { bgcolor: '#f2fafa' },
 			}}
 		>
-			<Avatar
-				src={q.patient_avatar}
-				sx={{
-					width: 38,
-					height: 38,
-					flexShrink: 0,
-					mt: 0.2,
-					border: '2px solid',
-					borderColor: isSelected ? '#0c7c7c' : '#e0e0e0',
-					transition: 'border-color 0.18s ease',
-				}}
-			/>
+
 			<Box sx={{ flex: 1, minWidth: 0 }}>
 				<Typography
 					sx={{

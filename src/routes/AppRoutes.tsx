@@ -58,6 +58,9 @@ import AdminSpecialitiesPage from '../features/admin/pages/AdminSpecialitiesPage
 import AdminBlogsPage from '../features/admin/pages/AdminBlogsPage'
 import AdminBlogCreatePage from '../features/admin/pages/AdminBlogCreatePage'
 import AdminBlogEditPage from '../features/admin/pages/AdminBlogEditPage'
+import AdminArticlesPage from '../features/admin/pages/AdminArticlesPage'
+import AdminArticleCreatePage from '../features/admin/pages/AdminArticleCreatePage'
+import AdminArticleEditPage from '../features/admin/pages/AdminArticleEditPage'
 import AdminCommentsPage from '../features/admin/pages/AdminCommentsPage'
 import AdminReviewsPage from '../features/admin/pages/AdminReviewsPage'
 import AdminAdsPage from '../features/admin/pages/AdminAdsPage'
@@ -147,6 +150,9 @@ export default function AppRoutes() {
 						<Route path={ROUTES.ADMIN.BLOGS} element={<AdminBlogsPage />} />
 						<Route path={ROUTES.ADMIN.BLOG_CREATE} element={<AdminBlogCreatePage />} />
 						<Route path={ROUTES.ADMIN.BLOG_EDIT} element={<AdminBlogEditPage />} />
+						<Route path={ROUTES.ADMIN.ARTICLES} element={<AdminArticlesPage />} />
+						<Route path={ROUTES.ADMIN.ARTICLE_CREATE} element={<AdminArticleCreatePage />} />
+						<Route path={ROUTES.ADMIN.ARTICLE_EDIT} element={<AdminArticleEditPage />} />
 						<Route path={ROUTES.ADMIN.COMMENTS} element={<AdminCommentsPage />} />
 						<Route path={ROUTES.ADMIN.REVIEWS} element={<AdminReviewsPage />} />
 						<Route path={ROUTES.ADMIN.ADS} element={<AdminAdsPage />} />

@@ -11,11 +11,11 @@ export interface DoctorEvent {
 	event_time: string // HH:MM:SS or HH:MM
 	end_time: string // HH:MM:SS or HH:MM
 	registration_link?: string
+	location_type?: 'online' | 'physical'
+	location?: string
 	description: string
 	cover_image_url?: string
 	status: 'draft' | 'published'
-	location_type: 'online' | 'offline'
-	location?: string
 	is_expired?: boolean
 	created_at: string
 	updated_at: string

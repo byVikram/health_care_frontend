@@ -331,12 +331,43 @@ export const getDashboardStats = async () => {
 	return res.data
 }
 
+export interface VerificationQueueListParams {
+	page?: number
+	pageSize?: number
+}
+
+export interface DoctorVerificationListResult {
+	items: DoctorVerificationItem[]
+	total: number
+}
+
+export interface ProviderVerificationListResult {
+	items: ProviderVerificationItem[]
+	total: number
+}
+
 /** GET /api/admin/doctors/verification-queue */
-export const getDoctorsVerificationQueue = async () => {
-	const res = await ApiService.get<{ success: boolean; data: DoctorVerificationItem[] }>(
-		API_ENDPOINTS.ADMIN.DOCTORS_VERIFICATION_QUEUE
+export const getDoctorsVerificationQueue = async (params: VerificationQueueListParams = {}) => {
+	const { page = 1, pageSize = 10 } = params
+	const res = await ApiService.getWithParams<{
+		success: boolean
+		data: DoctorVerificationItem[] | DoctorVerificationListResult
+	}>(
+		API_ENDPOINTS.ADMIN.DOCTORS_VERIFICATION_QUEUE,
+		{ page, page_size: pageSize }
 	)
-	return res.data
+
+	if (res.data?.success && res.data.data) {
+		if (Array.isArray(res.data.data)) {
+			const all = res.data.data
+			const total = all.length
+			const start = (page - 1) * pageSize
+			const items = all.slice(start, start + pageSize)
+			return { success: true, data: { items, total } }
+		}
+		return { success: true, data: res.data.data }
+	}
+	return { success: false, data: { items: [], total: 0 } }
 }
 
 /** POST /api/admin/doctors/:doctor_id/verify */
@@ -358,18 +389,27 @@ export const getDoctorVerificationDetail = async (doctorId: string) => {
 }
 
 /** GET /api/admin/providers/verification-queue */
-export const getProvidersVerificationQueue = async () => {
-	const res = await ApiService.get<{
+export const getProvidersVerificationQueue = async (params: VerificationQueueListParams = {}) => {
+	const { page = 1, pageSize = 10 } = params
+	const res = await ApiService.getWithParams<{
 		success: boolean
 		data: {
 			pharmacies: Array<{ id: string; owner_name: string; is_verified: boolean; created_at: string }>
 			radiology: Array<{ id: string; owner_name: string; is_verified: boolean; created_at: string }>
 			laboratories: Array<{ id: string; owner_name: string; is_verified: boolean; created_at: string }>
-		}
-	}>(API_ENDPOINTS.ADMIN.PROVIDERS_VERIFICATION_QUEUE)
+		} | ProviderVerificationListResult
+	}>(API_ENDPOINTS.ADMIN.PROVIDERS_VERIFICATION_QUEUE, { page, page_size: pageSize })
 
 	if (res.data?.success && res.data.data) {
-		const { pharmacies = [], radiology = [], laboratories = [] } = res.data.data
+		if ('items' in res.data.data && Array.isArray(res.data.data.items)) {
+			return { success: true, data: res.data.data as ProviderVerificationListResult }
+		}
+		const rawData = res.data.data as {
+			pharmacies?: Array<{ id: string; owner_name: string; is_verified: boolean; created_at: string }>
+			radiology?: Array<{ id: string; owner_name: string; is_verified: boolean; created_at: string }>
+			laboratories?: Array<{ id: string; owner_name: string; is_verified: boolean; created_at: string }>
+		}
+		const { pharmacies = [], radiology = [], laboratories = [] } = rawData
 		const flattened: ProviderVerificationItem[] = [
 			...pharmacies.map((item) => ({
 				id: item.id,
@@ -396,10 +436,13 @@ export const getProvidersVerificationQueue = async () => {
 				created_at: item.created_at,
 			})),
 		]
-		return { success: true, data: flattened }
+		const total = flattened.length
+		const start = (page - 1) * pageSize
+		const items = flattened.slice(start, start + pageSize)
+		return { success: true, data: { items, total } }
 	}
 
-	return { success: false, data: [] }
+	return { success: false, data: { items: [], total: 0 } }
 }
 
 /** POST /api/admin/providers/:provider_type/:provider_id/verify */
@@ -1011,3 +1054,61 @@ export const deleteAdminEvent = async (eventId: string) => {
 	)
 	return res.data
 }
+
+// ── 11. Admin Articles Management ──────────────────────────────────────────
+
+export interface AdminArticleItem {
+	id: string
+	title: string
+	summary: string
+	content: string
+	category: string
+	cover_image?: string
+	coverImage?: string
+	author: string
+	tags?: string
+	status: 'draft' | 'published' | string
+	publish_date?: string
+	publishDate?: string
+	created_at: string
+	createdAt?: string
+}
+
+export const listAdminArticles = async () => {
+	const res = await ApiService.get<AdminMutationResponse<AdminArticleItem[]>>(
+		API_ENDPOINTS.ADMIN.ARTICLES
+	)
+	return res.data
+}
+
+export const getAdminArticle = async (articleId: string) => {
+	const res = await ApiService.get<AdminMutationResponse<AdminArticleItem>>(
+		API_ENDPOINTS.ADMIN.ARTICLE_DETAIL(articleId)
+	)
+	return res.data
+}
+
+export const createAdminArticle = async (payload: Partial<AdminArticleItem>) => {
+	const res = await ApiService.post<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.ARTICLES,
+		payload
+	)
+	return res.data
+}
+
+export const updateAdminArticle = async (articleId: string, payload: Partial<AdminArticleItem>) => {
+	const res = await ApiService.put<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.ARTICLE_DETAIL(articleId),
+		payload
+	)
+	return res.data
+}
+
+export const deleteAdminArticle = async (articleId: string) => {
+	const res = await ApiService.delete<AdminMutationResponse>(
+		API_ENDPOINTS.ADMIN.ARTICLE_DETAIL(articleId)
+	)
+	return res.data
+}
+
+

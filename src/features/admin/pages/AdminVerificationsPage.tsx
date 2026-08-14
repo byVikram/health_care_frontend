@@ -110,10 +110,24 @@ export default function AdminVerificationsPage() {
 
 	const handleTabChange = (_: React.SyntheticEvent, val: 'doctors' | 'providers') => {
 		setActiveTab(val)
+		if (val === 'doctors') {
+			setDocPage(1)
+		} else {
+			setProvPage(1)
+		}
 		setSearchParams(val === 'providers' ? { tab: 'providers' } : {})
 	}
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
+
+	// ── Pagination ──────────────────────────────────────────────────────────
+	const [docPage, setDocPage] = useState(1)
+	const [docPageSize, setDocPageSize] = useState(10)
+	const [docTotalRows, setDocTotalRows] = useState(0)
+
+	const [provPage, setProvPage] = useState(1)
+	const [provPageSize, setProvPageSize] = useState(10)
+	const [provTotalRows, setProvTotalRows] = useState(0)
 
 	const [doctorsQueue, setDoctorsQueue] = useState<DoctorVerificationItem[]>([])
 	const [providersQueue, setProvidersQueue] = useState<ProviderVerificationItem[]>([])
@@ -132,17 +146,23 @@ export default function AdminVerificationsPage() {
 		setError(null)
 		try {
 			const [docRes, provRes] = await Promise.all([
-				getDoctorsVerificationQueue(),
-				getProvidersVerificationQueue(),
+				getDoctorsVerificationQueue({ page: docPage, pageSize: docPageSize }),
+				getProvidersVerificationQueue({ page: provPage, pageSize: provPageSize }),
 			])
-			if (docRes.success) setDoctorsQueue(docRes.data || [])
-			if (provRes.success) setProvidersQueue(provRes.data || [])
+			if (docRes.success && docRes.data) {
+				setDoctorsQueue(docRes.data.items || [])
+				setDocTotalRows(docRes.data.total ?? 0)
+			}
+			if (provRes.success && provRes.data) {
+				setProvidersQueue(provRes.data.items || [])
+				setProvTotalRows(provRes.data.total ?? 0)
+			}
 		} catch (err: unknown) {
 			setError(getErrorMessage(err, 'Failed to load verification queue.'))
 		} finally {
 			setLoading(false)
 		}
-	}, [])
+	}, [docPage, docPageSize, provPage, provPageSize])
 
 	useEffect(() => {
 		fetchQueues()
@@ -300,7 +320,7 @@ export default function AdminVerificationsPage() {
 									'&:hover': { borderColor: '#0d9488', bgcolor: 'rgba(13,148,136,0.06)' },
 								}}
 							>
-								<OpenInNewIcon sx={{ fontSize: 16 }} />
+								<VisibilityIcon sx={{ fontSize: 16 }} />
 							</IconButton>
 						</span>
 					</Tooltip>
@@ -404,7 +424,7 @@ export default function AdminVerificationsPage() {
 									'&:hover': { borderColor: '#0d9488', bgcolor: 'rgba(13,148,136,0.06)' },
 								}}
 							>
-								<OpenInNewIcon sx={{ fontSize: 16 }} />
+								<VisibilityIcon sx={{ fontSize: 16 }} />
 							</IconButton>
 						</span>
 					</Tooltip>
@@ -418,7 +438,7 @@ export default function AdminVerificationsPage() {
 			<AdminPageHeader
 				title="Verifications Center"
 				subtitle="Review, audit, approve, or reject healthcare providers and doctor credential applications."
-				count={doctorsQueue.length + providersQueue.length}
+				count={docTotalRows + provTotalRows}
 				countLabel="pending applications"
 			/>
 
@@ -427,7 +447,7 @@ export default function AdminVerificationsPage() {
 				<Grid size={{ xs: 12, sm: 4 }}>
 					<AdminStatCard
 						label="Pending Doctors Queue"
-						value={doctorsQueue.length}
+						value={docTotalRows}
 						icon={<LocalHospitalIcon />}
 						iconColor="#d97706"
 						iconBg="rgba(217,119,6,0.12)"
@@ -438,7 +458,7 @@ export default function AdminVerificationsPage() {
 				<Grid size={{ xs: 12, sm: 4 }}>
 					<AdminStatCard
 						label="Pending Providers Queue"
-						value={providersQueue.length}
+						value={provTotalRows}
 						icon={<StorefrontIcon />}
 						iconColor="#0d9488"
 						iconBg="rgba(13,148,136,0.12)"
@@ -449,7 +469,7 @@ export default function AdminVerificationsPage() {
 				<Grid size={{ xs: 12, sm: 4 }}>
 					<AdminStatCard
 						label="Total Applications"
-						value={doctorsQueue.length + providersQueue.length}
+						value={docTotalRows + provTotalRows}
 						icon={<AssignmentTurnedInIcon />}
 						iconColor="#2563eb"
 						iconBg="rgba(37,99,235,0.1)"
@@ -471,13 +491,13 @@ export default function AdminVerificationsPage() {
 			>
 				<Tab
 					value="doctors"
-					label={`Doctors Queue (${doctorsQueue.length})`}
+					label={`Doctors Queue (${docTotalRows})`}
 					icon={<LocalHospitalIcon sx={{ fontSize: 17 }} />}
 					iconPosition="start"
 				/>
 				<Tab
 					value="providers"
-					label={`Providers Queue (${providersQueue.length})`}
+					label={`Providers Queue (${provTotalRows})`}
 					icon={<StorefrontIcon sx={{ fontSize: 17 }} />}
 					iconPosition="start"
 				/>
@@ -497,7 +517,7 @@ export default function AdminVerificationsPage() {
 					</Typography>
 				</Stack>
 			) : activeTab === 'doctors' ? (
-				doctorsQueue.length === 0 ? (
+				docTotalRows === 0 ? (
 					<AdminEmptyState
 						icon={<VerifiedUserIcon />}
 						title="Doctors queue is clear"
@@ -509,9 +529,17 @@ export default function AdminVerificationsPage() {
 						rows={doctorsQueue}
 						emptyMessage="No doctors awaiting verification."
 						onRowClick={(doc) => handleOpenReview('doctor', doc)}
+						page={docPage}
+						pageSize={docPageSize}
+						totalRows={docTotalRows}
+						onPageChange={(newPage) => setDocPage(newPage)}
+						onPageSizeChange={(newSize) => {
+							setDocPageSize(newSize)
+							setDocPage(1)
+						}}
 					/>
 				)
-			) : providersQueue.length === 0 ? (
+			) : provTotalRows === 0 ? (
 				<AdminEmptyState
 					icon={<VerifiedUserIcon />}
 					title="Providers queue is clear"
@@ -523,6 +551,14 @@ export default function AdminVerificationsPage() {
 					rows={providersQueue}
 					emptyMessage="No providers awaiting verification."
 					onRowClick={(prov) => handleOpenReview('provider', prov)}
+					page={provPage}
+					pageSize={provPageSize}
+					totalRows={provTotalRows}
+					onPageChange={(newPage) => setProvPage(newPage)}
+					onPageSizeChange={(newSize) => {
+						setProvPageSize(newSize)
+						setProvPage(1)
+					}}
 				/>
 			)}
 

@@ -2,10 +2,15 @@
 import ApiService from './apiService'
 
 export interface BlogAuthor {
-	id: string
+	id?: string
 	name: string
 	bio?: string
 	avatar_url?: string
+	avatar?: string
+	designation?: string
+	specialty?: string
+	credentials?: string
+	experience?: string
 }
 
 export interface BlogPost {

@@ -39,6 +39,7 @@ import GroupsIcon from '@mui/icons-material/Groups'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer'
+import MenuBookIcon from '@mui/icons-material/MenuBook'
 
 import { useAuth, clearAuth } from '../../hooks/useAuth'
 import { ROUTES } from '../../constants/routes'
@@ -76,6 +77,7 @@ const NAV_GROUPS: NavGroup[] = [
 		groupLabel: 'Content',
 		items: [
 			{ label: 'Blog Posts', path: ROUTES.ADMIN.BLOGS, icon: <ArticleIcon /> },
+			{ label: 'Articles', path: ROUTES.ADMIN.ARTICLES, icon: <MenuBookIcon /> },
 			{ label: 'Communities', path: ROUTES.ADMIN.COMMUNITIES, icon: <GroupsIcon /> },
 			{ label: 'Events', path: ROUTES.ADMIN.EVENTS, icon: <EventNoteIcon /> },
 			{ label: 'Comments', path: ROUTES.ADMIN.COMMENTS, icon: <CommentIcon /> },

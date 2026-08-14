@@ -29,6 +29,7 @@ import { getBlogPost, getBlogComments, createBlogComment, BlogPost, BlogComment 
 import { getActiveAds, trackAdMetric, AdPlacementConfig } from '../../services/adService'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../hooks/useAuth'
+import AuthorInfoCard from '../../components/common/AuthorInfoCard'
 
 const renderInFeedAd = (matchingAd: AdPlacementConfig, idx: number, onAdClick: (adId: string, url: string) => void) => (
 	<Card
@@ -441,6 +442,9 @@ export default function BlogArticlePage() {
 								<Box className="article-body">
 									{renderContentParagraphs(blog.content, ads, handleAdClick)}
 								</Box>
+
+								{/* Author Information Section */}
+								<AuthorInfoCard author={blog.author} />
 							</CardContent>
 						</Card>
 
