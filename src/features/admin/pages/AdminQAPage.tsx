@@ -20,7 +20,7 @@ import {
 } from "@mui/material"
 import AppInput from "../../../components/common/Input/AppInput"
 import SearchIcon from "@mui/icons-material/Search"
-import OpenInNewIcon from "@mui/icons-material/OpenInNew"
+import VisibilityIcon from "@mui/icons-material/Visibility"
 import QuestionAnswerIcon from "@mui/icons-material/QuestionAnswer"
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline"
 import HideSourceIcon from "@mui/icons-material/HideSource"
@@ -495,7 +495,7 @@ export default function AdminQAPage() {
 						}}
 						sx={{ border: "1px solid #e2e8f0", borderRadius: 1.5, color: "#0d9488" }}
 					>
-						<OpenInNewIcon sx={{ fontSize: 15 }} />
+						<VisibilityIcon sx={{ fontSize: 15 }} />
 					</IconButton>
 				</Tooltip>
 			),

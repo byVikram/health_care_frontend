@@ -1,12 +1,14 @@
 // src/features/doctor/DoctorDetailPage.tsx
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { Box, Container, Typography, Divider, Grid, Card } from '@mui/material'
+import { Box, Container, Typography, Divider, Grid, Card, Avatar, Chip, Button, Alert, Radio } from '@mui/material'
 import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined'
 // import ApartmentOutlinedIcon from '@mui/icons-material/ApartmentOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
+import PersonIcon from '@mui/icons-material/Person'
 import DoctorProfileCard from './components/DoctorProfileCard'
 import AppSelect from '../../../components/common/Select/AppSelect'
+import AppInput from '../../../components/common/Input/AppInput'
 // import AppointmentTypeSelector from './components/AppointmentTypeSelector'
 import AppButton from '../../../components/common/Button/AppButton'
 import DateSlotPicker, { SlotGroup, TimeSlot } from '../../../components/common/DateSlotPicker/DateSlotPicker'
@@ -35,6 +37,69 @@ type ApiAvailabilityBlock = {
 	appointment_mode?: ApiAvailabilityMode
 	sessions?: SlotGroup[]
 }
+
+export interface PatientProfile {
+	id: string
+	name: string
+	age: string | number
+	gender: string
+	relationship: string
+	avatar?: string
+	bloodGroup?: string
+}
+
+const DEFAULT_PATIENT_PROFILES: PatientProfile[] = [
+	{
+		id: 'self-1',
+		name: 'John Doe',
+		age: '45',
+		gender: 'Male',
+		relationship: 'Self',
+		avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+		bloodGroup: 'O+',
+	},
+	{
+		id: 'spouse-2',
+		name: 'Jane Doe',
+		age: '42',
+		gender: 'Female',
+		relationship: 'Spouse',
+		avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
+		bloodGroup: 'O+',
+	},
+	{
+		id: 'child-3',
+		name: 'Tommy Doe',
+		age: '12',
+		gender: 'Male',
+		relationship: 'Child',
+		avatar: 'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?auto=format&fit=crop&w=200&q=80',
+		bloodGroup: 'O-',
+	},
+	{
+		id: 'parent-4',
+		name: 'Mary Doe',
+		age: '70',
+		gender: 'Female',
+		relationship: 'Parent',
+		avatar: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=200&q=80',
+		bloodGroup: 'B+',
+	},
+]
+
+const GENDER_OPTIONS = [
+	{ value: 'Male', label: 'Male' },
+	{ value: 'Female', label: 'Female' },
+	{ value: 'Other', label: 'Other' },
+]
+
+const RELATIONSHIP_OPTIONS = [
+	{ value: 'Self', label: 'Self' },
+	{ value: 'Parent', label: 'Parent' },
+	{ value: 'Spouse', label: 'Spouse' },
+	{ value: 'Child', label: 'Child' },
+	{ value: 'Other', label: 'Other' },
+]
 
 const EMPTY_MODE_SLOTS: Record<AvailabilityMode, SlotGroup[]> = { clinic: [], video: [] }
 
@@ -71,6 +136,20 @@ export default function DoctorDetailPage() {
 	const [showFullAbout, setShowFullAbout] = useState(false)
 	const [selectedAchievement, setSelectedAchievement] = useState<AchievementCardData | null>(null)
 	const [detailsModalOpen, setDetailsModalOpen] = useState(false)
+
+	// Patient selection / Booking For state
+	const [patientProfiles, setPatientProfiles] = useState<PatientProfile[]>(DEFAULT_PATIENT_PROFILES)
+	const [selectedPatientId, setSelectedPatientId] = useState<string>('self-1')
+
+	// Modals State
+	const [switchPatientModalOpen, setSwitchPatientModalOpen] = useState(false)
+	const [addMemberOpen, setAddMemberOpen] = useState(false)
+	const [newMemberName, setNewMemberName] = useState('')
+	const [newMemberAge, setNewMemberAge] = useState('')
+	const [newMemberGender, setNewMemberGender] = useState('Male')
+	const [newMemberRelation, setNewMemberRelation] = useState('Parent')
+	const [addMemberError, setAddMemberError] = useState<string | null>(null)
+
 
 
 	const [bookingSuccessModal, setBookingSuccessModal] = useState(false)
@@ -118,6 +197,34 @@ export default function DoctorDetailPage() {
 			setConsentOpen(true)
 			setPendingBooking(false)
 		}
+	}
+
+	const selectedPatient = patientProfiles.find((p) => p.id === selectedPatientId) || patientProfiles[0]
+
+	const handleSaveNewMember = () => {
+		if (!newMemberName.trim()) {
+			setAddMemberError('Please enter full name')
+			return
+		}
+		if (!newMemberAge.trim()) {
+			setAddMemberError('Please enter age')
+			return
+		}
+
+		const created: PatientProfile = {
+			id: `fam-${Date.now()}`,
+			name: newMemberName.trim(),
+			age: newMemberAge.trim(),
+			gender: newMemberGender,
+			relationship: newMemberRelation,
+		}
+
+		setPatientProfiles((prev) => [...prev, created])
+		setSelectedPatientId(created.id)
+		setAddMemberOpen(false)
+		setNewMemberName('')
+		setNewMemberAge('')
+		setAddMemberError(null)
 	}
 
 	const primaryHospital =
@@ -402,13 +509,6 @@ export default function DoctorDetailPage() {
 													{showFullAbout ? 'Show less' : 'Read more'}
 												</Typography>
 											</Typography>
-											{/* <Divider sx={{ my: 2 }} />
-											<Typography variant="h5" sx={{ mb: 0.5 }}>
-												Working Time
-											</Typography>
-											<Typography variant="body2">
-												{primaryHospital?.working_hours || 'Not available'}
-											</Typography> */}
 										</Box>
 										<ProfessionalDetailsSection doctorDetail={doctorDetail} />
 										{doctorDetail.achievements && doctorDetail.achievements.length > 0 && (
@@ -498,13 +598,6 @@ export default function DoctorDetailPage() {
 												</Typography>
 											)}
 										</Box>
-										{/* <Box sx={{ ...customCardStyle, p: 3 }}>
-											<AppointmentTypeSelector
-												types={appointmentTypes}
-												selected={selectedType}
-												onChange={setSelectedType}
-											/>
-										</Box> */}
 									</>
 								)}
 							</Box>
@@ -521,12 +614,85 @@ export default function DoctorDetailPage() {
 								p: 3,
 								display: 'flex',
 								flexDirection: 'column',
-								gap: 3,
+								gap: 2.25,
 							}}
 						>
+							{/* Booking For (Patient Selection) Section */}
+							<Box>
+								<Typography variant="h6" sx={{ mb: 1, fontWeight: 600, fontSize: '15.5px', color: 'text.primary' }}>
+									Booking For
+								</Typography>
+
+								{selectedPatient && (
+									<Box
+										onClick={() => setSwitchPatientModalOpen(true)}
+										sx={{
+											p: 1.35,
+											borderRadius: '10px',
+											bgcolor: 'rgba(43,111,113,0.06)',
+											border: '1px solid',
+											borderColor: 'rgba(43,111,113,0.18)',
+											display: 'flex',
+											alignItems: 'center',
+											justifyContent: 'space-between',
+											cursor: 'pointer',
+											transition: 'all 0.2s ease',
+											'&:hover': {
+												bgcolor: 'rgba(43,111,113,0.1)',
+												borderColor: 'primary.main',
+											},
+										}}
+									>
+										<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0, flex: 1 }}>
+											<Avatar
+												src={selectedPatient.avatar}
+												sx={{
+													width: 34,
+													height: 34,
+													bgcolor: 'primary.main',
+													fontSize: '13px',
+													fontWeight: 700,
+													color: '#fff',
+												}}
+											>
+												{selectedPatient.name.charAt(0).toUpperCase()}
+											</Avatar>
+											<Box sx={{ minWidth: 0, flex: 1 }}>
+												<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+													<Typography
+														variant="subtitle2"
+														noWrap
+														sx={{ fontWeight: 700, fontSize: '13px', color: 'text.primary', lineHeight: 1.2 }}
+													>
+														{selectedPatient.name}
+													</Typography>
+													<Chip
+														label={selectedPatient.relationship}
+														size="small"
+														sx={{
+															height: 18,
+															fontSize: '10px',
+															fontWeight: 700,
+															bgcolor: selectedPatient.relationship === 'Self' ? 'primary.main' : 'rgba(15,23,42,0.08)',
+															color: selectedPatient.relationship === 'Self' ? '#ffffff' : 'text.primary',
+															'& .MuiChip-label': { px: 0.75 },
+														}}
+													/>
+												</Box>
+												<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '11.5px', display: 'block', mt: 0.25 }}>
+													{selectedPatient.age} Yrs • {selectedPatient.gender} {selectedPatient.bloodGroup ? `• Blood: ${selectedPatient.bloodGroup}` : ''}
+												</Typography>
+											</Box>
+										</Box>
+										<Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 600, fontSize: '12px', ml: 1, flexShrink: 0 }}>
+											Switch
+										</Typography>
+									</Box>
+								)}
+							</Box>
 
 							<Box>
-								<Typography variant="h6" sx={{ mb: 1, fontWeight: 600, fontSize: '16px', color: 'text.primary' }}>
+								<Typography variant="h6" sx={{ mb: 1, fontWeight: 600, fontSize: '15.5px', color: 'text.primary' }}>
 									Choose Hospital
 								</Typography>
 								<AppSelect
@@ -595,10 +761,6 @@ export default function DoctorDetailPage() {
 								videoPrice={appointmentTypes[1]?.price}
 							/>
 
-
-
-
-
 							{!loading && (
 								<AppButton
 									label="Book Appointment"
@@ -646,6 +808,11 @@ export default function DoctorDetailPage() {
 					setConsentOpen(false)
 					navigate('/payment', {
 						state: {
+							patient: selectedPatient,
+							patientName: selectedPatient.name,
+							patientRelation: selectedPatient.relationship,
+							patientAge: selectedPatient.age,
+							patientGender: selectedPatient.gender,
 							doctorName: doctorDetail?.name ?? '',
 							avatarUrl: buildS3Url(doctorDetail?.details?.avatar_s3_key),
 							specialty: doctorDetail?.specialities?.[0] ?? 'Doctor',
@@ -679,11 +846,196 @@ export default function DoctorDetailPage() {
 				hideCancelButton
 			/>
 
-			<AchievementDetailsModal
-				open={detailsModalOpen}
-				onClose={() => setDetailsModalOpen(false)}
-				achievement={selectedAchievement}
-			/>
+			{/* Switch Patient Profile Modal */}
+			<AppModal
+				open={switchPatientModalOpen}
+				onClose={() => setSwitchPatientModalOpen(false)}
+				title="Select Patient Profile"
+				maxWidth="xs"
+				fullWidth
+			>
+				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 1, pb: 1 }}>
+					<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '12.5px' }}>
+						Choose who this appointment / booking is for:
+					</Typography>
+
+					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, maxHeight: 320, overflowY: 'auto', pr: 0.5 }}>
+						{patientProfiles.map((profile) => {
+							const isSelected = profile.id === selectedPatientId
+							return (
+								<Box
+									key={profile.id}
+									onClick={() => {
+										setSelectedPatientId(profile.id)
+										setSwitchPatientModalOpen(false)
+									}}
+									sx={{
+										p: 1.5,
+										borderRadius: '10px',
+										border: '1px solid',
+										borderColor: isSelected ? 'primary.main' : 'divider',
+										bgcolor: isSelected ? 'rgba(43,111,113,0.08)' : 'background.paper',
+										display: 'flex',
+										alignItems: 'center',
+										justifyContent: 'space-between',
+										cursor: 'pointer',
+										transition: 'all 0.15s ease',
+										'&:hover': {
+											borderColor: 'primary.main',
+											bgcolor: isSelected ? 'rgba(43,111,113,0.1)' : 'action.hover',
+										},
+									}}
+								>
+									<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+										<Avatar
+											src={profile.avatar}
+											sx={{
+												width: 38,
+												height: 38,
+												bgcolor: isSelected ? 'primary.main' : 'grey.400',
+												fontSize: '14px',
+												fontWeight: 700,
+												color: '#fff',
+											}}
+										>
+											{profile.name.charAt(0).toUpperCase()}
+										</Avatar>
+										<Box>
+											<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+												<Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '13.5px', color: 'text.primary' }}>
+													{profile.name}
+												</Typography>
+												<Chip
+													label={profile.relationship}
+													size="small"
+													sx={{
+														height: 18,
+														fontSize: '10px',
+														fontWeight: 700,
+														bgcolor: profile.relationship === 'Self' ? 'primary.main' : 'rgba(15,23,42,0.08)',
+														color: profile.relationship === 'Self' ? '#ffffff' : 'text.primary',
+														'& .MuiChip-label': { px: 0.75 },
+													}}
+												/>
+											</Box>
+											<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '11.5px' }}>
+												{profile.age} Yrs • {profile.gender} {profile.bloodGroup ? `• BG: ${profile.bloodGroup}` : ''}
+											</Typography>
+										</Box>
+									</Box>
+
+									<Radio
+										checked={isSelected}
+										onChange={() => {
+											setSelectedPatientId(profile.id)
+											setSwitchPatientModalOpen(false)
+										}}
+										size="small"
+										sx={{ color: isSelected ? 'primary.main' : 'action.active' }}
+									/>
+								</Box>
+							)
+						})}
+					</Box>
+
+					<Button
+						fullWidth
+						variant="outlined"
+						onClick={() => {
+							setSwitchPatientModalOpen(false)
+							setNewMemberName('')
+							setNewMemberAge('')
+							setNewMemberGender('Male')
+							setNewMemberRelation('Parent')
+							setAddMemberError(null)
+							setAddMemberOpen(true)
+						}}
+						sx={{
+							mt: 1,
+							borderRadius: '10px',
+							textTransform: 'none',
+							fontWeight: 600,
+							borderColor: 'primary.main',
+							color: 'primary.main',
+							py: 1,
+						}}
+					>
+						+ Add New Family Member
+					</Button>
+				</Box>
+			</AppModal>
+
+			{/* Add Family Member / Relation Modal */}
+			<AppModal
+				open={addMemberOpen}
+				onClose={() => setAddMemberOpen(false)}
+				title="Add New Family Member"
+				maxWidth="xs"
+				fullWidth
+			>
+				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1, pb: 1 }}>
+					{addMemberError && (
+						<Alert severity="error" sx={{ borderRadius: '8px', py: 0.5, fontSize: '13px' }}>
+							{addMemberError}
+						</Alert>
+					)}
+
+					<AppInput
+						label="Full Name"
+						placeholder="Enter patient full name"
+						value={newMemberName}
+						onChange={(e) => setNewMemberName(e.target.value)}
+						fullWidth
+					/>
+
+					<Grid container spacing={2}>
+						<Grid size={{ xs: 6 }}>
+							<AppInput
+								label="Age"
+								type="number"
+								placeholder="Age"
+								value={newMemberAge}
+								onChange={(e) => setNewMemberAge(e.target.value)}
+								fullWidth
+							/>
+						</Grid>
+						<Grid size={{ xs: 6 }}>
+							<AppSelect
+								label="Gender"
+								value={newMemberGender}
+								onChange={(e) => setNewMemberGender(e.target.value as string)}
+								options={GENDER_OPTIONS}
+								fullWidth
+							/>
+						</Grid>
+					</Grid>
+
+					<AppSelect
+						label="Relationship"
+						value={newMemberRelation}
+						onChange={(e) => setNewMemberRelation(e.target.value as string)}
+						options={RELATIONSHIP_OPTIONS.filter((r) => r.value !== 'Self')}
+						fullWidth
+					/>
+
+					<Box sx={{ mt: 1, display: 'flex', gap: 1.5, justifyContent: 'flex-end' }}>
+						<AppButton
+							label="Cancel"
+							variant="outlined"
+							onClick={() => setAddMemberOpen(false)}
+							sx={{ borderRadius: '8px' }}
+						/>
+						<AppButton
+							label="Save & Select"
+							variant="contained"
+							color="primary"
+							onClick={handleSaveNewMember}
+							sx={{ borderRadius: '8px' }}
+						/>
+					</Box>
+				</Box>
+			</AppModal>
 		</Box>
 	)
 }
+
