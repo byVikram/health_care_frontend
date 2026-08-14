@@ -30,6 +30,9 @@ export const API_ENDPOINTS = {
 		DELETE_ACCOUNT: '/api/doctors/profile',
 		ACHIEVEMENTS: '/api/doctors/achievements',
 		ACHIEVEMENT_BY_ID: (publicId: string) => `/api/doctors/achievements/${publicId}`,
+		BANK_DETAILS: '/api/doctors/bank-details',
+		BANK_DETAILS_REQUEST_OTP: '/api/doctors/bank-details/request-otp',
+		BANK_DETAILS_VERIFY_OTP: '/api/doctors/bank-details/verify-otp',
 	},
 	LABORATORY_PROFILE: {
 		DETAILS: '/api/laboratory/details',

@@ -538,3 +538,68 @@ export const deleteAchievement = async (publicId: string) => {
 	const res = await ApiService.delete(API_ENDPOINTS.DOCTOR_PROFILE.ACHIEVEMENT_BY_ID(publicId))
 	return res.data
 }
+
+// -- Doctor bank details --------------------------------------------------------
+
+export type BankAccountType = 'savings' | 'current'
+
+export interface BankDetails {
+	account_holder_name: string
+	bank_name: string
+	branch_name: string | null
+	account_number: string
+	ifsc_code: string
+	account_type: BankAccountType
+	upi_id: string | null
+	pan_number: string | null
+	is_locked: boolean
+	updated_at: string
+}
+
+export interface BankDetailsPayload {
+	account_holder_name: string
+	bank_name: string
+	branch_name?: string | null
+	account_number: string
+	confirm_account_number: string
+	ifsc_code: string
+	account_type: BankAccountType
+	upi_id?: string | null
+	pan_number?: string | null
+}
+
+export interface BankDetailsResponse {
+	success: boolean
+	message: string
+	data: BankDetails | null
+}
+
+export const getBankDetails = async (): Promise<BankDetailsResponse> => {
+	const res = await ApiService.get<BankDetailsResponse>(API_ENDPOINTS.DOCTOR_PROFILE.BANK_DETAILS)
+	return res.data
+}
+
+export const createBankDetails = async (payload: BankDetailsPayload): Promise<BankDetailsResponse> => {
+	const res = await ApiService.post<BankDetailsResponse>(API_ENDPOINTS.DOCTOR_PROFILE.BANK_DETAILS, payload)
+	return res.data
+}
+
+export const updateBankDetails = async (payload: BankDetailsPayload): Promise<BankDetailsResponse> => {
+	const res = await ApiService.patch<BankDetailsResponse>(API_ENDPOINTS.DOCTOR_PROFILE.BANK_DETAILS, payload)
+	return res.data
+}
+
+export const requestBankDetailsEditOtp = async (): Promise<{ success: boolean; message: string }> => {
+	const res = await ApiService.post<{ success: boolean; message: string }>(
+		API_ENDPOINTS.DOCTOR_PROFILE.BANK_DETAILS_REQUEST_OTP,
+		{}
+	)
+	return res.data
+}
+
+export const verifyBankDetailsEditOtp = async (otp: string): Promise<BankDetailsResponse> => {
+	const res = await ApiService.post<BankDetailsResponse>(API_ENDPOINTS.DOCTOR_PROFILE.BANK_DETAILS_VERIFY_OTP, {
+		otp,
+	})
+	return res.data
+}
