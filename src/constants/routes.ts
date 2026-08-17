@@ -120,5 +120,6 @@ export const ROUTES = {
 		ARTICLES: '/admin/articles',
 		ARTICLE_CREATE: '/admin/articles/create',
 		ARTICLE_EDIT: '/admin/articles/edit/:id',
+		ADMINS: '/admin/admins',
 	},
 }

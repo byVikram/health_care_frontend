@@ -56,45 +56,57 @@ interface NavGroup {
 	items: MenuItemDef[]
 }
 
-const NAV_GROUPS: NavGroup[] = [
-	{
-		groupLabel: 'Overview',
-		items: [
-			{ label: 'Dashboard', path: ROUTES.ADMIN.DASHBOARD, icon: <DashboardIcon /> },
-		],
-	},
-	{
-		groupLabel: 'Operations',
-		items: [
-			{ label: 'Verifications', path: ROUTES.ADMIN.VERIFICATIONS, icon: <VerifiedUserIcon /> },
-			{ label: 'Users', path: ROUTES.ADMIN.USERS, icon: <PeopleIcon /> },
-			{ label: 'Reviews', path: ROUTES.ADMIN.REVIEWS, icon: <RateReviewIcon /> },
-			{ label: 'Appointments', path: ROUTES.ADMIN.APPOINTMENTS, icon: <EventNoteIcon /> },
-			{ label: 'Billing', path: ROUTES.ADMIN.BILLING, icon: <ReceiptLongIcon /> },
-		],
-	},
-	{
-		groupLabel: 'Content',
-		items: [
-			{ label: 'Blog Posts', path: ROUTES.ADMIN.BLOGS, icon: <ArticleIcon /> },
-			{ label: 'Articles', path: ROUTES.ADMIN.ARTICLES, icon: <MenuBookIcon /> },
-			{ label: 'Communities', path: ROUTES.ADMIN.COMMUNITIES, icon: <GroupsIcon /> },
-			{ label: 'Events', path: ROUTES.ADMIN.EVENTS, icon: <EventNoteIcon /> },
-			{ label: 'Comments', path: ROUTES.ADMIN.COMMENTS, icon: <CommentIcon /> },
-			{ label: 'Q&As', path: ROUTES.ADMIN.QA, icon: <QuestionAnswerIcon /> },
-			{ label: 'Advertisements', path: ROUTES.ADMIN.ADS, icon: <CampaignIcon /> },
-		],
-	},
-	{
+const getNavGroups = (userRole: string | null): NavGroup[] => {
+	const groups: NavGroup[] = [
+		{
+			groupLabel: 'Overview',
+			items: [
+				{ label: 'Dashboard', path: ROUTES.ADMIN.DASHBOARD, icon: <DashboardIcon /> },
+			],
+		},
+		{
+			groupLabel: 'Operations',
+			items: [
+				{ label: 'Verifications', path: ROUTES.ADMIN.VERIFICATIONS, icon: <VerifiedUserIcon /> },
+				{ label: 'Users', path: ROUTES.ADMIN.USERS, icon: <PeopleIcon /> },
+				{ label: 'Reviews', path: ROUTES.ADMIN.REVIEWS, icon: <RateReviewIcon /> },
+				{ label: 'Appointments', path: ROUTES.ADMIN.APPOINTMENTS, icon: <EventNoteIcon /> },
+				{ label: 'Billing', path: ROUTES.ADMIN.BILLING, icon: <ReceiptLongIcon /> },
+			],
+		},
+		{
+			groupLabel: 'Content',
+			items: [
+				{ label: 'Blog Posts', path: ROUTES.ADMIN.BLOGS, icon: <ArticleIcon /> },
+				{ label: 'Articles', path: ROUTES.ADMIN.ARTICLES, icon: <MenuBookIcon /> },
+				{ label: 'Communities', path: ROUTES.ADMIN.COMMUNITIES, icon: <GroupsIcon /> },
+				{ label: 'Events', path: ROUTES.ADMIN.EVENTS, icon: <EventNoteIcon /> },
+				{ label: 'Comments', path: ROUTES.ADMIN.COMMENTS, icon: <CommentIcon /> },
+				{ label: 'Q&As', path: ROUTES.ADMIN.QA, icon: <QuestionAnswerIcon /> },
+				{ label: 'Advertisements', path: ROUTES.ADMIN.ADS, icon: <CampaignIcon /> },
+			],
+		},
+	]
+
+	if (userRole === 'super_admin') {
+		groups.push({
+			groupLabel: 'Admins',
+			items: [
+				{ label: 'Admins', path: ROUTES.ADMIN.ADMINS, icon: <AdminPanelSettingsIcon /> },
+			],
+		})
+	}
+
+	groups.push({
 		groupLabel: 'System',
 		items: [
 			{ label: 'Specialities', path: ROUTES.ADMIN.SPECIALITIES, icon: <CategoryIcon /> },
 			{ label: 'Audit Logs', path: ROUTES.ADMIN.AUDITS, icon: <AssessmentIcon /> },
 		],
-	},
-]
+	})
 
-const ALL_ITEMS: MenuItemDef[] = NAV_GROUPS.flatMap((g) => g.items)
+	return groups
+}
 
 export default function AdminLayout() {
 	const navigate = useNavigate()
@@ -103,6 +115,10 @@ export default function AdminLayout() {
 	const [mobileOpen, setMobileOpen] = useState(false)
 	const [collapsed, setCollapsed] = useState(false)
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+
+	const navGroups = getNavGroups(role)
+	const allItems = navGroups.flatMap((g) => g.items)
+
 
 	const sidebarWidth = collapsed ? 76 : 260
 
@@ -182,7 +198,7 @@ export default function AdminLayout() {
 
 			{/* ── Navigation Groups ── */}
 			<Box sx={{ flex: 1, py: 2, px: collapsed ? 1 : 1.5, overflowY: 'auto', ...customScrollbar }}>
-				{NAV_GROUPS.map((group, gi) => (
+				{navGroups.map((group, gi) => (
 					<Box key={group.groupLabel} sx={{ mb: collapsed ? 1.5 : 0.5 }}>
 						{!collapsed && (
 							<Typography
@@ -342,7 +358,7 @@ export default function AdminLayout() {
 		</Box>
 	)
 
-	const currentPageLabel = ALL_ITEMS.find((m) => isActive(m.path))?.label || 'Admin Portal'
+	const currentPageLabel = allItems.find((m) => isActive(m.path))?.label || 'Admin Portal'
 
 	return (
 		<Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f8fafc' }}>
