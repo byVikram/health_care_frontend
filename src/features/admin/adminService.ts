@@ -1111,4 +1111,70 @@ export const deleteAdminArticle = async (articleId: string) => {
 	return res.data
 }
 
+// ── Admin Management (Sub Admins) ──
+export interface SubAdminItem {
+	id?: string | number
+	public_id: string
+	name: string
+	email: string
+	contact_number: string
+	role: 'support_admin' | 'billing_admin' | 'compliance_admin' | string
+	department?: string | null
+	is_suspended: boolean
+	created_at?: string
+}
+
+export interface CreateSubAdminPayload {
+	name: string
+	email: string
+	contact_number: string
+	password?: string
+	role: 'support_admin' | 'billing_admin' | 'compliance_admin'
+	department?: string
+}
+
+export interface SubAdminListParams {
+	role?: string
+	page?: number
+	pageSize?: number
+}
+
+export interface SubAdminListResult {
+	items: SubAdminItem[]
+	total: number
+	page: number
+	page_size: number
+}
+
+export const listSubAdmins = async (params: SubAdminListParams = {}) => {
+	const res = await ApiService.get<AdminMutationResponse<SubAdminListResult>>(
+		API_ENDPOINTS.ADMIN.SUB_ADMINS,
+		{
+			params: {
+				role: params.role || undefined,
+				page: params.page || 1,
+				page_size: params.pageSize || 10,
+			},
+		}
+	)
+	return res.data
+}
+
+export const createSubAdmin = async (payload: CreateSubAdminPayload) => {
+	const res = await ApiService.post<AdminMutationResponse<SubAdminItem>>(
+		API_ENDPOINTS.ADMIN.SUB_ADMINS,
+		payload
+	)
+	return res.data
+}
+
+export const updateSubAdminStatus = async (publicId: string, isSuspended: boolean) => {
+	const res = await ApiService.patch<AdminMutationResponse<SubAdminItem>>(
+		API_ENDPOINTS.ADMIN.SUB_ADMIN_STATUS(publicId),
+		{ is_suspended: isSuspended }
+	)
+	return res.data
+}
+
+
 

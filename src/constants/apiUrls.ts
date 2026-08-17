@@ -202,6 +202,8 @@ export const API_ENDPOINTS = {
 		QA_REPLY_STATUS: (id: string) => `/api/admin/qa/replies/${id}/status`,
 		ARTICLES: '/api/admin/articles',
 		ARTICLE_DETAIL: (id: string) => `/api/admin/articles/${id}`,
+		SUB_ADMINS: '/api/admin/sub-admins',
+		SUB_ADMIN_STATUS: (publicId: string) => `/api/admin/sub-admins/${publicId}/status`,
 	},
 	EVENTS: {
 		PUBLIC: '/api/events/public',

@@ -62,13 +62,14 @@ export default function AppDrawer({
 				paper: {
 					sx: {
 						width: { xs: '100%', sm: width },
-						borderRadius: '16px',
-						m: 2,
-						height: 'calc(100% - 32px)',
+						top: '64px',
+						height: 'calc(100vh - 64px)',
+						m: 0,
+						borderRadius: '16px 0 0 0',
 						p: 0,
 						display: 'flex',
 						flexDirection: 'column',
-						boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+						boxShadow: '-4px 0 24px rgba(0,0,0,0.08)',
 						...sx
 					},
 				},
