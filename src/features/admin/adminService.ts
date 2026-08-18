@@ -21,6 +21,9 @@ export interface DoctorVerificationItem {
 	is_verified: boolean
 	created_at: string
 	license_proof_s3_key?: string
+	assigned_admin_id?: string | null
+	assigned_admin_name?: string | null
+	assigned_at?: string | null
 }
 
 export interface DocumentReviewItemPayload {
@@ -1177,4 +1180,19 @@ export const updateSubAdminStatus = async (publicId: string, isSuspended: boolea
 }
 
 
+// ── Doctor Verification Assignment ─────────────────────────────────────────────
 
+export interface AssignDoctorsResult {
+	assigned_to_id: string
+	assigned_count: number
+	doctor_ids: string[]
+}
+
+/** POST /api/admin/doctors/assign -- Super Admin routes doctors to a compliance_admin Sub Admin. */
+export const assignDoctorsToSubadmin = async (doctorIds: string[], assignedToId: string) => {
+	const res = await ApiService.post<AdminMutationResponse<AssignDoctorsResult>>(
+		API_ENDPOINTS.ADMIN.ASSIGN_DOCTORS,
+		{ doctor_ids: doctorIds, assigned_to_id: assignedToId }
+	)
+	return res.data
+}
