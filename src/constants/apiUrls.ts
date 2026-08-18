@@ -204,6 +204,7 @@ export const API_ENDPOINTS = {
 		ARTICLE_DETAIL: (id: string) => `/api/admin/articles/${id}`,
 		SUB_ADMINS: '/api/admin/sub-admins',
 		SUB_ADMIN_STATUS: (publicId: string) => `/api/admin/sub-admins/${publicId}/status`,
+		ASSIGN_DOCTORS: '/api/admin/doctors/assign',
 	},
 	EVENTS: {
 		PUBLIC: '/api/events/public',

@@ -1,4 +1,4 @@
-// src/features/admin/pages/AdminVerificationsPage.tsx
+﻿// src/features/admin/pages/AdminVerificationsPage.tsx
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
@@ -15,6 +15,7 @@ import {
 	Tooltip,
 	Avatar,
 	Grid,
+	Checkbox,
 } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
@@ -29,8 +30,10 @@ import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn'
 // import CloseIcon from '@mui/icons-material/Close'
 import { toast } from 'react-toastify'
 
+import { useAuth } from '../../../hooks/useAuth'
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import AppButton from '../../../components/common/Button/AppButton'
+import AppSelect from '../../../components/common/Select/AppSelect'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppDrawer from '../../../components/common/Drawer/AppDrawer'
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
@@ -48,6 +51,9 @@ import {
 	ProviderVerificationItem,
 	DoctorVerificationDetail,
 	DoctorVerificationDocument,
+	listSubAdmins,
+	assignDoctorsToSubadmin,
+	SubAdminItem,
 } from '../adminService'
 import { buildS3Url } from '../../../utils/s3'
 
@@ -96,6 +102,8 @@ function SectionHeader({ title }: { title: string }) {
 }
 
 export default function AdminVerificationsPage() {
+	const { role } = useAuth()
+	const isSuperAdmin = role === 'super_admin'
 	const navigate = useNavigate()
 	const [searchParams, setSearchParams] = useSearchParams()
 	const initialTab = searchParams.get('tab') === 'providers' ? 'providers' : 'doctors'
@@ -131,6 +139,52 @@ export default function AdminVerificationsPage() {
 
 	const [doctorsQueue, setDoctorsQueue] = useState<DoctorVerificationItem[]>([])
 	const [providersQueue, setProvidersQueue] = useState<ProviderVerificationItem[]>([])
+
+	// ── Doctor -> Sub Admin assignment (bulk select + assign) ────────────────
+	const [selectedDoctorIds, setSelectedDoctorIds] = useState<string[]>([])
+	const [subAdmins, setSubAdmins] = useState<SubAdminItem[]>([])
+	const [assigning, setAssigning] = useState(false)
+
+	useEffect(() => {
+		if (!isSuperAdmin) return
+		listSubAdmins({ role: 'compliance_admin', pageSize: 100 })
+			.then((res) => {
+				if (res.success && res.data) {
+					setSubAdmins(res.data.items || [])
+				}
+			})
+			.catch(() => {
+				// Non-fatal -- the assign dropdown simply stays empty.
+			})
+	}, [isSuperAdmin])
+
+	const toggleDoctorSelection = (id: string) => {
+		setSelectedDoctorIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+	}
+
+	const handleAssignToSubAdmin: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+		const assignedToId = e.target.value
+		if (!assignedToId) return
+		if (selectedDoctorIds.length === 0) {
+			toast.info('Select at least one doctor to assign first.')
+			return
+		}
+
+		setAssigning(true)
+		try {
+			const res = await assignDoctorsToSubadmin(selectedDoctorIds, assignedToId)
+			if (res.success) {
+				const subAdminName = subAdmins.find((s) => s.public_id === assignedToId)?.name
+				toast.success(`${selectedDoctorIds.length} doctor(s) assigned to ${subAdminName || 'Sub Admin'}.`)
+				setSelectedDoctorIds([])
+				fetchQueues()
+			}
+		} catch (err: unknown) {
+			toast.error(getErrorMessage(err, 'Failed to assign doctors.'))
+		} finally {
+			setAssigning(false)
+		}
+	}
 
 	// Drawer state (for fallback inline inspections)
 	const [drawerOpen, setDrawerOpen] = useState(false)
@@ -230,21 +284,27 @@ export default function AdminVerificationsPage() {
 		{
 			field: 'name',
 			label: 'Applicant',
-			render: (_: unknown, row: DoctorVerificationItem) => (
-				<Stack direction="row" spacing={1.5} alignItems="center">
-					<Avatar sx={{ bgcolor: 'rgba(13,148,136,0.12)', color: '#0d9488', width: 38, height: 38, fontSize: 14, fontWeight: 800 }}>
-						{(row.name || 'D').substring(0, 1).toUpperCase()}
-					</Avatar>
-					<Box sx={{ minWidth: 0 }}>
-						<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
-							Dr. {row.name}
-						</Typography>
-						<Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-							ID: #{row.public_id || row.id}
-						</Typography>
-					</Box>
-				</Stack>
-			),
+			render: (_: unknown, row: DoctorVerificationItem) => {
+				const rowId = row.public_id || row.id
+				return (
+					<Stack direction="row" spacing={1} alignItems="center">
+						{isSuperAdmin && (
+							<Checkbox
+								size="medium"
+								checked={selectedDoctorIds.includes(rowId)}
+								onClick={(e) => e.stopPropagation()}
+								onChange={() => toggleDoctorSelection(rowId)}
+								sx={{ p: 0.75, color: '#cbd5e1', '& .MuiSvgIcon-root': { fontSize: 24 }, '&.Mui-checked': { color: '#0d9488' } }}
+							/>
+						)}
+						<Box sx={{ minWidth: 0 }}>
+							<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
+								Dr. {row.name}
+							</Typography>
+						</Box>
+					</Stack>
+				)
+			},
 		},
 		{
 			field: 'email',
@@ -293,10 +353,17 @@ export default function AdminVerificationsPage() {
 			field: 'is_verified',
 			label: 'Status',
 			render: (_: unknown, row: DoctorVerificationItem) => (
-				<StatusBadge
-					status={row.is_verified ? 'verified' : 'pending'}
-					label={row.is_verified ? 'Verified' : 'Awaiting Review'}
-				/>
+				<Box>
+					<StatusBadge
+						status={row.is_verified ? 'verified' : 'pending'}
+						label={row.is_verified ? 'Verified' : 'Awaiting Review'}
+					/>
+					{row.assigned_admin_name && (
+						<Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+							Assigned: {row.assigned_admin_name}
+						</Typography>
+					)}
+				</Box>
 			),
 		},
 		{
@@ -479,29 +546,61 @@ export default function AdminVerificationsPage() {
 			</Grid>
 
 			{/* Main Queue Tabs & Table */}
-			<Tabs
-				value={activeTab}
-				onChange={handleTabChange}
-				sx={{
-					mb: 2.5,
-					'& .MuiTab-root': { textTransform: 'none', fontWeight: 700, fontSize: 13.5 },
-					'& .Mui-selected': { color: '#0d9488 !important' },
-					'& .MuiTabs-indicator': { bgcolor: '#0d9488', height: 3 },
-				}}
-			>
-				<Tab
-					value="doctors"
-					label={`Doctors Queue (${docTotalRows})`}
-					icon={<LocalHospitalIcon sx={{ fontSize: 17 }} />}
-					iconPosition="start"
-				/>
-				<Tab
-					value="providers"
-					label={`Providers Queue (${provTotalRows})`}
-					icon={<StorefrontIcon sx={{ fontSize: 17 }} />}
-					iconPosition="start"
-				/>
-			</Tabs>
+			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 2.5 }}>
+				<Tabs
+					value={activeTab}
+					onChange={handleTabChange}
+					sx={{
+						'& .MuiTab-root': { textTransform: 'none', fontWeight: 700, fontSize: 13.5 },
+						'& .Mui-selected': { color: '#0d9488 !important' },
+						'& .MuiTabs-indicator': { bgcolor: '#0d9488', height: 3 },
+					}}
+				>
+					<Tab
+						value="doctors"
+						label={`Doctors Queue (${docTotalRows})`}
+						icon={<LocalHospitalIcon sx={{ fontSize: 17 }} />}
+						iconPosition="start"
+					/>
+					<Tab
+						value="providers"
+						label={`Providers Queue (${provTotalRows})`}
+						icon={<StorefrontIcon sx={{ fontSize: 17 }} />}
+						iconPosition="start"
+					/>
+				</Tabs>
+
+				{activeTab === 'doctors' && isSuperAdmin && (
+					<Stack direction="row" spacing={1.5} alignItems="center">
+						{selectedDoctorIds.length > 0 && (
+							<Chip
+								label={`${selectedDoctorIds.length} selected`}
+								size="small"
+								sx={{ bgcolor: 'rgba(13,148,136,0.1)', color: '#0d9488', fontWeight: 700 }}
+							/>
+						)}
+						<Box sx={{ minWidth: 220 }}>
+							<AppSelect
+								placeholder={
+									assigning
+										? 'Assigning...'
+										: selectedDoctorIds.length === 0
+										? 'Select doctors to assign'
+										: 'Assign to Sub Admin'
+								}
+								value=""
+								disabled={assigning}
+								onChange={handleAssignToSubAdmin}
+								options={
+									subAdmins.length > 0
+										? subAdmins.map((s) => ({ value: s.public_id, label: s.name || s.email || 'Unnamed' }))
+										: [{ value: '', label: 'No sub admins available', disabled: true }]
+								}
+							/>
+						</Box>
+					</Stack>
+				)}
+			</Box>
 
 			{error && (
 				<Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
