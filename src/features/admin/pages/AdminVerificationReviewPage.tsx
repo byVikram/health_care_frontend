@@ -3,37 +3,37 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
 	Box,
-	Grid,
 	Typography,
 	Chip,
 	Stack,
 	CircularProgress,
 	Alert,
-	Avatar,
 	Divider,
 	IconButton,
 	Tooltip,
+	Avatar,
+	Grid,
 } from '@mui/material'
-import AppButton from '../../../components/common/Button/AppButton'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore'
 import NavigateNextIcon from '@mui/icons-material/NavigateNext'
+import PersonIcon from '@mui/icons-material/Person'
 import EmailIcon from '@mui/icons-material/Email'
 import PhoneIcon from '@mui/icons-material/Phone'
 import BadgeIcon from '@mui/icons-material/Badge'
 import SchoolIcon from '@mui/icons-material/School'
-import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
-import PersonIcon from '@mui/icons-material/Person'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
-// import WorkIcon from '@mui/icons-material/Work'
-// import TranslateIcon from '@mui/icons-material/Translate'
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
 import PaymentsIcon from '@mui/icons-material/Payments'
+import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
 import { toast } from 'react-toastify'
 
-import StatusBadge from '../../../components/admin/StatusBadge'
+import { ROUTES } from '../../../constants/routes'
+import AppButton from '../../../components/common/Button/AppButton'
 import AppInput from '../../../components/common/Input/AppInput'
+import StatusBadge from '../../../components/admin/StatusBadge'
 
-import DocumentRail, { VerificationDocumentItem, DocumentStatus } from '../../../components/admin/verification/DocumentRail'
+import DocumentRail from '../../../components/admin/verification/DocumentRail'
 import DocumentViewer from '../../../components/admin/verification/DocumentViewer'
 import IssueFlagSelector from '../../../components/admin/verification/IssueFlagSelector'
 import AuditTimeline, { AuditTimelineEvent } from '../../../components/admin/verification/AuditTimeline'
@@ -42,6 +42,7 @@ import VerificationActionBar from '../../../components/admin/verification/Verifi
 import {
 	getDoctorVerificationDetail,
 	getProvidersVerificationQueue,
+	getProviderAdminDetail,
 	verifyDoctor,
 	verifyProvider,
 	getVerificationAuditHistory,
@@ -50,39 +51,62 @@ import {
 	ProviderVerificationItem,
 	AuditHistoryEventItem,
 } from '../adminService'
-import { ROUTES } from '../../../constants/routes'
 
-const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
+export type DocumentStatus =
+	| 'verified'
+	| 'requires_reupload'
+	| 'rejected'
+	| 'not_reviewed'
+	| 'flagged'
+	| 'under_review'
 
-const formatDoctorName = (name?: string) => {
-	if (!name) return ''
-	const clean = name.trim()
-	if (clean.toLowerCase().startsWith('dr.') || clean.toLowerCase().startsWith('dr ')) {
-		return clean
-	}
-	return `Dr. ${clean}`
+export interface VerificationDocumentItem {
+	id: string
+	name: string
+	url: string
+	type: string
+	status: DocumentStatus
+	issueTag?: string
 }
 
-const calculateAge = (dob?: string) => {
-	if (!dob) return null
-	const birthDate = new Date(dob)
-	if (isNaN(birthDate.getTime())) return null
-	const ageDiffMs = Date.now() - birthDate.getTime()
-	const ageDate = new Date(ageDiffMs)
-	return Math.abs(ageDate.getUTCFullYear() - 1970)
+const getErrorMessage = (err: unknown, fallback: string) =>
+	err instanceof Error ? err.message : fallback
+
+function calculateAge(dateOfBirth?: string | null): number | null {
+	if (!dateOfBirth) return null
+	const dob = new Date(dateOfBirth)
+	if (isNaN(dob.getTime())) return null
+	const diffMs = Date.now() - dob.getTime()
+	const ageDt = new Date(diffMs)
+	return Math.abs(ageDt.getUTCFullYear() - 1970)
 }
 
-function InfoTile({ label, value, icon }: { label: string; value?: string | number | null; icon?: React.ReactElement }) {
+function formatDoctorName(rawName?: string | null): string {
+	if (!rawName) return 'Dr. Applicant'
+	const trimmed = rawName.trim()
+	if (/^dr\.?/i.test(trimmed)) return trimmed
+	return `Dr. ${trimmed}`
+}
+
+function InfoTile({
+	label,
+	value,
+	icon,
+}: {
+	label: string
+	value?: string | number | null
+	icon?: React.ReactNode
+}) {
 	return (
-		<Box sx={{ p: 1.25, bgcolor: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
-			<Stack direction="row" spacing={0.6} alignItems="center" sx={{ mb: 0.25 }}>
+		<Box sx={{ p: 1.25, bgcolor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+			<Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.25 }}>
 				{icon}
-				<Typography variant="caption" fontWeight={700} color="#64748b" sx={{ textTransform: 'uppercase', fontSize: '10px', letterSpacing: '0.04em' }}>
+				<Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
 					{label}
 				</Typography>
 			</Stack>
-			<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap sx={{ fontSize: '13px' }}>
-				{value ?? '—'}
+			<Typography variant="body2" fontWeight={800} color="#0f172a" noWrap sx={{ fontSize: '13px' }}>
+				{value || '—'}
 			</Typography>
 		</Box>
 	)
@@ -118,6 +142,7 @@ export default function AdminVerificationReviewPage() {
 	])
 
 	const isDoctor = type === 'doctor'
+	const isNurse = type === 'ancillary' || type === 'nurse'
 
 	const fetchData = useCallback(async () => {
 		if (!id) return
@@ -126,7 +151,7 @@ export default function AdminVerificationReviewPage() {
 
 		try {
 			// 1. Fetch live audit history logs from backend first
-			const targetType = isDoctor ? 'doctor' : type || 'provider'
+			const targetType = isDoctor ? 'doctor' : isNurse ? 'ancillary' : type || 'provider'
 			const auditRes = await getVerificationAuditHistory(targetType, id)
 			let fetchedAuditLogs: AuditHistoryEventItem[] = []
 
@@ -170,7 +195,7 @@ export default function AdminVerificationReviewPage() {
 					: undefined
 			}
 
-			// 2. Fetch doctor verification detail or providers
+			// 2. Fetch doctor verification detail or providers / nurses
 			if (isDoctor) {
 				const res = await getDoctorVerificationDetail(id)
 				if (res.success && res.data) {
@@ -243,27 +268,86 @@ export default function AdminVerificationReviewPage() {
 					setError('Doctor verification details could not be loaded.')
 				}
 			} else {
-				const res = await getProvidersVerificationQueue()
-				if (res.success && res.data) {
-					const items = Array.isArray(res.data) ? res.data : (res.data as { items?: ProviderVerificationItem[] }).items || []
-					const matched = items.find((p: ProviderVerificationItem) => p.id === id || p.public_id === id)
-					if (matched) {
-						setProviderItem(matched)
-						if (matched.license_proof_s3_key) {
-							const dId = 'prov_license'
-							const dName = 'Business License Proof'
-							setDocuments([
-								{
-									id: dId,
-									name: dName,
-									url: matched.license_proof_s3_key,
-									type: 'license',
-									status: getDocStatus(dId, dName),
-									issueTag: getDocIssueTag(dId, dName),
-								},
-							])
+				// Fetch detail endpoint for nurse / provider
+				let matchedProvider: ProviderVerificationItem | null = null
+
+				try {
+					const detailRes = await getProviderAdminDetail(isNurse ? 'ancillary' : type || 'pharmacy', id)
+					if (detailRes.success && detailRes.data) {
+						const d = detailRes.data
+						matchedProvider = {
+							id: d.provider_id || id,
+							public_id: d.provider_id || id,
+							provider_type: (d.provider_type as any) || (type as any) || 'ancillary',
+							name: d.owner_name || d.business_name || (isNurse ? 'Nurse Professional' : 'Provider'),
+							owner_name: (d.owner_name || d.business_name) ?? undefined,
+							email: d.email || undefined,
+							contact_number: d.contact_number || undefined,
+							license_number: d.license_number || undefined,
+							license_proof_s3_key: d.avatar_s3_key || undefined,
+							specialty: d.specialty || undefined,
+							qualifications: d.qualifications || undefined,
+							capabilities: d.capabilities || [],
+							is_verified: d.is_verified,
+							verification_status: d.verification_status,
+							created_at: d.registration_date || new Date().toISOString(),
 						}
 					}
+				} catch {
+					// Fallback to queue if detail endpoint error
+				}
+
+				if (!matchedProvider) {
+					const res = await getProvidersVerificationQueue()
+					if (res.success && res.data) {
+						const rawData = res.data as any
+						const items: ProviderVerificationItem[] = Array.isArray(res.data)
+							? res.data
+							: Array.isArray(rawData.items)
+							? rawData.items
+							: [
+									...(rawData.ancillary || []),
+									...(rawData.pharmacies || []),
+									...(rawData.radiology || []),
+									...(rawData.laboratories || []),
+							  ]
+						const matched = items.find((p: ProviderVerificationItem) => p.id === id || p.public_id === id)
+						if (matched) {
+							matchedProvider = matched
+						}
+					}
+				}
+
+				if (matchedProvider) {
+					setProviderItem(matchedProvider)
+					const docs: VerificationDocumentItem[] = []
+
+					if (matchedProvider.license_proof_s3_key) {
+						const dId = 'prov_license'
+						const dName = isNurse ? 'Nursing License Document' : 'Business License Proof'
+						docs.push({
+							id: dId,
+							name: dName,
+							url: matchedProvider.license_proof_s3_key,
+							type: 'license',
+							status: getDocStatus(dId, dName),
+							issueTag: getDocIssueTag(dId, dName),
+						})
+					} else {
+						const dId = 'nurse_credential'
+						const dName = isNurse ? 'Nurse Professional Registration & License' : 'Facility Provider Registration'
+						docs.push({
+							id: dId,
+							name: dName,
+							url: '',
+							type: 'registration_license',
+							status: getDocStatus(dId, dName),
+							issueTag: getDocIssueTag(dId, dName),
+						})
+					}
+					setDocuments(docs)
+				} else {
+					setError('Verification details could not be loaded.')
 				}
 			}
 		} catch (err: unknown) {
@@ -271,7 +355,7 @@ export default function AdminVerificationReviewPage() {
 		} finally {
 			setLoading(false)
 		}
-	}, [id, isDoctor, type])
+	}, [id, isDoctor, isNurse, type])
 
 	useEffect(() => {
 		fetchData()
@@ -333,7 +417,7 @@ export default function AdminVerificationReviewPage() {
 							...d,
 							status: nextStatus,
 							issueTag: selectedFlags.length > 0 ? selectedFlags.join(', ') : undefined,
-						}
+					  }
 					: d
 			)
 		)
@@ -351,7 +435,7 @@ export default function AdminVerificationReviewPage() {
 		])
 
 		try {
-			const targetType = isDoctor ? 'doctor' : type || 'provider'
+			const targetType = isDoctor ? 'doctor' : isNurse ? 'ancillary' : type || 'provider'
 			await recordSingleDocumentReview({
 				target_type: targetType,
 				target_id: id,
@@ -362,7 +446,6 @@ export default function AdminVerificationReviewPage() {
 				notes: reviewerNotes.trim() || undefined,
 			})
 			toast.success(`Document "${activeDoc.name}" status saved to database.`)
-			// Refresh to update precise audit trail logs and status
 			await fetchData()
 		} catch (err: unknown) {
 			toast.error(getErrorMessage(err, 'Failed to save document status to database.'))
@@ -397,7 +480,7 @@ export default function AdminVerificationReviewPage() {
 					navigate(ROUTES.ADMIN.VERIFICATIONS)
 				}
 			} else {
-				const pType = providerItem?.provider_type || (type as ProviderVerificationItem['provider_type']) || 'pharmacy'
+				const pType = isNurse ? 'ancillary' : providerItem?.provider_type || (type as any) || 'pharmacy'
 				const res = await verifyProvider(pType, id, {
 					is_verified: isApproved,
 					rejection_reason: !isApproved ? notesPayload.trim() || undefined : undefined,
@@ -406,7 +489,7 @@ export default function AdminVerificationReviewPage() {
 					document_reviews: docReviewsPayload,
 				})
 				if (res.success) {
-					toast.success(`Provider ${providerItem?.name || id} verification verdict submitted: ${verdict.toUpperCase()}.`)
+					toast.success(`${isNurse ? 'Nurse' : 'Provider'} ${providerItem?.name || id} verification verdict submitted: ${verdict.toUpperCase()}.`)
 					navigate(ROUTES.ADMIN.VERIFICATIONS)
 				}
 			}
@@ -424,7 +507,7 @@ export default function AdminVerificationReviewPage() {
 	}
 
 	const rawName = isDoctor ? doctorDetail?.name : providerItem?.name
-	const applicantDisplayName = isDoctor ? formatDoctorName(rawName) : rawName
+	const applicantDisplayName = isDoctor ? formatDoctorName(rawName) : (isNurse && rawName && !rawName.startsWith('Nurse') ? `Nurse ${rawName}` : rawName)
 	const isVerified = isDoctor ? doctorDetail?.is_verified : providerItem?.is_verified
 	const activeDocument = documents[selectedDocIndex] || null
 
@@ -434,7 +517,7 @@ export default function AdminVerificationReviewPage() {
 		? doctorDetail?.degrees && doctorDetail.degrees.length > 0
 			? doctorDetail.degrees.map((d) => `${d.degree}${d.college ? ` (${d.college})` : ''}`).join(', ')
 			: doctorDetail?.qualification
-		: undefined
+		: providerItem?.qualifications || (isNurse ? 'B.Sc Nursing Certified' : undefined)
 
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 64px)', bgcolor: '#f8fafc' }}>
@@ -454,14 +537,14 @@ export default function AdminVerificationReviewPage() {
 
 							<Stack direction="row" spacing={1.25} alignItems="center">
 								<Typography variant="h6" fontWeight={800} color="#ffffff" sx={{ fontSize: 17 }}>
-									{applicantDisplayName}
+									{applicantDisplayName || 'Applicant'}
 								</Typography>
 								<Chip
-									label={(isDoctor ? 'Doctor' : providerItem?.provider_type || 'Provider').toUpperCase()}
+									label={(isDoctor ? 'Doctor' : isNurse ? 'Nurse' : providerItem?.provider_type || 'Provider').toUpperCase()}
 									size="small"
-									sx={{ bgcolor: isDoctor ? '#0d9488' : '#2563eb', color: '#ffffff', fontWeight: 700, fontSize: '0.62rem', height: 20 }}
+									sx={{ bgcolor: isDoctor || isNurse ? '#0d9488' : '#2563eb', color: '#ffffff', fontWeight: 700, fontSize: '0.62rem', height: 20 }}
 								/>
-								<StatusBadge status={isVerified ? 'verified' : 'pending'} label={isVerified ? 'VERIFIED' : 'AWAITING AUDIT'} />
+								<StatusBadge status={isVerified ? 'verified' : (providerItem?.verification_status === 'rejected' ? 'rejected' : 'pending')} label={isVerified ? 'VERIFIED' : (providerItem?.verification_status === 'rejected' ? 'REJECTED' : 'AWAITING AUDIT')} />
 							</Stack>
 						</Stack>
 
@@ -507,7 +590,7 @@ export default function AdminVerificationReviewPage() {
 							sx={{
 								width: 52,
 								height: 52,
-								bgcolor: isDoctor ? '#0d9488' : '#2563eb',
+								bgcolor: isDoctor || isNurse ? '#0d9488' : '#2563eb',
 								color: '#ffffff',
 								fontSize: 22,
 								fontWeight: 800,
@@ -519,14 +602,14 @@ export default function AdminVerificationReviewPage() {
 
 						<Box sx={{ flex: 1 }}>
 							<Typography variant="caption" fontWeight={800} color="#0d9488" sx={{ textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 1 }}>
-								Applicant Profile & Demographics
+								{isNurse ? 'Nurse Professional Profile & Credentials' : isDoctor ? 'Doctor Profile & Demographics' : 'Provider Profile & Business Credentials'}
 							</Typography>
 
 							<Grid container spacing={1.5}>
 								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 									<InfoTile
-										label="Demographics & Age"
-										value={isDoctor ? `${doctorDetail?.gender || 'Gender N/A'} • ${doctorAge != null ? `${doctorAge} yrs` : 'N/A'} ${doctorDetail?.date_of_birth ? `(DOB: ${doctorDetail.date_of_birth})` : ''}` : 'N/A'}
+										label="Demographics & Role"
+										value={isDoctor ? `${doctorDetail?.gender || 'Gender N/A'} • ${doctorAge != null ? `${doctorAge} yrs` : 'N/A'}` : isNurse ? 'Certified Healthcare Nurse' : 'Provider Organization'}
 										icon={<PersonIcon sx={{ fontSize: 13, color: '#0d9488' }} />}
 									/>
 								</Grid>
@@ -547,36 +630,36 @@ export default function AdminVerificationReviewPage() {
 								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 									<InfoTile
 										label="Registration / License #"
-										value={isDoctor ? (doctorDetail?.registration_number ? `#${doctorDetail.registration_number}` : 'Pending') : (providerItem?.license_number ? `#${providerItem.license_number}` : 'N/A')}
+										value={isDoctor ? (doctorDetail?.registration_number ? `#${doctorDetail.registration_number}` : 'Pending') : (providerItem?.license_number ? `#${providerItem.license_number}` : 'Pending')}
 										icon={<BadgeIcon sx={{ fontSize: 13, color: '#0d9488' }} />}
 									/>
 								</Grid>
 
 								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 									<InfoTile
-										label="Degrees & Qualifications"
+										label="Qualifications / Degrees"
 										value={qualificationsSummary}
 										icon={<SchoolIcon sx={{ fontSize: 13, color: '#0d9488' }} />}
 									/>
 								</Grid>
 								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 									<InfoTile
-										label="Location & City"
-										value={isDoctor ? doctorDetail?.location : 'N/A'}
-										icon={<LocationOnIcon sx={{ fontSize: 13, color: '#0d9488' }} />}
+										label={isNurse ? 'Specialty / Care Focus' : 'Specialization / Location'}
+										value={isDoctor ? doctorDetail?.specialities?.join(', ') : isNurse ? providerItem?.specialty || 'General In-Home Nursing' : 'Diagnostic Services'}
+										icon={isNurse ? <MedicalServicesIcon sx={{ fontSize: 13, color: '#0d9488' }} /> : <LocationOnIcon sx={{ fontSize: 13, color: '#0d9488' }} />}
 									/>
 								</Grid>
 								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 									<InfoTile
-										label="Hospital & Experience"
-										value={isDoctor ? `${doctorDetail?.hospital || 'Hospital N/A'} (${doctorDetail?.experience_years != null ? `${doctorDetail.experience_years} yrs exp` : ''})` : 'N/A'}
+										label="Hospital / Organization"
+										value={isDoctor ? `${doctorDetail?.hospital || 'Hospital N/A'}` : isNurse ? 'In-Home Care Delivery' : providerItem?.name}
 										icon={<LocalHospitalIcon sx={{ fontSize: 13, color: '#0d9488' }} />}
 									/>
 								</Grid>
 								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 									<InfoTile
-										label="Fee & Languages"
-										value={isDoctor ? `₹${doctorDetail?.consultation_fee || 0} • ${doctorDetail?.languages?.join(', ') || 'N/A'}` : 'N/A'}
+										label="Registration Date"
+										value={isDoctor ? (doctorDetail?.date_of_birth ? `DOB: ${doctorDetail.date_of_birth}` : 'N/A') : providerItem?.created_at ? new Date(providerItem.created_at).toLocaleDateString('en-IN') : '—'}
 										icon={<PaymentsIcon sx={{ fontSize: 13, color: '#0d9488' }} />}
 									/>
 								</Grid>
@@ -605,7 +688,7 @@ export default function AdminVerificationReviewPage() {
 						<DocumentRail
 							documents={documents}
 							selectedIndex={selectedDocIndex}
-							onSelectDocument={(idx) => setSelectedDocIndex(idx)}
+							onSelectDocument={(idx: number) => setSelectedDocIndex(idx)}
 						/>
 					</Box>
 

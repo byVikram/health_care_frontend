@@ -1,4 +1,4 @@
-﻿// src/features/admin/pages/AdminVerificationsPage.tsx
+// src/features/admin/pages/AdminVerificationsPage.tsx
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
@@ -26,8 +26,7 @@ import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
 import StorefrontIcon from '@mui/icons-material/Storefront'
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser'
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn'
-// import CheckIcon from '@mui/icons-material/Check'
-// import CloseIcon from '@mui/icons-material/Close'
+import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
 import { toast } from 'react-toastify'
 
 import { useAuth } from '../../../hooks/useAuth'
@@ -43,11 +42,13 @@ import AdminEmptyState from '../../../components/admin/AdminEmptyState'
 
 import {
 	getDoctorsVerificationQueue,
+	getNursesVerificationQueue,
 	getProvidersVerificationQueue,
 	verifyDoctor,
+	verifyNurse,
 	verifyProvider,
-	// getDoctorVerificationDetail,
 	DoctorVerificationItem,
+	NurseVerificationItem,
 	ProviderVerificationItem,
 	DoctorVerificationDetail,
 	DoctorVerificationDocument,
@@ -63,6 +64,7 @@ const REJECTION_PRESETS = [
 	'Qualification Certificate Missing',
 	'Name Mismatch on Submitted ID',
 	'Incomplete Hospital Affiliation Proof',
+	'Nursing License Invalid or Expired',
 ]
 
 const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
@@ -106,24 +108,31 @@ export default function AdminVerificationsPage() {
 	const isSuperAdmin = role === 'super_admin'
 	const navigate = useNavigate()
 	const [searchParams, setSearchParams] = useSearchParams()
-	const initialTab = searchParams.get('tab') === 'providers' ? 'providers' : 'doctors'
-	const [activeTab, setActiveTab] = useState<'doctors' | 'providers'>(initialTab)
+	const initialTab =
+		searchParams.get('tab') === 'nurses'
+			? 'nurses'
+			: searchParams.get('tab') === 'providers'
+			? 'providers'
+			: 'doctors'
+	const [activeTab, setActiveTab] = useState<'doctors' | 'nurses' | 'providers'>(initialTab)
 
 	useEffect(() => {
 		const paramTab = searchParams.get('tab')
-		if (paramTab === 'providers' || paramTab === 'doctors') {
+		if (paramTab === 'providers' || paramTab === 'doctors' || paramTab === 'nurses') {
 			setActiveTab(paramTab)
 		}
 	}, [searchParams])
 
-	const handleTabChange = (_: React.SyntheticEvent, val: 'doctors' | 'providers') => {
+	const handleTabChange = (_: React.SyntheticEvent, val: 'doctors' | 'nurses' | 'providers') => {
 		setActiveTab(val)
 		if (val === 'doctors') {
 			setDocPage(1)
+		} else if (val === 'nurses') {
+			setNursePage(1)
 		} else {
 			setProvPage(1)
 		}
-		setSearchParams(val === 'providers' ? { tab: 'providers' } : {})
+		setSearchParams(val !== 'doctors' ? { tab: val } : {})
 	}
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
@@ -133,11 +142,16 @@ export default function AdminVerificationsPage() {
 	const [docPageSize, setDocPageSize] = useState(10)
 	const [docTotalRows, setDocTotalRows] = useState(0)
 
+	const [nursePage, setNursePage] = useState(1)
+	const [nursePageSize, setNursePageSize] = useState(10)
+	const [nurseTotalRows, setNurseTotalRows] = useState(0)
+
 	const [provPage, setProvPage] = useState(1)
 	const [provPageSize, setProvPageSize] = useState(10)
 	const [provTotalRows, setProvTotalRows] = useState(0)
 
 	const [doctorsQueue, setDoctorsQueue] = useState<DoctorVerificationItem[]>([])
+	const [nursesQueue, setNursesQueue] = useState<NurseVerificationItem[]>([])
 	const [providersQueue, setProvidersQueue] = useState<ProviderVerificationItem[]>([])
 
 	// ── Doctor -> Sub Admin assignment (bulk select + assign) ────────────────
@@ -154,7 +168,7 @@ export default function AdminVerificationsPage() {
 				}
 			})
 			.catch(() => {
-				// Non-fatal -- the assign dropdown simply stays empty.
+				// Non-fatal -- assign dropdown simply stays empty.
 			})
 	}, [isSuperAdmin])
 
@@ -188,8 +202,10 @@ export default function AdminVerificationsPage() {
 
 	// Drawer state (for fallback inline inspections)
 	const [drawerOpen, setDrawerOpen] = useState(false)
-	const [selectedItemType] = useState<'doctor' | 'provider' | null>(null)
-	const [selectedItemData, setSelectedItemData] = useState<DoctorVerificationItem | ProviderVerificationItem | null>(null)
+	const [selectedItemType, setSelectedItemType] = useState<'doctor' | 'nurse' | 'provider' | null>(null)
+	const [selectedItemData, setSelectedItemData] = useState<
+		DoctorVerificationItem | NurseVerificationItem | ProviderVerificationItem | null
+	>(null)
 	const [doctorDetail, setDoctorDetail] = useState<DoctorVerificationDetail | null>(null)
 	const [detailLoading] = useState(false)
 	const [notes, setNotes] = useState('')
@@ -199,33 +215,61 @@ export default function AdminVerificationsPage() {
 		setLoading(true)
 		setError(null)
 		try {
-			const [docRes, provRes] = await Promise.all([
+			const [docRes, nurseRes, provRes] = await Promise.allSettled([
 				getDoctorsVerificationQueue({ page: docPage, pageSize: docPageSize }),
+				getNursesVerificationQueue({ page: nursePage, pageSize: nursePageSize }),
 				getProvidersVerificationQueue({ page: provPage, pageSize: provPageSize }),
 			])
-			if (docRes.success && docRes.data) {
-				setDoctorsQueue(docRes.data.items || [])
-				setDocTotalRows(docRes.data.total ?? 0)
+
+			if (docRes.status === 'fulfilled' && docRes.value?.success && docRes.value?.data) {
+				setDoctorsQueue(docRes.value.data.items || [])
+				setDocTotalRows(docRes.value.data.total ?? 0)
 			}
-			if (provRes.success && provRes.data) {
-				setProvidersQueue(provRes.data.items || [])
-				setProvTotalRows(provRes.data.total ?? 0)
+			if (nurseRes.status === 'fulfilled' && nurseRes.value?.success && nurseRes.value?.data) {
+				setNursesQueue(nurseRes.value.data.items || [])
+				setNurseTotalRows(nurseRes.value.data.total ?? 0)
+			} else {
+				setNursesQueue([])
+				setNurseTotalRows(0)
+			}
+			if (provRes.status === 'fulfilled' && provRes.value?.success && provRes.value?.data) {
+				setProvidersQueue(provRes.value.data.items || [])
+				setProvTotalRows(provRes.value.data.total ?? 0)
 			}
 		} catch (err: unknown) {
 			setError(getErrorMessage(err, 'Failed to load verification queue.'))
 		} finally {
 			setLoading(false)
 		}
-	}, [docPage, docPageSize, provPage, provPageSize])
+	}, [docPage, docPageSize, nursePage, nursePageSize, provPage, provPageSize])
 
 	useEffect(() => {
 		fetchQueues()
 	}, [fetchQueues])
 
-	const handleOpenReview = (type: 'doctor' | 'provider', item: DoctorVerificationItem | ProviderVerificationItem) => {
+	const handleOpenReview = (
+		type: 'doctor' | 'nurse' | 'provider',
+		item: DoctorVerificationItem | NurseVerificationItem | ProviderVerificationItem
+	) => {
 		const targetId = item.public_id || item.id
-		const resolvedType = type === 'doctor' ? 'doctor' : (item as ProviderVerificationItem).provider_type || 'pharmacy'
-		navigate(`/admin/verifications/${resolvedType}/${targetId}`)
+		if (type === 'doctor') {
+			navigate(`/admin/verifications/doctor/${targetId}`)
+		} else if (type === 'nurse') {
+			navigate(`/admin/verifications/ancillary/${targetId}`)
+		} else {
+			const resolvedType = (item as ProviderVerificationItem).provider_type || 'pharmacy'
+			navigate(`/admin/verifications/${resolvedType}/${targetId}`)
+		}
+	}
+
+	const handleOpenDrawer = (
+		type: 'doctor' | 'nurse' | 'provider',
+		item: DoctorVerificationItem | NurseVerificationItem | ProviderVerificationItem
+	) => {
+		setSelectedItemType(type)
+		setSelectedItemData(item)
+		setNotes('')
+		setDrawerOpen(true)
 	}
 
 	const handleVerifySubmit = async (isApproved: boolean) => {
@@ -242,6 +286,17 @@ export default function AdminVerificationsPage() {
 				})
 				if (res.success) {
 					toast.success(`Dr. ${doc.name} ${isApproved ? 'approved & verified' : 'rejected'} successfully.`)
+				}
+			} else if (selectedItemType === 'nurse') {
+				const nurse = selectedItemData as NurseVerificationItem
+				const targetId = nurse.public_id || nurse.id
+				const res = await verifyNurse(targetId, {
+					is_verified: isApproved,
+					rejection_reason: !isApproved ? notes.trim() || undefined : undefined,
+				})
+				if (res.success) {
+					const displayName = nurse.name || 'Nurse'
+					toast.success(`${displayName} ${isApproved ? 'approved & verified' : 'rejected'} successfully.`)
 				}
 			} else {
 				const prov = selectedItemData as ProviderVerificationItem
@@ -396,6 +451,144 @@ export default function AdminVerificationsPage() {
 		},
 	]
 
+	// ── Dedicated Nurse Columns ───────────────────────────────────────────────
+	const nurseColumns: Column<NurseVerificationItem>[] = [
+		{
+			field: 'name',
+			label: 'Nurse Applicant',
+			render: (_: unknown, row: NurseVerificationItem) => {
+				const rawName = row.name || row.owner_name || 'Nurse'
+				const displayName = rawName.startsWith('Nurse') ? rawName : `Nurse ${rawName}`
+				const initial = (rawName.replace(/^Nurse\s*/i, '') || 'N').substring(0, 1).toUpperCase()
+				return (
+					<Stack direction="row" spacing={1.5} alignItems="center">
+						<Avatar sx={{ bgcolor: 'rgba(13,148,136,0.12)', color: '#0d9488', width: 38, height: 38, fontSize: 14, fontWeight: 800 }}>
+							{initial}
+						</Avatar>
+						<Box sx={{ minWidth: 0 }}>
+							<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
+								{displayName}
+							</Typography>
+							{row.qualifications && (
+								<Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', fontSize: 11 }}>
+									{row.qualifications}
+								</Typography>
+							)}
+						</Box>
+					</Stack>
+				)
+			},
+		},
+		{
+			field: 'email',
+			label: 'Contact Info',
+			render: (_: unknown, row: NurseVerificationItem) => (
+				<Box>
+					<Typography variant="body2" color="#0f172a" fontSize={13}>
+						{row.email || '—'}
+					</Typography>
+					<Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+						{row.contact_number || '—'}
+					</Typography>
+				</Box>
+			),
+		},
+		{
+			field: 'speciality',
+			label: 'Department / Specialty',
+			render: (_: unknown, row: NurseVerificationItem) => (
+				<Chip
+					label={row.speciality || 'General Nursing'}
+					size="small"
+					sx={{ bgcolor: '#ccfbf1', color: '#0f766e', fontWeight: 700, fontSize: '0.65rem', height: 22, borderRadius: '6px' }}
+				/>
+			),
+		},
+		{
+			field: 'license_number',
+			label: 'Registration / License #',
+			render: (_: unknown, row: NurseVerificationItem) => (
+				<Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 700, color: '#475569', fontSize: 12.5 }}>
+					{row.license_number ? `#${row.license_number}` : 'Pending'}
+				</Typography>
+			),
+		},
+		{
+			field: 'created_at',
+			label: 'Submitted Date',
+			render: (_: unknown, row: NurseVerificationItem) => {
+				if (!row.created_at) return <Typography variant="caption" color="text.secondary">—</Typography>
+				try {
+					const dt = new Date(row.created_at)
+					return (
+						<Typography variant="caption" color="text.secondary">
+							{isNaN(dt.getTime()) ? '—' : dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+						</Typography>
+					)
+				} catch {
+					return <Typography variant="caption" color="text.secondary">—</Typography>
+				}
+			},
+		},
+		{
+			field: 'is_verified',
+			label: 'Status',
+			render: (_: unknown, row: NurseVerificationItem) => (
+				<StatusBadge
+					status={row.is_verified ? 'verified' : (row.verification_status === 'rejected' ? 'rejected' : 'pending')}
+					label={row.is_verified ? 'Verified' : (row.verification_status === 'rejected' ? 'Rejected' : 'Awaiting Review')}
+				/>
+			),
+		},
+		{
+			field: 'actions',
+			label: 'Actions',
+			align: 'right',
+			render: (_: unknown, row: NurseVerificationItem) => (
+				<Stack direction="row" spacing={0.75} justifyContent="flex-end" alignItems="center">
+					<Tooltip title="Review Nurse Application">
+						<span>
+							<IconButton
+								size="small"
+								onClick={(e) => {
+									e.stopPropagation()
+									handleOpenReview('nurse', row)
+								}}
+								sx={{
+									border: '1px solid #e2e8f0',
+									borderRadius: 1.5,
+									color: '#0d9488',
+									'&:hover': { borderColor: '#0d9488', bgcolor: 'rgba(13,148,136,0.06)' },
+								}}
+							>
+								<VisibilityIcon sx={{ fontSize: 16 }} />
+							</IconButton>
+						</span>
+					</Tooltip>
+					<Tooltip title="Quick Inspect Drawer">
+						<span>
+							<IconButton
+								size="small"
+								onClick={(e) => {
+									e.stopPropagation()
+									handleOpenDrawer('nurse', row)
+								}}
+								sx={{
+									border: '1px solid #e2e8f0',
+									borderRadius: 1.5,
+									color: '#475569',
+									'&:hover': { borderColor: '#0d9488', color: '#0d9488' },
+								}}
+							>
+								<DescriptionIcon sx={{ fontSize: 16 }} />
+							</IconButton>
+						</span>
+					</Tooltip>
+				</Stack>
+			),
+		},
+	]
+
 	// ── Expanded Provider Columns ──────────────────────────────────────────────
 	const providerColumns: Column<ProviderVerificationItem>[] = [
 		{
@@ -500,43 +693,56 @@ export default function AdminVerificationsPage() {
 		},
 	]
 
+	const totalAllApplications = docTotalRows + nurseTotalRows + provTotalRows
+
 	return (
 		<Box>
 			<AdminPageHeader
 				title="Verifications Center"
-				subtitle="Review, audit, approve, or reject healthcare providers and doctor credential applications."
-				count={docTotalRows + provTotalRows}
+				subtitle="Review, audit, approve, or reject healthcare providers, doctors, and nurses credential applications."
+				count={totalAllApplications}
 				countLabel="pending applications"
 			/>
 
 			{/* Top Metric Cards */}
 			<Grid container spacing={2.5} sx={{ mb: 3.5 }}>
-				<Grid size={{ xs: 12, sm: 4 }}>
+				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 					<AdminStatCard
-						label="Pending Doctors Queue"
+						label="Pending Doctors"
 						value={docTotalRows}
 						icon={<LocalHospitalIcon />}
 						iconColor="#d97706"
 						iconBg="rgba(217,119,6,0.12)"
-						description="Doctors awaiting credential verification"
+						description="Doctors awaiting credential review"
 						onClick={() => setActiveTab('doctors')}
 					/>
 				</Grid>
-				<Grid size={{ xs: 12, sm: 4 }}>
+				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 					<AdminStatCard
-						label="Pending Providers Queue"
-						value={provTotalRows}
-						icon={<StorefrontIcon />}
+						label="Pending Nurses"
+						value={nurseTotalRows}
+						icon={<MedicalServicesIcon />}
 						iconColor="#0d9488"
 						iconBg="rgba(13,148,136,0.12)"
-						description="Labs, Pharmacies & Radiology"
+						description="Nurses awaiting registration verification"
+						onClick={() => setActiveTab('nurses')}
+					/>
+				</Grid>
+				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
+					<AdminStatCard
+						label="Pending Providers"
+						value={provTotalRows}
+						icon={<StorefrontIcon />}
+						iconColor="#7e22ce"
+						iconBg="rgba(126,34,206,0.12)"
+						description="Labs, Pharmacies & Diagnostic centers"
 						onClick={() => setActiveTab('providers')}
 					/>
 				</Grid>
-				<Grid size={{ xs: 12, sm: 4 }}>
+				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 					<AdminStatCard
 						label="Total Applications"
-						value={docTotalRows + provTotalRows}
+						value={totalAllApplications}
 						icon={<AssignmentTurnedInIcon />}
 						iconColor="#2563eb"
 						iconBg="rgba(37,99,235,0.1)"
@@ -560,6 +766,12 @@ export default function AdminVerificationsPage() {
 						value="doctors"
 						label={`Doctors Queue (${docTotalRows})`}
 						icon={<LocalHospitalIcon sx={{ fontSize: 17 }} />}
+						iconPosition="start"
+					/>
+					<Tab
+						value="nurses"
+						label={`Nurses Queue (${nurseTotalRows})`}
+						icon={<MedicalServicesIcon sx={{ fontSize: 17 }} />}
 						iconPosition="start"
 					/>
 					<Tab
@@ -638,11 +850,34 @@ export default function AdminVerificationsPage() {
 						}}
 					/>
 				)
+			) : activeTab === 'nurses' ? (
+				nurseTotalRows === 0 ? (
+					<AdminEmptyState
+						icon={<MedicalServicesIcon />}
+						title="Nurses queue is clear"
+						description="No nurse verification applications pending at this time."
+					/>
+				) : (
+					<AppTable
+						columns={nurseColumns}
+						rows={nursesQueue}
+						emptyMessage="No nurses awaiting verification."
+						onRowClick={(nurse) => handleOpenReview('nurse', nurse)}
+						page={nursePage}
+						pageSize={nursePageSize}
+						totalRows={nurseTotalRows}
+						onPageChange={(newPage) => setNursePage(newPage)}
+						onPageSizeChange={(newSize) => {
+							setNursePageSize(newSize)
+							setNursePage(1)
+						}}
+					/>
+				)
 			) : provTotalRows === 0 ? (
 				<AdminEmptyState
 					icon={<VerifiedUserIcon />}
 					title="Providers queue is clear"
-					description="No pharmacy, lab, or radiology applications pending."
+					description="No pharmacy, lab, or diagnostic applications pending."
 				/>
 			) : (
 				<AppTable
@@ -667,11 +902,18 @@ export default function AdminVerificationsPage() {
 				onClose={() => {
 					setDrawerOpen(false)
 					setSelectedItemData(null)
+					setSelectedItemType(null)
 					setDoctorDetail(null)
 				}}
 				onConfirm={() => handleVerifySubmit(true)}
 				title={`Application Review — ${selectedItemData?.name ?? ''}`}
-				subtitle={selectedItemType === 'doctor' ? 'Doctor License & Credential Inspection' : 'Provider Business License Inspection'}
+				subtitle={
+					selectedItemType === 'doctor'
+						? 'Doctor License & Credential Inspection'
+						: selectedItemType === 'nurse'
+						? 'Nurse Registration & Credentials Inspection'
+						: 'Provider Business License Inspection'
+				}
 				width={620}
 				sx={{ top: '64px', height: 'calc(100% - 64px)' }}
 				footerContent={
@@ -838,6 +1080,78 @@ export default function AdminVerificationsPage() {
 							/>
 						</Box>
 					)
+				) : selectedItemType === 'nurse' && selectedItemData ? (
+					(() => {
+						const nurse = selectedItemData as NurseVerificationItem
+						const rawNurseName = nurse.name || nurse.owner_name || 'Nurse'
+						const displayNurseName = rawNurseName.startsWith('Nurse') ? rawNurseName : `Nurse ${rawNurseName}`
+						const initial = (rawNurseName.replace(/^Nurse\s*/i, '') || 'N').substring(0, 1).toUpperCase()
+						return (
+							<Box>
+								<Box sx={{ p: 2.5, bgcolor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', mb: 3 }}>
+									<Stack direction="row" spacing={2} alignItems="center">
+										<Avatar sx={{ width: 56, height: 56, bgcolor: '#0d9488', color: '#ffffff', fontSize: 22, fontWeight: 800 }}>
+											{initial}
+										</Avatar>
+										<Box>
+											<Typography variant="subtitle1" fontWeight={800} color="#0f172a">
+												{displayNurseName}
+											</Typography>
+											<Typography variant="caption" color="text.secondary" display="block">
+												{nurse.email || '—'} | {nurse.contact_number || '—'}
+											</Typography>
+											<Stack direction="row" spacing={1} sx={{ mt: 0.75 }}>
+												<Chip label={nurse.speciality || 'General Nursing'} size="small" sx={{ bgcolor: '#ccfbf1', color: '#0f766e', fontWeight: 700, fontSize: '0.62rem', height: 20 }} />
+												<StatusBadge status={nurse.is_verified ? 'verified' : (nurse.verification_status === 'rejected' ? 'rejected' : 'pending')} label={nurse.is_verified ? 'Verified' : 'Pending Review'} />
+											</Stack>
+										</Box>
+									</Stack>
+								</Box>
+
+								<Grid container spacing={3}>
+									<Grid size={{ xs: 12, md: 6 }}>
+										<SectionHeader title="Personal Information" />
+										<InfoRow label="Nurse Name" value={displayNurseName} />
+										<InfoRow label="Email Address" value={nurse.email} />
+										<InfoRow label="Phone Number" value={nurse.contact_number} />
+										<InfoRow label="Submitted Date" value={nurse.created_at ? new Date(nurse.created_at).toLocaleDateString('en-IN') : '—'} />
+									</Grid>
+
+									<Grid size={{ xs: 12, md: 6 }}>
+										<SectionHeader title="Professional Credentials" />
+										<InfoRow label="Registration / License #" value={nurse.license_number} />
+										<InfoRow label="Department / Specialty" value={nurse.speciality} />
+										<InfoRow label="Qualifications" value={nurse.qualifications || 'B.Sc Nursing'} />
+										<InfoRow label="Current Status" value={nurse.is_verified ? 'Approved & Verified' : 'Awaiting Audit'} />
+									</Grid>
+								</Grid>
+
+								<Divider sx={{ my: 3 }} />
+
+								<SectionHeader title="Reviewer Notes & Presets" />
+								<Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+									{REJECTION_PRESETS.map((preset) => (
+										<Chip
+											key={preset}
+											label={preset}
+											size="small"
+											onClick={() => handleAddPresetNote(preset)}
+											sx={{ bgcolor: '#f1f5f9', color: '#475569', fontSize: '0.68rem', fontWeight: 600, cursor: 'pointer', '&:hover': { bgcolor: '#fee2e2', color: '#dc2626' } }}
+										/>
+									))}
+								</Stack>
+								<AppInput
+									label=""
+									placeholder="Enter administrative review notes or rejection reason..."
+									value={notes}
+									onChange={(e) => setNotes(e.target.value)}
+									multiline
+									rows={3}
+									fullWidth
+								/>
+							</Box>
+						)
+					})()
 				) : selectedItemData ? (
 					(() => {
 						const prov = selectedItemData as ProviderVerificationItem
