@@ -113,6 +113,8 @@ export interface AdminUserItem {
 	laboratory_id?: string | null
 	/** Only present for radiology-role rows -- opens the radiology details drawer. */
 	radiology_id?: string | null
+	/** Only present for ancillary/nurse-role rows. */
+	ancillary_id?: string | null
 }
 
 export interface AdminUserListParams {

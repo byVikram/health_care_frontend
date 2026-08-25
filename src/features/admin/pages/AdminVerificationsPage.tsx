@@ -10,18 +10,13 @@ import {
 	Stack,
 	CircularProgress,
 	Alert,
-	Divider,
 	IconButton,
 	Tooltip,
 	Avatar,
 	Grid,
 	Checkbox,
 } from '@mui/material'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import CancelIcon from '@mui/icons-material/Cancel'
 import VisibilityIcon from '@mui/icons-material/Visibility'
-import OpenInNewIcon from '@mui/icons-material/OpenInNew'
-import DescriptionIcon from '@mui/icons-material/Description'
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
 import StorefrontIcon from '@mui/icons-material/Storefront'
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser'
@@ -31,10 +26,7 @@ import { toast } from 'react-toastify'
 
 import { useAuth } from '../../../hooks/useAuth'
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
-import AppButton from '../../../components/common/Button/AppButton'
 import AppSelect from '../../../components/common/Select/AppSelect'
-import AppInput from '../../../components/common/Input/AppInput'
-import AppDrawer from '../../../components/common/Drawer/AppDrawer'
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 import AdminStatCard from '../../../components/admin/AdminStatCard'
 import StatusBadge from '../../../components/admin/StatusBadge'
@@ -44,64 +36,15 @@ import {
 	getDoctorsVerificationQueue,
 	getNursesVerificationQueue,
 	getProvidersVerificationQueue,
-	verifyDoctor,
-	verifyNurse,
-	verifyProvider,
 	DoctorVerificationItem,
 	NurseVerificationItem,
 	ProviderVerificationItem,
-	DoctorVerificationDetail,
-	DoctorVerificationDocument,
 	listSubAdmins,
 	assignDoctorsToSubadmin,
 	SubAdminItem,
 } from '../adminService'
-import { buildS3Url } from '../../../utils/s3'
-
-const REJECTION_PRESETS = [
-	'Illegible License Document',
-	'Expired Medical Registration',
-	'Qualification Certificate Missing',
-	'Name Mismatch on Submitted ID',
-	'Incomplete Hospital Affiliation Proof',
-	'Nursing License Invalid or Expired',
-]
 
 const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
-
-function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
-	return (
-		<Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.75 }}>
-			<Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-				{label}
-			</Typography>
-			<Typography variant="body2" sx={{ fontWeight: 700, color: '#0f172a', textAlign: 'right', wordBreak: 'break-word', maxWidth: '60%' }}>
-				{value ?? '—'}
-			</Typography>
-		</Box>
-	)
-}
-
-function SectionHeader({ title }: { title: string }) {
-	return (
-		<Typography
-			variant="subtitle2"
-			sx={{
-				fontWeight: 800,
-				color: '#0f172a',
-				mt: 2,
-				mb: 1,
-				pb: 0.5,
-				borderBottom: '2px solid #e2e8f0',
-				textTransform: 'uppercase',
-				fontSize: '11px',
-				letterSpacing: '0.08em',
-			}}
-		>
-			{title}
-		</Typography>
-	)
-}
 
 export default function AdminVerificationsPage() {
 	const { role } = useAuth()
@@ -200,17 +143,6 @@ export default function AdminVerificationsPage() {
 		}
 	}
 
-	// Drawer state (for fallback inline inspections)
-	const [drawerOpen, setDrawerOpen] = useState(false)
-	const [selectedItemType, setSelectedItemType] = useState<'doctor' | 'nurse' | 'provider' | null>(null)
-	const [selectedItemData, setSelectedItemData] = useState<
-		DoctorVerificationItem | NurseVerificationItem | ProviderVerificationItem | null
-	>(null)
-	const [doctorDetail, setDoctorDetail] = useState<DoctorVerificationDetail | null>(null)
-	const [detailLoading] = useState(false)
-	const [notes, setNotes] = useState('')
-	const [submitting, setSubmitting] = useState(false)
-
 	const fetchQueues = useCallback(async () => {
 		setLoading(true)
 		setError(null)
@@ -260,78 +192,6 @@ export default function AdminVerificationsPage() {
 			const resolvedType = (item as ProviderVerificationItem).provider_type || 'pharmacy'
 			navigate(`/admin/verifications/${resolvedType}/${targetId}`)
 		}
-	}
-
-	const handleOpenDrawer = (
-		type: 'doctor' | 'nurse' | 'provider',
-		item: DoctorVerificationItem | NurseVerificationItem | ProviderVerificationItem
-	) => {
-		setSelectedItemType(type)
-		setSelectedItemData(item)
-		setNotes('')
-		setDrawerOpen(true)
-	}
-
-	const handleVerifySubmit = async (isApproved: boolean) => {
-		if (!selectedItemType || !selectedItemData) return
-
-		setSubmitting(true)
-		try {
-			if (selectedItemType === 'doctor') {
-				const doc = selectedItemData as DoctorVerificationItem
-				const targetId = doc.public_id || doc.id
-				const res = await verifyDoctor(targetId, {
-					is_verified: isApproved,
-					rejection_reason: !isApproved ? notes.trim() || undefined : undefined,
-				})
-				if (res.success) {
-					toast.success(`Dr. ${doc.name} ${isApproved ? 'approved & verified' : 'rejected'} successfully.`)
-				}
-			} else if (selectedItemType === 'nurse') {
-				const nurse = selectedItemData as NurseVerificationItem
-				const targetId = nurse.public_id || nurse.id
-				const res = await verifyNurse(targetId, {
-					is_verified: isApproved,
-					rejection_reason: !isApproved ? notes.trim() || undefined : undefined,
-				})
-				if (res.success) {
-					const displayName = nurse.name || 'Nurse'
-					toast.success(`${displayName} ${isApproved ? 'approved & verified' : 'rejected'} successfully.`)
-				}
-			} else {
-				const prov = selectedItemData as ProviderVerificationItem
-				const res = await verifyProvider(prov.provider_type, prov.public_id || prov.id, {
-					is_verified: isApproved,
-					rejection_reason: !isApproved ? notes.trim() || undefined : undefined,
-				})
-				if (res.success) {
-					toast.success(
-						`${prov.provider_type.toUpperCase()} ${prov.name} ${isApproved ? 'approved' : 'rejected'} successfully.`
-					)
-				}
-			}
-			setDrawerOpen(false)
-			setSelectedItemData(null)
-			setNotes('')
-			fetchQueues()
-		} catch (err: unknown) {
-			toast.error(getErrorMessage(err, 'Verification update failed.'))
-		} finally {
-			setSubmitting(false)
-		}
-	}
-
-	const handleOpenDocument = (doc: DoctorVerificationDocument) => {
-		const url = buildS3Url(doc.url)
-		if (url) {
-			window.open(url, '_blank')
-		} else {
-			toast.error('Document URL is not available')
-		}
-	}
-
-	const handleAddPresetNote = (preset: string) => {
-		setNotes((prev) => (prev ? `${prev}; ${preset}` : preset))
 	}
 
 	// ── Expanded Doctor Columns ────────────────────────────────────────────────
@@ -867,322 +727,6 @@ export default function AdminVerificationsPage() {
 					}}
 				/>
 			)}
-
-			{/* ── Spacious 2-Column Inspection Drawer ───────────────────────────── */}
-			<AppDrawer
-				open={drawerOpen}
-				onClose={() => {
-					setDrawerOpen(false)
-					setSelectedItemData(null)
-					setSelectedItemType(null)
-					setDoctorDetail(null)
-				}}
-				onConfirm={() => handleVerifySubmit(true)}
-				title={`Application Review — ${selectedItemData?.name ?? ''}`}
-				subtitle={
-					selectedItemType === 'doctor'
-						? 'Doctor License & Credential Inspection'
-						: selectedItemType === 'nurse'
-						? 'Nurse Registration & Credentials Inspection'
-						: 'Provider Business License Inspection'
-				}
-				width={620}
-				sx={{ top: '64px', height: 'calc(100% - 64px)' }}
-				footerContent={
-					<Stack direction="row" spacing={1.5} sx={{ width: '100%' }}>
-						<AppButton
-							label="Reject Application"
-							color="error"
-							variant="outlined"
-							fullWidth
-							startIcon={<CancelIcon />}
-							onClick={() => handleVerifySubmit(false)}
-							disabled={submitting}
-							sx={{ borderRadius: '10px', fontWeight: 700 }}
-						/>
-						<AppButton
-							label="Approve & Verify"
-							fullWidth
-							startIcon={<CheckCircleIcon />}
-							onClick={() => handleVerifySubmit(true)}
-							disabled={submitting}
-							loading={submitting}
-							sx={{
-								borderRadius: '10px',
-								fontWeight: 700,
-								bgcolor: '#0d9488',
-								'&:hover': { bgcolor: '#0f766e' },
-							}}
-						/>
-					</Stack>
-				}
-			>
-				{selectedItemType === 'doctor' ? (
-					detailLoading ? (
-						<Stack alignItems="center" sx={{ py: 8 }}>
-							<CircularProgress size={32} sx={{ color: '#0d9488' }} />
-							<Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-								Loading doctor credentials & documents...
-							</Typography>
-						</Stack>
-					) : !doctorDetail ? (
-						<Alert severity="warning" sx={{ mt: 2 }}>Doctor details could not be loaded.</Alert>
-					) : (
-						<Box>
-							{/* Doctor Overview Banner */}
-							<Box sx={{ p: 2.5, bgcolor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', mb: 3 }}>
-								<Stack direction="row" spacing={2} alignItems="center">
-									<Avatar sx={{ width: 56, height: 56, bgcolor: '#0d9488', color: '#ffffff', fontSize: 22, fontWeight: 800 }}>
-										{(doctorDetail.name || 'D').substring(0, 1).toUpperCase()}
-									</Avatar>
-									<Box>
-										<Typography variant="subtitle1" fontWeight={800} color="#0f172a">
-											Dr. {doctorDetail.name}
-										</Typography>
-										<Typography variant="caption" color="text.secondary" display="block">
-											{doctorDetail.email} | {doctorDetail.contact_number}
-										</Typography>
-										<Stack direction="row" spacing={1} sx={{ mt: 0.75 }}>
-											<Chip label={doctorDetail.specialities?.join(', ') || 'General'} size="small" sx={{ bgcolor: '#dbeafe', color: '#1d4ed8', fontWeight: 700, fontSize: '0.62rem', height: 20 }} />
-											<StatusBadge status={doctorDetail.is_verified ? 'verified' : 'pending'} label={doctorDetail.is_verified ? 'Verified' : 'Pending Review'} />
-										</Stack>
-									</Box>
-								</Stack>
-							</Box>
-
-							{/* 2-Column Inspection Grid */}
-							<Grid container spacing={3}>
-								<Grid size={{ xs: 12, md: 6 }}>
-									<SectionHeader title="Personal Information" />
-									<InfoRow label="Gender" value={doctorDetail.gender} />
-									<InfoRow label="Date of Birth" value={doctorDetail.date_of_birth} />
-									<InfoRow label="Location" value={doctorDetail.location} />
-
-									<SectionHeader title="Professional Credentials" />
-									<InfoRow label="Registration #" value={doctorDetail.registration_number} />
-									<InfoRow label="Qualification" value={doctorDetail.qualification} />
-									<InfoRow label="Experience" value={doctorDetail.experience_years != null ? `${doctorDetail.experience_years} years` : null} />
-									<InfoRow label="Hospital" value={doctorDetail.hospital} />
-									<InfoRow label="Consult Fee" value={doctorDetail.consultation_fee != null ? `₹${doctorDetail.consultation_fee}` : null} />
-									<InfoRow label="Languages" value={doctorDetail.languages?.join(', ')} />
-								</Grid>
-
-								<Grid size={{ xs: 12, md: 6 }}>
-									<SectionHeader title="Submitted Documents" />
-									{doctorDetail.documents && doctorDetail.documents.length > 0 ? (
-										<Stack spacing={1.5}>
-											{doctorDetail.documents.map((doc) => (
-												<Box
-													key={doc.id}
-													sx={{
-														p: 1.75,
-														bgcolor: '#ffffff',
-														borderRadius: '10px',
-														border: '1px solid #e2e8f0',
-														transition: 'all 0.15s ease',
-														'&:hover': { borderColor: '#0d9488' },
-													}}
-												>
-													<Stack direction="row" alignItems="center" justifyContent="space-between">
-														<Stack direction="row" spacing={1.25} alignItems="center" sx={{ minWidth: 0 }}>
-															<DescriptionIcon sx={{ color: '#0d9488', fontSize: 22 }} />
-															<Box sx={{ minWidth: 0 }}>
-																<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
-																	{doc.name}
-																</Typography>
-																<Typography variant="caption" color="text.secondary">
-																	TYPE: {doc.type.toUpperCase()}
-																</Typography>
-															</Box>
-														</Stack>
-														<Tooltip title="Inspect document in new tab">
-															<IconButton
-																size="small"
-																onClick={() => handleOpenDocument(doc)}
-																sx={{ border: '1px solid #e2e8f0', borderRadius: 1.5, color: '#0d9488', '&:hover': { bgcolor: 'rgba(13,148,136,0.08)' } }}
-															>
-																<OpenInNewIcon sx={{ fontSize: 16 }} />
-															</IconButton>
-														</Tooltip>
-													</Stack>
-												</Box>
-											))}
-										</Stack>
-									) : (
-										<Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-											No verification documents attached.
-										</Typography>
-									)}
-								</Grid>
-							</Grid>
-
-							<Divider sx={{ my: 3 }} />
-
-							{/* Rejection Presets & Notes */}
-							<SectionHeader title="Reviewer Notes & Presets" />
-							<Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-								Click preset reasons below to quickly populate rejection notes:
-							</Typography>
-							<Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
-								{REJECTION_PRESETS.map((preset) => (
-									<Chip
-										key={preset}
-										label={preset}
-										size="small"
-										onClick={() => handleAddPresetNote(preset)}
-										sx={{
-											bgcolor: '#f1f5f9',
-											color: '#475569',
-											fontSize: '0.68rem',
-											fontWeight: 600,
-											cursor: 'pointer',
-											'&:hover': { bgcolor: '#fee2e2', color: '#dc2626' },
-										}}
-									/>
-								))}
-							</Stack>
-							<AppInput
-								label=""
-								placeholder="Enter administrative review notes or rejection reason..."
-								value={notes}
-								onChange={(e) => setNotes(e.target.value)}
-								multiline
-								rows={3}
-								fullWidth
-							/>
-						</Box>
-					)
-				) : selectedItemType === 'nurse' && selectedItemData ? (
-					(() => {
-						const nurse = selectedItemData as NurseVerificationItem
-						const rawNurseName = nurse.name || nurse.owner_name || 'Nurse'
-						const displayNurseName = rawNurseName.startsWith('Nurse') ? rawNurseName : `Nurse ${rawNurseName}`
-						const initial = (rawNurseName.replace(/^Nurse\s*/i, '') || 'N').substring(0, 1).toUpperCase()
-						return (
-							<Box>
-								<Box sx={{ p: 2.5, bgcolor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', mb: 3 }}>
-									<Stack direction="row" spacing={2} alignItems="center">
-										<Avatar sx={{ width: 56, height: 56, bgcolor: '#0d9488', color: '#ffffff', fontSize: 22, fontWeight: 800 }}>
-											{initial}
-										</Avatar>
-										<Box>
-											<Typography variant="subtitle1" fontWeight={800} color="#0f172a">
-												{displayNurseName}
-											</Typography>
-											<Typography variant="caption" color="text.secondary" display="block">
-												{nurse.email || '—'} | {nurse.contact_number || '—'}
-											</Typography>
-											<Stack direction="row" spacing={1} sx={{ mt: 0.75 }}>
-												<Chip label={nurse.speciality || 'General Nursing'} size="small" sx={{ bgcolor: '#ccfbf1', color: '#0f766e', fontWeight: 700, fontSize: '0.62rem', height: 20 }} />
-												<StatusBadge status={nurse.is_verified ? 'verified' : (nurse.verification_status === 'rejected' ? 'rejected' : 'pending')} label={nurse.is_verified ? 'Verified' : 'Pending Review'} />
-											</Stack>
-										</Box>
-									</Stack>
-								</Box>
-
-								<Grid container spacing={3}>
-									<Grid size={{ xs: 12, md: 6 }}>
-										<SectionHeader title="Personal Information" />
-										<InfoRow label="Nurse Name" value={displayNurseName} />
-										<InfoRow label="Email Address" value={nurse.email} />
-										<InfoRow label="Phone Number" value={nurse.contact_number} />
-										<InfoRow label="Submitted Date" value={nurse.created_at ? new Date(nurse.created_at).toLocaleDateString('en-IN') : '—'} />
-									</Grid>
-
-									<Grid size={{ xs: 12, md: 6 }}>
-										<SectionHeader title="Professional Credentials" />
-										<InfoRow label="Registration / License #" value={nurse.license_number} />
-										<InfoRow label="Department / Specialty" value={nurse.speciality} />
-										<InfoRow label="Qualifications" value={nurse.qualifications || 'B.Sc Nursing'} />
-										<InfoRow label="Current Status" value={nurse.is_verified ? 'Approved & Verified' : 'Awaiting Audit'} />
-									</Grid>
-								</Grid>
-
-								<Divider sx={{ my: 3 }} />
-
-								<SectionHeader title="Reviewer Notes & Presets" />
-								<Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
-									{REJECTION_PRESETS.map((preset) => (
-										<Chip
-											key={preset}
-											label={preset}
-											size="small"
-											onClick={() => handleAddPresetNote(preset)}
-											sx={{ bgcolor: '#f1f5f9', color: '#475569', fontSize: '0.68rem', fontWeight: 600, cursor: 'pointer', '&:hover': { bgcolor: '#fee2e2', color: '#dc2626' } }}
-										/>
-									))}
-								</Stack>
-								<AppInput
-									label=""
-									placeholder="Enter administrative review notes or rejection reason..."
-									value={notes}
-									onChange={(e) => setNotes(e.target.value)}
-									multiline
-									rows={3}
-									fullWidth
-								/>
-							</Box>
-						)
-					})()
-				) : selectedItemData ? (
-					(() => {
-						const prov = selectedItemData as ProviderVerificationItem
-						return (
-							<Box>
-								<Box sx={{ p: 2.5, bgcolor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', mb: 3 }}>
-									<Stack direction="row" spacing={2} alignItems="center">
-										<Avatar sx={{ width: 56, height: 56, bgcolor: '#2563eb', color: '#ffffff', fontSize: 22, fontWeight: 800 }}>
-											{(prov.name || 'P').substring(0, 1).toUpperCase()}
-										</Avatar>
-										<Box>
-											<Typography variant="subtitle1" fontWeight={800} color="#0f172a">
-												{prov.name}
-											</Typography>
-											<Typography variant="caption" color="text.secondary" display="block">
-												Owner: {prov.owner_name} | {prov.email}
-											</Typography>
-											<Chip label={prov.provider_type?.toUpperCase()} size="small" sx={{ bgcolor: '#f3e8ff', color: '#7e22ce', fontWeight: 700, fontSize: '0.62rem', height: 20, mt: 0.75 }} />
-										</Box>
-									</Stack>
-								</Box>
-
-								<SectionHeader title="Provider Information" />
-								<InfoRow label="Business Name" value={prov.name} />
-								<InfoRow label="Owner Name" value={prov.owner_name} />
-								<InfoRow label="Email Address" value={prov.email} />
-								<InfoRow label="Phone Number" value={prov.contact_number} />
-								<InfoRow label="Provider Type" value={prov.provider_type?.toUpperCase()} />
-								<InfoRow label="License Number" value={prov.license_number} />
-								<InfoRow label="Status" value={prov.is_verified ? 'Verified' : 'Pending Review'} />
-
-								<Divider sx={{ my: 3 }} />
-
-								<SectionHeader title="Reviewer Notes & Presets" />
-								<Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
-									{REJECTION_PRESETS.map((preset) => (
-										<Chip
-											key={preset}
-											label={preset}
-											size="small"
-											onClick={() => handleAddPresetNote(preset)}
-											sx={{ bgcolor: '#f1f5f9', color: '#475569', fontSize: '0.68rem', fontWeight: 600, cursor: 'pointer', '&:hover': { bgcolor: '#fee2e2', color: '#dc2626' } }}
-										/>
-									))}
-								</Stack>
-								<AppInput
-									label=""
-									placeholder="Enter administrative review notes or rejection reason..."
-									value={notes}
-									onChange={(e) => setNotes(e.target.value)}
-									multiline
-									rows={3}
-									fullWidth
-								/>
-							</Box>
-						)
-					})()
-				) : null}
-			</AppDrawer>
 		</Box>
 	)
 }
