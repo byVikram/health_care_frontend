@@ -289,7 +289,7 @@ export default function AdminVerificationReviewPage() {
 							qualifications: d.qualifications || undefined,
 							capabilities: d.capabilities || [],
 							is_verified: d.is_verified,
-							verification_status: d.verification_status,
+							verification_status: d.verification_status || undefined,
 							created_at: d.registration_date || new Date().toISOString(),
 						}
 					}

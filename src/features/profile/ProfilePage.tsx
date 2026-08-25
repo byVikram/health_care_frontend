@@ -3,7 +3,7 @@ import { useAuth } from '../../hooks/useAuth'
 import DoctorProfilePage from '../doctor/profile/DoctorProfilePage'
 import PatientProfilePage from '../patient/PatientProfilePage'
 import LaboratoryProfilePage from '../laboratory/profile/LaboratoryProfilePage'
-import PharmacyProfilePage from '../pharmacy/profile/PharmacyProfilePage'
+import PharmacyProfilePage from '../Pharmacy/profile/PharmacyProfilePage'
 import RadiologyProfilePage from '../radiology/profile/RadiologyProfilePage'
 
 export default function ProfilePage() {

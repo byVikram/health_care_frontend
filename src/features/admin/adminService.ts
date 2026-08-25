@@ -1326,3 +1326,191 @@ export const assignDoctorsToSubadmin = async (doctorIds: string[], assignedToId:
 	)
 	return res.data
 }
+
+
+// ── Admin Ancillary Operations / Service Management ───────────────────────────
+
+export interface AdminAncillaryPatient {
+	id: string
+	public_id?: string
+	name: string
+	contact_number?: string
+	relationship?: string
+	age?: number
+	gender?: string
+}
+
+export interface AdminAncillaryNurse {
+	provider_id: string
+	public_id?: string
+	name: string
+	qualifications?: string
+	is_online: boolean
+	is_verified: boolean
+	license_number?: string
+	contact_number?: string
+	current_lat?: number
+	current_lng?: number
+	last_location_update?: string
+}
+
+export interface AdminAncillaryServiceInfo {
+	specialty_id?: string
+	specialty_name?: string
+	procedure_id?: string
+	procedure_name?: string
+	estimated_duration?: string
+	medical_notes?: string
+	chief_complaint?: string
+}
+
+export interface AdminAncillaryLocation {
+	street_address: string
+	latitude?: number
+	longitude?: number
+}
+
+export interface AdminAncillaryPayment {
+	amount: string
+	payment_method: string
+	payment_status: string
+}
+
+export interface AdminAncillarySessionInfo {
+	otp_verified: boolean
+	otp_verified_at?: string | null
+	checklist?: Record<string, boolean> | null
+	clinical_notes?: string | null
+}
+
+export interface AdminAncillaryRequestItem {
+	id: string
+	public_id: string
+	patient: AdminAncillaryPatient
+	nurse: AdminAncillaryNurse | null
+	service: AdminAncillaryServiceInfo
+	location: AdminAncillaryLocation
+	booking_type: 'INSTANT' | 'SCHEDULED' | string
+	status: string
+	assignment: {
+		offer_status?: string
+	} | null
+	payment: AdminAncillaryPayment
+	created_at: string
+	requires_attention?: boolean
+	attention_reason?: string
+}
+
+export interface AdminAncillaryStats {
+	active_services: number
+	searching_unassigned: number
+	in_progress: number
+	completed_today: number
+	cancelled: number
+	nurses_online: number
+	total_requests: number
+}
+
+export interface AdminAncillaryDetail extends AdminAncillaryRequestItem {
+	session?: AdminAncillarySessionInfo | null
+}
+
+export interface AdminAncillaryListParams {
+	page?: number
+	pageSize?: number
+	search?: string
+	status?: string
+	bookingType?: string
+	specialtyId?: string
+	providerId?: string
+	sortOrder?: 'newest' | 'oldest' | string
+}
+
+export interface AdminAncillaryListResult {
+	items: AdminAncillaryRequestItem[]
+	total: number
+	page: number
+	page_size: number
+	total_pages: number
+	stats?: AdminAncillaryStats
+}
+
+export interface AvailableAncillaryProviderItem {
+	provider_id: string
+	public_id: string
+	name: string
+	qualifications?: string
+	specialty_name?: string
+	is_online: boolean
+	is_verified: boolean
+	license_number?: string
+	contact_number?: string
+}
+
+/** GET /api/admin/ancillary/requests -- List operational ancillary requests */
+export const listAdminAncillaryRequests = async (params: AdminAncillaryListParams = {}) => {
+	const res = await ApiService.get<AdminMutationResponse<AdminAncillaryListResult>>(
+		API_ENDPOINTS.ADMIN.ANCILLARY_REQUESTS,
+		{
+			params: {
+				page: params.page || 1,
+				page_size: params.pageSize || 10,
+				search: params.search || undefined,
+				status: params.status || undefined,
+				booking_type: params.bookingType || undefined,
+				specialty_id: params.specialtyId || undefined,
+				provider_id: params.providerId || undefined,
+				sort_order: params.sortOrder || 'newest',
+			},
+		}
+	)
+	return res.data
+}
+
+/** GET /api/admin/ancillary/stats -- Fetch summary KPI metrics */
+export const getAdminAncillaryStats = async () => {
+	const res = await ApiService.get<AdminMutationResponse<AdminAncillaryStats>>(
+		API_ENDPOINTS.ADMIN.ANCILLARY_STATS
+	)
+	return res.data
+}
+
+/** GET /api/admin/ancillary/requests/:requestId -- Fetch full operational detail */
+export const getAdminAncillaryRequestDetail = async (requestId: string) => {
+	const res = await ApiService.get<AdminMutationResponse<AdminAncillaryDetail>>(
+		API_ENDPOINTS.ADMIN.ANCILLARY_DETAIL(requestId)
+	)
+	return res.data
+}
+
+/** POST /api/admin/ancillary/requests/:requestId/cancel -- Admin cancellation */
+export const cancelAdminAncillaryRequest = async (requestId: string, reason: string) => {
+	const res = await ApiService.post<AdminMutationResponse<{ requestId: string; status: string }>>(
+		API_ENDPOINTS.ADMIN.CANCEL_ANCILLARY_REQUEST(requestId),
+		{ reason }
+	)
+	return res.data
+}
+
+/** POST /api/admin/ancillary/requests/:requestId/reassign -- Automatic admin nurse reassignment */
+export const reassignAdminAncillaryRequest = async (requestId: string, reason?: string) => {
+	const res = await ApiService.post<AdminMutationResponse<{ requestId: string; providerId: string; providerName?: string; status: string }>>(
+		API_ENDPOINTS.ADMIN.REASSIGN_ANCILLARY_REQUEST(requestId),
+		{ reason }
+	)
+	return res.data
+}
+
+/** GET /api/admin/ancillary/available-providers -- List online/verified nurses for reassignment */
+export const getAvailableAncillaryProviders = async (procedureId?: string) => {
+	const res = await ApiService.get<AdminMutationResponse<AvailableAncillaryProviderItem[]>>(
+		API_ENDPOINTS.ADMIN.AVAILABLE_ANCILLARY_PROVIDERS,
+		{
+			params: {
+				procedure_id: procedureId || undefined,
+			},
+		}
+	)
+	return res.data
+}
+

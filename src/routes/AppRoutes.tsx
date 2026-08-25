@@ -29,9 +29,9 @@ import PortalPage from '../features/portal/PortalPage'
 import DoctorAppointmentList from '../features/appointments/AppointmentList'
 import PatientAppointmentDetailPage from '../features/patient/PatientAppointmentDetailPage'
 import WelcomePage from '../features/auth/WelcomePage'
-import OrderList from '../features/pharmacy/orders/OrderList'
-import OrderDetailPage from '../features/pharmacy/orders/OrderDeatailPage'
-import PharmacySearchPage from '../features/pharmacy/components/PharmacySearchPage'
+import OrderList from '../features/Pharmacy/orders/OrderList'
+import OrderDetailPage from '../features/Pharmacy/orders/OrderDeatailPage'
+import PharmacySearchPage from '../features/Pharmacy/components/PharmacySearchPage'
 import RadiologyProfilePage from '../features/radiology/profile/RadiologyProfilePage'
 import BookingsList from '../features/radiology/bookings/BookingsList'
 import BookingDetailPage from '../features/radiology/bookings/BookingDetailPage'
@@ -68,6 +68,8 @@ import AdminCommunitiesPage from '../features/admin/pages/AdminCommunitiesPage'
 import AdminEventsPage from '../features/admin/pages/AdminEventsPage'
 import AdminQAPage from '../features/admin/pages/AdminQAPage'
 import AdminAdminsPage from '../features/admin/pages/AdminAdminsPage'
+import AdminAncillaryPage from '../features/admin/pages/AdminAncillaryPage'
+import AdminAncillaryDetailPage from '../features/admin/pages/AdminAncillaryDetailPage'
 
 import BlogListPage from '../features/portal/BlogListPage'
 import BlogArticlePage from '../features/portal/BlogArticlePage'
@@ -161,6 +163,8 @@ export default function AppRoutes() {
 						<Route path={ROUTES.ADMIN.EVENTS} element={<AdminEventsPage />} />
 						<Route path={ROUTES.ADMIN.QA} element={<AdminQAPage />} />
 						<Route path={ROUTES.ADMIN.ADMINS} element={<AdminAdminsPage />} />
+						<Route path={ROUTES.ADMIN.ANCILLARY} element={<AdminAncillaryPage />} />
+						<Route path={ROUTES.ADMIN.ANCILLARY_DETAIL} element={<AdminAncillaryDetailPage />} />
 					</Route>
 				</Route>
 
