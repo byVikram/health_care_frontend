@@ -455,27 +455,16 @@ export default function AdminVerificationsPage() {
 	const nurseColumns: Column<NurseVerificationItem>[] = [
 		{
 			field: 'name',
-			label: 'Nurse Applicant',
+			label: 'Applicant',
 			render: (_: unknown, row: NurseVerificationItem) => {
 				const rawName = row.name || row.owner_name || 'Nurse'
 				const displayName = rawName.startsWith('Nurse') ? rawName : `Nurse ${rawName}`
-				const initial = (rawName.replace(/^Nurse\s*/i, '') || 'N').substring(0, 1).toUpperCase()
 				return (
-					<Stack direction="row" spacing={1.5} alignItems="center">
-						<Avatar sx={{ bgcolor: 'rgba(13,148,136,0.12)', color: '#0d9488', width: 38, height: 38, fontSize: 14, fontWeight: 800 }}>
-							{initial}
-						</Avatar>
-						<Box sx={{ minWidth: 0 }}>
-							<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
-								{displayName}
-							</Typography>
-							{row.qualifications && (
-								<Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', fontSize: 11 }}>
-									{row.qualifications}
-								</Typography>
-							)}
-						</Box>
-					</Stack>
+					<Box sx={{ minWidth: 0 }}>
+						<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
+							{displayName}
+						</Typography>
+					</Box>
 				)
 			},
 		},
@@ -495,7 +484,7 @@ export default function AdminVerificationsPage() {
 		},
 		{
 			field: 'speciality',
-			label: 'Department / Specialty',
+			label: 'Speciality',
 			render: (_: unknown, row: NurseVerificationItem) => (
 				<Chip
 					label={row.speciality || 'General Nursing'}
@@ -506,7 +495,7 @@ export default function AdminVerificationsPage() {
 		},
 		{
 			field: 'license_number',
-			label: 'Registration / License #',
+			label: 'Registration #',
 			render: (_: unknown, row: NurseVerificationItem) => (
 				<Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 700, color: '#475569', fontSize: 12.5 }}>
 					{row.license_number ? `#${row.license_number}` : 'Pending'}
@@ -534,10 +523,12 @@ export default function AdminVerificationsPage() {
 			field: 'is_verified',
 			label: 'Status',
 			render: (_: unknown, row: NurseVerificationItem) => (
-				<StatusBadge
-					status={row.is_verified ? 'verified' : (row.verification_status === 'rejected' ? 'rejected' : 'pending')}
-					label={row.is_verified ? 'Verified' : (row.verification_status === 'rejected' ? 'Rejected' : 'Awaiting Review')}
-				/>
+				<Box>
+					<StatusBadge
+						status={row.is_verified ? 'verified' : (row.verification_status === 'rejected' ? 'rejected' : 'pending')}
+						label={row.is_verified ? 'Verified' : (row.verification_status === 'rejected' ? 'Rejected' : 'Awaiting Review')}
+					/>
+				</Box>
 			),
 		},
 		{
@@ -546,7 +537,7 @@ export default function AdminVerificationsPage() {
 			align: 'right',
 			render: (_: unknown, row: NurseVerificationItem) => (
 				<Stack direction="row" spacing={0.75} justifyContent="flex-end" alignItems="center">
-					<Tooltip title="Review Nurse Application">
+					<Tooltip title="Review Application">
 						<span>
 							<IconButton
 								size="small"
@@ -562,25 +553,6 @@ export default function AdminVerificationsPage() {
 								}}
 							>
 								<VisibilityIcon sx={{ fontSize: 16 }} />
-							</IconButton>
-						</span>
-					</Tooltip>
-					<Tooltip title="Quick Inspect Drawer">
-						<span>
-							<IconButton
-								size="small"
-								onClick={(e) => {
-									e.stopPropagation()
-									handleOpenDrawer('nurse', row)
-								}}
-								sx={{
-									border: '1px solid #e2e8f0',
-									borderRadius: 1.5,
-									color: '#475569',
-									'&:hover': { borderColor: '#0d9488', color: '#0d9488' },
-								}}
-							>
-								<DescriptionIcon sx={{ fontSize: 16 }} />
 							</IconButton>
 						</span>
 					</Tooltip>

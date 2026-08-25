@@ -35,11 +35,19 @@ import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
 import { ROUTES } from '../../../constants/routes'
 import {
 	AdminAncillaryDetail,
+	ANCILLARY_TERMINAL_STATUSES,
 	getAdminAncillaryRequestDetail,
 	cancelAdminAncillaryRequest,
 	reassignAdminAncillaryRequest,
 } from '../adminService'
 import { formatINR } from '../../../utils/Utils'
+
+function getErrorMessage(err: unknown, fallback: string = 'An error occurred'): string {
+	if (err instanceof Error) return err.message
+	if (typeof err === 'string') return err
+	if (err && typeof err === 'object' && 'message' in err) return String((err as { message: unknown }).message)
+	return fallback
+}
 
 export default function AdminAncillaryDetailPage() {
 	const { id } = useParams<{ id: string }>()
@@ -66,8 +74,8 @@ export default function AdminAncillaryDetailPage() {
 			} else {
 				setError('Unable to load service request details.')
 			}
-		} catch (err: any) {
-			setError(err?.message || 'Failed to fetch ancillary request details.')
+		} catch (err: unknown) {
+			setError(getErrorMessage(err, 'Failed to fetch ancillary request details.'))
 		} finally {
 			setLoading(false)
 		}
@@ -89,8 +97,8 @@ export default function AdminAncillaryDetailPage() {
 			setSuccessMsg(`Successfully reassigned care nurse${nurseName}.`)
 			setShowReassignModal(false)
 			await fetchDetail()
-		} catch (err: any) {
-			setError(err?.message || 'Failed to reassign care nurse.')
+		} catch (err: unknown) {
+			setError(getErrorMessage(err, 'Failed to reassign care nurse.'))
 		} finally {
 			setActionLoading(false)
 		}
@@ -104,15 +112,15 @@ export default function AdminAncillaryDetailPage() {
 			setSuccessMsg(`Service request ${detail.public_id} successfully cancelled.`)
 			setShowCancelModal(false)
 			await fetchDetail()
-		} catch (err: any) {
-			setError(err?.message || 'Failed to cancel service request.')
+		} catch (err: unknown) {
+			setError(getErrorMessage(err, 'Failed to cancel service request.'))
 		} finally {
 			setActionLoading(false)
 		}
 	}
 
-	const isCancellable = detail && !['COMPLETED', 'CANCELLED_BY_PATIENT', 'CANCELLED_BY_PROVIDER', 'CANCELLED', 'FAILED'].includes(detail.status.toUpperCase())
-	const isReassignable = detail && !['COMPLETED', 'CANCELLED_BY_PATIENT', 'CANCELLED_BY_PROVIDER', 'CANCELLED', 'FAILED'].includes(detail.status.toUpperCase())
+	const isCancellable = detail && !(ANCILLARY_TERMINAL_STATUSES as string[]).includes(detail.status.toUpperCase())
+	const isReassignable = detail && !(ANCILLARY_TERMINAL_STATUSES as string[]).includes(detail.status.toUpperCase())
 
 	return (
 		<Box sx={{ pb: 8 }}>
@@ -471,6 +479,26 @@ export default function AdminAncillaryDetailPage() {
 													Last GPS sync: {new Date(detail.nurse.last_location_update).toLocaleTimeString()}
 												</Typography>
 											)}
+										</Box>
+									) : ['CANCELLED_BY_PATIENT', 'CANCELLED_BY_PROVIDER', 'CANCELLED'].includes((detail.status || '').toUpperCase()) ? (
+										<Box sx={{ p: 3, borderRadius: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+											<PersonOffIcon sx={{ color: '#64748b', fontSize: 36, mb: 1 }} />
+											<Typography variant="subtitle1" fontWeight={700} color="#334155">
+												No Care Provider Assigned
+											</Typography>
+											<Typography variant="body2" color="#64748b" sx={{ mt: 0.5 }}>
+												This service request was cancelled before a care provider was dispatched.
+											</Typography>
+										</Box>
+									) : (detail.status || '').toUpperCase() === 'COMPLETED' ? (
+										<Box sx={{ p: 3, borderRadius: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+											<CheckCircleIcon sx={{ color: '#15803d', fontSize: 36, mb: 1 }} />
+											<Typography variant="subtitle1" fontWeight={700} color="#15803d">
+												Service Completed
+											</Typography>
+											<Typography variant="body2" color="#475569" sx={{ mt: 0.5 }}>
+												This service request has concluded.
+											</Typography>
 										</Box>
 									) : (
 										<Box sx={{ p: 3, borderRadius: 2, bgcolor: '#fffbeb', border: '1px dashed #f59e0b', textAlign: 'center' }}>

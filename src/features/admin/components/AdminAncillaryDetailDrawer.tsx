@@ -26,7 +26,7 @@ import CancelIcon from '@mui/icons-material/Cancel'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 
 import StatusBadge from '../../../components/admin/StatusBadge'
-import { AdminAncillaryDetail } from '../adminService'
+import { AdminAncillaryDetail, ANCILLARY_TERMINAL_STATUSES } from '../adminService'
 import { formatINR } from '../../../utils/Utils'
 import { customScrollbar } from '../../../styles/commonStyles'
 
@@ -49,8 +49,8 @@ export default function AdminAncillaryDetailDrawer({
 }: AdminAncillaryDetailDrawerProps) {
 	if (!detail && !loading) return null
 
-	const isCancellable = detail && !['COMPLETED', 'CANCELLED_BY_PATIENT', 'CANCELLED_BY_PROVIDER', 'CANCELLED', 'FAILED'].includes(detail.status.toUpperCase())
-	const isReassignable = detail && !['COMPLETED', 'CANCELLED_BY_PATIENT', 'CANCELLED_BY_PROVIDER', 'CANCELLED', 'FAILED'].includes(detail.status.toUpperCase())
+	const isCancellable = detail && !(ANCILLARY_TERMINAL_STATUSES as string[]).includes(detail.status.toUpperCase())
+	const isReassignable = detail && !(ANCILLARY_TERMINAL_STATUSES as string[]).includes(detail.status.toUpperCase())
 
 	return (
 		<Drawer
@@ -218,6 +218,26 @@ export default function AdminAncillaryDetailDrawer({
 										</Typography>
 									)}
 								</Box>
+							) : ['CANCELLED_BY_PATIENT', 'CANCELLED_BY_PROVIDER', 'CANCELLED'].includes((detail.status || '').toUpperCase()) ? (
+								<Box sx={{ p: 2, borderRadius: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+									<PersonOffIcon sx={{ color: '#64748b', fontSize: 28, mb: 0.5 }} />
+									<Typography variant="subtitle2" fontWeight={600} color="#334155">
+										No Care Provider Assigned
+									</Typography>
+									<Typography variant="caption" color="#64748b">
+										Service request was cancelled prior to provider assignment.
+									</Typography>
+								</Box>
+							) : (detail.status || '').toUpperCase() === 'COMPLETED' ? (
+								<Box sx={{ p: 2, borderRadius: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+									<CheckCircleIcon sx={{ color: '#15803d', fontSize: 28, mb: 0.5 }} />
+									<Typography variant="subtitle2" fontWeight={600} color="#15803d">
+										Service Completed
+									</Typography>
+									<Typography variant="caption" color="#475569">
+										This service request has concluded.
+									</Typography>
+								</Box>
 							) : (
 								<Box sx={{ p: 2, borderRadius: 2, bgcolor: '#fffbeb', border: '1px dashed #f59e0b', textAlign: 'center' }}>
 									<PersonOffIcon sx={{ color: '#d97706', fontSize: 32, mb: 0.5 }} />
@@ -327,7 +347,7 @@ export default function AdminAncillaryDetailDrawer({
 								<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 									<Typography variant="caption" color="text.secondary">Total Amount</Typography>
 									<Typography variant="subtitle1" fontWeight={800} color="#0f172a">
-										{formatINR(Number(detail.payment.amount || 0))}
+										{formatINR(detail.payment.amount)}
 									</Typography>
 								</Box>
 								<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

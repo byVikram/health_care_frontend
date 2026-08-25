@@ -1383,6 +1383,58 @@ export interface AdminAncillarySessionInfo {
 	clinical_notes?: string | null
 }
 
+export type AncillaryRequestStatus =
+	| 'SEARCHING'
+	| 'SEARCHING_FOR_NURSE'
+	| 'SCHEDULED_PENDING'
+	| 'REQUESTED'
+	| 'OFFERED'
+	| 'ASSIGNED'
+	| 'NURSE_ASSIGNED'
+	| 'EN_ROUTE'
+	| 'ARRIVED'
+	| 'IN_PROGRESS'
+	| 'VERIFICATION_PENDING'
+	| 'COMPLETED'
+	| 'CANCELLED'
+	| 'CANCELLED_BY_PATIENT'
+	| 'CANCELLED_BY_PROVIDER'
+	| 'EXPIRED'
+	| 'FAILED'
+
+export const ANCILLARY_SEARCHING_STATUSES: AncillaryRequestStatus[] = [
+	'SEARCHING',
+	'SEARCHING_FOR_NURSE',
+	'SCHEDULED_PENDING',
+	'REQUESTED',
+]
+
+export const ANCILLARY_ACTIVE_STATUSES: AncillaryRequestStatus[] = [
+	'ASSIGNED',
+	'NURSE_ASSIGNED',
+	'EN_ROUTE',
+	'ARRIVED',
+	'IN_PROGRESS',
+	'VERIFICATION_PENDING',
+]
+
+export const ANCILLARY_CANCELLED_STATUSES: AncillaryRequestStatus[] = [
+	'CANCELLED',
+	'CANCELLED_BY_PATIENT',
+	'CANCELLED_BY_PROVIDER',
+	'EXPIRED',
+	'FAILED',
+]
+
+export const ANCILLARY_TERMINAL_STATUSES: AncillaryRequestStatus[] = [
+	'COMPLETED',
+	'CANCELLED',
+	'CANCELLED_BY_PATIENT',
+	'CANCELLED_BY_PROVIDER',
+	'EXPIRED',
+	'FAILED',
+]
+
 export interface AdminAncillaryRequestItem {
 	id: string
 	public_id: string
@@ -1391,7 +1443,7 @@ export interface AdminAncillaryRequestItem {
 	service: AdminAncillaryServiceInfo
 	location: AdminAncillaryLocation
 	booking_type: 'INSTANT' | 'SCHEDULED' | string
-	status: string
+	status: AncillaryRequestStatus | string
 	assignment: {
 		offer_status?: string
 	} | null
@@ -1423,6 +1475,9 @@ export interface AdminAncillaryListParams {
 	bookingType?: string
 	specialtyId?: string
 	providerId?: string
+	dateFilter?: string
+	startDate?: string
+	endDate?: string
 	sortOrder?: 'newest' | 'oldest' | string
 }
 
@@ -1447,6 +1502,22 @@ export interface AvailableAncillaryProviderItem {
 	contact_number?: string
 }
 
+export interface AncillaryCategoryItem {
+	id: string
+	code: string
+	title: string
+	description?: string
+	icon?: string
+}
+
+/** GET /api/ancillary/categories -- Get active categories / specialties from backend */
+export const getAncillaryCategories = async () => {
+	const res = await ApiService.get<{ success: boolean; data: AncillaryCategoryItem[] }>(
+		'/api/ancillary/categories'
+	)
+	return res.data
+}
+
 /** GET /api/admin/ancillary/requests -- List operational ancillary requests */
 export const listAdminAncillaryRequests = async (params: AdminAncillaryListParams = {}) => {
 	const res = await ApiService.get<AdminMutationResponse<AdminAncillaryListResult>>(
@@ -1460,6 +1531,9 @@ export const listAdminAncillaryRequests = async (params: AdminAncillaryListParam
 				booking_type: params.bookingType || undefined,
 				specialty_id: params.specialtyId || undefined,
 				provider_id: params.providerId || undefined,
+				date_filter: params.dateFilter || undefined,
+				start_date: params.startDate || undefined,
+				end_date: params.endDate || undefined,
 				sort_order: params.sortOrder || 'newest',
 			},
 		}
@@ -1513,4 +1587,5 @@ export const getAvailableAncillaryProviders = async (procedureId?: string) => {
 	)
 	return res.data
 }
+
 

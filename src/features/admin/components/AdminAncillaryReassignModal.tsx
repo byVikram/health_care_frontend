@@ -28,6 +28,13 @@ import {
 	getAvailableAncillaryProviders,
 } from '../adminService'
 
+function getErrorMessage(err: unknown, fallback: string = 'An error occurred'): string {
+	if (err instanceof Error) return err.message
+	if (typeof err === 'string') return err
+	if (err && typeof err === 'object' && 'message' in err) return String((err as { message: unknown }).message)
+	return fallback
+}
+
 interface AdminAncillaryReassignModalProps {
 	open: boolean
 	onClose: () => void
@@ -64,9 +71,9 @@ export default function AdminAncillaryReassignModal({
 			if (res.success && res.data) {
 				setProviders(res.data)
 			}
-		} catch (err: any) {
+		} catch (err: unknown) {
 			console.error('Failed to fetch available providers:', err)
-			setError(err?.message || 'Failed to load available nurses list.')
+			setError(getErrorMessage(err, 'Failed to load available nurses list.'))
 		} finally {
 			setLoadingProviders(false)
 		}
@@ -79,8 +86,8 @@ export default function AdminAncillaryReassignModal({
 		try {
 			await onConfirm(selectedProviderId, reason.trim() || undefined)
 			onClose()
-		} catch (err: any) {
-			setError(err?.message || 'Failed to reassign care provider.')
+		} catch (err: unknown) {
+			setError(getErrorMessage(err, 'Failed to reassign care provider.'))
 		} finally {
 			setSubmitting(false)
 		}

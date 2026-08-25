@@ -26,8 +26,9 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import PersonOffIcon from '@mui/icons-material/PersonOff'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
-import TwoWheelerIcon from '@mui/icons-material/TwoWheeler'
+import HealingIcon from '@mui/icons-material/Healing'
 import VisibilityIcon from '@mui/icons-material/Visibility'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 import AdminStatCard from '../../../components/admin/AdminStatCard'
@@ -42,13 +43,60 @@ import {
 	AdminAncillaryRequestItem,
 	AdminAncillaryDetail,
 	AdminAncillaryStats,
+	AncillaryCategoryItem,
+	ANCILLARY_SEARCHING_STATUSES,
+	ANCILLARY_ACTIVE_STATUSES,
+	ANCILLARY_CANCELLED_STATUSES,
 	listAdminAncillaryRequests,
 	getAdminAncillaryStats,
+	getAncillaryCategories,
 	getAdminAncillaryRequestDetail,
 	cancelAdminAncillaryRequest,
 	reassignAdminAncillaryRequest,
 } from '../adminService'
 import { formatINR } from '../../../utils/Utils'
+
+/** Single configurable threshold for highlighting long-waiting unassigned requests */
+const SEARCHING_WARNING_THRESHOLD_MINUTES = 5
+
+function isSearchingStatus(status?: string): boolean {
+	if (!status) return false
+	return (ANCILLARY_SEARCHING_STATUSES as string[]).includes(status.toUpperCase())
+}
+
+function isTerminalStatus(status?: string): boolean {
+	if (!status) return false
+	const s = status.toUpperCase()
+	return s === 'COMPLETED' || (ANCILLARY_CANCELLED_STATUSES as string[]).includes(s)
+}
+
+function isCancelledStatus(status?: string): boolean {
+	if (!status) return false
+	return (ANCILLARY_CANCELLED_STATUSES as string[]).includes(status.toUpperCase())
+}
+
+function getWaitingDurationMinutes(createdAtStr?: string): number | null {
+	if (!createdAtStr) return null
+	const createdTime = new Date(createdAtStr).getTime()
+	if (isNaN(createdTime)) return null
+	const diffMs = Date.now() - createdTime
+	return Math.max(0, Math.floor(diffMs / 60000))
+}
+
+function formatWaitingDuration(minutes: number): string {
+	if (minutes < 1) return 'Waiting <1m'
+	if (minutes < 60) return `Waiting ${minutes}m`
+	const hrs = Math.floor(minutes / 60)
+	const remMins = minutes % 60
+	return remMins > 0 ? `Waiting ${hrs}h ${remMins}m` : `Waiting ${hrs}h`
+}
+
+function getErrorMessage(err: unknown, fallback: string = 'An error occurred'): string {
+	if (err instanceof Error) return err.message
+	if (typeof err === 'string') return err
+	if (err && typeof err === 'object' && 'message' in err) return String((err as { message: unknown }).message)
+	return fallback
+}
 
 type OperationalTab = 'all' | 'active' | 'searching' | 'in_progress' | 'completed' | 'cancelled'
 
@@ -58,8 +106,8 @@ export default function AdminAncillaryPage() {
 	// State
 	const [requests, setRequests] = useState<AdminAncillaryRequestItem[]>([])
 	const [stats, setStats] = useState<AdminAncillaryStats | null>(null)
+	const [categories, setCategories] = useState<AncillaryCategoryItem[]>([])
 	const [loading, setLoading] = useState<boolean>(true)
-	const [statsLoading, setStatsLoading] = useState<boolean>(false)
 	const [error, setError] = useState<string | null>(null)
 
 	// Pagination
@@ -71,6 +119,10 @@ export default function AdminAncillaryPage() {
 	const [activeTab, setActiveTab] = useState<OperationalTab>('all')
 	const [searchInput, setSearchInput] = useState<string>('')
 	const [searchQuery, setSearchQuery] = useState<string>('')
+	const [specialtyFilter, setSpecialtyFilter] = useState<string>('')
+	const [dateFilter, setDateFilter] = useState<string>('all')
+	const [startDate, setStartDate] = useState<string>('')
+	const [endDate, setEndDate] = useState<string>('')
 	const [sortOrder, setSortOrder] = useState<string>('newest')
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -90,26 +142,45 @@ export default function AdminAncillaryPage() {
 		}, 400)
 	}
 
-	// ── Map Tab to Status Parameter ──────────────────────────────────────────
+	// ── Map Tab to Status Parameter (Single Source of Truth) ─────────────────
 	const getStatusFilterForTab = (tab: OperationalTab): string | undefined => {
 		switch (tab) {
 			case 'active':
-				return 'ASSIGNED,EN_ROUTE,ARRIVED,IN_PROGRESS'
+				return ANCILLARY_ACTIVE_STATUSES.join(',')
 			case 'searching':
-				return 'SEARCHING,SEARCHING_FOR_NURSE'
+				return ANCILLARY_SEARCHING_STATUSES.join(',')
 			case 'in_progress':
 				return 'IN_PROGRESS'
 			case 'completed':
 				return 'COMPLETED'
 			case 'cancelled':
-				return 'CANCELLED_BY_PATIENT,CANCELLED_BY_PROVIDER,CANCELLED,EXPIRED,FAILED'
+				return ANCILLARY_CANCELLED_STATUSES.join(',')
 			case 'all':
 			default:
 				return undefined
 		}
 	}
 
-	// ── Data Fetching ────────────────────────────────────────────────────────
+	// ── Dynamic Specialty Categories Fetching ─────────────────────────────────
+	useEffect(() => {
+		let isMounted = true
+		const loadCategories = async () => {
+			try {
+				const res = await getAncillaryCategories()
+				if (isMounted && res.success && Array.isArray(res.data)) {
+					setCategories(res.data)
+				}
+			} catch (err) {
+				console.warn('Failed to load dynamic specialties:', err)
+			}
+		}
+		loadCategories()
+		return () => {
+			isMounted = false
+		}
+	}, [])
+
+	// ── Data Fetching (Simultaneously loads requests + stats in 1 API call) ───
 	const fetchRequests = useCallback(async () => {
 		setLoading(true)
 		setError(null)
@@ -119,6 +190,10 @@ export default function AdminAncillaryPage() {
 				pageSize,
 				search: searchQuery.trim() || undefined,
 				status: getStatusFilterForTab(activeTab),
+				specialtyId: specialtyFilter || undefined,
+				dateFilter: dateFilter !== 'all' ? dateFilter : undefined,
+				startDate: dateFilter === 'custom' && startDate ? startDate : undefined,
+				endDate: dateFilter === 'custom' && endDate ? endDate : undefined,
 				sortOrder,
 			})
 
@@ -129,35 +204,17 @@ export default function AdminAncillaryPage() {
 					setStats(res.data.stats)
 				}
 			}
-		} catch (err: any) {
+		} catch (err: unknown) {
 			console.error('Error fetching admin ancillary requests:', err)
-			setError(err?.message || 'Unable to load ancillary service operations.')
+			setError(getErrorMessage(err, 'Unable to load ancillary service operations.'))
 		} finally {
 			setLoading(false)
 		}
-	}, [page, pageSize, searchQuery, activeTab, sortOrder])
-
-	const fetchStats = useCallback(async () => {
-		setStatsLoading(true)
-		try {
-			const res = await getAdminAncillaryStats()
-			if (res.success && res.data) {
-				setStats(res.data)
-			}
-		} catch (err) {
-			console.error('Error fetching ancillary stats:', err)
-		} finally {
-			setStatsLoading(false)
-		}
-	}, [])
+	}, [page, pageSize, searchQuery, activeTab, specialtyFilter, dateFilter, startDate, endDate, sortOrder])
 
 	useEffect(() => {
 		fetchRequests()
 	}, [fetchRequests])
-
-	useEffect(() => {
-		fetchStats()
-	}, [fetchStats])
 
 	// ── Navigate to Full Detail View ─────────────────────────────────────────
 	const handleRowClick = (row: AdminAncillaryRequestItem) => {
@@ -172,9 +229,8 @@ export default function AdminAncillaryPage() {
 			await cancelAdminAncillaryRequest(cancelTarget.public_id || cancelTarget.id, 'Cancelled by Administrator via Operations Portal')
 			setActionSuccessMsg(`Successfully cancelled request ${cancelTarget.public_id}.`)
 			fetchRequests()
-			fetchStats()
-		} catch (err: any) {
-			setError(err?.message || 'Failed to cancel request.')
+		} catch (err: unknown) {
+			setError(getErrorMessage(err, 'Failed to cancel request.'))
 		} finally {
 			setActionLoading(false)
 			setCancelTarget(null)
@@ -187,25 +243,45 @@ export default function AdminAncillaryPage() {
 		{
 			field: 'public_id',
 			label: 'Request ID',
-			render: (_, row) => (
-				<Box>
-					<Typography variant="body2" fontWeight={800} color="#0f172a">
-						{row.public_id}
-					</Typography>
-					<Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
-						<Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-							{new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+			render: (_, row) => {
+				const isSearching = isSearchingStatus(row.status)
+				const waitingMins = isSearching ? getWaitingDurationMinutes(row.created_at) : null
+				const isLongWaiting = isSearching && waitingMins !== null && waitingMins >= SEARCHING_WARNING_THRESHOLD_MINUTES
+
+				return (
+					<Box>
+						<Typography variant="body2" fontWeight={800} color="#0f172a">
+							{row.public_id}
 						</Typography>
-						{row.requires_attention && (
-							<Chip
-								label="Attention Required"
-								size="small"
-								sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800, bgcolor: '#fee2e2', color: '#dc2626' }}
-							/>
-						)}
-					</Stack>
-				</Box>
-			),
+						<Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
+							<Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+								{row.created_at ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+							</Typography>
+							{isLongWaiting ? (
+								<Chip
+									icon={<WarningAmberIcon sx={{ fontSize: '11px !important', color: '#b45309 !important' }} />}
+									label="Attention Required"
+									size="small"
+									sx={{
+										height: 18,
+										fontSize: '0.6rem',
+										fontWeight: 800,
+										bgcolor: '#fef3c7',
+										color: '#b45309',
+										border: '1px solid #fde68a',
+									}}
+								/>
+							) : row.requires_attention && !isSearching ? (
+								<Chip
+									label="Attention Required"
+									size="small"
+									sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800, bgcolor: '#fee2e2', color: '#dc2626' }}
+								/>
+							) : null}
+						</Stack>
+					</Box>
+				)
+			},
 		},
 		{
 			field: 'patient',
@@ -227,16 +303,37 @@ export default function AdminAncillaryPage() {
 			label: 'Assigned Nurse',
 			render: (_, row) => {
 				if (!row.nurse) {
+					const isSearching = isSearchingStatus(row.status)
+					const isCancelled = isCancelledStatus(row.status)
+					const isCompleted = row.status?.toUpperCase() === 'COMPLETED'
+
+					if (isSearching) {
+						return (
+							<Chip
+								icon={<PersonOffIcon sx={{ fontSize: '13px !important', color: '#d97706 !important' }} />}
+								label="⚠️ Unassigned"
+								size="small"
+								sx={{
+									bgcolor: '#fffbeb',
+									color: '#b45309',
+									border: '1px dashed #f59e0b',
+									fontWeight: 800,
+									fontSize: '0.68rem',
+									height: 24,
+								}}
+							/>
+						)
+					}
+
 					return (
 						<Chip
-							icon={<PersonOffIcon sx={{ fontSize: '13px !important', color: '#d97706 !important' }} />}
-							label="⚠️ Unassigned"
+							label={isCancelled ? 'Not Assigned' : isCompleted ? 'None' : 'Not Assigned'}
 							size="small"
 							sx={{
-								bgcolor: '#fffbeb',
-								color: '#b45309',
-								border: '1px dashed #f59e0b',
-								fontWeight: 800,
+								bgcolor: '#f1f5f9',
+								color: '#64748b',
+								border: '1px solid #e2e8f0',
+								fontWeight: 600,
 								fontSize: '0.68rem',
 								height: 24,
 							}}
@@ -295,7 +392,33 @@ export default function AdminAncillaryPage() {
 		{
 			field: 'status',
 			label: 'Status',
-			render: (_, row) => <StatusBadge status={row.status} />,
+			render: (_, row) => {
+				const isSearching = isSearchingStatus(row.status)
+				const isTerminal = isTerminalStatus(row.status)
+				const waitingMins = isSearching && !isTerminal ? getWaitingDurationMinutes(row.created_at) : null
+				const isLongWaiting = isSearching && waitingMins !== null && waitingMins >= SEARCHING_WARNING_THRESHOLD_MINUTES
+
+				return (
+					<Box>
+						<StatusBadge status={row.status} />
+						{isSearching && !isTerminal && waitingMins !== null && (
+							<Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
+								<AccessTimeIcon sx={{ fontSize: 13, color: isLongWaiting ? '#d97706' : '#64748b' }} />
+								<Typography
+									variant="caption"
+									fontWeight={isLongWaiting ? 800 : 600}
+									sx={{
+										fontSize: '0.68rem',
+										color: isLongWaiting ? '#b45309' : '#64748b',
+									}}
+								>
+									{formatWaitingDuration(waitingMins)}
+								</Typography>
+							</Stack>
+						)}
+					</Box>
+				)
+			},
 		},
 		{
 			field: 'payment',
@@ -303,7 +426,7 @@ export default function AdminAncillaryPage() {
 			render: (_, row) => (
 				<Box>
 					<Typography variant="body2" fontWeight={800} color="#0f172a">
-						{formatINR(Number(row.payment.amount || 0))}
+						{formatINR(row.payment.amount)}
 					</Typography>
 					<Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
 						{row.payment.payment_method || 'CARD'}
@@ -344,11 +467,8 @@ export default function AdminAncillaryPage() {
 					<Button
 						variant="outlined"
 						startIcon={<RefreshIcon />}
-						onClick={() => {
-							fetchRequests()
-							fetchStats()
-						}}
-						disabled={loading || statsLoading}
+						onClick={fetchRequests}
+						disabled={loading}
 						sx={{
 							borderRadius: 2,
 							fontWeight: 700,
@@ -387,9 +507,9 @@ export default function AdminAncillaryPage() {
 					<AdminStatCard
 						label="Active Services"
 						value={stats?.active_services ?? '--'}
-						icon={<TwoWheelerIcon />}
-						iconColor="#0284c7"
-						iconBg="#e0f2fe"
+						icon={<MedicalServicesIcon />}
+						iconColor="#0d9488"
+						iconBg="rgba(13,148,136,0.12)"
 						onClick={() => setActiveTab('active')}
 					/>
 				</Grid>
@@ -399,7 +519,7 @@ export default function AdminAncillaryPage() {
 						value={stats?.searching_unassigned ?? '--'}
 						icon={<PersonOffIcon />}
 						iconColor="#d97706"
-						iconBg="#fef3c7"
+						iconBg="rgba(217,119,6,0.12)"
 						onClick={() => setActiveTab('searching')}
 					/>
 				</Grid>
@@ -407,9 +527,9 @@ export default function AdminAncillaryPage() {
 					<AdminStatCard
 						label="In Progress"
 						value={stats?.in_progress ?? '--'}
-						icon={<MedicalServicesIcon />}
-						iconColor="#7c3aed"
-						iconBg="#ede9fe"
+						icon={<HealingIcon />}
+						iconColor="#0d9488"
+						iconBg="rgba(13,148,136,0.12)"
 						onClick={() => setActiveTab('in_progress')}
 					/>
 				</Grid>
@@ -418,8 +538,8 @@ export default function AdminAncillaryPage() {
 						label="Completed Today"
 						value={stats?.completed_today ?? '--'}
 						icon={<CheckCircleIcon />}
-						iconColor="#10b981"
-						iconBg="#d1fae5"
+						iconColor="#059669"
+						iconBg="rgba(5,150,105,0.12)"
 						onClick={() => setActiveTab('completed')}
 					/>
 				</Grid>
@@ -428,8 +548,8 @@ export default function AdminAncillaryPage() {
 						label="Cancelled"
 						value={stats?.cancelled ?? '--'}
 						icon={<CancelIcon />}
-						iconColor="#ef4444"
-						iconBg="#fee2e2"
+						iconColor="#64748b"
+						iconBg="rgba(100,116,139,0.12)"
 						onClick={() => setActiveTab('cancelled')}
 					/>
 				</Grid>
@@ -439,7 +559,7 @@ export default function AdminAncillaryPage() {
 						value={stats?.nurses_online ?? '--'}
 						icon={<AccessTimeIcon />}
 						iconColor="#0d9488"
-						iconBg="#ccfbf1"
+						iconBg="rgba(13,148,136,0.12)"
 					/>
 				</Grid>
 			</Grid>
@@ -482,9 +602,9 @@ export default function AdminAncillaryPage() {
 
 			{/* ── Filter & Search Toolbar ── */}
 			<Stack
-				direction={{ xs: 'column', md: 'row' }}
+				direction={{ xs: 'column', lg: 'row' }}
 				spacing={2}
-				alignItems={{ xs: 'stretch', md: 'center' }}
+				alignItems={{ xs: 'stretch', lg: 'center' }}
 				justifyContent="space-between"
 				sx={{ mb: 3 }}
 			>
@@ -493,12 +613,87 @@ export default function AdminAncillaryPage() {
 					value={searchInput}
 					onChange={handleSearchChange}
 					startIcon={<SearchIcon sx={{ color: '#94a3b8' }} />}
-					sx={{ width: { xs: '100%', md: 360 } }}
+					sx={{ width: { xs: '100%', lg: 320 } }}
 				/>
 
-
 				<Stack direction="row" spacing={1.5} alignItems="center" sx={{ flexWrap: 'wrap', gap: 1 }}>
+					{/* Specialty Filter */}
+					<FormControl size="small" sx={{ minWidth: 160 }}>
+						<InputLabel id="specialty-filter-label">Specialty</InputLabel>
+						<Select
+							labelId="specialty-filter-label"
+							value={specialtyFilter}
+							label="Specialty"
+							onChange={(e) => {
+								setSpecialtyFilter(e.target.value)
+								setPage(1)
+							}}
+						>
+							<MenuItem value="">All Specialties</MenuItem>
+							{categories.length > 0
+								? categories.map((cat) => (
+										<MenuItem key={cat.id || cat.code} value={cat.id || cat.title}>
+											{cat.title}
+										</MenuItem>
+								  ))
+								: [
+										<MenuItem key="nursing" value="Nursing Care">Nursing Care</MenuItem>,
+										<MenuItem key="physio" value="Physiotherapy">Physiotherapy</MenuItem>,
+										<MenuItem key="rehab" value="Rehab Care">Rehab Care</MenuItem>,
+										<MenuItem key="elder" value="Elder Day Care">Elder Day Care</MenuItem>,
+								  ]}
+						</Select>
+					</FormControl>
+
+					{/* Date Filter */}
 					<FormControl size="small" sx={{ minWidth: 140 }}>
+						<InputLabel id="date-filter-label">Date</InputLabel>
+						<Select
+							labelId="date-filter-label"
+							value={dateFilter}
+							label="Date"
+							onChange={(e) => {
+								setDateFilter(e.target.value)
+								setPage(1)
+							}}
+						>
+							<MenuItem value="all">All Dates</MenuItem>
+							<MenuItem value="today">Today</MenuItem>
+							<MenuItem value="yesterday">Yesterday</MenuItem>
+							<MenuItem value="last_7_days">Last 7 Days</MenuItem>
+							<MenuItem value="custom">Custom Range</MenuItem>
+						</Select>
+					</FormControl>
+
+					{/* Custom Date Range Inputs */}
+					{dateFilter === 'custom' && (
+						<Stack direction="row" spacing={1} alignItems="center">
+							<AppInput
+								type="date"
+								size="small"
+								value={startDate}
+								onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+									setStartDate(e.target.value)
+									setPage(1)
+								}}
+								sx={{ width: 145 }}
+							/>
+							<Typography variant="caption" color="text.secondary">to</Typography>
+							<AppInput
+								type="date"
+								size="small"
+								value={endDate}
+								onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+									setEndDate(e.target.value)
+									setPage(1)
+								}}
+								sx={{ width: 145 }}
+							/>
+						</Stack>
+					)}
+
+					{/* Sort Order */}
+					<FormControl size="small" sx={{ minWidth: 130 }}>
 						<InputLabel id="sort-order-label">Sort</InputLabel>
 						<Select
 							labelId="sort-order-label"
@@ -514,13 +709,17 @@ export default function AdminAncillaryPage() {
 						</Select>
 					</FormControl>
 
-					{(searchQuery || activeTab !== 'all') && (
+					{(searchQuery || activeTab !== 'all' || specialtyFilter || dateFilter !== 'all' || startDate || endDate) && (
 						<Button
 							variant="text"
 							onClick={() => {
 								setSearchInput('')
 								setSearchQuery('')
 								setActiveTab('all')
+								setSpecialtyFilter('')
+								setDateFilter('all')
+								setStartDate('')
+								setEndDate('')
 								setPage(1)
 							}}
 							sx={{ textTransform: 'none', color: '#64748b', fontWeight: 600 }}
@@ -538,6 +737,22 @@ export default function AdminAncillaryPage() {
 				loading={loading}
 				onRowClick={handleRowClick}
 				emptyMessage="No ancillary service requests matching current operational filters."
+				rowSx={(row) => {
+					const isSearching = isSearchingStatus(row.status)
+					const waitingMins = isSearching ? getWaitingDurationMinutes(row.created_at) : null
+					const isLongWaiting = isSearching && waitingMins !== null && waitingMins >= SEARCHING_WARNING_THRESHOLD_MINUTES
+
+					if (isLongWaiting) {
+						return {
+							bgcolor: 'rgba(254, 243, 199, 0.25)',
+							borderLeft: '4px solid #f59e0b',
+							'&:hover': {
+								bgcolor: 'rgba(254, 243, 199, 0.45) !important',
+							},
+						}
+					}
+					return {}
+				}}
 				page={page}
 				pageSize={pageSize}
 				totalRows={totalRows}
