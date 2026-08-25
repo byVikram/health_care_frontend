@@ -31,6 +31,7 @@ import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 import AppButton from '../../../components/common/Button/AppButton'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppSelect from '../../../components/common/Select/AppSelect'
+import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
 
 import {
 	listAdminCommunities,
@@ -57,6 +58,8 @@ export default function AdminCommunitiesPage() {
 	const [loading, setLoading] = useState(true)
 	const [dialogOpen, setDialogOpen] = useState(false)
 	const [editingGroup, setEditingGroup] = useState<AdminCommunityItem | null>(null)
+	const [groupPendingDelete, setGroupPendingDelete] = useState<AdminCommunityItem | null>(null)
+	const [deleting, setDeleting] = useState(false)
 
 	// Form State
 	const [name, setName] = useState('')
@@ -122,15 +125,19 @@ export default function AdminCommunitiesPage() {
 		}
 	}
 
-	const handleDelete = async (id: string) => {
-		if (!window.confirm('Are you sure you want to delete this community group? This will purge all posts and replies under it!')) return
+	const handleConfirmDelete = async () => {
+		if (!groupPendingDelete) return
+		setDeleting(true)
 		try {
-			await deleteAdminCommunity(id)
+			await deleteAdminCommunity(groupPendingDelete.id)
 			toast.success('Community group deleted successfully')
-			setGroups((prev) => prev.filter((g) => g.id !== id))
+			setGroups((prev) => prev.filter((g) => g.id !== groupPendingDelete.id))
+			setGroupPendingDelete(null)
 		} catch (err) {
 			console.error('Error deleting group:', err)
 			toast.error('Failed to delete group')
+		} finally {
+			setDeleting(false)
 		}
 	}
 
@@ -242,7 +249,7 @@ export default function AdminCommunitiesPage() {
 					<Tooltip title="Delete group">
 						<IconButton
 							size="small"
-							onClick={() => handleDelete(group.id)}
+							onClick={() => setGroupPendingDelete(group)}
 							sx={{ border: '1px solid #fecaca', borderRadius: 1.5, color: '#dc2626', bgcolor: '#fff1f2', '&:hover': { bgcolor: '#fee2e2' } }}
 						>
 							<DeleteIcon sx={{ fontSize: 16 }} />
@@ -334,6 +341,17 @@ export default function AdminCommunitiesPage() {
 					<AppButton variant="contained" onClick={handleSubmit} label={editingGroup ? 'Save Changes' : 'Create Group'} sx={{ bgcolor: '#0d9488', fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }} />
 				</DialogActions>
 			</Dialog>
+
+			<ConfirmModal
+				open={groupPendingDelete !== null}
+				onClose={() => setGroupPendingDelete(null)}
+				onConfirm={handleConfirmDelete}
+				title="Delete Support Group"
+				description={`Are you sure you want to delete "${groupPendingDelete?.name}"? This will purge all posts and replies under it!`}
+				variant="delete"
+				confirmLabel="Delete Group"
+				loading={deleting}
+			/>
 		</Box>
 	)
 }

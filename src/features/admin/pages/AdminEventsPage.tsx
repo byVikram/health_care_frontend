@@ -32,6 +32,7 @@ import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 import AppButton from '../../../components/common/Button/AppButton'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppSelect from '../../../components/common/Select/AppSelect'
+import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
 
 import {
 	listAdminEvents,
@@ -69,6 +70,8 @@ export default function AdminEventsPage() {
 	const [dialogOpen, setDialogOpen] = useState(false)
 	const [editingEvent, setEditingEvent] = useState<AdminEventItem | null>(null)
 	const [statusFilter, setStatusFilter] = useState('all')
+	const [eventPendingDelete, setEventPendingDelete] = useState<AdminEventItem | null>(null)
+	const [deleting, setDeleting] = useState(false)
 
 	// Form State
 	const [title, setTitle] = useState('')
@@ -174,15 +177,19 @@ export default function AdminEventsPage() {
 		}
 	}
 
-	const handleDelete = async (id: string) => {
-		if (!window.confirm('Are you sure you want to delete this event?')) return
+	const handleConfirmDelete = async () => {
+		if (!eventPendingDelete) return
+		setDeleting(true)
 		try {
-			await deleteAdminEvent(id)
+			await deleteAdminEvent(eventPendingDelete.id)
 			toast.success('Event deleted successfully')
-			setEvents((prev) => prev.filter((e) => e.id !== id))
+			setEvents((prev) => prev.filter((e) => e.id !== eventPendingDelete.id))
+			setEventPendingDelete(null)
 		} catch (err) {
 			console.error('Error deleting event:', err)
 			toast.error('Failed to delete event')
+		} finally {
+			setDeleting(false)
 		}
 	}
 
@@ -299,7 +306,7 @@ export default function AdminEventsPage() {
 					<Tooltip title="Delete Event">
 						<IconButton
 							size="small"
-							onClick={() => handleDelete(evt.id)}
+							onClick={() => setEventPendingDelete(evt)}
 							sx={{ border: '1px solid #fecaca', borderRadius: 1.5, color: '#dc2626', bgcolor: '#fff1f2', '&:hover': { bgcolor: '#fee2e2' } }}
 						>
 							<DeleteIcon sx={{ fontSize: 16 }} />
@@ -463,6 +470,17 @@ export default function AdminEventsPage() {
 					<AppButton variant="contained" onClick={handleSubmit} label={editingEvent ? 'Save Changes' : 'Create Event'} sx={{ bgcolor: '#0d9488', fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }} />
 				</DialogActions>
 			</Dialog>
+
+			<ConfirmModal
+				open={eventPendingDelete !== null}
+				onClose={() => setEventPendingDelete(null)}
+				onConfirm={handleConfirmDelete}
+				title="Delete Event"
+				description={`Are you sure you want to delete "${eventPendingDelete?.title}"? This action cannot be undone.`}
+				variant="delete"
+				confirmLabel="Delete Event"
+				loading={deleting}
+			/>
 		</Box>
 	)
 }

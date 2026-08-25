@@ -35,6 +35,7 @@ import StatusBadge from '../../../components/admin/StatusBadge'
 import AppButton from '../../../components/common/Button/AppButton'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppSelect from '../../../components/common/Select/AppSelect'
+import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
 
 
 import {
@@ -66,6 +67,12 @@ export default function AdminAdsPage() {
 	const [placements, setPlacements] = useState<AdminAdPlacementItem[]>([])
 	const [loading, setLoading] = useState(true)
 	const [activeTab, setActiveTab] = useState<'campaigns' | 'placements'>('campaigns')
+
+	// Delete Modals State
+	const [adPendingDelete, setAdPendingDelete] = useState<AdminAdItem | null>(null)
+	const [placementPendingDelete, setPlacementPendingDelete] = useState<AdminAdPlacementItem | null>(null)
+	const [deletingCampaign, setDeletingCampaign] = useState(false)
+	const [deletingPlacement, setDeletingPlacement] = useState(false)
 
 	// Campaign Modal
 	const [campaignOpen, setCampaignOpen] = useState(false)
@@ -125,10 +132,20 @@ export default function AdminAdsPage() {
 		} catch (err) { console.error('Error saving ad campaign:', err) }
 	}
 
-	const handleDeleteCampaign = async (id: string) => {
-		if (!window.confirm('Delete this campaign? All placement configs for this ad will be lost.')) return
-		try { await deleteAd(id); toast.success('Campaign deleted successfully'); await fetchData() }
-		catch (err) { console.error('Error deleting campaign:', err) }
+	const handleConfirmDeleteCampaign = async () => {
+		if (!adPendingDelete) return
+		setDeletingCampaign(true)
+		try {
+			await deleteAd(adPendingDelete.id)
+			toast.success('Campaign deleted successfully')
+			setAdPendingDelete(null)
+			await fetchData()
+		} catch (err) {
+			console.error('Error deleting campaign:', err)
+			toast.error('Failed to delete campaign')
+		} finally {
+			setDeletingCampaign(false)
+		}
 	}
 
 	const handleOpenPlacement = () => {
@@ -160,10 +177,20 @@ export default function AdminAdsPage() {
 		}
 	}
 
-	const handleDeletePlacement = async (id: string) => {
-		if (!window.confirm('Delete this placement configuration?')) return
-		try { await deleteAdPlacement(id); toast.success('Placement deleted successfully'); setPlacements((prev) => prev.filter((p) => p.id !== id)) }
-		catch (err) { console.error('Error deleting placement:', err) }
+	const handleConfirmDeletePlacement = async () => {
+		if (!placementPendingDelete) return
+		setDeletingPlacement(true)
+		try {
+			await deleteAdPlacement(placementPendingDelete.id)
+			toast.success('Placement deleted successfully')
+			setPlacements((prev) => prev.filter((p) => p.id !== placementPendingDelete.id))
+			setPlacementPendingDelete(null)
+		} catch (err) {
+			console.error('Error deleting placement:', err)
+			toast.error('Failed to delete placement')
+		} finally {
+			setDeletingPlacement(false)
+		}
 	}
 
 	const totalImpressions = ads.reduce((acc, curr) => acc + curr.impressions, 0)
@@ -245,7 +272,7 @@ export default function AdminAdsPage() {
 						</IconButton>
 					</Tooltip>
 					<Tooltip title="Delete campaign">
-						<IconButton size="small" onClick={() => handleDeleteCampaign(ad.id)} sx={{ border: '1px solid #fecaca', borderRadius: 1.5, color: '#dc2626', bgcolor: '#fff1f2', '&:hover': { bgcolor: '#fee2e2' } }}>
+						<IconButton size="small" onClick={() => setAdPendingDelete(ad)} sx={{ border: '1px solid #fecaca', borderRadius: 1.5, color: '#dc2626', bgcolor: '#fff1f2', '&:hover': { bgcolor: '#fee2e2' } }}>
 							<DeleteIcon sx={{ fontSize: 16 }} />
 						</IconButton>
 					</Tooltip>
@@ -283,7 +310,7 @@ export default function AdminAdsPage() {
 			label: 'Paragraph',
 			render: (_, p) => (
 				<Typography variant="caption" color="text.secondary">
-					{p.paragraph_index !== undefined && p.paragraph_index !== null ? `After para ${p.paragraph_index}` : 'â€”'}
+					{p.paragraph_index !== undefined && p.paragraph_index !== null ? `After para ${p.paragraph_index}` : '—'}
 				</Typography>
 			),
 		},
@@ -302,7 +329,7 @@ export default function AdminAdsPage() {
 			align: 'right',
 			render: (_, p) => (
 				<Tooltip title="Remove placement">
-					<IconButton size="small" onClick={() => handleDeletePlacement(p.id)} sx={{ border: '1px solid #fecaca', borderRadius: 1.5, color: '#dc2626', bgcolor: '#fff1f2', '&:hover': { bgcolor: '#fee2e2' } }}>
+					<IconButton size="small" onClick={() => setPlacementPendingDelete(p)} sx={{ border: '1px solid #fecaca', borderRadius: 1.5, color: '#dc2626', bgcolor: '#fff1f2', '&:hover': { bgcolor: '#fee2e2' } }}>
 						<DeleteIcon sx={{ fontSize: 16 }} />
 					</IconButton>
 				</Tooltip>
@@ -458,6 +485,30 @@ export default function AdminAdsPage() {
 					<AppButton variant="contained" onClick={handleSavePlacement} label="Add Rule" sx={{ bgcolor: '#0d9488', fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }} />
 				</DialogActions>
 			</Dialog>
+
+			{/* Confirm Delete Campaign */}
+			<ConfirmModal
+				open={adPendingDelete !== null}
+				onClose={() => setAdPendingDelete(null)}
+				onConfirm={handleConfirmDeleteCampaign}
+				title="Delete Ad Campaign"
+				description={`Delete campaign "${adPendingDelete?.title}"? All placement configs for this ad will be lost.`}
+				variant="delete"
+				confirmLabel="Delete Campaign"
+				loading={deletingCampaign}
+			/>
+
+			{/* Confirm Delete Placement */}
+			<ConfirmModal
+				open={placementPendingDelete !== null}
+				onClose={() => setPlacementPendingDelete(null)}
+				onConfirm={handleConfirmDeletePlacement}
+				title="Delete Placement Configuration"
+				description={`Delete placement rule on route "${placementPendingDelete?.page_route}" (${placementPendingDelete?.placement_key})?`}
+				variant="delete"
+				confirmLabel="Delete Placement"
+				loading={deletingPlacement}
+			/>
 		</Box>
 	)
 }
