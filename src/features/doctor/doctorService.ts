@@ -6,7 +6,7 @@ import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { AppointmentsResponse } from '../../types/appointment'
 import { DoctorSearchResponse } from '../../types/doctor-search'
 import { DoctorDetailResponse } from '../../types/doctor-detail'
-import { SpecialitiesResponse } from '../../types/speciality'
+import { SpecialitiesResponse, SymptomsResponse } from '../../types/speciality'
 import {
 	DoctorProfileApiResponse,
 	DoctorProfileApiData,
@@ -96,6 +96,11 @@ export const getDoctorById = async (id: string, latitude?: number, longitude?: n
 
 export const getSpecialities = async (): Promise<SpecialitiesResponse> => {
 	const res = await ApiService.get<SpecialitiesResponse>(API_ENDPOINTS.SPECIALITIES.LIST)
+	return res.data
+}
+
+export const getSymptoms = async (): Promise<SymptomsResponse> => {
+	const res = await ApiService.get<SymptomsResponse>(API_ENDPOINTS.SPECIALITIES.SYMPTOMS)
 	return res.data
 }
 

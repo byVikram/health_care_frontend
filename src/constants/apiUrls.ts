@@ -53,6 +53,7 @@ export const API_ENDPOINTS = {
 	},
 	SPECIALITIES: {
 		LIST: '/api/specialities',
+		SYMPTOMS: '/api/specialities/symptoms',
 	},
 	AREA_OF_EXPERTISE: {
 		LIST: '/api/area-of-expertise',

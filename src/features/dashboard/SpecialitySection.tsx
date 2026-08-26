@@ -1,7 +1,10 @@
 // src/features/dashboard/SpecialitySection.tsx
-import { Box, Typography, Grid } from '@mui/material'
+import { useEffect, useState } from 'react'
+import { Box, Typography, Grid, Skeleton } from '@mui/material'
 import AppButton from '../../components/common/Button/AppButton'
 import SpecialityCard from '../../components/common/Card/SpecialityCard'
+import { getSymptoms } from '../doctor/doctorService'
+import { SymptomItem } from '../../types/speciality'
 
 import PregnancyIcon from '../../assets/specialties/pregnancy.svg'
 import AcneIcon from '../../assets/specialties/acne.svg'
@@ -11,42 +14,56 @@ import ChildIcon from '../../assets/specialties/child.svg'
 import DepressionIcon from '../../assets/specialties/depression.svg'
 import { useNavigate } from 'react-router-dom'
 
-// Placeholder illustrations from a free public CDN
-const specialities = [
-	{
-		id: 1,
-		title: 'Pregnancy or Period doubts',
-		image: PregnancyIcon,
-	},
-	{
-		id: 2,
-		title: 'Acne, pimple or Skin Issues',
-		image: AcneIcon,
-	},
-	{
-		id: 3,
-		title: 'Performance issues in bed',
-		image: PerformanceIcon,
-	},
-	{
-		id: 4,
-		title: 'Cold, cough or fever',
-		image: ColdIcon,
-	},
-	{
-		id: 5,
-		title: 'Child not feeling well',
-		image: ChildIcon,
-	},
-	{
-		id: 6,
-		title: 'Depression or anxiety',
-		image: DepressionIcon,
-	},
-]
+// icon_key (from the symptoms API) -> local illustration. Falls back to the
+// pregnancy icon only if the backend ever returns a key we don't recognise.
+const ICON_MAP: Record<string, string> = {
+	pregnancy: PregnancyIcon,
+	acne: AcneIcon,
+	performance: PerformanceIcon,
+	cough: ColdIcon,
+	child: ChildIcon,
+	depression: DepressionIcon,
+}
 
 export default function SpecialitySection() {
 	const navigate = useNavigate()
+	const [symptoms, setSymptoms] = useState<SymptomItem[]>([])
+	const [loading, setLoading] = useState(true)
+
+	useEffect(() => {
+		let active = true
+		setLoading(true)
+		getSymptoms()
+			.then((res) => {
+				if (!active) return
+				setSymptoms(res.data)
+			})
+			.catch((err) => {
+				console.error('Failed to load symptoms:', err)
+			})
+			.finally(() => {
+				if (active) setLoading(false)
+			})
+		return () => {
+			active = false
+		}
+	}, [])
+
+	const handleConsult = (symptom: SymptomItem) => {
+		// The symptom -> specialty mapping comes from the backend
+		// (speciality_symptoms). If a symptom has no resolved specialty yet,
+		// send the user to the unfiltered doctor list rather than guessing.
+		if (!symptom.speciality_id) {
+			navigate('/doctors/search')
+			return
+		}
+		const next = new URLSearchParams({
+			speciality_id: symptom.speciality_id,
+			speciality_label: symptom.speciality_label ?? '',
+		})
+		navigate(`/doctors/search?${next.toString()}`)
+	}
+
 	return (
 		<Box sx={{ py: 2 }}>
 			{/* Header Row */}
@@ -86,19 +103,26 @@ export default function SpecialitySection() {
 
 			{/* Speciality Cards */}
 			<Grid container spacing={2}>
-				{specialities.map((s) => (
-					<Grid size={{ xs: 6, sm: 4, md: 2 }} key={s.id}>
-						<Box sx={{ display: 'flex', justifyContent: 'center' }}>
-							<SpecialityCard
-								image={s.image}
-								title={s.title}
-								onConsult={() =>
-									navigate('/doctors/search?speciality_id=3c7b1e9d-8a2f-4d6c-b5a1-7f0e2d9a8c55')
-								}
-							/>
-						</Box>
-					</Grid>
-				))}
+				{loading
+					? Array.from({ length: 6 }).map((_, i) => (
+							<Grid size={{ xs: 6, sm: 4, md: 2 }} key={i}>
+								<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+									<Skeleton variant="circular" width={72} height={72} />
+									<Skeleton variant="text" width="80%" />
+								</Box>
+							</Grid>
+						))
+					: symptoms.map((s) => (
+							<Grid size={{ xs: 6, sm: 4, md: 2 }} key={s.id}>
+								<Box sx={{ display: 'flex', justifyContent: 'center' }}>
+									<SpecialityCard
+										image={(s.icon_key && ICON_MAP[s.icon_key]) || PregnancyIcon}
+										title={s.label}
+										onConsult={() => handleConsult(s)}
+									/>
+								</Box>
+							</Grid>
+						))}
 			</Grid>
 		</Box>
 	)
