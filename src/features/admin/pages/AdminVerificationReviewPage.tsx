@@ -1,5 +1,5 @@
 // src/features/admin/pages/AdminVerificationReviewPage.tsx
-import { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
 	Box,
@@ -8,7 +8,6 @@ import {
 	Stack,
 	CircularProgress,
 	Alert,
-	Divider,
 	IconButton,
 	Tooltip,
 	Avatar,
@@ -24,14 +23,14 @@ import BadgeIcon from '@mui/icons-material/Badge'
 import SchoolIcon from '@mui/icons-material/School'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
-import PaymentsIcon from '@mui/icons-material/Payments'
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline'
 import { toast } from 'react-toastify'
 
 import { ROUTES } from '../../../constants/routes'
 import AppButton from '../../../components/common/Button/AppButton'
 import AppInput from '../../../components/common/Input/AppInput'
-import StatusBadge from '../../../components/admin/StatusBadge'
 
 import DocumentRail from '../../../components/admin/verification/DocumentRail'
 import DocumentViewer from '../../../components/admin/verification/DocumentViewer'
@@ -98,14 +97,30 @@ function InfoTile({
 	icon?: React.ReactNode
 }) {
 	return (
-		<Box sx={{ p: 1.25, bgcolor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-			<Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.25 }}>
+		<Box
+			sx={{
+				p: 1,
+				bgcolor: '#ffffff',
+				borderRadius: '8px',
+				border: '1px solid #e2e8f0',
+				height: '100%',
+				display: 'flex',
+				flexDirection: 'column',
+				justifyContent: 'center',
+			}}
+		>
+			<Stack direction="row" spacing={0.6} alignItems="center" sx={{ mb: 0.25 }}>
 				{icon}
-				<Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+				<Typography
+					variant="caption"
+					color="#64748b"
+					fontWeight={700}
+					sx={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.04em' }}
+				>
 					{label}
 				</Typography>
 			</Stack>
-			<Typography variant="body2" fontWeight={800} color="#0f172a" noWrap sx={{ fontSize: '13px' }}>
+			<Typography variant="body2" fontWeight={800} color="#0f172a" noWrap sx={{ fontSize: '12px' }}>
 				{value || '—'}
 			</Typography>
 		</Box>
@@ -132,14 +147,7 @@ export default function AdminVerificationReviewPage() {
 	const [submitting, setSubmitting] = useState(false)
 
 	// Audit activity log timeline
-	const [auditEvents, setAuditEvents] = useState<AuditTimelineEvent[]>([
-		{
-			id: '1',
-			reviewerName: 'Admin Auditor',
-			action: 'Opened verification session',
-			timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-		},
-	])
+	const [auditEvents, setAuditEvents] = useState<AuditTimelineEvent[]>([])
 
 	const isDoctor = type === 'doctor'
 	const isNurse = type === 'ancillary' || type === 'nurse'
@@ -150,7 +158,6 @@ export default function AdminVerificationReviewPage() {
 		setError(null)
 
 		try {
-			// 1. Fetch live audit history logs from backend first
 			const targetType = isDoctor ? 'doctor' : isNurse ? 'ancillary' : type || 'provider'
 			const auditRes = await getVerificationAuditHistory(targetType, id)
 			let fetchedAuditLogs: AuditHistoryEventItem[] = []
@@ -169,7 +176,6 @@ export default function AdminVerificationReviewPage() {
 				)
 			}
 
-			// Helper to get doc status from audit logs
 			const getDocStatus = (docId: string, docName: string): DocumentStatus => {
 				const latestLog = fetchedAuditLogs.find(
 					(log) =>
@@ -195,14 +201,12 @@ export default function AdminVerificationReviewPage() {
 					: undefined
 			}
 
-			// 2. Fetch doctor verification detail or providers / nurses
 			if (isDoctor) {
 				const res = await getDoctorVerificationDetail(id)
 				if (res.success && res.data) {
 					const data = res.data
 					setDoctorDetail(data)
 
-					// Build documents rail items
 					const docs: VerificationDocumentItem[] = []
 
 					if (data.documents && data.documents.length > 0) {
@@ -268,7 +272,6 @@ export default function AdminVerificationReviewPage() {
 					setError('Doctor verification details could not be loaded.')
 				}
 			} else {
-				// Fetch detail endpoint for nurse / provider
 				let matchedProvider: ProviderVerificationItem | null = null
 
 				try {
@@ -324,12 +327,12 @@ export default function AdminVerificationReviewPage() {
 
 					if (matchedProvider.license_proof_s3_key) {
 						const dId = 'prov_license'
-						const dName = isNurse ? 'Nursing License Document' : 'Business License Proof'
+						const dName = isNurse ? 'Nurse Professional Registration & License' : 'Business License Proof'
 						docs.push({
 							id: dId,
 							name: dName,
 							url: matchedProvider.license_proof_s3_key,
-							type: 'license',
+							type: 'registration_license',
 							status: getDocStatus(dId, dName),
 							issueTag: getDocIssueTag(dId, dName),
 						})
@@ -361,7 +364,7 @@ export default function AdminVerificationReviewPage() {
 		fetchData()
 	}, [fetchData])
 
-	// Keyboard shortcuts navigation (P for Prev, N for Next)
+	// Keyboard shortcuts navigation
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
@@ -375,7 +378,6 @@ export default function AdminVerificationReviewPage() {
 		return () => window.removeEventListener('keydown', handleKeyDown)
 	}, [documents.length])
 
-	// Sync issue flags and reviewer notes when document is selected/switched
 	useEffect(() => {
 		const activeDoc = documents[selectedDocIndex]
 		if (activeDoc) {
@@ -384,7 +386,6 @@ export default function AdminVerificationReviewPage() {
 				: []
 			setSelectedFlags(flags)
 
-			// Prefill notes from the latest audit event of this document if notes are empty
 			const latestLog = auditEvents.find(
 				(evt) =>
 					evt.documentName &&
@@ -400,7 +401,6 @@ export default function AdminVerificationReviewPage() {
 
 	const handleBack = () => navigate(ROUTES.ADMIN.VERIFICATIONS)
 
-	// Document-level action handler (saves to DB immediately)
 	const handleDocAction = async (action: 'approve' | 'reject' | 'reupload') => {
 		if (documents.length === 0 || !id) return
 		const activeDoc = documents[selectedDocIndex]
@@ -445,14 +445,13 @@ export default function AdminVerificationReviewPage() {
 				issue_tags: selectedFlags,
 				notes: reviewerNotes.trim() || undefined,
 			})
-			toast.success(`Document "${activeDoc.name}" status saved to database.`)
+			toast.success(`Document "${activeDoc.name}" status saved.`)
 			await fetchData()
 		} catch (err: unknown) {
-			toast.error(getErrorMessage(err, 'Failed to save document status to database.'))
+			toast.error(getErrorMessage(err, 'Failed to save document status.'))
 		}
 	}
 
-	// Applicant-level action handler
 	const handleApplicantAction = async (verdict: 'approve' | 'request_changes' | 'reject') => {
 		if (!id) return
 		setSubmitting(true)
@@ -519,119 +518,198 @@ export default function AdminVerificationReviewPage() {
 			: doctorDetail?.qualification
 		: providerItem?.qualifications || (isNurse ? 'B.Sc Nursing Certified' : undefined)
 
+	const roleLabel = (isDoctor ? 'Doctor' : isNurse ? 'Nurse' : providerItem?.provider_type || 'Provider').toUpperCase()
+
 	return (
-		<Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 64px)', bgcolor: '#f8fafc' }}>
-			{/* CLEAN TOP NAVIGATION HEADER */}
-			<Box sx={{ bgcolor: '#0f172a', color: '#ffffff', borderBottom: '1px solid #1e293b', flexShrink: 0 }}>
-				<Box sx={{ px: 3, py: 1.5 }}>
-					<Stack direction="row" justifyContent="space-between" alignItems="center">
-						<Stack direction="row" spacing={2} alignItems="center">
-							<AppButton
-								variant="outlined"
-								size="small"
-								startIcon={<ArrowBackIcon />}
-								onClick={handleBack}
-								label="Back to Queue"
-								sx={{ borderRadius: 1.5, borderColor: '#334155', color: '#94a3b8', '&:hover': { borderColor: '#ffffff', color: '#ffffff' } }}
-							/>
+		<Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+			{/* APPLICANT FLOATING HEADER CARD (Primary Single Header) */}
+			<Box
+				sx={{
+					bgcolor: '#ffffff',
+					borderRadius: '12px',
+					border: '1px solid #e2e8f0',
+					px: 2.5,
+					py: 1.25,
+					mb: 2,
+					boxShadow: '0 1px 2px rgba(15,23,42,0.02)',
+				}}
+			>
+				<Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1.5}>
+					<Stack direction="row" spacing={1.75} alignItems="center" flexWrap="wrap">
+						<AppButton
+							variant="outlined"
+							size="small"
+							startIcon={<ArrowBackIcon sx={{ fontSize: 15 }} />}
+							onClick={handleBack}
+							label="Back to Queue"
+							sx={{
+								borderRadius: '8px',
+								borderColor: '#e2e8f0',
+								color: '#334155',
+								bgcolor: '#f8fafc',
+								fontWeight: 700,
+								fontSize: '0.78rem',
+								py: 0.4,
+								px: 1.25,
+								'&:hover': {
+									borderColor: '#0d9488',
+									color: '#0d9488',
+									bgcolor: '#f0fdfa',
+								},
+							}}
+						/>
 
-							<Stack direction="row" spacing={1.25} alignItems="center">
-								<Typography variant="h6" fontWeight={800} color="#ffffff" sx={{ fontSize: 17 }}>
-									{applicantDisplayName || 'Applicant'}
-								</Typography>
-								<Chip
-									label={(isDoctor ? 'Doctor' : isNurse ? 'Nurse' : providerItem?.provider_type || 'Provider').toUpperCase()}
-									size="small"
-									sx={{ bgcolor: isDoctor || isNurse ? '#0d9488' : '#2563eb', color: '#ffffff', fontWeight: 700, fontSize: '0.62rem', height: 20 }}
-								/>
-								<StatusBadge status={isVerified ? 'verified' : (providerItem?.verification_status === 'rejected' ? 'rejected' : 'pending')} label={isVerified ? 'VERIFIED' : (providerItem?.verification_status === 'rejected' ? 'REJECTED' : 'AWAITING AUDIT')} />
-							</Stack>
-						</Stack>
+						<Typography variant="h6" fontWeight={800} color="#0f172a" sx={{ fontSize: 18 }}>
+							{applicantDisplayName || 'Applicant'}
+						</Typography>
 
-						{/* Queue Document Navigation Shortcuts */}
-						<Stack direction="row" spacing={1} alignItems="center">
-							<Tooltip title="Previous Document (Key P / Arrow Up)">
-								<span>
-									<IconButton
-										size="small"
-										disabled={selectedDocIndex === 0}
-										onClick={() => setSelectedDocIndex((prev) => Math.max(prev - 1, 0))}
-										sx={{ color: '#94a3b8', '&:hover': { color: '#ffffff' } }}
-									>
-										<NavigateBeforeIcon />
-									</IconButton>
-								</span>
-							</Tooltip>
-							<Typography variant="caption" color="#94a3b8" fontWeight={700}>
-								Doc {selectedDocIndex + 1} of {documents.length}
-							</Typography>
-							<Tooltip title="Next Document (Key N / Arrow Down)">
-								<span>
-									<IconButton
-										size="small"
-										disabled={selectedDocIndex >= documents.length - 1}
-										onClick={() => setSelectedDocIndex((prev) => Math.min(prev + 1, documents.length - 1))}
-										sx={{ color: '#94a3b8', '&:hover': { color: '#ffffff' } }}
-									>
-										<NavigateNextIcon />
-									</IconButton>
-								</span>
-							</Tooltip>
-						</Stack>
+						<Chip
+							label={roleLabel}
+							size="small"
+							sx={{
+								bgcolor: '#ccfbf1',
+								color: '#0f766e',
+								fontWeight: 800,
+								fontSize: '0.68rem',
+								height: 22,
+								borderRadius: '5px',
+								px: 0.25,
+							}}
+						/>
+
+						<Chip
+							label={isVerified ? 'VERIFIED' : (providerItem?.verification_status === 'rejected' ? 'REJECTED' : 'AWAITING AUDIT')}
+							size="small"
+							sx={{
+								bgcolor: isVerified ? '#dcfce7' : (providerItem?.verification_status === 'rejected' ? '#fee2e2' : '#fef3c7'),
+								color: isVerified ? '#15803d' : (providerItem?.verification_status === 'rejected' ? '#b91c1c' : '#d97706'),
+								fontWeight: 800,
+								fontSize: '0.68rem',
+								height: 22,
+								borderRadius: '5px',
+								px: 0.25,
+							}}
+						/>
 					</Stack>
-				</Box>
+
+					{/* Document Navigation Controls */}
+					<Stack direction="row" spacing={0.75} alignItems="center">
+						<Tooltip title="Previous Document (Key P / Arrow Up)">
+							<span>
+								<IconButton
+									size="small"
+									disabled={selectedDocIndex === 0}
+									onClick={() => setSelectedDocIndex((prev) => Math.max(prev - 1, 0))}
+									sx={{
+										color: '#64748b',
+										border: '1px solid #e2e8f0',
+										borderRadius: '6px',
+										bgcolor: '#ffffff',
+										p: 0.4,
+										'&:hover': { color: '#0d9488', borderColor: '#0d9488', bgcolor: '#f0fdfa' },
+										'&.Mui-disabled': { color: '#cbd5e1', borderColor: '#f1f5f9' },
+									}}
+								>
+									<NavigateBeforeIcon sx={{ fontSize: 16 }} />
+								</IconButton>
+							</span>
+						</Tooltip>
+						<Typography variant="caption" color="#475569" fontWeight={700} sx={{ px: 0.5, fontSize: '12px' }}>
+							Doc {documents.length > 0 ? selectedDocIndex + 1 : 0} of {documents.length}
+						</Typography>
+						<Tooltip title="Next Document (Key N / Arrow Down)">
+							<span>
+								<IconButton
+									size="small"
+									disabled={selectedDocIndex >= documents.length - 1}
+									onClick={() => setSelectedDocIndex((prev) => Math.min(prev + 1, documents.length - 1))}
+									sx={{
+										color: '#64748b',
+										border: '1px solid #e2e8f0',
+										borderRadius: '6px',
+										bgcolor: '#ffffff',
+										p: 0.4,
+										'&:hover': { color: '#0d9488', borderColor: '#0d9488', bgcolor: '#f0fdfa' },
+										'&.Mui-disabled': { color: '#cbd5e1', borderColor: '#f1f5f9' },
+									}}
+								>
+									<NavigateNextIcon sx={{ fontSize: 16 }} />
+								</IconButton>
+							</span>
+						</Tooltip>
+					</Stack>
+				</Stack>
 			</Box>
 
-			{/* DEDICATED APPLICANT PROFILE & DEMOGRAPHICS CARD (BELOW TOP HEADER) */}
+			{/* APPLICANT PROFILE & DEMOGRAPHICS CARD */}
 			{!loading && !error && (
-				<Box sx={{ px: 3, py: 2, bgcolor: '#ffffff', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
-					<Stack direction="row" spacing={2.5} alignItems="center">
+				<Box
+					sx={{
+						bgcolor: '#ffffff',
+						borderRadius: '12px',
+						border: '1px solid #e2e8f0',
+						p: 1.75,
+						mb: 1.5,
+						boxShadow: '0 1px 2px rgba(15,23,42,0.02)',
+					}}
+				>
+					<Stack direction="row" spacing={2} alignItems="flex-start">
 						<Avatar
 							sx={{
-								width: 52,
-								height: 52,
-								bgcolor: isDoctor || isNurse ? '#0d9488' : '#2563eb',
+								width: 44,
+								height: 44,
+								bgcolor: '#0d9488',
 								color: '#ffffff',
-								fontSize: 22,
+								fontSize: 19,
 								fontWeight: 800,
-								boxShadow: '0 4px 12px rgba(15,23,42,0.08)',
+								flexShrink: 0,
+								mt: 0.25,
 							}}
 						>
-							{(applicantDisplayName || 'V').substring(0, 1).toUpperCase()}
+							{(applicantDisplayName || 'N').substring(0, 1).toUpperCase()}
 						</Avatar>
 
 						<Box sx={{ flex: 1 }}>
-							<Typography variant="caption" fontWeight={800} color="#0d9488" sx={{ textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 1 }}>
-								{isNurse ? 'Nurse Professional Profile & Credentials' : isDoctor ? 'Doctor Profile & Demographics' : 'Provider Profile & Business Credentials'}
+							<Typography
+								variant="caption"
+								fontWeight={800}
+								color="#0d9488"
+								sx={{ textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 1, fontSize: '11px' }}
+							>
+								{isNurse
+									? 'NURSE PROFESSIONAL PROFILE & CREDENTIALS'
+									: isDoctor
+									? 'DOCTOR PROFILE & DEMOGRAPHICS'
+									: 'PROVIDER PROFILE & BUSINESS CREDENTIALS'}
 							</Typography>
 
-							<Grid container spacing={1.5}>
+							<Grid container spacing={1}>
 								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 									<InfoTile
 										label="Demographics & Role"
 										value={isDoctor ? `${doctorDetail?.gender || 'Gender N/A'} • ${doctorAge != null ? `${doctorAge} yrs` : 'N/A'}` : isNurse ? 'Certified Healthcare Nurse' : 'Provider Organization'}
-										icon={<PersonIcon sx={{ fontSize: 13, color: '#0d9488' }} />}
+										icon={<PersonIcon sx={{ fontSize: 12, color: '#0d9488' }} />}
 									/>
 								</Grid>
 								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 									<InfoTile
 										label="Email Address"
 										value={isDoctor ? doctorDetail?.email : providerItem?.email}
-										icon={<EmailIcon sx={{ fontSize: 13, color: '#0d9488' }} />}
+										icon={<EmailIcon sx={{ fontSize: 12, color: '#0d9488' }} />}
 									/>
 								</Grid>
 								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 									<InfoTile
 										label="Contact Phone"
 										value={isDoctor ? doctorDetail?.contact_number : providerItem?.contact_number}
-										icon={<PhoneIcon sx={{ fontSize: 13, color: '#0d9488' }} />}
+										icon={<PhoneIcon sx={{ fontSize: 12, color: '#0d9488' }} />}
 									/>
 								</Grid>
 								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 									<InfoTile
 										label="Registration / License #"
 										value={isDoctor ? (doctorDetail?.registration_number ? `#${doctorDetail.registration_number}` : 'Pending') : (providerItem?.license_number ? `#${providerItem.license_number}` : 'Pending')}
-										icon={<BadgeIcon sx={{ fontSize: 13, color: '#0d9488' }} />}
+										icon={<BadgeIcon sx={{ fontSize: 12, color: '#0d9488' }} />}
 									/>
 								</Grid>
 
@@ -639,28 +717,28 @@ export default function AdminVerificationReviewPage() {
 									<InfoTile
 										label="Qualifications / Degrees"
 										value={qualificationsSummary}
-										icon={<SchoolIcon sx={{ fontSize: 13, color: '#0d9488' }} />}
+										icon={<SchoolIcon sx={{ fontSize: 12, color: '#0d9488' }} />}
 									/>
 								</Grid>
 								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 									<InfoTile
 										label={isNurse ? 'Specialty / Care Focus' : 'Specialization / Location'}
-										value={isDoctor ? doctorDetail?.specialities?.join(', ') : isNurse ? providerItem?.specialty || 'General In-Home Nursing' : 'Diagnostic Services'}
-										icon={isNurse ? <MedicalServicesIcon sx={{ fontSize: 13, color: '#0d9488' }} /> : <LocationOnIcon sx={{ fontSize: 13, color: '#0d9488' }} />}
+										value={isDoctor ? doctorDetail?.specialities?.join(', ') : isNurse ? providerItem?.specialty || 'Nursing Care' : 'Diagnostic Services'}
+										icon={isNurse ? <MedicalServicesIcon sx={{ fontSize: 12, color: '#0d9488' }} /> : <LocationOnIcon sx={{ fontSize: 12, color: '#0d9488' }} />}
 									/>
 								</Grid>
 								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 									<InfoTile
 										label="Hospital / Organization"
 										value={isDoctor ? `${doctorDetail?.hospital || 'Hospital N/A'}` : isNurse ? 'In-Home Care Delivery' : providerItem?.name}
-										icon={<LocalHospitalIcon sx={{ fontSize: 13, color: '#0d9488' }} />}
+										icon={<LocalHospitalIcon sx={{ fontSize: 12, color: '#0d9488' }} />}
 									/>
 								</Grid>
 								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 									<InfoTile
 										label="Registration Date"
-										value={isDoctor ? (doctorDetail?.date_of_birth ? `DOB: ${doctorDetail.date_of_birth}` : 'N/A') : providerItem?.created_at ? new Date(providerItem.created_at).toLocaleDateString('en-IN') : '—'}
-										icon={<PaymentsIcon sx={{ fontSize: 13, color: '#0d9488' }} />}
+										value={isDoctor ? (doctorDetail?.date_of_birth ? `DOB: ${doctorDetail.date_of_birth}` : 'N/A') : providerItem?.created_at ? new Date(providerItem.created_at).toLocaleDateString('en-GB') : '—'}
+										icon={<CalendarTodayIcon sx={{ fontSize: 12, color: '#0d9488' }} />}
 									/>
 								</Grid>
 							</Grid>
@@ -670,21 +748,31 @@ export default function AdminVerificationReviewPage() {
 			)}
 
 			{loading ? (
-				<Stack alignItems="center" justifyContent="center" sx={{ flex: 1 }}>
-					<CircularProgress sx={{ color: '#0d9488' }} size={36} />
-					<Typography variant="body2" sx={{ color: '#64748b', mt: 2 }}>
-						Loading verification command center...
+				<Stack alignItems="center" justifyContent="center" sx={{ flex: 1, minHeight: 340 }}>
+					<CircularProgress sx={{ color: '#0d9488' }} size={32} />
+					<Typography variant="body2" sx={{ color: '#64748b', mt: 1.5, fontWeight: 600 }}>
+						Loading verification workspace...
 					</Typography>
 				</Stack>
 			) : error ? (
-				<Box sx={{ p: 4 }}>
+				<Box sx={{ p: 3 }}>
 					<Alert severity="warning">{error}</Alert>
 				</Box>
 			) : (
-				/* 3-PANEL VERIFICATION WORKSPACE */
-				<Box sx={{ height: 'calc(100vh - 240px)', minHeight: 680, display: 'flex', overflow: 'hidden' }}>
-					{/* PANEL 1: Document Navigation Rail (260px) */}
-					<Box sx={{ width: 260, borderRight: '1px solid #e2e8f0', bgcolor: '#ffffff', flexShrink: 0 }}>
+				/* 3-PANEL UNIFIED VERIFICATION WORKSPACE */
+				<Box
+					sx={{
+						bgcolor: '#ffffff',
+						borderRadius: '12px',
+						border: '1px solid #e2e8f0',
+						minHeight: 500,
+						display: 'flex',
+						overflow: 'hidden',
+						boxShadow: '0 1px 2px rgba(15,23,42,0.02)',
+					}}
+				>
+					{/* PANEL 1: Review Progress & Document List (240px) */}
+					<Box sx={{ width: 240, borderRight: '1px solid #e2e8f0', bgcolor: '#ffffff', flexShrink: 0 }}>
 						<DocumentRail
 							documents={documents}
 							selectedIndex={selectedDocIndex}
@@ -693,34 +781,50 @@ export default function AdminVerificationReviewPage() {
 					</Box>
 
 					{/* PANEL 2: Document Inspection Canvas (Flex Grow) */}
-					<Box sx={{ flex: 1, overflow: 'hidden' }}>
+					<Box sx={{ flex: 1, overflow: 'hidden', bgcolor: '#ffffff' }}>
 						<DocumentViewer documents={documents} activeDocument={activeDocument} />
 					</Box>
 
-					{/* PANEL 3: Audit & Verification Actions Panel (380px) */}
-					<Box sx={{ width: 380, borderLeft: '1px solid #e2e8f0', bgcolor: '#ffffff', display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'hidden' }}>
+					{/* PANEL 3: Audit, Issue Flags & Actions Panel (310px) */}
+					<Box
+						sx={{
+							width: 310,
+							borderLeft: '1px solid #e2e8f0',
+							bgcolor: '#ffffff',
+							display: 'flex',
+							flexDirection: 'column',
+							flexShrink: 0,
+							overflow: 'hidden',
+						}}
+					>
 						{/* Scrollable Audit Section */}
-						<Box sx={{ flex: 1, overflowY: 'auto', p: 2.5, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+						<Box sx={{ flex: 1, overflowY: 'auto', p: 1.75, display: 'flex', flexDirection: 'column', gap: 1.75 }}>
 							{/* Document Issue Flag Selector */}
 							<IssueFlagSelector selectedFlags={selectedFlags} onToggleFlag={handleToggleFlag} />
 
-							{/* Reviewer Notes Box */}
+							{/* Reviewer Comments Box */}
 							<Box>
-								<Typography variant="caption" fontWeight={800} color="#475569" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', mb: 1 }}>
-									Reviewer Audit Comments
-								</Typography>
+								<Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.75 }}>
+									<ChatBubbleOutlineIcon sx={{ fontSize: 15, color: '#0d9488' }} />
+									<Typography
+										variant="caption"
+										fontWeight={800}
+										color="#0f172a"
+										sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '11px' }}
+									>
+										Reviewer Audit Comments
+									</Typography>
+								</Stack>
 								<AppInput
 									label=""
 									placeholder="Enter review findings, comments, or re-upload instructions..."
 									value={reviewerNotes}
 									onChange={(e) => setReviewerNotes(e.target.value)}
 									multiline
-									rows={3}
+									rows={2}
 									fullWidth
 								/>
 							</Box>
-
-							<Divider />
 
 							{/* Review History / Audit Trail Timeline */}
 							<AuditTimeline events={auditEvents} />

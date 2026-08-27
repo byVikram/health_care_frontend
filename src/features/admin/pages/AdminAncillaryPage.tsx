@@ -29,12 +29,14 @@ import CancelIcon from '@mui/icons-material/Cancel'
 import HealingIcon from '@mui/icons-material/Healing'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import RestartAltIcon from '@mui/icons-material/RestartAlt'
 
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 import AdminStatCard from '../../../components/admin/AdminStatCard'
 import StatusBadge from '../../../components/admin/StatusBadge'
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import AppInput from '../../../components/common/Input/AppInput'
+import AppDatePicker from '../../../components/common/DatePicker/AppDatePicker'
 import AdminEmptyState from '../../../components/admin/AdminEmptyState'
 import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
 import { ROUTES } from '../../../constants/routes'
@@ -48,11 +50,8 @@ import {
 	ANCILLARY_ACTIVE_STATUSES,
 	ANCILLARY_CANCELLED_STATUSES,
 	listAdminAncillaryRequests,
-	getAdminAncillaryStats,
 	getAncillaryCategories,
-	getAdminAncillaryRequestDetail,
 	cancelAdminAncillaryRequest,
-	reassignAdminAncillaryRequest,
 } from '../adminService'
 import { formatINR } from '../../../utils/Utils'
 
@@ -96,6 +95,16 @@ function getErrorMessage(err: unknown, fallback: string = 'An error occurred'): 
 	if (typeof err === 'string') return err
 	if (err && typeof err === 'object' && 'message' in err) return String((err as { message: unknown }).message)
 	return fallback
+}
+
+function ddmmyyyyToIso(value?: string): string | undefined {
+	if (!value) return undefined
+	const parts = value.split('/')
+	if (parts.length === 3) {
+		const [day, month, year] = parts
+		return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+	}
+	return value
 }
 
 type OperationalTab = 'all' | 'active' | 'searching' | 'in_progress' | 'completed' | 'cancelled'
@@ -192,8 +201,8 @@ export default function AdminAncillaryPage() {
 				status: getStatusFilterForTab(activeTab),
 				specialtyId: specialtyFilter || undefined,
 				dateFilter: dateFilter !== 'all' ? dateFilter : undefined,
-				startDate: dateFilter === 'custom' && startDate ? startDate : undefined,
-				endDate: dateFilter === 'custom' && endDate ? endDate : undefined,
+				startDate: dateFilter === 'custom' && startDate ? ddmmyyyyToIso(startDate) : undefined,
+				endDate: dateFilter === 'custom' && endDate ? ddmmyyyyToIso(endDate) : undefined,
 				sortOrder,
 			})
 
@@ -465,17 +474,16 @@ export default function AdminAncillaryPage() {
 				subtitle="Real-time in-home nursing, physiotherapy, and rehabilitation service dispatch & operational control"
 				actions={
 					<Button
-						variant="outlined"
-						startIcon={<RefreshIcon />}
 						onClick={fetchRequests}
-						disabled={loading}
+						startIcon={<RefreshIcon sx={{ fontSize: 17 }} />}
 						sx={{
-							borderRadius: 2,
-							fontWeight: 700,
 							textTransform: 'none',
-							color: '#0f172a',
-							borderColor: '#cbd5e1',
-							'&:hover': { borderColor: '#94a3b8', bgcolor: '#f8fafc' },
+							fontWeight: 700,
+							fontSize: 13,
+							color: '#0d9488',
+							border: '1px solid #e2e8f0',
+							borderRadius: '8px',
+							'&:hover': { bgcolor: 'rgba(13,148,136,0.08)' },
 						}}
 					>
 						Refresh
@@ -603,7 +611,7 @@ export default function AdminAncillaryPage() {
 			{/* ── Filter & Search Toolbar ── */}
 			<Stack
 				direction={{ xs: 'column', lg: 'row' }}
-				spacing={2}
+				spacing={1}
 				alignItems={{ xs: 'stretch', lg: 'center' }}
 				justifyContent="space-between"
 				sx={{ mb: 3 }}
@@ -613,12 +621,12 @@ export default function AdminAncillaryPage() {
 					value={searchInput}
 					onChange={handleSearchChange}
 					startIcon={<SearchIcon sx={{ color: '#94a3b8' }} />}
-					sx={{ width: { xs: '100%', lg: 320 } }}
+					sx={{ width: { xs: '100%', lg: 220, xl: 260 } }}
 				/>
 
-				<Stack direction="row" spacing={1.5} alignItems="center" sx={{ flexWrap: 'wrap', gap: 1 }}>
+				<Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" sx={{ gap: 0.75 }}>
 					{/* Specialty Filter */}
-					<FormControl size="small" sx={{ minWidth: 160 }}>
+					<FormControl size="small" sx={{ minWidth: 135 }}>
 						<InputLabel id="specialty-filter-label">Specialty</InputLabel>
 						<Select
 							labelId="specialty-filter-label"
@@ -646,7 +654,7 @@ export default function AdminAncillaryPage() {
 					</FormControl>
 
 					{/* Date Filter */}
-					<FormControl size="small" sx={{ minWidth: 140 }}>
+					<FormControl size="small" sx={{ minWidth: 120 }}>
 						<InputLabel id="date-filter-label">Date</InputLabel>
 						<Select
 							labelId="date-filter-label"
@@ -665,40 +673,88 @@ export default function AdminAncillaryPage() {
 						</Select>
 					</FormControl>
 
-					{/* Custom Date Range Inputs */}
+					{/* Custom Date Range MUI Date Pickers (Indian DD/MM/YYYY Format) */}
 					{dateFilter === 'custom' && (
-						<Stack direction="row" spacing={1} alignItems="center">
-							<AppInput
-								type="date"
-								size="small"
-								value={startDate}
-								onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-									setStartDate(e.target.value)
-									setPage(1)
-								}}
-								sx={{ width: 145 }}
-							/>
-							<Typography variant="caption" color="text.secondary">to</Typography>
-							<AppInput
-								type="date"
-								size="small"
-								value={endDate}
-								onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-									setEndDate(e.target.value)
-									setPage(1)
-								}}
-								sx={{ width: 145 }}
-							/>
+						<Stack direction="row" spacing={0.5} alignItems="center">
+							<Box sx={{ width: 152 }}>
+								<AppDatePicker
+									placeholder="Start Date"
+									format="DD/MM/YYYY"
+									value={startDate || null}
+									onChange={(val) => {
+										setStartDate(val || '')
+										setPage(1)
+									}}
+									size="small"
+									sx={{
+										height: 40,
+										'& .MuiOutlinedInput-root, & .MuiPickersOutlinedInput-root': {
+											height: 40,
+											bgcolor: '#ffffff',
+											borderRadius: '6px',
+											pr: 0.5,
+										},
+										'& .MuiOutlinedInput-input, & .MuiPickersOutlinedInput-input, & .MuiPickersSectionList-root': {
+											padding: '8px 2px 8px 10px !important',
+											fontSize: '0.78rem !important',
+											fontWeight: 600,
+											letterSpacing: '-0.01em',
+										},
+										'& .MuiPickersSectionList-sectionContent': {
+											fontSize: '0.78rem !important',
+										},
+										'& .MuiIconButton-root': {
+											p: '3px !important',
+										},
+									}}
+								/>
+							</Box>
+							<Typography variant="body2" color="text.secondary" sx={{ fontWeight: 700, px: 0.25, fontSize: '0.8rem' }}>
+								To
+							</Typography>
+							<Box sx={{ width: 152 }}>
+								<AppDatePicker
+									placeholder="End Date"
+									format="DD/MM/YYYY"
+									value={endDate || null}
+									onChange={(val) => {
+										setEndDate(val || '')
+										setPage(1)
+									}}
+									size="small"
+									sx={{
+										height: 40,
+										'& .MuiOutlinedInput-root, & .MuiPickersOutlinedInput-root': {
+											height: 40,
+											bgcolor: '#ffffff',
+											borderRadius: '6px',
+											pr: 0.5,
+										},
+										'& .MuiOutlinedInput-input, & .MuiPickersOutlinedInput-input, & .MuiPickersSectionList-root': {
+											padding: '8px 2px 8px 10px !important',
+											fontSize: '0.78rem !important',
+											fontWeight: 600,
+											letterSpacing: '-0.01em',
+										},
+										'& .MuiPickersSectionList-sectionContent': {
+											fontSize: '0.78rem !important',
+										},
+										'& .MuiIconButton-root': {
+											p: '3px !important',
+										},
+									}}
+								/>
+							</Box>
 						</Stack>
 					)}
 
-					{/* Sort Order */}
-					<FormControl size="small" sx={{ minWidth: 130 }}>
-						<InputLabel id="sort-order-label">Sort</InputLabel>
+					{/* Order By Filter */}
+					<FormControl size="small" sx={{ minWidth: 125 }}>
+						<InputLabel id="order-by-label">Order By</InputLabel>
 						<Select
-							labelId="sort-order-label"
+							labelId="order-by-label"
 							value={sortOrder}
-							label="Sort"
+							label="Order By"
 							onChange={(e) => {
 								setSortOrder(e.target.value)
 								setPage(1)
@@ -709,23 +765,43 @@ export default function AdminAncillaryPage() {
 						</Select>
 					</FormControl>
 
+					{/* Reset Filter Button */}
 					{(searchQuery || activeTab !== 'all' || specialtyFilter || dateFilter !== 'all' || startDate || endDate) && (
-						<Button
-							variant="text"
-							onClick={() => {
-								setSearchInput('')
-								setSearchQuery('')
-								setActiveTab('all')
-								setSpecialtyFilter('')
-								setDateFilter('all')
-								setStartDate('')
-								setEndDate('')
-								setPage(1)
-							}}
-							sx={{ textTransform: 'none', color: '#64748b', fontWeight: 600 }}
-						>
-							Reset Filters
-						</Button>
+						<Tooltip title="Reset all active filters">
+							<Button
+								size="small"
+								onClick={() => {
+									setSearchInput('')
+									setSearchQuery('')
+									setActiveTab('all')
+									setSpecialtyFilter('')
+									setDateFilter('all')
+									setStartDate('')
+									setEndDate('')
+									setPage(1)
+								}}
+								startIcon={<RestartAltIcon sx={{ fontSize: 16 }} />}
+								sx={{
+									textTransform: 'none',
+									color: '#64748b',
+									border: '1px solid #e2e8f0',
+									bgcolor: '#ffffff',
+									fontWeight: 700,
+									fontSize: '12px',
+									height: 40,
+									px: 1.25,
+									borderRadius: '8px',
+									whiteSpace: 'nowrap',
+									'&:hover': {
+										borderColor: '#cbd5e1',
+										bgcolor: '#f8fafc',
+										color: '#0f172a',
+									},
+								}}
+							>
+								Reset
+							</Button>
+						</Tooltip>
 					)}
 				</Stack>
 			</Stack>
