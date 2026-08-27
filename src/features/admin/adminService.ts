@@ -41,16 +41,37 @@ export interface DoctorVerifyPayload {
 	document_reviews?: DocumentReviewItemPayload[]
 }
 
+export interface NurseVerificationItem {
+	id: string
+	public_id?: string
+	name: string
+	owner_name?: string
+	email?: string
+	contact_number?: string
+	license_number?: string
+	license_proof_s3_key?: string
+	speciality?: string
+	qualifications?: string
+	capabilities?: string[]
+	verification_status?: string
+	is_verified: boolean
+	created_at: string
+}
+
 export interface ProviderVerificationItem {
 	id: string
 	public_id?: string
-	provider_type: 'pharmacy' | 'radiology' | 'laboratory'
+	provider_type: 'pharmacy' | 'radiology' | 'laboratory' | 'ancillary' | 'nurse'
 	name?: string
 	owner_name?: string
 	email?: string
 	contact_number?: string
 	license_number?: string
 	license_proof_s3_key?: string
+	specialty?: string
+	qualifications?: string
+	capabilities?: string[]
+	verification_status?: string
 	is_verified: boolean
 	created_at: string
 }
@@ -92,6 +113,8 @@ export interface AdminUserItem {
 	laboratory_id?: string | null
 	/** Only present for radiology-role rows -- opens the radiology details drawer. */
 	radiology_id?: string | null
+	/** Only present for ancillary/nurse-role rows. */
+	ancillary_id?: string | null
 }
 
 export interface AdminUserListParams {
@@ -162,7 +185,7 @@ export interface AdminPatientDetail {
 
 export interface AdminProviderDetail {
 	provider_id: string
-	provider_type: 'pharmacy' | 'radiology' | 'laboratory'
+	provider_type: 'pharmacy' | 'radiology' | 'laboratory' | 'ancillary' | 'nurse' | string
 	owner_name: string
 	business_name?: string | null
 	email?: string | null
@@ -179,6 +202,10 @@ export interface AdminProviderDetail {
 	state?: string | null
 	pincode?: string | null
 	registration_date?: string
+	specialty?: string | null
+	qualifications?: string | null
+	capabilities?: string[] | null
+	verification_status?: string | null
 }
 
 export interface AppointmentActionFlags {
@@ -342,6 +369,111 @@ export interface VerificationQueueListParams {
 export interface DoctorVerificationListResult {
 	items: DoctorVerificationItem[]
 	total: number
+}
+
+export interface NurseVerificationListResult {
+	items: NurseVerificationItem[]
+	total: number
+}
+
+/** GET /api/admin/providers/verification-queue (filtered for nurses) */
+export const getNursesVerificationQueue = async (params: VerificationQueueListParams = {}) => {
+	const { page = 1, pageSize = 10 } = params
+	try {
+		const res = await ApiService.getWithParams<{
+			success: boolean
+			data: {
+				pharmacies?: any[]
+				radiology?: any[]
+				laboratories?: any[]
+				ancillary?: any[]
+			} | { items: any[]; total: number } | any[]
+		}>(API_ENDPOINTS.ADMIN.PROVIDERS_VERIFICATION_QUEUE, { page, page_size: pageSize })
+
+		if (res.data?.success && res.data.data) {
+			const payload = res.data.data
+
+			if (Array.isArray(payload)) {
+				const allNurses = payload.filter((p: any) => p && (p.provider_type === 'ancillary' || p.provider_type === 'nurse'))
+				const mapped: NurseVerificationItem[] = allNurses.map((p: any) => ({
+					id: p.id || p.public_id || '',
+					public_id: p.public_id || p.id,
+					name: p.name || p.owner_name || 'Nurse',
+					owner_name: p.owner_name || p.name,
+					email: p.email || '',
+					contact_number: p.contact_number || '',
+					license_number: p.license_number || '',
+					license_proof_s3_key: p.license_proof_s3_key,
+					speciality: p.specialty || p.speciality || 'General Nursing',
+					qualifications: p.qualifications || '',
+					capabilities: Array.isArray(p.capabilities) ? p.capabilities : [],
+					verification_status: p.verification_status || (p.is_verified ? 'approved' : 'pending'),
+					is_verified: Boolean(p.is_verified),
+					created_at: p.created_at || '',
+				}))
+				const total = mapped.length
+				const start = (page - 1) * pageSize
+				return { success: true, data: { items: mapped.slice(start, start + pageSize), total } }
+			}
+
+			if ('items' in payload && Array.isArray(payload.items)) {
+				const allNurses = payload.items.filter(
+					(p: any) => p && (p.provider_type === 'ancillary' || p.provider_type === 'nurse')
+				)
+				const mapped: NurseVerificationItem[] = allNurses.map((p: any) => ({
+					id: p.id || p.public_id || '',
+					public_id: p.public_id || p.id,
+					name: p.name || p.owner_name || 'Nurse',
+					owner_name: p.owner_name || p.name,
+					email: p.email || '',
+					contact_number: p.contact_number || '',
+					license_number: p.license_number || '',
+					license_proof_s3_key: p.license_proof_s3_key,
+					speciality: p.specialty || p.speciality || 'General Nursing',
+					qualifications: p.qualifications || '',
+					capabilities: Array.isArray(p.capabilities) ? p.capabilities : [],
+					verification_status: p.verification_status || (p.is_verified ? 'approved' : 'pending'),
+					is_verified: Boolean(p.is_verified),
+					created_at: p.created_at || '',
+				}))
+				const total = mapped.length
+				const start = (page - 1) * pageSize
+				return { success: true, data: { items: mapped.slice(start, start + pageSize), total } }
+			}
+
+			const rawData = payload as any
+			const ancillary = Array.isArray(rawData.ancillary) ? rawData.ancillary : []
+			const mapped: NurseVerificationItem[] = ancillary.map((item: any) => ({
+				id: item.id || item.public_id || '',
+				public_id: item.public_id || item.id,
+				name: item.name || item.owner_name || 'Nurse',
+				owner_name: item.owner_name || item.name,
+				email: item.email || '',
+				contact_number: item.contact_number || '',
+				license_number: item.license_number || '',
+				license_proof_s3_key: item.license_proof_s3_key,
+				speciality: item.specialty || item.speciality || 'General Nursing',
+				qualifications: item.qualifications || '',
+				capabilities: Array.isArray(item.capabilities) ? item.capabilities : [],
+				verification_status: item.verification_status || (item.is_verified ? 'approved' : 'pending'),
+				is_verified: Boolean(item.is_verified),
+				created_at: item.created_at || '',
+			}))
+			const total = mapped.length
+			const start = (page - 1) * pageSize
+			const items = mapped.slice(start, start + pageSize)
+			return { success: true, data: { items, total } }
+		}
+	} catch (err) {
+		console.warn('getNursesVerificationQueue safe catch:', err)
+	}
+
+	return { success: true, data: { items: [], total: 0 } }
+}
+
+/** POST /api/admin/providers/ancillary/:nurse_id/verify */
+export const verifyNurse = async (nurseId: string, payload: ProviderVerifyPayload) => {
+	return verifyProvider('ancillary', nurseId, payload)
 }
 
 export interface ProviderVerificationListResult {
@@ -1196,3 +1328,266 @@ export const assignDoctorsToSubadmin = async (doctorIds: string[], assignedToId:
 	)
 	return res.data
 }
+
+
+// ── Admin Ancillary Operations / Service Management ───────────────────────────
+
+export interface AdminAncillaryPatient {
+	id: string
+	public_id?: string
+	name: string
+	contact_number?: string
+	relationship?: string
+	age?: number
+	gender?: string
+}
+
+export interface AdminAncillaryNurse {
+	provider_id: string
+	public_id?: string
+	name: string
+	qualifications?: string
+	is_online: boolean
+	is_verified: boolean
+	license_number?: string
+	contact_number?: string
+	current_lat?: number
+	current_lng?: number
+	last_location_update?: string
+}
+
+export interface AdminAncillaryServiceInfo {
+	specialty_id?: string
+	specialty_name?: string
+	procedure_id?: string
+	procedure_name?: string
+	estimated_duration?: string
+	medical_notes?: string
+	chief_complaint?: string
+}
+
+export interface AdminAncillaryLocation {
+	street_address: string
+	latitude?: number
+	longitude?: number
+}
+
+export interface AdminAncillaryPayment {
+	amount: string
+	payment_method: string
+	payment_status: string
+}
+
+export interface AdminAncillarySessionInfo {
+	otp_verified: boolean
+	otp_verified_at?: string | null
+	checklist?: Record<string, boolean> | null
+	clinical_notes?: string | null
+}
+
+export type AncillaryRequestStatus =
+	| 'SEARCHING'
+	| 'SEARCHING_FOR_NURSE'
+	| 'SCHEDULED_PENDING'
+	| 'REQUESTED'
+	| 'OFFERED'
+	| 'ASSIGNED'
+	| 'NURSE_ASSIGNED'
+	| 'EN_ROUTE'
+	| 'ARRIVED'
+	| 'IN_PROGRESS'
+	| 'VERIFICATION_PENDING'
+	| 'COMPLETED'
+	| 'CANCELLED'
+	| 'CANCELLED_BY_PATIENT'
+	| 'CANCELLED_BY_PROVIDER'
+	| 'EXPIRED'
+	| 'FAILED'
+
+export const ANCILLARY_SEARCHING_STATUSES: AncillaryRequestStatus[] = [
+	'SEARCHING',
+	'SEARCHING_FOR_NURSE',
+	'SCHEDULED_PENDING',
+	'REQUESTED',
+]
+
+export const ANCILLARY_ACTIVE_STATUSES: AncillaryRequestStatus[] = [
+	'ASSIGNED',
+	'NURSE_ASSIGNED',
+	'EN_ROUTE',
+	'ARRIVED',
+	'IN_PROGRESS',
+	'VERIFICATION_PENDING',
+]
+
+export const ANCILLARY_CANCELLED_STATUSES: AncillaryRequestStatus[] = [
+	'CANCELLED',
+	'CANCELLED_BY_PATIENT',
+	'CANCELLED_BY_PROVIDER',
+	'EXPIRED',
+	'FAILED',
+]
+
+export const ANCILLARY_TERMINAL_STATUSES: AncillaryRequestStatus[] = [
+	'COMPLETED',
+	'CANCELLED',
+	'CANCELLED_BY_PATIENT',
+	'CANCELLED_BY_PROVIDER',
+	'EXPIRED',
+	'FAILED',
+]
+
+export interface AdminAncillaryRequestItem {
+	id: string
+	public_id: string
+	patient: AdminAncillaryPatient
+	nurse: AdminAncillaryNurse | null
+	service: AdminAncillaryServiceInfo
+	location: AdminAncillaryLocation
+	booking_type: 'INSTANT' | 'SCHEDULED' | string
+	status: AncillaryRequestStatus | string
+	assignment: {
+		offer_status?: string
+	} | null
+	payment: AdminAncillaryPayment
+	created_at: string
+	requires_attention?: boolean
+	attention_reason?: string
+}
+
+export interface AdminAncillaryStats {
+	active_services: number
+	searching_unassigned: number
+	in_progress: number
+	completed_today: number
+	cancelled: number
+	nurses_online: number
+	total_requests: number
+}
+
+export interface AdminAncillaryDetail extends AdminAncillaryRequestItem {
+	session?: AdminAncillarySessionInfo | null
+}
+
+export interface AdminAncillaryListParams {
+	page?: number
+	pageSize?: number
+	search?: string
+	status?: string
+	bookingType?: string
+	specialtyId?: string
+	providerId?: string
+	dateFilter?: string
+	startDate?: string
+	endDate?: string
+	sortOrder?: 'newest' | 'oldest' | string
+}
+
+export interface AdminAncillaryListResult {
+	items: AdminAncillaryRequestItem[]
+	total: number
+	page: number
+	page_size: number
+	total_pages: number
+	stats?: AdminAncillaryStats
+}
+
+export interface AvailableAncillaryProviderItem {
+	provider_id: string
+	public_id: string
+	name: string
+	qualifications?: string
+	specialty_name?: string
+	is_online: boolean
+	is_verified: boolean
+	license_number?: string
+	contact_number?: string
+}
+
+export interface AncillaryCategoryItem {
+	id: string
+	code: string
+	title: string
+	description?: string
+	icon?: string
+}
+
+/** GET /api/ancillary/categories -- Get active categories / specialties from backend */
+export const getAncillaryCategories = async () => {
+	const res = await ApiService.get<{ success: boolean; data: AncillaryCategoryItem[] }>(
+		'/api/ancillary/categories'
+	)
+	return res.data
+}
+
+/** GET /api/admin/ancillary/requests -- List operational ancillary requests */
+export const listAdminAncillaryRequests = async (params: AdminAncillaryListParams = {}) => {
+	const res = await ApiService.get<AdminMutationResponse<AdminAncillaryListResult>>(
+		API_ENDPOINTS.ADMIN.ANCILLARY_REQUESTS,
+		{
+			params: {
+				page: params.page || 1,
+				page_size: params.pageSize || 10,
+				search: params.search || undefined,
+				status: params.status || undefined,
+				booking_type: params.bookingType || undefined,
+				specialty_id: params.specialtyId || undefined,
+				provider_id: params.providerId || undefined,
+				date_filter: params.dateFilter || undefined,
+				start_date: params.startDate || undefined,
+				end_date: params.endDate || undefined,
+				sort_order: params.sortOrder || 'newest',
+			},
+		}
+	)
+	return res.data
+}
+
+/** GET /api/admin/ancillary/stats -- Fetch summary KPI metrics */
+export const getAdminAncillaryStats = async () => {
+	const res = await ApiService.get<AdminMutationResponse<AdminAncillaryStats>>(
+		API_ENDPOINTS.ADMIN.ANCILLARY_STATS
+	)
+	return res.data
+}
+
+/** GET /api/admin/ancillary/requests/:requestId -- Fetch full operational detail */
+export const getAdminAncillaryRequestDetail = async (requestId: string) => {
+	const res = await ApiService.get<AdminMutationResponse<AdminAncillaryDetail>>(
+		API_ENDPOINTS.ADMIN.ANCILLARY_DETAIL(requestId)
+	)
+	return res.data
+}
+
+/** POST /api/admin/ancillary/requests/:requestId/cancel -- Admin cancellation */
+export const cancelAdminAncillaryRequest = async (requestId: string, reason: string) => {
+	const res = await ApiService.post<AdminMutationResponse<{ requestId: string; status: string }>>(
+		API_ENDPOINTS.ADMIN.CANCEL_ANCILLARY_REQUEST(requestId),
+		{ reason }
+	)
+	return res.data
+}
+
+/** POST /api/admin/ancillary/requests/:requestId/reassign -- Automatic admin nurse reassignment */
+export const reassignAdminAncillaryRequest = async (requestId: string, reason?: string) => {
+	const res = await ApiService.post<AdminMutationResponse<{ requestId: string; providerId: string; providerName?: string; status: string }>>(
+		API_ENDPOINTS.ADMIN.REASSIGN_ANCILLARY_REQUEST(requestId),
+		{ reason }
+	)
+	return res.data
+}
+
+/** GET /api/admin/ancillary/available-providers -- List online/verified nurses for reassignment */
+export const getAvailableAncillaryProviders = async (procedureId?: string) => {
+	const res = await ApiService.get<AdminMutationResponse<AvailableAncillaryProviderItem[]>>(
+		API_ENDPOINTS.ADMIN.AVAILABLE_ANCILLARY_PROVIDERS,
+		{
+			params: {
+				procedure_id: procedureId || undefined,
+			},
+		}
+	)
+	return res.data
+}
+
+

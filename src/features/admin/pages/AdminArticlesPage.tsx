@@ -27,6 +27,7 @@ import StatusBadge from '../../../components/admin/StatusBadge'
 import AppButton from '../../../components/common/Button/AppButton'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppSelect from '../../../components/common/Select/AppSelect'
+import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
 import { ARTICLE_CATEGORIES } from '../../../components/admin/ArticleForm'
 
 import {
@@ -57,6 +58,8 @@ export default function AdminArticlesPage() {
 	const [statusFilter, setStatusFilter] = useState('all')
 	const [categoryFilter, setCategoryFilter] = useState('all')
 	const [searchQuery, setSearchQuery] = useState('')
+	const [articlePendingDelete, setArticlePendingDelete] = useState<AdminArticleItem | null>(null)
+	const [deleting, setDeleting] = useState(false)
 
 	const fetchArticles = async () => {
 		setLoading(true)
@@ -83,15 +86,19 @@ export default function AdminArticlesPage() {
 		navigate(ROUTES.ADMIN.ARTICLE_EDIT.replace(':id', article.id))
 	}
 
-	const handleDelete = async (id: string) => {
-		if (!window.confirm('Are you sure you want to delete this article? This action cannot be undone.')) return
+	const handleConfirmDelete = async () => {
+		if (!articlePendingDelete) return
+		setDeleting(true)
 		try {
-			await deleteAdminArticle(id)
+			await deleteAdminArticle(articlePendingDelete.id)
 			toast.success('Article deleted successfully')
-			setArticles((prev) => prev.filter((a) => a.id !== id))
+			setArticles((prev) => prev.filter((a) => a.id !== articlePendingDelete.id))
+			setArticlePendingDelete(null)
 		} catch (err) {
 			console.error('Error deleting article:', err)
 			toast.error('Failed to delete article')
+		} finally {
+			setDeleting(false)
 		}
 	}
 
@@ -271,7 +278,7 @@ export default function AdminArticlesPage() {
 					<Tooltip title="Delete article">
 						<IconButton
 							size="small"
-							onClick={() => handleDelete(art.id)}
+							onClick={() => setArticlePendingDelete(art)}
 							sx={{
 								border: '1px solid #fecaca',
 								borderRadius: 1.5,
@@ -402,6 +409,17 @@ export default function AdminArticlesPage() {
 					emptyMessage='No healthcare articles found matching your criteria. Click "+ Add Article" to write one.'
 				/>
 			)}
+
+			<ConfirmModal
+				open={articlePendingDelete !== null}
+				onClose={() => setArticlePendingDelete(null)}
+				onConfirm={handleConfirmDelete}
+				title="Delete Article"
+				description={`Are you sure you want to delete "${articlePendingDelete?.title}"? This action cannot be undone.`}
+				variant="delete"
+				confirmLabel="Delete Article"
+				loading={deleting}
+			/>
 		</Box>
 	)
 }

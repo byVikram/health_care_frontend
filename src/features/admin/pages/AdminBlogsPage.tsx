@@ -23,6 +23,7 @@ import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 // import SectionCard from '../../../components/common/Card/SectionCard'
 import StatusBadge from '../../../components/admin/StatusBadge'
+import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
 import {
 	listAdminBlogs,
 	deleteAdminBlog,
@@ -31,10 +32,14 @@ import {
 import { ROUTES } from '../../../constants/routes'
 import { toast } from 'react-toastify'
 
+const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
+
 export default function AdminBlogsPage() {
 	const navigate = useNavigate()
 	const [blogs, setBlogs] = useState<AdminBlogItem[]>([])
 	const [loading, setLoading] = useState(true)
+	const [blogPendingDelete, setBlogPendingDelete] = useState<AdminBlogItem | null>(null)
+	const [deleting, setDeleting] = useState(false)
 
 	const fetchBlogs = async () => {
 		setLoading(true)
@@ -60,14 +65,18 @@ export default function AdminBlogsPage() {
 		navigate(ROUTES.ADMIN.BLOG_EDIT.replace(':id', blog.id))
 	}
 
-	const handleDelete = async (id: string) => {
-		if (!window.confirm('Are you sure you want to delete this blog post?')) return
+	const handleConfirmDelete = async () => {
+		if (!blogPendingDelete) return
+		setDeleting(true)
 		try {
-			await deleteAdminBlog(id)
+			await deleteAdminBlog(blogPendingDelete.id)
 			toast.success('Blog post deleted successfully')
-			setBlogs((prev) => prev.filter((b) => b.id !== id))
-		} catch (err) {
-			console.error('Error deleting blog:', err)
+			setBlogs((prev) => prev.filter((b) => b.id !== blogPendingDelete.id))
+			setBlogPendingDelete(null)
+		} catch (err: unknown) {
+			toast.error(getErrorMessage(err, 'Failed to delete blog post'))
+		} finally {
+			setDeleting(false)
 		}
 	}
 
@@ -167,7 +176,7 @@ export default function AdminBlogsPage() {
 					<Tooltip title="Delete article">
 						<IconButton
 							size="small"
-							onClick={() => handleDelete(blog.id)}
+							onClick={() => setBlogPendingDelete(blog)}
 							sx={{ border: '1px solid #fecaca', borderRadius: 1.5, color: '#dc2626', bgcolor: '#fff1f2', '&:hover': { bgcolor: '#fee2e2' } }}
 						>
 							<DeleteIcon sx={{ fontSize: 16 }} />
@@ -221,6 +230,17 @@ export default function AdminBlogsPage() {
 					emptyMessage="No blog articles found."
 				/>
 			)}
+
+			<ConfirmModal
+				open={blogPendingDelete !== null}
+				onClose={() => setBlogPendingDelete(null)}
+				onConfirm={handleConfirmDelete}
+				title="Delete Blog Post"
+				description={`Are you sure you want to delete "${blogPendingDelete?.title}"? This action cannot be undone.`}
+				variant="delete"
+				confirmLabel="Delete Post"
+				loading={deleting}
+			/>
 		</Box>
 	)
 }

@@ -121,5 +121,7 @@ export const ROUTES = {
 		ARTICLE_CREATE: '/admin/articles/create',
 		ARTICLE_EDIT: '/admin/articles/edit/:id',
 		ADMINS: '/admin/admins',
+		ANCILLARY: '/admin/ancillary',
+		ANCILLARY_DETAIL: '/admin/ancillary/:id',
 	},
 }

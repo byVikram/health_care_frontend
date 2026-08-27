@@ -23,6 +23,7 @@ import PeopleIcon from '@mui/icons-material/People'
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
 import PersonIcon from '@mui/icons-material/Person'
 import StorefrontIcon from '@mui/icons-material/Storefront'
+import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
 import { toast } from 'react-toastify'
 
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
@@ -38,6 +39,7 @@ const ROLE_OPTIONS = [
 	{ label: 'All Roles', value: '', icon: <PeopleIcon sx={{ fontSize: 14 }} /> },
 	{ label: 'Doctors', value: 'doctor', icon: <LocalHospitalIcon sx={{ fontSize: 14 }} /> },
 	{ label: 'Patients', value: 'patient', icon: <PersonIcon sx={{ fontSize: 14 }} /> },
+	{ label: 'Nurses / Ancillary', value: 'ancillary', icon: <MedicalServicesIcon sx={{ fontSize: 14 }} /> },
 	{ label: 'Pharmacies', value: 'pharmacy', icon: <StorefrontIcon sx={{ fontSize: 14 }} /> },
 	{ label: 'Radiology', value: 'radiology', icon: <StorefrontIcon sx={{ fontSize: 14 }} /> },
 	{ label: 'Laboratories', value: 'laboratory', icon: <StorefrontIcon sx={{ fontSize: 14 }} /> },
@@ -46,6 +48,8 @@ const ROLE_OPTIONS = [
 const ROLE_COLORS: Record<string, { bg: string; color: string }> = {
 	doctor:     { bg: '#dbeafe', color: '#1d4ed8' },
 	patient:    { bg: '#dcfce7', color: '#15803d' },
+	ancillary:  { bg: '#ccfbf1', color: '#0f766e' },
+	nurse:      { bg: '#ccfbf1', color: '#0f766e' },
 	pharmacy:   { bg: '#f3e8ff', color: '#7e22ce' },
 	radiology:  { bg: '#fff7ed', color: '#c2410c' },
 	laboratory: { bg: '#fef9c3', color: '#a16207' },
@@ -56,11 +60,13 @@ const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Erro
 
 function resolveDetailId(user: AdminUserItem): string | null {
 	switch (user.role) {
-		case 'patient':    return user.patient_id || null
-		case 'doctor':     return user.doctor_id || null
-		case 'pharmacy':   return user.pharmacy_id || null
-		case 'laboratory': return user.laboratory_id || null
-		case 'radiology':  return user.radiology_id || null
+		case 'patient':    return user.patient_id || user.public_id || String(user.id) || null
+		case 'doctor':     return user.doctor_id || user.public_id || String(user.id) || null
+		case 'pharmacy':   return user.pharmacy_id || user.public_id || String(user.id) || null
+		case 'laboratory': return user.laboratory_id || user.public_id || String(user.id) || null
+		case 'radiology':  return user.radiology_id || user.public_id || String(user.id) || null
+		case 'ancillary':
+		case 'nurse':      return user.ancillary_id || user.public_id || String(user.id) || null
 		default:           return user.public_id || String(user.id) || null
 	}
 }

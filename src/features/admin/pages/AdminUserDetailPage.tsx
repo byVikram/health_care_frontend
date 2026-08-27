@@ -43,7 +43,7 @@ import {
 import { buildS3Url } from '../../../utils/s3'
 import { ROUTES } from '../../../constants/routes'
 
-type DetailRole = 'patient' | 'doctor' | 'pharmacy' | 'laboratory' | 'radiology'
+type DetailRole = 'patient' | 'doctor' | 'pharmacy' | 'laboratory' | 'radiology' | 'ancillary' | 'nurse'
 
 const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
 
@@ -82,6 +82,7 @@ export default function AdminUserDetailPage() {
     const [activeTab, setActiveTab] = useState<'profile' | 'appointments' | 'reviews' | 'linked'>('profile')
 
     const detailRole = (role as DetailRole) || 'patient'
+    const isNurse = detailRole === 'ancillary' || detailRole === 'nurse'
 
     const fetchPatient = async (patientId: string) => {
         setLoading(true)
@@ -123,14 +124,15 @@ export default function AdminUserDetailPage() {
             return
         }
 
-        getProviderAdminDetail(detailRole, id)
+        const providerTargetType = isNurse ? 'ancillary' : detailRole
+        getProviderAdminDetail(providerTargetType, id)
             .then((res) => {
                 if (res.success && res.data) setProviderDetail(res.data)
-                else setError('Provider details could not be loaded.')
+                else setError(`${isNurse ? 'Nurse / Ancillary provider' : 'Provider'} details could not be loaded.`)
             })
-            .catch((err: unknown) => setError(getErrorMessage(err, 'Failed to load provider details.')))
+            .catch((err: unknown) => setError(getErrorMessage(err, `Failed to load ${isNurse ? 'nurse / ancillary provider' : 'provider'} details.`)))
             .finally(() => setLoading(false))
-    }, [id, detailRole])
+    }, [id, detailRole, isNurse])
 
     const handleBack = () => navigate(ROUTES.ADMIN.USERS)
 
@@ -369,16 +371,47 @@ export default function AdminUserDetailPage() {
 
                                     {providerDetail && (
                                         <Grid container spacing={2}>
-                                            <Grid size={{ xs: 12, sm: 6, md: 4 }}><InfoTile label="Business Name" value={providerDetail.business_name} /></Grid>
-                                            <Grid size={{ xs: 12, sm: 6, md: 4 }}><InfoTile label="Owner Name" value={providerDetail.owner_name} /></Grid>
+                                            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                                                <InfoTile
+                                                    label={isNurse ? 'Full Name' : 'Business Name'}
+                                                    value={providerDetail.business_name || providerDetail.owner_name}
+                                                />
+                                            </Grid>
+                                            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                                                <InfoTile
+                                                    label={isNurse ? 'Professional Role' : 'Owner Name'}
+                                                    value={providerDetail.owner_name}
+                                                />
+                                            </Grid>
                                             <Grid size={{ xs: 12, sm: 6, md: 4 }}><InfoTile label="Email Address" value={providerDetail.email} /></Grid>
                                             <Grid size={{ xs: 12, sm: 6, md: 4 }}><InfoTile label="Phone Number" value={providerDetail.contact_number} /></Grid>
-                                            <Grid size={{ xs: 12, sm: 6, md: 4 }}><InfoTile label="Alternate Mobile" value={providerDetail.alternate_mobile} /></Grid>
-                                            <Grid size={{ xs: 12, sm: 6, md: 4 }}><InfoTile label="WhatsApp Number" value={providerDetail.whatsapp_number} /></Grid>
-                                            <Grid size={{ xs: 12, sm: 6, md: 4 }}><InfoTile label="License Number" value={providerDetail.license_number} /></Grid>
-                                            <Grid size={{ xs: 12, sm: 6, md: 4 }}><InfoTile label="GST Number" value={providerDetail.gst_number} /></Grid>
-                                            <Grid size={{ xs: 12, sm: 6, md: 4 }}><InfoTile label="City & State" value={providerDetail.city ? `${providerDetail.city}, ${providerDetail.state || ''}` : null} /></Grid>
-                                            <Grid size={{ xs: 12 }}><InfoTile label="Full Address" value={providerDetail.address} /></Grid>
+                                            {providerDetail.specialty && (
+                                                <Grid size={{ xs: 12, sm: 6, md: 4 }}><InfoTile label="Specialty" value={providerDetail.specialty} /></Grid>
+                                            )}
+                                            {providerDetail.qualifications && (
+                                                <Grid size={{ xs: 12, sm: 6, md: 4 }}><InfoTile label="Qualifications" value={providerDetail.qualifications} /></Grid>
+                                            )}
+                                            <Grid size={{ xs: 12, sm: 6, md: 4 }}><InfoTile label={isNurse ? 'License / Registration #' : 'License Number'} value={providerDetail.license_number} /></Grid>
+                                            {providerDetail.gst_number && (
+                                                <Grid size={{ xs: 12, sm: 6, md: 4 }}><InfoTile label="GST Number" value={providerDetail.gst_number} /></Grid>
+                                            )}
+                                            {providerDetail.alternate_mobile && (
+                                                <Grid size={{ xs: 12, sm: 6, md: 4 }}><InfoTile label="Alternate Mobile" value={providerDetail.alternate_mobile} /></Grid>
+                                            )}
+                                            {providerDetail.whatsapp_number && (
+                                                <Grid size={{ xs: 12, sm: 6, md: 4 }}><InfoTile label="WhatsApp Number" value={providerDetail.whatsapp_number} /></Grid>
+                                            )}
+                                            {providerDetail.city && (
+                                                <Grid size={{ xs: 12, sm: 6, md: 4 }}><InfoTile label="City & State" value={`${providerDetail.city}, ${providerDetail.state || ''}`} /></Grid>
+                                            )}
+                                            {providerDetail.address && (
+                                                <Grid size={{ xs: 12 }}><InfoTile label="Full Address" value={providerDetail.address} /></Grid>
+                                            )}
+                                            {providerDetail.capabilities && providerDetail.capabilities.length > 0 && (
+                                                <Grid size={{ xs: 12 }}>
+                                                    <InfoTile label="Clinical Capabilities" value={providerDetail.capabilities.join(', ')} />
+                                                </Grid>
+                                            )}
                                         </Grid>
                                     )}
                                 </Box>

@@ -40,6 +40,7 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer'
 import MenuBookIcon from '@mui/icons-material/MenuBook'
+import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
 
 import { useAuth, clearAuth } from '../../hooks/useAuth'
 import { ROUTES } from '../../constants/routes'
@@ -71,6 +72,7 @@ const getNavGroups = (userRole: string | null): NavGroup[] => {
 				{ label: 'Users', path: ROUTES.ADMIN.USERS, icon: <PeopleIcon /> },
 				{ label: 'Reviews', path: ROUTES.ADMIN.REVIEWS, icon: <RateReviewIcon /> },
 				{ label: 'Appointments', path: ROUTES.ADMIN.APPOINTMENTS, icon: <EventNoteIcon /> },
+				{ label: 'Ancillary Operations', path: ROUTES.ADMIN.ANCILLARY, icon: <MedicalServicesIcon /> },
 				{ label: 'Billing', path: ROUTES.ADMIN.BILLING, icon: <ReceiptLongIcon /> },
 			],
 		},

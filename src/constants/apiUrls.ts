@@ -206,6 +206,12 @@ export const API_ENDPOINTS = {
 		SUB_ADMINS: '/api/admin/sub-admins',
 		SUB_ADMIN_STATUS: (publicId: string) => `/api/admin/sub-admins/${publicId}/status`,
 		ASSIGN_DOCTORS: '/api/admin/doctors/assign',
+		ANCILLARY_REQUESTS: '/api/admin/ancillary/requests',
+		ANCILLARY_STATS: '/api/admin/ancillary/stats',
+		ANCILLARY_DETAIL: (requestId: string) => `/api/admin/ancillary/requests/${requestId}`,
+		CANCEL_ANCILLARY_REQUEST: (requestId: string) => `/api/admin/ancillary/requests/${requestId}/cancel`,
+		REASSIGN_ANCILLARY_REQUEST: (requestId: string) => `/api/admin/ancillary/requests/${requestId}/reassign`,
+		AVAILABLE_ANCILLARY_PROVIDERS: '/api/admin/ancillary/available-providers',
 	},
 	EVENTS: {
 		PUBLIC: '/api/events/public',
