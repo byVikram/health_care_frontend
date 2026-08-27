@@ -92,8 +92,9 @@ export default function PatientPortalPage() {
 
 			{/* Quick Services + Services */}
 			<Container
+				id="services"
 				maxWidth="lg"
-				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6 }}
+				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6, scrollMarginTop: { xs: 80, md: 96 } }}
 			>
 				<QuickServicesSection />
 				<Divider />
@@ -105,8 +106,9 @@ export default function PatientPortalPage() {
 
 			{/* Specialities + Consult */}
 			<Container
+				id="about"
 				maxWidth="lg"
-				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6 }}
+				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6, scrollMarginTop: { xs: 80, md: 96 } }}
 			>
 				<Divider />
 				<SpecialitySection />
@@ -114,28 +116,30 @@ export default function PatientPortalPage() {
 			</Container>
 
 			{/* Articles / Blogs */}
-			<Box>
+			<Box id="blog-media" sx={{ scrollMarginTop: { xs: 80, md: 96 } }}>
 				<ArticleSection />
 			</Box>
 
 			{/* Upcoming Events */}
 			<Container
+				id="events"
 				maxWidth="lg"
-				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6 }}
+				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6, scrollMarginTop: { xs: 80, md: 96 } }}
 			>
 				<UpcomingEventsSection />
 			</Container>
 
 			{/* Community & Blogs */}
 			<Container
+				id="community"
 				maxWidth="lg"
-				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6 }}
+				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6, scrollMarginTop: { xs: 80, md: 96 } }}
 			>
 				<CommunityBlogsSection />
 			</Container>
 
 			{/* Patient-specific Health Questions — unchanged */}
-			<Container maxWidth="lg" sx={{ py: 2 }}>
+			<Container id="contact" maxWidth="lg" sx={{ py: 2, scrollMarginTop: { xs: 80, md: 96 } }}>
 				<PatientHealthQuestionsSection />
 			</Container>
 		</Box>

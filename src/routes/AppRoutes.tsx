@@ -83,11 +83,29 @@ import HealthQuestionsPage from '../features/portal/HealthQuestionsPage'
 import DoctorEventListPage from '../features/doctor/events/DoctorEventListPage'
 import DoctorEventFormPage from '../features/doctor/events/DoctorEventFormPage'
 
-function ProtectedLayout() {
+function PublicOrAuthenticatedLayout() {
+	const { accessToken } = useAuth()
+
+	if (accessToken) {
+		return (
+			<NavbarLayout>
+				<Outlet />
+			</NavbarLayout>
+		)
+	}
+
 	return (
 		<MainLayout>
 			<Outlet />
 		</MainLayout>
+	)
+}
+
+function AuthenticatedNavbarLayout() {
+	return (
+		<NavbarLayout>
+			<Outlet />
+		</NavbarLayout>
 	)
 }
 
@@ -131,7 +149,7 @@ export default function AppRoutes() {
 
 
 				<Route path={ROUTES.PUBLIC.WELCOME_DOCTOR} element={<WelcomePage role="doctor" />} />
-				<Route element={<ProtectedLayout />}>
+				<Route element={<PublicOrAuthenticatedLayout />}>
 					<Route path={ROUTES.ROOT} element={<DashboardPage />} />
 					<Route path={ROUTES.PUBLIC.HEALTH_QUESTIONS} element={<HealthQuestionsPage />} />
 				</Route>
@@ -170,7 +188,7 @@ export default function AppRoutes() {
 
 				{/* Protected routes */}
 				<Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
-					<Route element={<ProtectedLayout />}>
+					<Route element={<AuthenticatedNavbarLayout />}>
 						
 						<Route path={ROUTES.DOCTORS.DETAIL} element={<DoctorDetailPage />} />
 						<Route path={ROUTES.DOCTORS.SEARCH} element={<DoctorSearchPage />} />
