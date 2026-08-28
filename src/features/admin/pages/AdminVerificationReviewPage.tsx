@@ -14,8 +14,6 @@ import {
 	Grid,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
-import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore'
-import NavigateNextIcon from '@mui/icons-material/NavigateNext'
 import PersonIcon from '@mui/icons-material/Person'
 import EmailIcon from '@mui/icons-material/Email'
 import PhoneIcon from '@mui/icons-material/Phone'
@@ -29,7 +27,6 @@ import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline'
 import { toast } from 'react-toastify'
 
 import { ROUTES } from '../../../constants/routes'
-import AppButton from '../../../components/common/Button/AppButton'
 import AppInput from '../../../components/common/Input/AppInput'
 
 import DocumentRail from '../../../components/admin/verification/DocumentRail'
@@ -522,124 +519,59 @@ export default function AdminVerificationReviewPage() {
 
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-			{/* APPLICANT FLOATING HEADER CARD (Primary Single Header) */}
-			<Box
-				sx={{
-					bgcolor: '#ffffff',
-					borderRadius: '12px',
-					border: '1px solid #e2e8f0',
-					px: 2.5,
-					py: 1.25,
-					mb: 2,
-					boxShadow: '0 1px 2px rgba(15,23,42,0.02)',
-				}}
+			{/* APPLICANT HEADER ROW (Clean, minimal navigation row) */}
+			<Stack
+				direction="row"
+				alignItems="center"
+				spacing={1.5}
+				sx={{ mb: 2.5 }}
 			>
-				<Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1.5}>
-					<Stack direction="row" spacing={1.75} alignItems="center" flexWrap="wrap">
-						<AppButton
-							variant="outlined"
-							size="small"
-							startIcon={<ArrowBackIcon sx={{ fontSize: 15 }} />}
-							onClick={handleBack}
-							label="Back to Queue"
-							sx={{
-								borderRadius: '8px',
-								borderColor: '#e2e8f0',
-								color: '#334155',
-								bgcolor: '#f8fafc',
-								fontWeight: 700,
-								fontSize: '0.78rem',
-								py: 0.4,
-								px: 1.25,
-								'&:hover': {
-									borderColor: '#0d9488',
-									color: '#0d9488',
-									bgcolor: '#f0fdfa',
-								},
-							}}
-						/>
+				<Tooltip title="Back to Queue">
+					<IconButton
+						onClick={handleBack}
+						size="small"
+						sx={{
+							p: 0.5,
+							color: '#475569',
+							'&:hover': { color: '#0d9488', bgcolor: 'rgba(13,148,136,0.08)' },
+						}}
+					>
+						<ArrowBackIcon sx={{ fontSize: 22 }} />
+					</IconButton>
+				</Tooltip>
 
-						<Typography variant="h6" fontWeight={800} color="#0f172a" sx={{ fontSize: 18 }}>
-							{applicantDisplayName || 'Applicant'}
-						</Typography>
+				<Typography variant="h6" fontWeight={800} color="#0f172a" sx={{ fontSize: 18, lineHeight: 1.2 }}>
+					{applicantDisplayName || 'Applicant'}
+				</Typography>
 
-						<Chip
-							label={roleLabel}
-							size="small"
-							sx={{
-								bgcolor: '#ccfbf1',
-								color: '#0f766e',
-								fontWeight: 800,
-								fontSize: '0.68rem',
-								height: 22,
-								borderRadius: '5px',
-								px: 0.25,
-							}}
-						/>
+				<Chip
+					label={roleLabel}
+					size="small"
+					sx={{
+						bgcolor: '#ccfbf1',
+						color: '#0f766e',
+						fontWeight: 800,
+						fontSize: '0.68rem',
+						height: 22,
+						borderRadius: '5px',
+						px: 0.25,
+					}}
+				/>
 
-						<Chip
-							label={isVerified ? 'VERIFIED' : (providerItem?.verification_status === 'rejected' ? 'REJECTED' : 'AWAITING AUDIT')}
-							size="small"
-							sx={{
-								bgcolor: isVerified ? '#dcfce7' : (providerItem?.verification_status === 'rejected' ? '#fee2e2' : '#fef3c7'),
-								color: isVerified ? '#15803d' : (providerItem?.verification_status === 'rejected' ? '#b91c1c' : '#d97706'),
-								fontWeight: 800,
-								fontSize: '0.68rem',
-								height: 22,
-								borderRadius: '5px',
-								px: 0.25,
-							}}
-						/>
-					</Stack>
-
-					{/* Document Navigation Controls */}
-					<Stack direction="row" spacing={0.75} alignItems="center">
-						<Tooltip title="Previous Document (Key P / Arrow Up)">
-							<span>
-								<IconButton
-									size="small"
-									disabled={selectedDocIndex === 0}
-									onClick={() => setSelectedDocIndex((prev) => Math.max(prev - 1, 0))}
-									sx={{
-										color: '#64748b',
-										border: '1px solid #e2e8f0',
-										borderRadius: '6px',
-										bgcolor: '#ffffff',
-										p: 0.4,
-										'&:hover': { color: '#0d9488', borderColor: '#0d9488', bgcolor: '#f0fdfa' },
-										'&.Mui-disabled': { color: '#cbd5e1', borderColor: '#f1f5f9' },
-									}}
-								>
-									<NavigateBeforeIcon sx={{ fontSize: 16 }} />
-								</IconButton>
-							</span>
-						</Tooltip>
-						<Typography variant="caption" color="#475569" fontWeight={700} sx={{ px: 0.5, fontSize: '12px' }}>
-							Doc {documents.length > 0 ? selectedDocIndex + 1 : 0} of {documents.length}
-						</Typography>
-						<Tooltip title="Next Document (Key N / Arrow Down)">
-							<span>
-								<IconButton
-									size="small"
-									disabled={selectedDocIndex >= documents.length - 1}
-									onClick={() => setSelectedDocIndex((prev) => Math.min(prev + 1, documents.length - 1))}
-									sx={{
-										color: '#64748b',
-										border: '1px solid #e2e8f0',
-										borderRadius: '6px',
-										bgcolor: '#ffffff',
-										p: 0.4,
-										'&:hover': { color: '#0d9488', borderColor: '#0d9488', bgcolor: '#f0fdfa' },
-										'&.Mui-disabled': { color: '#cbd5e1', borderColor: '#f1f5f9' },
-									}}
-								>
-									<NavigateNextIcon sx={{ fontSize: 16 }} />
-								</IconButton>
-							</span>
-						</Tooltip>
-					</Stack>
-				</Stack>
-			</Box>
+				<Chip
+					label={isVerified ? 'VERIFIED' : (providerItem?.verification_status === 'rejected' ? 'REJECTED' : 'AWAITING AUDIT')}
+					size="small"
+					sx={{
+						bgcolor: isVerified ? '#dcfce7' : (providerItem?.verification_status === 'rejected' ? '#fee2e2' : '#fef3c7'),
+						color: isVerified ? '#15803d' : (providerItem?.verification_status === 'rejected' ? '#b91c1c' : '#d97706'),
+						fontWeight: 800,
+						fontSize: '0.68rem',
+						height: 22,
+						borderRadius: '5px',
+						px: 0.25,
+					}}
+				/>
+			</Stack>
 
 			{/* APPLICANT PROFILE & DEMOGRAPHICS CARD */}
 			{!loading && !error && (

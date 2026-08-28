@@ -361,6 +361,21 @@ export const getDashboardStats = async () => {
 	return res.data
 }
 
+export interface VerificationKpiCounts {
+	pending_doctors: number
+	pending_ancillary: number
+	pending_providers: number
+	total_applications: number
+}
+
+/** GET /api/admin/verifications/kpi-counts -- Dedicated KPI counts for Verification Center */
+export const getVerificationKpiCounts = async () => {
+	const res = await ApiService.get<{ success: boolean; data: VerificationKpiCounts }>(
+		API_ENDPOINTS.ADMIN.VERIFICATION_KPI_COUNTS
+	)
+	return res.data
+}
+
 export interface VerificationQueueListParams {
 	page?: number
 	pageSize?: number
@@ -1474,8 +1489,13 @@ export interface AdminAncillaryStats {
 	in_progress: number
 	completed_today: number
 	cancelled: number
-	nurses_online: number
-	total_requests: number
+}
+
+export interface AdminAncillaryStatsParams {
+	specialtyId?: string
+	dateFilter?: string
+	startDate?: string
+	endDate?: string
 }
 
 export interface AdminAncillaryDetail extends AdminAncillaryRequestItem {
@@ -1556,13 +1576,24 @@ export const listAdminAncillaryRequests = async (params: AdminAncillaryListParam
 	return res.data
 }
 
-/** GET /api/admin/ancillary/stats -- Fetch summary KPI metrics */
-export const getAdminAncillaryStats = async () => {
-	const res = await ApiService.get<AdminMutationResponse<AdminAncillaryStats>>(
-		API_ENDPOINTS.ADMIN.ANCILLARY_STATS
-	)
+/** GET /api/admin/ancillary/stats -- Dedicated KPI counts for Ancillary Operations */
+export const getAncillaryOperationsKpi = async (params: AdminAncillaryStatsParams = {}) => {
+	const res = await ApiService.get<{
+		success: boolean
+		data: AdminAncillaryStats
+	}>(API_ENDPOINTS.ADMIN.ANCILLARY_STATS, {
+		params: {
+			specialty_id: params.specialtyId && params.specialtyId !== 'all' ? params.specialtyId : undefined,
+			date_filter: params.dateFilter || undefined,
+			start_date: params.startDate || undefined,
+			end_date: params.endDate || undefined,
+		},
+	})
 	return res.data
 }
+
+/** GET /api/admin/ancillary/stats -- Alias for backward compatibility */
+export const getAdminAncillaryStats = getAncillaryOperationsKpi
 
 /** GET /api/admin/ancillary/requests/:requestId -- Fetch full operational detail */
 export const getAdminAncillaryRequestDetail = async (requestId: string) => {

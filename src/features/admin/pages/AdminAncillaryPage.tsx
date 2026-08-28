@@ -8,7 +8,6 @@ import {
 	Stack,
 	Tabs,
 	Tab,
-	InputAdornment,
 	Select,
 	MenuItem,
 	FormControl,
@@ -28,7 +27,6 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
 import HealingIcon from '@mui/icons-material/Healing'
 import VisibilityIcon from '@mui/icons-material/Visibility'
-import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import RestartAltIcon from '@mui/icons-material/RestartAlt'
 
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
@@ -37,7 +35,6 @@ import StatusBadge from '../../../components/admin/StatusBadge'
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppDatePicker from '../../../components/common/DatePicker/AppDatePicker'
-import AdminEmptyState from '../../../components/admin/AdminEmptyState'
 import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
 import { ROUTES } from '../../../constants/routes'
 
@@ -51,6 +48,7 @@ import {
 	ANCILLARY_CANCELLED_STATUSES,
 	listAdminAncillaryRequests,
 	getAncillaryCategories,
+	getAncillaryOperationsKpi,
 	cancelAdminAncillaryRequest,
 } from '../adminService'
 import { formatINR } from '../../../utils/Utils'
@@ -124,14 +122,16 @@ export default function AdminAncillaryPage() {
 	const [pageSize, setPageSize] = useState<number>(10)
 	const [totalRows, setTotalRows] = useState<number>(0)
 
-	// Filters & Search
+	// KPI-Specific Filters (Apply to 5 KPI Cards)
+	const [kpiSpecialty, setKpiSpecialty] = useState<string>('all')
+	const [kpiDateFilter, setKpiDateFilter] = useState<string>('today')
+	const [kpiStartDate, setKpiStartDate] = useState<string>('')
+	const [kpiEndDate, setKpiEndDate] = useState<string>('')
+
+	// Table Filters & Search
 	const [activeTab, setActiveTab] = useState<OperationalTab>('all')
 	const [searchInput, setSearchInput] = useState<string>('')
 	const [searchQuery, setSearchQuery] = useState<string>('')
-	const [specialtyFilter, setSpecialtyFilter] = useState<string>('')
-	const [dateFilter, setDateFilter] = useState<string>('all')
-	const [startDate, setStartDate] = useState<string>('')
-	const [endDate, setEndDate] = useState<string>('')
 	const [sortOrder, setSortOrder] = useState<string>('newest')
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -189,7 +189,28 @@ export default function AdminAncillaryPage() {
 		}
 	}, [])
 
-	// ── Data Fetching (Simultaneously loads requests + stats in 1 API call) ───
+	// ── Dedicated KPI Data Fetching (Independent 5 KPI counts with Specialty & Date filters) ──
+	const fetchKpiStats = useCallback(async () => {
+		try {
+			const res = await getAncillaryOperationsKpi({
+				specialtyId: kpiSpecialty && kpiSpecialty !== 'all' ? kpiSpecialty : undefined,
+				dateFilter: kpiDateFilter !== 'all' ? kpiDateFilter : 'all',
+				startDate: kpiDateFilter === 'custom' && kpiStartDate ? ddmmyyyyToIso(kpiStartDate) : undefined,
+				endDate: kpiDateFilter === 'custom' && kpiEndDate ? ddmmyyyyToIso(kpiEndDate) : undefined,
+			})
+			if (res.success && res.data) {
+				setStats(res.data)
+			}
+		} catch (err) {
+			console.warn('Failed to load ancillary KPI stats:', err)
+		}
+	}, [kpiSpecialty, kpiDateFilter, kpiStartDate, kpiEndDate])
+
+	useEffect(() => {
+		fetchKpiStats()
+	}, [fetchKpiStats])
+
+	// ── Request Table Data Fetching (Independent from KPI cards) ────────────
 	const fetchRequests = useCallback(async () => {
 		setLoading(true)
 		setError(null)
@@ -199,19 +220,12 @@ export default function AdminAncillaryPage() {
 				pageSize,
 				search: searchQuery.trim() || undefined,
 				status: getStatusFilterForTab(activeTab),
-				specialtyId: specialtyFilter || undefined,
-				dateFilter: dateFilter !== 'all' ? dateFilter : undefined,
-				startDate: dateFilter === 'custom' && startDate ? ddmmyyyyToIso(startDate) : undefined,
-				endDate: dateFilter === 'custom' && endDate ? ddmmyyyyToIso(endDate) : undefined,
 				sortOrder,
 			})
 
 			if (res.success && res.data) {
 				setRequests(res.data.items || [])
 				setTotalRows(res.data.total || 0)
-				if (res.data.stats) {
-					setStats(res.data.stats)
-				}
 			}
 		} catch (err: unknown) {
 			console.error('Error fetching admin ancillary requests:', err)
@@ -219,11 +233,15 @@ export default function AdminAncillaryPage() {
 		} finally {
 			setLoading(false)
 		}
-	}, [page, pageSize, searchQuery, activeTab, specialtyFilter, dateFilter, startDate, endDate, sortOrder])
+	}, [page, pageSize, searchQuery, activeTab, sortOrder])
 
 	useEffect(() => {
 		fetchRequests()
 	}, [fetchRequests])
+
+	const handleRefresh = async () => {
+		await Promise.all([fetchKpiStats(), fetchRequests()])
+	}
 
 	// ── Navigate to Full Detail View ─────────────────────────────────────────
 	const handleRowClick = (row: AdminAncillaryRequestItem) => {
@@ -237,60 +255,31 @@ export default function AdminAncillaryPage() {
 		try {
 			await cancelAdminAncillaryRequest(cancelTarget.public_id || cancelTarget.id, 'Cancelled by Administrator via Operations Portal')
 			setActionSuccessMsg(`Successfully cancelled request ${cancelTarget.public_id}.`)
+			fetchKpiStats()
 			fetchRequests()
 		} catch (err: unknown) {
-			setError(getErrorMessage(err, 'Failed to cancel request.'))
+			setError(getErrorMessage(err, 'Failed to cancel ancillary request.'))
 		} finally {
 			setActionLoading(false)
 			setCancelTarget(null)
 		}
 	}
 
-
-	// ── Table Columns ────────────────────────────────────────────────────────
+	// ── Table Column Definitions ─────────────────────────────────────────────
 	const columns: Column<AdminAncillaryRequestItem>[] = [
 		{
-			field: 'public_id',
-			label: 'Request ID',
-			render: (_, row) => {
-				const isSearching = isSearchingStatus(row.status)
-				const waitingMins = isSearching ? getWaitingDurationMinutes(row.created_at) : null
-				const isLongWaiting = isSearching && waitingMins !== null && waitingMins >= SEARCHING_WARNING_THRESHOLD_MINUTES
-
-				return (
-					<Box>
-						<Typography variant="body2" fontWeight={800} color="#0f172a">
-							{row.public_id}
-						</Typography>
-						<Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
-							<Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-								{row.created_at ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
-							</Typography>
-							{isLongWaiting ? (
-								<Chip
-									icon={<WarningAmberIcon sx={{ fontSize: '11px !important', color: '#b45309 !important' }} />}
-									label="Attention Required"
-									size="small"
-									sx={{
-										height: 18,
-										fontSize: '0.6rem',
-										fontWeight: 800,
-										bgcolor: '#fef3c7',
-										color: '#b45309',
-										border: '1px solid #fde68a',
-									}}
-								/>
-							) : row.requires_attention && !isSearching ? (
-								<Chip
-									label="Attention Required"
-									size="small"
-									sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800, bgcolor: '#fee2e2', color: '#dc2626' }}
-								/>
-							) : null}
-						</Stack>
-					</Box>
-				)
-			},
+			field: 'id',
+			label: 'Request Ref',
+			render: (_, row) => (
+				<Box>
+					<Typography variant="body2" fontWeight={800} color="#0f172a">
+						{row.public_id || `#${row.id}`}
+					</Typography>
+					<Typography variant="caption" color="text.secondary">
+						{row.booking_type || 'INSTANT'}
+					</Typography>
+				</Box>
+			),
 		},
 		{
 			field: 'patient',
@@ -298,11 +287,10 @@ export default function AdminAncillaryPage() {
 			render: (_, row) => (
 				<Box>
 					<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
-						{row.patient.name || 'Anonymous Patient'}
+						{row.patient.name}
 					</Typography>
 					<Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-						{row.patient.relationship ? `${row.patient.relationship}` : 'Self'}
-						{row.patient.contact_number ? ` • ${row.patient.contact_number}` : ''}
+						{row.patient.gender && row.patient.age ? `${row.patient.gender}, ${row.patient.age} yrs` : 'Patient Profile'}
 					</Typography>
 				</Box>
 			),
@@ -430,33 +418,50 @@ export default function AdminAncillaryPage() {
 			},
 		},
 		{
-			field: 'payment',
-			label: 'Amount',
+			field: 'total_amount',
+			label: 'Fee',
 			render: (_, row) => (
 				<Box>
-					<Typography variant="body2" fontWeight={800} color="#0f172a">
-						{formatINR(row.payment.amount)}
+					<Typography variant="body2" fontWeight={700} color="#0f172a">
+						{formatINR(Number(row.payment.amount || 0))}
 					</Typography>
-					<Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+					<Typography variant="caption" color="text.secondary">
 						{row.payment.payment_method || 'CARD'}
 					</Typography>
 				</Box>
 			),
 		},
 		{
+			field: 'created_at',
+			label: 'Requested Time',
+			render: (_, row) => {
+				if (!row.created_at) return '--'
+				const d = new Date(row.created_at)
+				return (
+					<Box>
+						<Typography variant="body2" fontWeight={600} color="#334155">
+							{d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+						</Typography>
+						<Typography variant="caption" color="text.secondary">
+							{d.toLocaleDateString([], { month: 'short', day: 'numeric' })}
+						</Typography>
+					</Box>
+				)
+			},
+		},
+		{
 			field: 'actions',
 			label: 'Actions',
-			align: 'right',
 			render: (_, row) => (
-				<Stack direction="row" spacing={0.5} justifyContent="flex-end">
-					<Tooltip title="View Details">
+				<Stack direction="row" spacing={0.5} onClick={(e) => e.stopPropagation()}>
+					<Tooltip title="View full operational details">
 						<IconButton
 							size="small"
-							onClick={(e) => {
-								e.stopPropagation()
-								handleRowClick(row)
+							onClick={() => handleRowClick(row)}
+							sx={{
+								color: '#0d9488',
+								'&:hover': { bgcolor: 'rgba(13,148,136,0.1)' },
 							}}
-							sx={{ color: '#0d9488', '&:hover': { bgcolor: 'rgba(13, 148, 136, 0.08)' } }}
 						>
 							<VisibilityIcon fontSize="small" />
 						</IconButton>
@@ -468,26 +473,183 @@ export default function AdminAncillaryPage() {
 
 	return (
 		<Box sx={{ pb: 6 }}>
-			{/* ── Page Header ── */}
+			{/* ── 1. Page Header (Title/Subtitle on Left & KPI Filters on Right) ── */}
 			<AdminPageHeader
 				title="Ancillary Operations"
 				subtitle="Real-time in-home nursing, physiotherapy, and rehabilitation service dispatch & operational control"
 				actions={
-					<Button
-						onClick={fetchRequests}
-						startIcon={<RefreshIcon sx={{ fontSize: 17 }} />}
-						sx={{
-							textTransform: 'none',
-							fontWeight: 700,
-							fontSize: 13,
-							color: '#0d9488',
-							border: '1px solid #e2e8f0',
-							borderRadius: '8px',
-							'&:hover': { bgcolor: 'rgba(13,148,136,0.08)' },
-						}}
+					<Stack
+						direction="row"
+						spacing={1.25}
+						alignItems="center"
+						flexWrap="wrap"
+						sx={{ gap: 1.25 }}
 					>
-						Refresh
-					</Button>
+						{/* KPI Specialty Filter */}
+						<FormControl size="small" sx={{ minWidth: 155 }}>
+							<InputLabel id="kpi-specialty-filter-label">Specialty</InputLabel>
+							<Select
+								labelId="kpi-specialty-filter-label"
+								value={kpiSpecialty}
+								label="Specialty"
+								onChange={(e) => setKpiSpecialty(e.target.value)}
+							>
+								<MenuItem value="all">All Specialties</MenuItem>
+								{categories.length > 0
+									? categories.map((cat) => (
+											<MenuItem key={cat.id || cat.code} value={cat.id || cat.code}>
+												{cat.title}
+											</MenuItem>
+									  ))
+									: [
+											<MenuItem key="nursing" value="nursing-care">Nursing Care</MenuItem>,
+											<MenuItem key="physio" value="physiotherapy">Physiotherapy</MenuItem>,
+											<MenuItem key="rehab" value="rehab-care">Rehabilitation</MenuItem>,
+											<MenuItem key="elder" value="elder-day-care">Elder Day Care</MenuItem>,
+									  ]}
+							</Select>
+						</FormControl>
+
+						{/* KPI Date Filter */}
+						<FormControl size="small" sx={{ minWidth: 135 }}>
+							<InputLabel id="kpi-date-filter-label">Date</InputLabel>
+							<Select
+								labelId="kpi-date-filter-label"
+								value={kpiDateFilter}
+								label="Date"
+								onChange={(e) => setKpiDateFilter(e.target.value)}
+							>
+								<MenuItem value="today">Today</MenuItem>
+								<MenuItem value="yesterday">Yesterday</MenuItem>
+								<MenuItem value="last_7_days">Last 7 Days</MenuItem>
+								<MenuItem value="custom">Custom Range</MenuItem>
+								<MenuItem value="all">All Dates</MenuItem>
+							</Select>
+						</FormControl>
+
+						{/* Custom Date Range MUI Date Pickers */}
+						{kpiDateFilter === 'custom' && (
+							<Stack direction="row" spacing={0.5} alignItems="center">
+								<Box sx={{ width: 145 }}>
+									<AppDatePicker
+										placeholder="Start Date"
+										format="DD/MM/YYYY"
+										value={kpiStartDate || null}
+										onChange={(val) => setKpiStartDate(val || '')}
+										size="small"
+										sx={{
+											height: 40,
+											'& .MuiOutlinedInput-root, & .MuiPickersOutlinedInput-root': {
+												height: 40,
+												bgcolor: '#ffffff',
+												borderRadius: '6px',
+												pr: 0.5,
+											},
+											'& .MuiOutlinedInput-input, & .MuiPickersOutlinedInput-input, & .MuiPickersSectionList-root': {
+												padding: '8px 2px 8px 10px !important',
+												fontSize: '0.78rem !important',
+												fontWeight: 600,
+												letterSpacing: '-0.01em',
+											},
+											'& .MuiPickersSectionList-sectionContent': {
+												fontSize: '0.78rem !important',
+											},
+											'& .MuiIconButton-root': {
+												p: '3px !important',
+											},
+										}}
+									/>
+								</Box>
+								<Typography variant="body2" color="text.secondary" sx={{ fontWeight: 700, px: 0.25, fontSize: '0.8rem' }}>
+									To
+								</Typography>
+								<Box sx={{ width: 145 }}>
+									<AppDatePicker
+										placeholder="End Date"
+										format="DD/MM/YYYY"
+										value={kpiEndDate || null}
+										onChange={(val) => setKpiEndDate(val || '')}
+										size="small"
+										sx={{
+											height: 40,
+											'& .MuiOutlinedInput-root, & .MuiPickersOutlinedInput-root': {
+												height: 40,
+												bgcolor: '#ffffff',
+												borderRadius: '6px',
+												pr: 0.5,
+											},
+											'& .MuiOutlinedInput-input, & .MuiPickersOutlinedInput-input, & .MuiPickersSectionList-root': {
+												padding: '8px 2px 8px 10px !important',
+												fontSize: '0.78rem !important',
+												fontWeight: 600,
+												letterSpacing: '-0.01em',
+											},
+											'& .MuiPickersSectionList-sectionContent': {
+												fontSize: '0.78rem !important',
+											},
+											'& .MuiIconButton-root': {
+												p: '3px !important',
+											},
+										}}
+									/>
+								</Box>
+							</Stack>
+						)}
+
+						{/* Reset Button (Resets KPI Filters) */}
+						{(kpiSpecialty !== 'all' || kpiDateFilter !== 'today' || kpiStartDate || kpiEndDate) && (
+							<Tooltip title="Reset KPI filters to default">
+								<Button
+									size="small"
+									onClick={() => {
+										setKpiSpecialty('all')
+										setKpiDateFilter('today')
+										setKpiStartDate('')
+										setKpiEndDate('')
+									}}
+									startIcon={<RestartAltIcon sx={{ fontSize: 16 }} />}
+									sx={{
+										textTransform: 'none',
+										color: '#64748b',
+										border: '1px solid #e2e8f0',
+										bgcolor: '#ffffff',
+										fontWeight: 700,
+										fontSize: '12px',
+										height: 40,
+										px: 1.5,
+										borderRadius: '8px',
+										whiteSpace: 'nowrap',
+										'&:hover': {
+											borderColor: '#cbd5e1',
+											bgcolor: '#f8fafc',
+											color: '#0f172a',
+										},
+									}}
+								>
+									Reset
+								</Button>
+							</Tooltip>
+						)}
+
+						{/* Refresh Button */}
+						<Button
+							onClick={handleRefresh}
+							startIcon={<RefreshIcon sx={{ fontSize: 17 }} />}
+							sx={{
+								textTransform: 'none',
+								fontWeight: 700,
+								fontSize: 13,
+								height: 40,
+								color: '#0d9488',
+								border: '1px solid #e2e8f0',
+								bgcolor: '#ffffff',
+								borderRadius: '8px',
+								'&:hover': { bgcolor: 'rgba(13,148,136,0.08)' },
+							}}
+						>
+							Refresh
+						</Button>
+					</Stack>
 				}
 			/>
 
@@ -509,9 +671,9 @@ export default function AdminAncillaryPage() {
 				</Alert>
 			)}
 
-			{/* ── KPI Stat Cards ── */}
-			<Grid container spacing={2.5} sx={{ mb: 3.5 }}>
-				<Grid size={{ xs: 12, sm: 6, md: 2 }}>
+			{/* ── 2. KPI Stat Cards (5 Cards) ── */}
+			<Grid container spacing={2} sx={{ mb: 3.5 }}>
+				<Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
 					<AdminStatCard
 						label="Active Services"
 						value={stats?.active_services ?? '--'}
@@ -521,7 +683,7 @@ export default function AdminAncillaryPage() {
 						onClick={() => setActiveTab('active')}
 					/>
 				</Grid>
-				<Grid size={{ xs: 12, sm: 6, md: 2 }}>
+				<Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
 					<AdminStatCard
 						label="Searching (Unassigned)"
 						value={stats?.searching_unassigned ?? '--'}
@@ -531,7 +693,7 @@ export default function AdminAncillaryPage() {
 						onClick={() => setActiveTab('searching')}
 					/>
 				</Grid>
-				<Grid size={{ xs: 12, sm: 6, md: 2 }}>
+				<Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
 					<AdminStatCard
 						label="In Progress"
 						value={stats?.in_progress ?? '--'}
@@ -541,9 +703,9 @@ export default function AdminAncillaryPage() {
 						onClick={() => setActiveTab('in_progress')}
 					/>
 				</Grid>
-				<Grid size={{ xs: 12, sm: 6, md: 2 }}>
+				<Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
 					<AdminStatCard
-						label="Completed Today"
+						label="Completed"
 						value={stats?.completed_today ?? '--'}
 						icon={<CheckCircleIcon />}
 						iconColor="#059669"
@@ -551,7 +713,7 @@ export default function AdminAncillaryPage() {
 						onClick={() => setActiveTab('completed')}
 					/>
 				</Grid>
-				<Grid size={{ xs: 12, sm: 6, md: 2 }}>
+				<Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
 					<AdminStatCard
 						label="Cancelled"
 						value={stats?.cancelled ?? '--'}
@@ -561,18 +723,42 @@ export default function AdminAncillaryPage() {
 						onClick={() => setActiveTab('cancelled')}
 					/>
 				</Grid>
-				<Grid size={{ xs: 12, sm: 6, md: 2 }}>
-					<AdminStatCard
-						label="Nurses on Duty"
-						value={stats?.nurses_online ?? '--'}
-						icon={<AccessTimeIcon />}
-						iconColor="#0d9488"
-						iconBg="rgba(13,148,136,0.12)"
-					/>
-				</Grid>
 			</Grid>
 
-			{/* ── Status Tabs ── */}
+			{/* ── 4. Table Filter Toolbar (Search & Order By) ── */}
+			<Stack
+				direction={{ xs: 'column', sm: 'row' }}
+				spacing={1}
+				alignItems={{ xs: 'stretch', sm: 'center' }}
+				justifyContent="space-between"
+				sx={{ mb: 2.5 }}
+			>
+				<AppInput
+					placeholder="Search by Patient, Nurse, Request ID..."
+					value={searchInput}
+					onChange={handleSearchChange}
+					startIcon={<SearchIcon sx={{ color: '#94a3b8' }} />}
+					sx={{ width: { xs: '100%', sm: 300, md: 360 } }}
+				/>
+
+				<FormControl size="small" sx={{ minWidth: 140 }}>
+					<InputLabel id="order-by-label">Order By</InputLabel>
+					<Select
+						labelId="order-by-label"
+						value={sortOrder}
+						label="Order By"
+						onChange={(e) => {
+							setSortOrder(e.target.value)
+							setPage(1)
+						}}
+					>
+						<MenuItem value="newest">Newest First</MenuItem>
+						<MenuItem value="oldest">Oldest First</MenuItem>
+					</Select>
+				</FormControl>
+			</Stack>
+
+			{/* ── 5. Status Tabs ── */}
 			<Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
 				<Tabs
 					value={activeTab}
@@ -608,205 +794,7 @@ export default function AdminAncillaryPage() {
 				</Tabs>
 			</Box>
 
-			{/* ── Filter & Search Toolbar ── */}
-			<Stack
-				direction={{ xs: 'column', lg: 'row' }}
-				spacing={1}
-				alignItems={{ xs: 'stretch', lg: 'center' }}
-				justifyContent="space-between"
-				sx={{ mb: 3 }}
-			>
-				<AppInput
-					placeholder="Search by Patient, Nurse, Request ID..."
-					value={searchInput}
-					onChange={handleSearchChange}
-					startIcon={<SearchIcon sx={{ color: '#94a3b8' }} />}
-					sx={{ width: { xs: '100%', lg: 220, xl: 260 } }}
-				/>
-
-				<Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" sx={{ gap: 0.75 }}>
-					{/* Specialty Filter */}
-					<FormControl size="small" sx={{ minWidth: 135 }}>
-						<InputLabel id="specialty-filter-label">Specialty</InputLabel>
-						<Select
-							labelId="specialty-filter-label"
-							value={specialtyFilter}
-							label="Specialty"
-							onChange={(e) => {
-								setSpecialtyFilter(e.target.value)
-								setPage(1)
-							}}
-						>
-							<MenuItem value="">All Specialties</MenuItem>
-							{categories.length > 0
-								? categories.map((cat) => (
-										<MenuItem key={cat.id || cat.code} value={cat.id || cat.title}>
-											{cat.title}
-										</MenuItem>
-								  ))
-								: [
-										<MenuItem key="nursing" value="Nursing Care">Nursing Care</MenuItem>,
-										<MenuItem key="physio" value="Physiotherapy">Physiotherapy</MenuItem>,
-										<MenuItem key="rehab" value="Rehab Care">Rehab Care</MenuItem>,
-										<MenuItem key="elder" value="Elder Day Care">Elder Day Care</MenuItem>,
-								  ]}
-						</Select>
-					</FormControl>
-
-					{/* Date Filter */}
-					<FormControl size="small" sx={{ minWidth: 120 }}>
-						<InputLabel id="date-filter-label">Date</InputLabel>
-						<Select
-							labelId="date-filter-label"
-							value={dateFilter}
-							label="Date"
-							onChange={(e) => {
-								setDateFilter(e.target.value)
-								setPage(1)
-							}}
-						>
-							<MenuItem value="all">All Dates</MenuItem>
-							<MenuItem value="today">Today</MenuItem>
-							<MenuItem value="yesterday">Yesterday</MenuItem>
-							<MenuItem value="last_7_days">Last 7 Days</MenuItem>
-							<MenuItem value="custom">Custom Range</MenuItem>
-						</Select>
-					</FormControl>
-
-					{/* Custom Date Range MUI Date Pickers (Indian DD/MM/YYYY Format) */}
-					{dateFilter === 'custom' && (
-						<Stack direction="row" spacing={0.5} alignItems="center">
-							<Box sx={{ width: 152 }}>
-								<AppDatePicker
-									placeholder="Start Date"
-									format="DD/MM/YYYY"
-									value={startDate || null}
-									onChange={(val) => {
-										setStartDate(val || '')
-										setPage(1)
-									}}
-									size="small"
-									sx={{
-										height: 40,
-										'& .MuiOutlinedInput-root, & .MuiPickersOutlinedInput-root': {
-											height: 40,
-											bgcolor: '#ffffff',
-											borderRadius: '6px',
-											pr: 0.5,
-										},
-										'& .MuiOutlinedInput-input, & .MuiPickersOutlinedInput-input, & .MuiPickersSectionList-root': {
-											padding: '8px 2px 8px 10px !important',
-											fontSize: '0.78rem !important',
-											fontWeight: 600,
-											letterSpacing: '-0.01em',
-										},
-										'& .MuiPickersSectionList-sectionContent': {
-											fontSize: '0.78rem !important',
-										},
-										'& .MuiIconButton-root': {
-											p: '3px !important',
-										},
-									}}
-								/>
-							</Box>
-							<Typography variant="body2" color="text.secondary" sx={{ fontWeight: 700, px: 0.25, fontSize: '0.8rem' }}>
-								To
-							</Typography>
-							<Box sx={{ width: 152 }}>
-								<AppDatePicker
-									placeholder="End Date"
-									format="DD/MM/YYYY"
-									value={endDate || null}
-									onChange={(val) => {
-										setEndDate(val || '')
-										setPage(1)
-									}}
-									size="small"
-									sx={{
-										height: 40,
-										'& .MuiOutlinedInput-root, & .MuiPickersOutlinedInput-root': {
-											height: 40,
-											bgcolor: '#ffffff',
-											borderRadius: '6px',
-											pr: 0.5,
-										},
-										'& .MuiOutlinedInput-input, & .MuiPickersOutlinedInput-input, & .MuiPickersSectionList-root': {
-											padding: '8px 2px 8px 10px !important',
-											fontSize: '0.78rem !important',
-											fontWeight: 600,
-											letterSpacing: '-0.01em',
-										},
-										'& .MuiPickersSectionList-sectionContent': {
-											fontSize: '0.78rem !important',
-										},
-										'& .MuiIconButton-root': {
-											p: '3px !important',
-										},
-									}}
-								/>
-							</Box>
-						</Stack>
-					)}
-
-					{/* Order By Filter */}
-					<FormControl size="small" sx={{ minWidth: 125 }}>
-						<InputLabel id="order-by-label">Order By</InputLabel>
-						<Select
-							labelId="order-by-label"
-							value={sortOrder}
-							label="Order By"
-							onChange={(e) => {
-								setSortOrder(e.target.value)
-								setPage(1)
-							}}
-						>
-							<MenuItem value="newest">Newest First</MenuItem>
-							<MenuItem value="oldest">Oldest First</MenuItem>
-						</Select>
-					</FormControl>
-
-					{/* Reset Filter Button */}
-					{(searchQuery || activeTab !== 'all' || specialtyFilter || dateFilter !== 'all' || startDate || endDate) && (
-						<Tooltip title="Reset all active filters">
-							<Button
-								size="small"
-								onClick={() => {
-									setSearchInput('')
-									setSearchQuery('')
-									setActiveTab('all')
-									setSpecialtyFilter('')
-									setDateFilter('all')
-									setStartDate('')
-									setEndDate('')
-									setPage(1)
-								}}
-								startIcon={<RestartAltIcon sx={{ fontSize: 16 }} />}
-								sx={{
-									textTransform: 'none',
-									color: '#64748b',
-									border: '1px solid #e2e8f0',
-									bgcolor: '#ffffff',
-									fontWeight: 700,
-									fontSize: '12px',
-									height: 40,
-									px: 1.25,
-									borderRadius: '8px',
-									whiteSpace: 'nowrap',
-									'&:hover': {
-										borderColor: '#cbd5e1',
-										bgcolor: '#f8fafc',
-										color: '#0f172a',
-									},
-								}}
-							>
-								Reset
-							</Button>
-						</Tooltip>
-					)}
-				</Stack>
-			</Stack>
-
-			{/* ── Operational Data Grid ── */}
+			{/* ── 6. Operational Data Grid ── */}
 			<AppTable
 				columns={columns}
 				rows={requests}
@@ -850,4 +838,3 @@ export default function AdminAncillaryPage() {
 		</Box>
 	)
 }
-
