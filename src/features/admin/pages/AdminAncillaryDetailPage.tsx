@@ -11,6 +11,8 @@ import {
 	Avatar,
 	Grid,
 	Divider,
+	IconButton,
+	Tooltip,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import PersonIcon from '@mui/icons-material/Person'
@@ -187,96 +189,82 @@ export default function AdminAncillaryDetailPage() {
 				</Alert>
 			)}
 
-			{/* FLOATING TOP HEADER CARD (All Operational Actions Kept Exclusively Here) */}
-			<Box
-				sx={{
-					bgcolor: '#ffffff',
-					borderRadius: '12px',
-					border: '1px solid #e2e8f0',
-					px: 2.5,
-					py: 1.25,
-					mb: 2,
-					boxShadow: '0 1px 2px rgba(15,23,42,0.02)',
-				}}
+			{/* APPLICANT / REQUEST HEADER ROW (Clean, minimal navigation row) */}
+			<Stack
+				direction="row"
+				justifyContent="space-between"
+				alignItems="center"
+				flexWrap="wrap"
+				gap={1.5}
+				sx={{ mb: 2.5 }}
 			>
-				<Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1.5}>
-					<Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
-						<AppButton
-							variant="outlined"
-							size="small"
-							startIcon={<ArrowBackIcon sx={{ fontSize: 15 }} />}
+				<Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+					<Tooltip title="Back to Operations">
+						<IconButton
 							onClick={handleBack}
-							label="Back to Operations"
+							size="small"
 							sx={{
-								borderRadius: '8px',
-								borderColor: '#e2e8f0',
-								color: '#334155',
-								bgcolor: '#f8fafc',
-								fontWeight: 700,
+								p: 0.5,
+								color: '#475569',
+								'&:hover': { color: '#0d9488', bgcolor: 'rgba(13,148,136,0.08)' },
+							}}
+						>
+							<ArrowBackIcon sx={{ fontSize: 22 }} />
+						</IconButton>
+					</Tooltip>
+
+					<Typography variant="h6" fontWeight={800} color="#0f172a" sx={{ fontSize: 18, lineHeight: 1.2 }}>
+						{detail?.public_id || 'Ancillary Request'}
+					</Typography>
+
+					{detail && <StatusBadge status={detail.status} />}
+				</Stack>
+
+				{/* Primary Operational Action Buttons */}
+				<Stack direction="row" spacing={1} alignItems="center">
+					{isReassignable && (
+						<AppButton
+							variant="contained"
+							size="small"
+							startIcon={<SwapHorizIcon sx={{ fontSize: 15 }} />}
+							onClick={() => setShowReassignModal(true)}
+							disabled={actionLoading}
+							label="Reassign Nurse"
+							sx={{
+								bgcolor: '#0d9488',
+								color: '#ffffff',
+								fontWeight: 800,
 								fontSize: '0.78rem',
-								py: 0.4,
-								px: 1.25,
+								borderRadius: '8px',
+								py: 0.45,
+								px: 1.75,
 								'&:hover': {
-									borderColor: '#0d9488',
-									color: '#0d9488',
-									bgcolor: '#f0fdfa',
+									bgcolor: '#0f766e',
 								},
 							}}
 						/>
+					)}
 
-						<Typography variant="h6" fontWeight={800} color="#0f172a" sx={{ fontSize: 18 }}>
-							{detail?.public_id || 'Ancillary Request'}
-						</Typography>
-
-						{detail && <StatusBadge status={detail.status} />}
-					</Stack>
-
-					{/* Primary Operational Action Buttons */}
-					<Stack direction="row" spacing={1} alignItems="center">
-						{isReassignable && (
-							<AppButton
-								variant="contained"
-								size="small"
-								startIcon={<SwapHorizIcon sx={{ fontSize: 15 }} />}
-								onClick={() => setShowReassignModal(true)}
-								disabled={actionLoading}
-								label="Reassign Nurse"
-								sx={{
-									bgcolor: '#0d9488',
-									color: '#ffffff',
-									fontWeight: 800,
-									fontSize: '0.78rem',
-									borderRadius: '8px',
-									py: 0.45,
-									px: 1.75,
-									'&:hover': {
-										bgcolor: '#0f766e',
-									},
-								}}
-							/>
-						)}
-
-						{isCancellable && (
-							<AppButton
-								variant="outlined"
-								color="error"
-								size="small"
-								startIcon={<CancelIcon sx={{ fontSize: 15 }} />}
-								onClick={() => setShowCancelModal(true)}
-								disabled={actionLoading}
-								label="Cancel Request"
-								sx={{
-									borderRadius: '8px',
-									fontWeight: 700,
-									fontSize: '0.78rem',
-									py: 0.45,
-									px: 1.5,
-								}}
-							/>
-						)}
-					</Stack>
+					{isCancellable && (
+						<AppButton
+							variant="outlined"
+							color="error"
+							size="small"
+							startIcon={<CancelIcon sx={{ fontSize: 15 }} />}
+							onClick={() => setShowCancelModal(true)}
+							disabled={actionLoading}
+							label="Cancel Request"
+							sx={{
+								borderRadius: '8px',
+								fontWeight: 700,
+								fontSize: '0.78rem',
+								py: 0.45,
+								px: 1.5,
+							}}
+						/>
+					)}
 				</Stack>
-			</Box>
+			</Stack>
 
 			{loading ? (
 				<Stack alignItems="center" justifyContent="center" sx={{ flex: 1, minHeight: 340 }}>

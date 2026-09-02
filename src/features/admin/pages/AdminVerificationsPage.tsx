@@ -1,5 +1,5 @@
 // src/features/admin/pages/AdminVerificationsPage.tsx
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
 	Box,
@@ -39,6 +39,8 @@ import {
 	getDoctorsVerificationQueue,
 	getNursesVerificationQueue,
 	getProvidersVerificationQueue,
+	getVerificationKpiCounts,
+	VerificationKpiCounts,
 	getAncillaryCategories,
 	DoctorVerificationItem,
 	NurseVerificationItem,
@@ -131,8 +133,14 @@ export default function AdminVerificationsPage() {
 
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
-	const [initialLoaded, setInitialLoaded] = useState(false)
-	const initialFetchDoneRef = useRef(false)
+
+	// ── Dedicated KPI Counts State (Independent from queue lists) ───────────
+	const [kpiCounts, setKpiCounts] = useState<VerificationKpiCounts>({
+		pending_doctors: 0,
+		pending_ancillary: 0,
+		pending_providers: 0,
+		total_applications: 0,
+	})
 
 	// ── Pagination ──────────────────────────────────────────────────────────
 	const [docPage, setDocPage] = useState(1)
@@ -173,136 +181,84 @@ export default function AdminVerificationsPage() {
 		setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
 	}
 
-	// ── 1. Initial Page Load: Fetch all 3 queues in parallel for instant KPI counts ───
-	const fetchAllInitialQueues = useCallback(async () => {
+	// ── 1. Fetch Dedicated KPI Counts (Card Counts) ──────────────────────────
+	const fetchKpiCounts = useCallback(async () => {
+		try {
+			const res = await getVerificationKpiCounts()
+			if (res.success && res.data) {
+				setKpiCounts(res.data)
+			}
+		} catch (err) {
+			console.warn('Failed to load verification KPI counts:', err)
+		}
+	}, [])
+
+	useEffect(() => {
+		fetchKpiCounts()
+	}, [fetchKpiCounts])
+
+	// ── 2. Lazy-Load Active Queue Only (Called only for active tab) ──────────
+	const fetchActiveQueue = useCallback(async () => {
 		setLoading(true)
 		setError(null)
 		try {
-			const [docRes, nurseRes, provRes] = await Promise.all([
-				getDoctorsVerificationQueue({ page: 1, pageSize: docPageSize }),
-				getNursesVerificationQueue({
-					page: 1,
+			if (activeTab === 'doctors') {
+				const res = await getDoctorsVerificationQueue({ page: docPage, pageSize: docPageSize })
+				if (res.success && res.data) {
+					setDoctorsQueue(res.data.items || [])
+					setDocTotalRows(res.data.total ?? 0)
+				}
+			} else if (activeTab === 'ancillary') {
+				const res = await getNursesVerificationQueue({
+					page: nursePage,
 					pageSize: nursePageSize,
 					subcategory: selectedAncillarySubcategory || undefined,
-				}),
-				getProvidersVerificationQueue({
-					page: 1,
+				})
+				if (res.success && res.data) {
+					setNursesQueue(res.data.items || [])
+					setNurseTotalRows(res.data.total ?? 0)
+				} else {
+					setNursesQueue([])
+					setNurseTotalRows(0)
+				}
+			} else if (activeTab === 'providers') {
+				const res = await getProvidersVerificationQueue({
+					page: provPage,
 					pageSize: provPageSize,
 					subcategory: selectedProviderSubcategory || undefined,
-				}),
-			])
-
-			if (docRes.success && docRes.data) {
-				setDoctorsQueue(docRes.data.items || [])
-				setDocTotalRows(docRes.data.total ?? (docRes.data.items?.length || 0))
-			}
-			if (nurseRes.success && nurseRes.data) {
-				setNursesQueue(nurseRes.data.items || [])
-				setNurseTotalRows(nurseRes.data.total ?? (nurseRes.data.items?.length || 0))
-			}
-			if (provRes.success && provRes.data) {
-				setProvidersQueue(provRes.data.items || [])
-				setProvTotalRows(provRes.data.total ?? (provRes.data.items?.length || 0))
+				})
+				if (res.success && res.data) {
+					setProvidersQueue(res.data.items || [])
+					setProvTotalRows(res.data.total ?? 0)
+				} else {
+					setProvidersQueue([])
+					setProvTotalRows(0)
+				}
 			}
 		} catch (err: unknown) {
-			setError(getErrorMessage(err, 'Failed to load verification queues.'))
-		} finally {
-			setLoading(false)
-			setInitialLoaded(true)
-		}
-	}, [docPageSize, nursePageSize, provPageSize, selectedAncillarySubcategory, selectedProviderSubcategory])
-
-	useEffect(() => {
-		if (!initialFetchDoneRef.current) {
-			initialFetchDoneRef.current = true
-			fetchAllInitialQueues()
-		}
-	}, [fetchAllInitialQueues])
-
-	// ── 2. Refetch specific category on pagination or subcategory change ─────
-	const fetchDoctorsQueue = useCallback(async () => {
-		setLoading(true)
-		setError(null)
-		try {
-			const res = await getDoctorsVerificationQueue({ page: docPage, pageSize: docPageSize })
-			if (res.success && res.data) {
-				setDoctorsQueue(res.data.items || [])
-				setDocTotalRows(res.data.total ?? 0)
-			}
-		} catch (err: unknown) {
-			setError(getErrorMessage(err, 'Failed to load doctors verification queue.'))
+			setError(getErrorMessage(err, 'Failed to load verification queue.'))
 		} finally {
 			setLoading(false)
 		}
-	}, [docPage, docPageSize])
-
-	const fetchAncillaryQueue = useCallback(async () => {
-		setLoading(true)
-		setError(null)
-		try {
-			const res = await getNursesVerificationQueue({
-				page: nursePage,
-				pageSize: nursePageSize,
-				subcategory: selectedAncillarySubcategory || undefined,
-			})
-			if (res.success && res.data) {
-				setNursesQueue(res.data.items || [])
-				setNurseTotalRows(res.data.total ?? 0)
-			} else {
-				setNursesQueue([])
-				setNurseTotalRows(0)
-			}
-		} catch (err: unknown) {
-			setError(getErrorMessage(err, 'Failed to load ancillary verification queue.'))
-		} finally {
-			setLoading(false)
-		}
-	}, [nursePage, nursePageSize, selectedAncillarySubcategory])
-
-	const fetchProvidersQueue = useCallback(async () => {
-		setLoading(true)
-		setError(null)
-		try {
-			const res = await getProvidersVerificationQueue({
-				page: provPage,
-				pageSize: provPageSize,
-				subcategory: selectedProviderSubcategory || undefined,
-			})
-			if (res.success && res.data) {
-				setProvidersQueue(res.data.items || [])
-				setProvTotalRows(res.data.total ?? 0)
-			} else {
-				setProvidersQueue([])
-				setProvTotalRows(0)
-			}
-		} catch (err: unknown) {
-			setError(getErrorMessage(err, 'Failed to load providers verification queue.'))
-		} finally {
-			setLoading(false)
-		}
-	}, [provPage, provPageSize, selectedProviderSubcategory])
-
-	// Trigger specific category fetch only on subcategory or page changes after initial load
-	useEffect(() => {
-		if (!initialLoaded) return
-		if (docPage > 1) {
-			fetchDoctorsQueue()
-		}
-	}, [docPage, docPageSize, fetchDoctorsQueue, initialLoaded])
+	}, [
+		activeTab,
+		docPage,
+		docPageSize,
+		nursePage,
+		nursePageSize,
+		selectedAncillarySubcategory,
+		provPage,
+		provPageSize,
+		selectedProviderSubcategory,
+	])
 
 	useEffect(() => {
-		if (!initialLoaded) return
-		if (selectedAncillarySubcategory !== '' || nursePage > 1) {
-			fetchAncillaryQueue()
-		}
-	}, [selectedAncillarySubcategory, nursePage, nursePageSize, fetchAncillaryQueue, initialLoaded])
+		fetchActiveQueue()
+	}, [fetchActiveQueue])
 
-	useEffect(() => {
-		if (!initialLoaded) return
-		if (selectedProviderSubcategory !== '' || provPage > 1) {
-			fetchProvidersQueue()
-		}
-	}, [selectedProviderSubcategory, provPage, provPageSize, fetchProvidersQueue, initialLoaded])
+	const handleRefresh = async () => {
+		await Promise.all([fetchKpiCounts(), fetchActiveQueue()])
+	}
 
 	const handleAssignToSubAdmin: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
 		const assignedToId = e.target.value
@@ -321,7 +277,8 @@ export default function AdminVerificationsPage() {
 					const subAdminName = subAdmins.find((s) => s.public_id === assignedToId)?.name
 					toast.success(`${selectedIds.length} doctor(s) assigned to ${subAdminName || 'Sub Admin'}.`)
 					setSelectedIds([])
-					fetchDoctorsQueue()
+					fetchKpiCounts()
+					fetchActiveQueue()
 				}
 			} else if (activeTab === 'ancillary') {
 				const res = await assignProvidersToSubadmin(selectedIds, assignedToId, 'ancillary')
@@ -329,7 +286,8 @@ export default function AdminVerificationsPage() {
 					const subAdminName = subAdmins.find((s) => s.public_id === assignedToId)?.name
 					toast.success(`${selectedIds.length} ancillary application(s) assigned to ${subAdminName || 'Sub Admin'}.`)
 					setSelectedIds([])
-					fetchAncillaryQueue()
+					fetchKpiCounts()
+					fetchActiveQueue()
 				}
 			} else {
 				const res = await assignProvidersToSubadmin(selectedIds, assignedToId, selectedProviderSubcategory || 'provider')
@@ -337,7 +295,8 @@ export default function AdminVerificationsPage() {
 					const subAdminName = subAdmins.find((s) => s.public_id === assignedToId)?.name
 					toast.success(`${selectedIds.length} provider(s) assigned to ${subAdminName || 'Sub Admin'}.`)
 					setSelectedIds([])
-					fetchProvidersQueue()
+					fetchKpiCounts()
+					fetchActiveQueue()
 				}
 			}
 		} catch (err: unknown) {
@@ -717,21 +676,19 @@ export default function AdminVerificationsPage() {
 		},
 	]
 
-	const totalAllApplications = docTotalRows + nurseTotalRows + provTotalRows
-
 	return (
 		<Box>
 			<AdminPageHeader
 				title="Verifications Center"
 				subtitle="Review, audit, approve, or reject healthcare providers, doctors, and nurses credential applications."
-				count={totalAllApplications}
+				count={kpiCounts.total_applications}
 				countLabel="pending applications"
 				actions={
 					<Button
 						variant="outlined"
 						size="small"
 						startIcon={<RefreshIcon sx={{ fontSize: 17 }} />}
-						onClick={fetchAllInitialQueues}
+						onClick={handleRefresh}
 						disabled={loading}
 						sx={{
 							borderRadius: 2,
@@ -759,7 +716,7 @@ export default function AdminVerificationsPage() {
 				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 					<AdminStatCard
 						label="Pending Doctors"
-						value={docTotalRows}
+						value={kpiCounts.pending_doctors}
 						icon={<LocalHospitalIcon />}
 						iconColor="#d97706"
 						iconBg="rgba(217,119,6,0.12)"
@@ -770,7 +727,7 @@ export default function AdminVerificationsPage() {
 				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 					<AdminStatCard
 						label="Pending Ancillary"
-						value={nurseTotalRows}
+						value={kpiCounts.pending_ancillary}
 						icon={<MedicalServicesIcon />}
 						iconColor="#0d9488"
 						iconBg="rgba(13,148,136,0.12)"
@@ -781,7 +738,7 @@ export default function AdminVerificationsPage() {
 				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 					<AdminStatCard
 						label="Pending Providers"
-						value={provTotalRows}
+						value={kpiCounts.pending_providers}
 						icon={<StorefrontIcon />}
 						iconColor="#7e22ce"
 						iconBg="rgba(126,34,206,0.12)"
@@ -792,7 +749,7 @@ export default function AdminVerificationsPage() {
 				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 					<AdminStatCard
 						label="Total Applications"
-						value={totalAllApplications}
+						value={kpiCounts.total_applications}
 						icon={<AssignmentTurnedInIcon />}
 						iconColor="#2563eb"
 						iconBg="rgba(37,99,235,0.1)"
@@ -814,19 +771,19 @@ export default function AdminVerificationsPage() {
 				>
 					<Tab
 						value="doctors"
-						label={`Doctors Queue (${docTotalRows})`}
+						label="Doctors Queue"
 						icon={<LocalHospitalIcon sx={{ fontSize: 17 }} />}
 						iconPosition="start"
 					/>
 					<Tab
 						value="ancillary"
-						label={`Ancillary Queue (${nurseTotalRows})`}
+						label="Ancillary Queue"
 						icon={<MedicalServicesIcon sx={{ fontSize: 17 }} />}
 						iconPosition="start"
 					/>
 					<Tab
 						value="providers"
-						label={`Providers Queue (${provTotalRows})`}
+						label="Providers Queue"
 						icon={<StorefrontIcon sx={{ fontSize: 17 }} />}
 						iconPosition="start"
 					/>

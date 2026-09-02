@@ -27,8 +27,7 @@ export interface DoctorVerificationItem {
 }
 
 export interface DocumentReviewItemPayload {
-	document_id: string
-	document_name: string
+	document_id?: string | null
 	status: 'verified' | 'requires_reupload' | 'rejected' | 'not_reviewed' | 'flagged' | 'under_review'
 	issue_tags?: string[]
 }
@@ -88,8 +87,7 @@ export interface AuditHistoryEventItem {
 	id: string
 	reviewer_name: string
 	action: string
-	document_id?: string
-	document_name?: string
+	document_id?: string | null
 	timestamp: string
 	issue_tags?: string[]
 	notes?: string
@@ -183,6 +181,17 @@ export interface AdminPatientDetail {
 	upcoming_appointments: AdminUpcomingAppointment[]
 }
 
+export interface AdminProviderQualificationItem {
+	id?: number | string
+	qualification: string
+	institution?: string
+	specialization?: string
+	year_of_passing?: string | number
+	proof_url?: string | null
+	proof_s3_key?: string | null
+	qualification_proof_s3_key?: string | null
+}
+
 export interface AdminProviderDetail {
 	provider_id: string
 	provider_type: 'pharmacy' | 'radiology' | 'laboratory' | 'ancillary' | 'nurse' | string
@@ -196,6 +205,7 @@ export interface AdminProviderDetail {
 	is_verified: boolean
 	is_suspended?: boolean | null
 	license_number?: string | null
+	license_proof_s3_key?: string | null
 	gst_number?: string | null
 	address?: string | null
 	city?: string | null
@@ -204,6 +214,7 @@ export interface AdminProviderDetail {
 	registration_date?: string
 	specialty?: string | null
 	qualifications?: string | null
+	qualifications_list?: AdminProviderQualificationItem[]
 	capabilities?: string[] | null
 	verification_status?: string | null
 }
@@ -258,7 +269,8 @@ export interface DoctorDegreeItem {
 }
 
 export interface DoctorVerificationDocument {
-	id: number | string
+	id?: number | string | null
+	document_type?: string
 	name: string
 	url: string
 	type: string
@@ -285,6 +297,7 @@ export interface DoctorVerificationDetail {
 	specialities?: string[]
 	qualification?: string
 	degrees?: DoctorDegreeItem[]
+	qualifications?: DoctorDegreeItem[]
 	experience_years?: number
 	registration_number?: string
 	registration_proof_s3_key?: string
@@ -357,6 +370,21 @@ export interface DashboardStats {
 export const getDashboardStats = async () => {
 	const res = await ApiService.get<{ success: boolean; data: DashboardStats }>(
 		API_ENDPOINTS.ADMIN.DASHBOARD_STATS
+	)
+	return res.data
+}
+
+export interface VerificationKpiCounts {
+	pending_doctors: number
+	pending_ancillary: number
+	pending_providers: number
+	total_applications: number
+}
+
+/** GET /api/admin/verifications/kpi-counts -- Dedicated KPI counts for Verification Center */
+export const getVerificationKpiCounts = async () => {
+	const res = await ApiService.get<{ success: boolean; data: VerificationKpiCounts }>(
+		API_ENDPOINTS.ADMIN.VERIFICATION_KPI_COUNTS
 	)
 	return res.data
 }
@@ -596,8 +624,7 @@ export const getVerificationAuditHistory = async (targetType: string, targetId: 
 export interface SingleDocumentReviewPayload {
 	target_type: string
 	target_id: string
-	document_id: string
-	document_name: string
+	document_id?: string | null
 	status: 'verified' | 'requires_reupload' | 'rejected' | 'not_reviewed' | 'flagged' | 'under_review'
 	issue_tags?: string[]
 	notes?: string
@@ -1474,8 +1501,13 @@ export interface AdminAncillaryStats {
 	in_progress: number
 	completed_today: number
 	cancelled: number
-	nurses_online: number
-	total_requests: number
+}
+
+export interface AdminAncillaryStatsParams {
+	specialtyId?: string
+	dateFilter?: string
+	startDate?: string
+	endDate?: string
 }
 
 export interface AdminAncillaryDetail extends AdminAncillaryRequestItem {
@@ -1556,13 +1588,24 @@ export const listAdminAncillaryRequests = async (params: AdminAncillaryListParam
 	return res.data
 }
 
-/** GET /api/admin/ancillary/stats -- Fetch summary KPI metrics */
-export const getAdminAncillaryStats = async () => {
-	const res = await ApiService.get<AdminMutationResponse<AdminAncillaryStats>>(
-		API_ENDPOINTS.ADMIN.ANCILLARY_STATS
-	)
+/** GET /api/admin/ancillary/stats -- Dedicated KPI counts for Ancillary Operations */
+export const getAncillaryOperationsKpi = async (params: AdminAncillaryStatsParams = {}) => {
+	const res = await ApiService.get<{
+		success: boolean
+		data: AdminAncillaryStats
+	}>(API_ENDPOINTS.ADMIN.ANCILLARY_STATS, {
+		params: {
+			specialty_id: params.specialtyId && params.specialtyId !== 'all' ? params.specialtyId : undefined,
+			date_filter: params.dateFilter || undefined,
+			start_date: params.startDate || undefined,
+			end_date: params.endDate || undefined,
+		},
+	})
 	return res.data
 }
+
+/** GET /api/admin/ancillary/stats -- Alias for backward compatibility */
+export const getAdminAncillaryStats = getAncillaryOperationsKpi
 
 /** GET /api/admin/ancillary/requests/:requestId -- Fetch full operational detail */
 export const getAdminAncillaryRequestDetail = async (requestId: string) => {

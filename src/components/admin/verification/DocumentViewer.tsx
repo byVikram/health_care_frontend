@@ -1,5 +1,5 @@
 // src/components/admin/verification/DocumentViewer.tsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
 	Box,
 	Stack,
@@ -8,6 +8,8 @@ import {
 	Tooltip,
 	Dialog,
 	Divider,
+	Button,
+	CircularProgress,
 } from '@mui/material'
 import DescriptionIcon from '@mui/icons-material/Description'
 import SearchIcon from '@mui/icons-material/Search'
@@ -18,6 +20,7 @@ import AddIcon from '@mui/icons-material/Add'
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore'
 import NavigateNextIcon from '@mui/icons-material/NavigateNext'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import CloseIcon from '@mui/icons-material/Close'
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined'
 
@@ -29,20 +32,103 @@ interface DocumentViewerProps {
 	activeDocument: VerificationDocumentItem | null
 }
 
+type DocumentFormat = 'pdf' | 'image' | 'fallback'
+
 export default function DocumentViewer({ activeDocument }: DocumentViewerProps) {
 	const [fullscreen, setFullscreen] = useState(false)
 	const [zoom, setZoom] = useState(100)
 	const [page, setPage] = useState(1)
+	const [docFormat, setDocFormat] = useState<DocumentFormat>('fallback')
+	const [isDetecting, setIsDetecting] = useState(false)
 
 	const s3Url = activeDocument ? buildS3Url(activeDocument.url) : undefined
-	const isImage = s3Url ? /\.(png|jpe?g|webp|gif)$/i.test(s3Url) : false
+
+	useEffect(() => {
+		setZoom(100)
+		setPage(1)
+
+		if (!s3Url) {
+			setDocFormat('fallback')
+			setIsDetecting(false)
+			return
+		}
+
+		// 1. Clean URL to strip query parameters and hashes (e.g. image.jpg?abc=123)
+		let cleanPath = ''
+		try {
+			const parsed = new URL(s3Url, window.location.origin)
+			cleanPath = parsed.pathname.toLowerCase()
+		} catch {
+			cleanPath = s3Url.split('?')[0].split('#')[0].toLowerCase()
+		}
+
+		// 2. Exact extension / MIME checks
+		const isExplicitPdf =
+			s3Url.startsWith('data:application/pdf') || cleanPath.endsWith('.pdf')
+		const isExplicitImage =
+			s3Url.startsWith('data:image/') ||
+			/\.(png|jpe?g|webp|gif|svg|bmp|avif)$/i.test(cleanPath)
+
+		if (isExplicitPdf) {
+			setDocFormat('pdf')
+			setIsDetecting(false)
+			return
+		}
+
+		if (isExplicitImage) {
+			setDocFormat('image')
+			setIsDetecting(false)
+			return
+		}
+
+		// 3. For URLs without obvious extensions, probe content type asynchronously
+		let isMounted = true
+		setIsDetecting(true)
+
+		// Probe image loading first
+		const probeImg = new Image()
+		probeImg.onload = () => {
+			if (isMounted) {
+				setDocFormat('image')
+				setIsDetecting(false)
+			}
+		}
+		probeImg.onerror = () => {
+			// If image probe fails, probe HTTP HEAD if same-origin / supported
+			fetch(s3Url, { method: 'HEAD' })
+				.then((res) => {
+					if (!isMounted) return
+					const ct = res.headers.get('content-type') || ''
+					if (ct.includes('application/pdf')) {
+						setDocFormat('pdf')
+					} else if (ct.startsWith('image/')) {
+						setDocFormat('image')
+					} else {
+						setDocFormat('fallback')
+					}
+				})
+				.catch(() => {
+					if (isMounted) {
+						setDocFormat('fallback')
+					}
+				})
+				.finally(() => {
+					if (isMounted) setIsDetecting(false)
+				})
+		}
+		probeImg.src = s3Url
+
+		return () => {
+			isMounted = false
+		}
+	}, [s3Url])
 
 	const handleZoomIn = () => setZoom((prev) => Math.min(prev + 25, 250))
 	const handleZoomOut = () => setZoom((prev) => Math.max(prev - 25, 50))
 	const handleResetZoom = () => setZoom(100)
 
 	return (
-		<Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: '#ffffff', p: 2 }}>
+		<Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 500, bgcolor: '#ffffff', p: 2 }}>
 			{/* Document Title Header - Compact */}
 			<Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5, minWidth: 0 }}>
 				<Box
@@ -69,7 +155,7 @@ export default function DocumentViewer({ activeDocument }: DocumentViewerProps) 
 			<Box
 				sx={{
 					flex: 1,
-					minHeight: 280,
+					minHeight: 440,
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
@@ -83,11 +169,19 @@ export default function DocumentViewer({ activeDocument }: DocumentViewerProps) 
 				}}
 			>
 				{s3Url ? (
-					isImage ? (
+					isDetecting ? (
+						<Stack alignItems="center" spacing={1.5}>
+							<CircularProgress size={28} sx={{ color: '#0d9488' }} />
+							<Typography variant="caption" color="#64748b" fontWeight={600}>
+								Loading document preview...
+							</Typography>
+						</Stack>
+					) : docFormat === 'image' ? (
 						<Box
 							sx={{
 								width: '100%',
 								height: '100%',
+								minHeight: 440,
 								display: 'flex',
 								alignItems: 'center',
 								justifyContent: 'center',
@@ -99,6 +193,7 @@ export default function DocumentViewer({ activeDocument }: DocumentViewerProps) 
 								component="img"
 								src={s3Url}
 								alt={activeDocument?.name || 'Document'}
+								onError={() => setDocFormat('fallback')}
 								sx={{
 									maxWidth: '100%',
 									maxHeight: '100%',
@@ -113,16 +208,19 @@ export default function DocumentViewer({ activeDocument }: DocumentViewerProps) 
 								}}
 							/>
 						</Box>
-					) : (
+					) : docFormat === 'pdf' ? (
 						<Box
 							sx={{
 								width: '100%',
 								height: '100%',
+								minHeight: 440,
 								borderRadius: '6px',
 								overflow: 'hidden',
 								bgcolor: '#ffffff',
 								boxShadow: '0 2px 12px rgba(15,23,42,0.06)',
 								border: '1px solid #e2e8f0',
+								display: 'flex',
+								flexDirection: 'column',
 							}}
 						>
 							<Box
@@ -132,11 +230,57 @@ export default function DocumentViewer({ activeDocument }: DocumentViewerProps) 
 								sx={{
 									width: '100%',
 									height: '100%',
+									flex: 1,
+									minHeight: 440,
 									border: 'none',
 									bgcolor: '#ffffff',
 								}}
 							/>
 						</Box>
+					) : (
+						/* Unknown / Unsupported / Blocked Format Safe Fallback */
+						<Stack alignItems="center" justifyContent="center" spacing={1.5} sx={{ textAlign: 'center', maxWidth: 360, p: 2 }}>
+							<Box
+								sx={{
+									width: 56,
+									height: 56,
+									borderRadius: '12px',
+									bgcolor: '#f0fdfa',
+									border: '1.5px solid #99f6e4',
+									display: 'flex',
+									alignItems: 'center',
+									justifyContent: 'center',
+									color: '#0d9488',
+								}}
+							>
+								<InsertDriveFileOutlinedIcon sx={{ fontSize: 32 }} />
+							</Box>
+							<Typography variant="body2" fontWeight={800} color="#0f172a">
+								{activeDocument?.name || 'Document File'}
+							</Typography>
+							<Typography variant="caption" color="#64748b" sx={{ lineHeight: 1.4 }}>
+								This document format or secure origin can be viewed directly in a browser window.
+							</Typography>
+							<Button
+								variant="contained"
+								size="small"
+								startIcon={<OpenInNewIcon sx={{ fontSize: 16 }} />}
+								href={s3Url}
+								target="_blank"
+								rel="noreferrer"
+								sx={{
+									bgcolor: '#0d9488',
+									fontWeight: 700,
+									textTransform: 'none',
+									borderRadius: '8px',
+									px: 2,
+									py: 0.75,
+									'&:hover': { bgcolor: '#0f766e' },
+								}}
+							>
+								Open Document
+							</Button>
+						</Stack>
 					)
 				) : (
 					/* Centered Empty State */
@@ -238,7 +382,7 @@ export default function DocumentViewer({ activeDocument }: DocumentViewerProps) 
 					<Divider orientation="vertical" flexItem sx={{ mx: 0.25, my: 0.5, borderColor: '#e2e8f0' }} />
 
 					{s3Url ? (
-						<Tooltip title="Open Original Document">
+						<Tooltip title="Open Original Document in New Tab">
 							<IconButton
 								size="small"
 								component="a"
@@ -283,7 +427,7 @@ export default function DocumentViewer({ activeDocument }: DocumentViewerProps) 
 					</Stack>
 					<Box sx={{ flex: 1, bgcolor: '#f1f5f9', p: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto' }}>
 						{s3Url &&
-							(isImage ? (
+							(docFormat === 'image' ? (
 								<Box
 									component="img"
 									src={s3Url}
@@ -299,7 +443,7 @@ export default function DocumentViewer({ activeDocument }: DocumentViewerProps) 
 										p: 1.5,
 									}}
 								/>
-							) : (
+							) : docFormat === 'pdf' ? (
 								<Box
 									component="iframe"
 									src={s3Url}
@@ -313,6 +457,17 @@ export default function DocumentViewer({ activeDocument }: DocumentViewerProps) 
 										bgcolor: '#ffffff',
 									}}
 								/>
+							) : (
+								<Button
+									variant="contained"
+									startIcon={<OpenInNewIcon />}
+									href={s3Url}
+									target="_blank"
+									rel="noreferrer"
+									sx={{ bgcolor: '#0d9488' }}
+								>
+									Open Document in New Window
+								</Button>
 							))}
 					</Box>
 				</Box>

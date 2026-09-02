@@ -26,7 +26,7 @@ export type DocumentStatus =
 	| 'requires_reupload'
 
 export interface VerificationDocumentItem {
-	id: string
+	id: string | null
 	name: string
 	url: string
 	type: string
@@ -131,11 +131,13 @@ export default function DocumentRail({
 					const isSelected = index === selectedIndex
 					const cfg = STATUS_CONFIG[doc.status] || STATUS_CONFIG.not_reviewed
 					const s3Url = buildS3Url(doc.url)
-					const isImage = s3Url ? /\.(png|jpe?g|webp|gif)$/i.test(s3Url) : false
+					const cleanPath = s3Url ? s3Url.split('?')[0].split('#')[0] : ''
+					const isPdf = Boolean(cleanPath && /\.pdf$/i.test(cleanPath))
+					const isImage = !isPdf || /\.(png|jpe?g|webp|gif|svg|bmp|avif)$/i.test(cleanPath) || s3Url?.startsWith('data:image/')
 
 					return (
 						<Box
-							key={doc.id}
+							key={doc.id !== null && doc.id !== undefined ? String(doc.id) : 'doc-item-' + index}
 							onClick={() => onSelectDocument(index)}
 							sx={{
 								p: 1.5,
