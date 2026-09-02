@@ -38,6 +38,7 @@ import VerificationActionBar from '../../../components/admin/verification/Verifi
 import {
 	getDoctorVerificationDetail,
 	getProvidersVerificationQueue,
+	getNursesVerificationQueue,
 	getProviderAdminDetail,
 	verifyDoctor,
 	verifyProvider,
@@ -125,6 +126,65 @@ function InfoTile({
 	)
 }
 
+const getDocStatusFromLogs = (
+	docId: string | null,
+	category: string,
+	fetchedAuditLogs: AuditHistoryEventItem[]
+): DocumentStatus => {
+	const latestLog = fetchedAuditLogs.find((log) => {
+		const act = log.action || ''
+		const logDocId = log.document_id
+
+		if (category === 'registration' || category === 'license') {
+			return (act.startsWith('registration_') || act.startsWith('license_')) &&
+				(logDocId === null || logDocId === undefined || logDocId === 'None' || logDocId === '' || logDocId === 'null')
+		}
+		if (category === 'qualification') {
+			if (!docId) return false
+			return act.startsWith('qualification_') && String(logDocId) === String(docId)
+		}
+		if (docId === null) {
+			return logDocId === null || logDocId === undefined || logDocId === 'None' || logDocId === '' || logDocId === 'null'
+		}
+		return String(logDocId) === String(docId)
+	})
+
+	if (latestLog) {
+		const act = latestLog.action
+		if (act.endsWith('_verified')) return 'verified'
+		if (act.endsWith('_rejected')) return 'rejected'
+		if (act.endsWith('_requires_reupload')) return 'requires_reupload'
+	}
+	return 'not_reviewed'
+}
+
+const getDocIssueTagFromLogs = (
+	docId: string | null,
+	category: string,
+	fetchedAuditLogs: AuditHistoryEventItem[]
+): string | undefined => {
+	const latestLog = fetchedAuditLogs.find((log) => {
+		const act = log.action || ''
+		const logDocId = log.document_id
+
+		if (category === 'registration' || category === 'license') {
+			return (act.startsWith('registration_') || act.startsWith('license_')) &&
+				(logDocId === null || logDocId === undefined || logDocId === 'None' || logDocId === '' || logDocId === 'null')
+		}
+		if (category === 'qualification') {
+			if (!docId) return false
+			return act.startsWith('qualification_') && String(logDocId) === String(docId)
+		}
+		if (docId === null) {
+			return logDocId === null || logDocId === undefined || logDocId === 'None' || logDocId === '' || logDocId === 'null'
+		}
+		return String(logDocId) === String(docId)
+	})
+	return latestLog?.issue_tags && latestLog.issue_tags.length > 0
+		? latestLog.issue_tags.join(', ')
+		: undefined
+}
+
 export default function AdminVerificationReviewPage() {
 	const { type, id } = useParams<{ type: string; id: string }>()
 	const navigate = useNavigate()
@@ -148,7 +208,8 @@ export default function AdminVerificationReviewPage() {
 	const [auditEvents, setAuditEvents] = useState<AuditTimelineEvent[]>([])
 
 	const isDoctor = type === 'doctor'
-	const isNurse = type === 'ancillary' || type === 'nurse'
+	const isPharmacyOrDiagnostic = type === 'pharmacy' || type === 'radiology' || type === 'laboratory'
+	const isAncillary = !isDoctor && !isPharmacyOrDiagnostic
 
 	const fetchData = useCallback(async () => {
 		if (!id) return
@@ -156,7 +217,7 @@ export default function AdminVerificationReviewPage() {
 		setError(null)
 
 		try {
-			const targetType = isDoctor ? 'doctor' : isNurse ? 'ancillary' : type || 'provider'
+			const targetType = isDoctor ? 'doctor' : isAncillary ? 'ancillary' : type || 'provider'
 			const auditRes = await getVerificationAuditHistory(targetType, id)
 			let fetchedAuditLogs: AuditHistoryEventItem[] = []
 
@@ -176,62 +237,6 @@ export default function AdminVerificationReviewPage() {
 				)
 			}
 
-			// Deterministic matching based on action prefix and exact document_id (no document_type or document_name matching)
-			const getDocStatus = (docId: string | null, docCategory: 'registration' | 'license' | 'qualification' | string): DocumentStatus => {
-				const latestLog = fetchedAuditLogs.find((log) => {
-					const act = log.action || ''
-					const logDocId = log.document_id
-
-					if (docCategory === 'registration') {
-						return act.startsWith('registration_') && (logDocId === null || logDocId === undefined || logDocId === 'None' || logDocId === '')
-					}
-					if (docCategory === 'license') {
-						return act.startsWith('license_') && (logDocId === null || logDocId === undefined || logDocId === 'None' || logDocId === '')
-					}
-					if (docCategory === 'qualification') {
-						if (!docId) return false
-						return act.startsWith('qualification_') && String(logDocId) === String(docId)
-					}
-					if (docId === null) {
-						return logDocId === null || logDocId === undefined || logDocId === 'None' || logDocId === ''
-					}
-					return String(logDocId) === String(docId)
-				})
-
-				if (latestLog) {
-					const act = latestLog.action
-					if (act.endsWith('_verified')) return 'verified'
-					if (act.endsWith('_rejected')) return 'rejected'
-					if (act.endsWith('_requires_reupload')) return 'requires_reupload'
-				}
-				return 'not_reviewed'
-			}
-
-			const getDocIssueTag = (docId: string | null, docCategory: 'registration' | 'license' | 'qualification' | string): string | undefined => {
-				const latestLog = fetchedAuditLogs.find((log) => {
-					const act = log.action || ''
-					const logDocId = log.document_id
-
-					if (docCategory === 'registration') {
-						return act.startsWith('registration_') && (logDocId === null || logDocId === undefined || logDocId === 'None' || logDocId === '')
-					}
-					if (docCategory === 'license') {
-						return act.startsWith('license_') && (logDocId === null || logDocId === undefined || logDocId === 'None' || logDocId === '')
-					}
-					if (docCategory === 'qualification') {
-						if (!docId) return false
-						return act.startsWith('qualification_') && String(logDocId) === String(docId)
-					}
-					if (docId === null) {
-						return logDocId === null || logDocId === undefined || logDocId === 'None' || logDocId === ''
-					}
-					return String(logDocId) === String(docId)
-				})
-				return latestLog?.issue_tags && latestLog.issue_tags.length > 0
-					? latestLog.issue_tags.join(', ')
-					: undefined
-			}
-
 			if (isDoctor) {
 				const res = await getDoctorVerificationDetail(id)
 				if (res.success && res.data) {
@@ -240,7 +245,7 @@ export default function AdminVerificationReviewPage() {
 
 					const docs: VerificationDocumentItem[] = []
 
-					if (data.documents && data.documents.length > 0) {
+					if (data.documents && Array.isArray(data.documents) && data.documents.length > 0) {
 						data.documents.forEach((d) => {
 							const isReg = d.document_type === 'registration' || d.type === 'license' || d.type === 'registration_license' || d.id === null || d.id === 'null'
 							const docId = isReg ? null : (d.id !== null && d.id !== undefined && d.id !== 'null' ? String(d.id) : null)
@@ -250,9 +255,9 @@ export default function AdminVerificationReviewPage() {
 								document_type: category,
 								name: d.name,
 								url: d.url,
-								type: d.type,
-								status: getDocStatus(docId, category),
-								issueTag: getDocIssueTag(docId, category),
+								type: d.type || category,
+								status: getDocStatusFromLogs(docId, category, fetchedAuditLogs),
+								issueTag: getDocIssueTagFromLogs(docId, category, fetchedAuditLogs),
 							})
 						})
 					} else {
@@ -263,8 +268,8 @@ export default function AdminVerificationReviewPage() {
 								name: 'Medical Registration License Proof',
 								url: data.registration_proof_s3_key,
 								type: 'registration_license',
-								status: getDocStatus(null, 'registration'),
-								issueTag: getDocIssueTag(null, 'registration'),
+								status: getDocStatusFromLogs(null, 'registration', fetchedAuditLogs),
+								issueTag: getDocIssueTagFromLogs(null, 'registration', fetchedAuditLogs),
 							})
 						}
 
@@ -280,33 +285,40 @@ export default function AdminVerificationReviewPage() {
 									name: dName,
 									url: proof,
 									type: 'qualification',
-									status: getDocStatus(dId, 'qualification'),
-									issueTag: getDocIssueTag(dId, 'qualification'),
+									status: getDocStatusFromLogs(dId, 'qualification', fetchedAuditLogs),
+									issueTag: getDocIssueTagFromLogs(dId, 'qualification', fetchedAuditLogs),
 								})
 							}
 						})
 					}
 
 					setDocuments(docs)
+					setSelectedDocIndex(0)
 				} else {
 					setError('Doctor verification details could not be loaded.')
 				}
 			} else {
 				let matchedProvider: ProviderVerificationItem | null = null
 				let providerQualifications: any[] = []
+				let backendDocs: any[] = []
 
 				try {
-					const detailRes = await getProviderAdminDetail(isNurse ? 'ancillary' : type || 'pharmacy', id)
+					const detailRes = await getProviderAdminDetail(isAncillary ? 'ancillary' : type || 'pharmacy', id)
 					if (detailRes.success && detailRes.data) {
-						const d = detailRes.data
+						const d = detailRes.data as any
+						if (d.documents && Array.isArray(d.documents) && d.documents.length > 0) {
+							backendDocs = d.documents
+						}
 						if (d.qualifications_list && Array.isArray(d.qualifications_list)) {
 							providerQualifications = d.qualifications_list
+						} else if (d.qualifications && Array.isArray(d.qualifications)) {
+							providerQualifications = d.qualifications
 						}
 						matchedProvider = {
 							id: d.provider_id || id,
 							public_id: d.provider_id || id,
 							provider_type: (d.provider_type as any) || (type as any) || 'ancillary',
-							name: d.owner_name || d.business_name || (isNurse ? 'Nurse Professional' : 'Provider'),
+							name: d.owner_name || d.business_name || (isAncillary ? 'Ancillary Professional' : 'Provider'),
 							owner_name: (d.owner_name || d.business_name) ?? undefined,
 							email: d.email || undefined,
 							contact_number: d.contact_number || undefined,
@@ -320,27 +332,56 @@ export default function AdminVerificationReviewPage() {
 							created_at: d.registration_date || new Date().toISOString(),
 						}
 					}
-				} catch {
-					// Fallback to queue if detail endpoint error
+				} catch (detailErr) {
+					console.warn('getProviderAdminDetail warning:', detailErr)
 				}
 
 				if (!matchedProvider) {
-					const res = await getProvidersVerificationQueue()
-					if (res.success && res.data) {
-						const rawData = res.data as any
-						const items: ProviderVerificationItem[] = Array.isArray(res.data)
-							? res.data
-							: Array.isArray(rawData.items)
-							? rawData.items
-							: [
-									...(rawData.ancillary || []),
-									...(rawData.pharmacies || []),
-									...(rawData.radiology || []),
-									...(rawData.laboratories || []),
-							  ]
-						const matched = items.find((p: ProviderVerificationItem) => p.id === id || p.public_id === id)
-						if (matched) {
-							matchedProvider = matched
+					if (isAncillary) {
+						const res = await getNursesVerificationQueue()
+						if (res && res.success && res.data && res.data.items) {
+							const matched = res.data.items.find((p: any) => p.id === id || p.public_id === id)
+							if (matched) {
+								matchedProvider = {
+									id: matched.id,
+									public_id: matched.public_id,
+									provider_type: 'ancillary',
+									name: matched.name,
+									owner_name: matched.owner_name,
+									email: matched.email,
+									contact_number: matched.contact_number,
+									license_number: matched.license_number,
+									license_proof_s3_key: matched.license_proof_s3_key,
+									specialty: matched.speciality,
+									qualifications: matched.qualifications,
+									capabilities: matched.capabilities,
+									is_verified: matched.is_verified,
+									verification_status: matched.verification_status,
+									created_at: matched.created_at,
+								}
+								if (matched.qualifications && Array.isArray(matched.qualifications)) {
+									providerQualifications = matched.qualifications
+								}
+							}
+						}
+					} else {
+						const res = await getProvidersVerificationQueue()
+						if (res.success && res.data) {
+							const rawData = res.data as any
+							const items: ProviderVerificationItem[] = Array.isArray(res.data)
+								? res.data
+								: Array.isArray(rawData.items)
+								? rawData.items
+								: [
+										...(rawData.ancillary || []),
+										...(rawData.pharmacies || []),
+										...(rawData.radiology || []),
+										...(rawData.laboratories || []),
+								  ]
+							const matched = items.find((p: ProviderVerificationItem) => p.id === id || p.public_id === id)
+							if (matched) {
+								matchedProvider = matched
+							}
 						}
 					}
 				}
@@ -349,39 +390,57 @@ export default function AdminVerificationReviewPage() {
 					setProviderItem(matchedProvider)
 					const docs: VerificationDocumentItem[] = []
 
-					if (matchedProvider.license_proof_s3_key) {
-						const dName = isNurse ? 'Nurse Professional Registration & License' : 'Business License Proof'
-						docs.push({
-							id: null,
-							document_type: 'license',
-							name: dName,
-							url: matchedProvider.license_proof_s3_key,
-							type: 'registration_license',
-							status: getDocStatus(null, 'license'),
-							issueTag: getDocIssueTag(null, 'license'),
+					if (backendDocs.length > 0) {
+						backendDocs.forEach((dItem: any) => {
+							const isLic = dItem.document_type === 'license' || dItem.type === 'registration_license' || dItem.id === null || dItem.id === 'null'
+							const docId = isLic ? null : (dItem.id !== null && dItem.id !== undefined && dItem.id !== 'null' ? String(dItem.id) : null)
+							const category = isLic ? 'license' : 'qualification'
+							docs.push({
+								id: docId,
+								document_type: category,
+								name: dItem.name,
+								url: dItem.url,
+								type: dItem.type || category,
+								status: getDocStatusFromLogs(docId, category, fetchedAuditLogs),
+								issueTag: getDocIssueTagFromLogs(docId, category, fetchedAuditLogs),
+							})
 						})
-					}
+					} else {
+						if (matchedProvider.license_proof_s3_key) {
+							const dName = isAncillary ? 'Professional Registration & License Proof' : 'Business License Proof'
+							docs.push({
+								id: null,
+								document_type: 'license',
+								name: dName,
+								url: matchedProvider.license_proof_s3_key,
+								type: 'registration_license',
+								status: getDocStatusFromLogs(null, 'license', fetchedAuditLogs),
+								issueTag: getDocIssueTagFromLogs(null, 'license', fetchedAuditLogs),
+							})
+						}
 
-					if (providerQualifications.length > 0) {
-						providerQualifications.forEach((q: any) => {
-							const qUrl = q.proof_url || q.proof_s3_key || q.qualification_proof_s3_key
-							if (qUrl) {
-								const qId = q.id ? String(q.id) : null
-								const qName = `${q.qualification || 'Qualification'}${q.institution ? ` (${q.institution})` : ''}`
-								docs.push({
-									id: qId,
-									document_type: 'qualification',
-									name: qName,
-									url: qUrl,
-									type: 'qualification',
-									status: getDocStatus(qId, 'qualification'),
-									issueTag: getDocIssueTag(qId, 'qualification'),
-								})
-							}
-						})
+						if (providerQualifications.length > 0) {
+							providerQualifications.forEach((q: any) => {
+								const qUrl = q.proof_url || q.proof_s3_key || q.qualification_proof_s3_key
+								if (qUrl) {
+									const qId = q.id ? String(q.id) : null
+									const qName = `${q.qualification || 'Qualification'}${q.institution ? ` (${q.institution})` : ''}`
+									docs.push({
+										id: qId,
+										document_type: 'qualification',
+										name: qName,
+										url: qUrl,
+										type: 'qualification',
+										status: getDocStatusFromLogs(qId, 'qualification', fetchedAuditLogs),
+										issueTag: getDocIssueTagFromLogs(qId, 'qualification', fetchedAuditLogs),
+									})
+								}
+							})
+						}
 					}
 
 					setDocuments(docs)
+					setSelectedDocIndex(0)
 				} else {
 					setError('Verification details could not be loaded.')
 				}
@@ -391,7 +450,7 @@ export default function AdminVerificationReviewPage() {
 		} finally {
 			setLoading(false)
 		}
-	}, [id, isDoctor, isNurse, type])
+	}, [id, isDoctor, isAncillary, isPharmacyOrDiagnostic, type])
 
 	useEffect(() => {
 		fetchData()
@@ -411,37 +470,20 @@ export default function AdminVerificationReviewPage() {
 		return () => window.removeEventListener('keydown', handleKeyDown)
 	}, [documents.length])
 
-	useEffect(() => {
-		const activeDoc = documents[selectedDocIndex]
-		if (activeDoc) {
-			const flags = activeDoc.issueTag
-				? activeDoc.issueTag.split(', ').map((f) => f.trim()).filter(Boolean)
-				: []
-			setSelectedFlags(flags)
-
-			const latestLog = auditEvents.find(
-				(evt) =>
-					evt.documentName &&
-					activeDoc.name &&
-					evt.documentName.toLowerCase() === activeDoc.name.toLowerCase()
-			)
-			setReviewerNotes(latestLog?.reason || '')
-		} else {
-			setSelectedFlags([])
-			setReviewerNotes('')
-		}
-	}, [selectedDocIndex, documents, auditEvents])
-
-	const handleBack = () => navigate(ROUTES.ADMIN.VERIFICATIONS)
+	const handleBack = () => {
+		navigate(ROUTES.ADMIN.VERIFICATIONS)
+	}
 
 	const handleDocAction = async (action: 'approve' | 'reject' | 'reupload') => {
-		if (documents.length === 0 || !id) return
 		const activeDoc = documents[selectedDocIndex]
-		if (!activeDoc) return
+		if (!activeDoc || !id) return
 
-		let nextStatus: DocumentStatus = 'verified'
-		if (action === 'reject') nextStatus = 'rejected'
-		if (action === 'reupload') nextStatus = 'requires_reupload'
+		const nextStatus: DocumentStatus =
+			action === 'approve'
+				? 'verified'
+				: action === 'reject'
+				? 'rejected'
+				: 'requires_reupload'
 
 		setDocuments((prev) =>
 			prev.map((d, i) =>
@@ -468,7 +510,7 @@ export default function AdminVerificationReviewPage() {
 		])
 
 		try {
-			const targetType = isDoctor ? 'doctor' : isNurse ? 'ancillary' : type || 'provider'
+			const targetType = isDoctor ? 'doctor' : isAncillary ? 'ancillary' : type || 'provider'
 			await recordSingleDocumentReview({
 				target_type: targetType,
 				target_id: id,
@@ -510,7 +552,7 @@ export default function AdminVerificationReviewPage() {
 					navigate(ROUTES.ADMIN.VERIFICATIONS)
 				}
 			} else {
-				const pType = isNurse ? 'ancillary' : providerItem?.provider_type || (type as any) || 'pharmacy'
+				const pType = isAncillary ? 'ancillary' : providerItem?.provider_type || (type as any) || 'pharmacy'
 				const res = await verifyProvider(pType, id, {
 					is_verified: isApproved,
 					rejection_reason: !isApproved ? notesPayload.trim() || undefined : undefined,
@@ -519,7 +561,7 @@ export default function AdminVerificationReviewPage() {
 					document_reviews: docReviewsPayload,
 				})
 				if (res.success) {
-					toast.success(`${isNurse ? 'Nurse' : 'Provider'} ${providerItem?.name || id} verification verdict submitted: ${verdict.toUpperCase()}.`)
+					toast.success(`${isAncillary ? 'Ancillary Provider' : 'Provider'} ${providerItem?.name || id} verification verdict submitted: ${verdict.toUpperCase()}.`)
 					navigate(ROUTES.ADMIN.VERIFICATIONS)
 				}
 			}
@@ -537,7 +579,7 @@ export default function AdminVerificationReviewPage() {
 	}
 
 	const rawName = isDoctor ? doctorDetail?.name : providerItem?.name
-	const applicantDisplayName = isDoctor ? formatDoctorName(rawName) : (isNurse && rawName && !rawName.startsWith('Nurse') ? `Nurse ${rawName}` : rawName)
+	const applicantDisplayName = isDoctor ? formatDoctorName(rawName) : rawName
 	const isVerified = isDoctor ? doctorDetail?.is_verified : providerItem?.is_verified
 	const activeDocument = documents[selectedDocIndex] || null
 
@@ -547,9 +589,13 @@ export default function AdminVerificationReviewPage() {
 		? doctorDetail?.degrees && doctorDetail.degrees.length > 0
 			? doctorDetail.degrees.map((d) => `${d.degree}${d.college ? ` (${d.college})` : ''}`).join(', ')
 			: doctorDetail?.qualification
-		: providerItem?.qualifications || (isNurse ? 'B.Sc Nursing Certified' : undefined)
+		: Array.isArray(providerItem?.qualifications)
+		? (providerItem.qualifications as any[]).map((q) => `${q.qualification || 'Degree'}${q.institution ? ` (${q.institution})` : ''}`).join(', ')
+		: typeof providerItem?.qualifications === 'string'
+		? providerItem.qualifications
+		: (isAncillary ? 'Qualifications Registered' : undefined)
 
-	const roleLabel = (isDoctor ? 'Doctor' : isNurse ? 'Nurse' : providerItem?.provider_type || 'Provider').toUpperCase()
+	const roleLabel = (isDoctor ? 'Doctor' : isAncillary ? (providerItem?.specialty || 'Ancillary') : providerItem?.provider_type || 'Provider').toUpperCase()
 
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
@@ -632,7 +678,7 @@ export default function AdminVerificationReviewPage() {
 								mt: 0.25,
 							}}
 						>
-							{(applicantDisplayName || 'N').substring(0, 1).toUpperCase()}
+							{(applicantDisplayName || 'A').substring(0, 1).toUpperCase()}
 						</Avatar>
 
 						<Box sx={{ flex: 1 }}>
@@ -642,8 +688,8 @@ export default function AdminVerificationReviewPage() {
 								color="#0d9488"
 								sx={{ textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 1, fontSize: '11px' }}
 							>
-								{isNurse
-									? 'NURSE PROFESSIONAL PROFILE & CREDENTIALS'
+								{isAncillary
+									? 'ANCILLARY PROVIDER PROFILE & CREDENTIALS'
 									: isDoctor
 									? 'DOCTOR PROFILE & DEMOGRAPHICS'
 									: 'PROVIDER PROFILE & BUSINESS CREDENTIALS'}
@@ -653,7 +699,7 @@ export default function AdminVerificationReviewPage() {
 								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 									<InfoTile
 										label="Demographics & Role"
-										value={isDoctor ? `${doctorDetail?.gender || 'Gender N/A'} • ${doctorAge != null ? `${doctorAge} yrs` : 'N/A'}` : isNurse ? 'Certified Healthcare Nurse' : 'Provider Organization'}
+										value={isDoctor ? `${doctorDetail?.gender || 'Gender N/A'} • ${doctorAge != null ? `${doctorAge} yrs` : 'N/A'}` : isAncillary ? (providerItem?.specialty || 'Certified Healthcare Provider') : 'Provider Organization'}
 										icon={<PersonIcon sx={{ fontSize: 12, color: '#0d9488' }} />}
 									/>
 								</Grid>
@@ -688,15 +734,15 @@ export default function AdminVerificationReviewPage() {
 								</Grid>
 								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 									<InfoTile
-										label={isNurse ? 'Specialty / Care Focus' : 'Specialization / Location'}
-										value={isDoctor ? doctorDetail?.specialities?.join(', ') : isNurse ? providerItem?.specialty || 'Nursing Care' : 'Diagnostic Services'}
-										icon={isNurse ? <MedicalServicesIcon sx={{ fontSize: 12, color: '#0d9488' }} /> : <LocationOnIcon sx={{ fontSize: 12, color: '#0d9488' }} />}
+										label={isAncillary ? 'Specialty / Care Focus' : 'Specialization / Location'}
+										value={isDoctor ? doctorDetail?.specialities?.join(', ') : isAncillary ? providerItem?.specialty || 'Ancillary Care' : 'Diagnostic Services'}
+										icon={isAncillary ? <MedicalServicesIcon sx={{ fontSize: 12, color: '#0d9488' }} /> : <LocationOnIcon sx={{ fontSize: 12, color: '#0d9488' }} />}
 									/>
 								</Grid>
 								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 									<InfoTile
 										label="Hospital / Organization"
-										value={isDoctor ? `${doctorDetail?.hospital || 'Hospital N/A'}` : isNurse ? 'In-Home Care Delivery' : providerItem?.name}
+										value={isDoctor ? `${doctorDetail?.hospital || 'Hospital N/A'}` : isAncillary ? 'Healthcare Service Delivery' : providerItem?.name}
 										icon={<LocalHospitalIcon sx={{ fontSize: 12, color: '#0d9488' }} />}
 									/>
 								</Grid>
