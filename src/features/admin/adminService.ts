@@ -27,8 +27,7 @@ export interface DoctorVerificationItem {
 }
 
 export interface DocumentReviewItemPayload {
-	document_id: string
-	document_name: string
+	document_id?: string | null
 	status: 'verified' | 'requires_reupload' | 'rejected' | 'not_reviewed' | 'flagged' | 'under_review'
 	issue_tags?: string[]
 }
@@ -88,8 +87,7 @@ export interface AuditHistoryEventItem {
 	id: string
 	reviewer_name: string
 	action: string
-	document_id?: string
-	document_name?: string
+	document_id?: string | null
 	timestamp: string
 	issue_tags?: string[]
 	notes?: string
@@ -183,6 +181,17 @@ export interface AdminPatientDetail {
 	upcoming_appointments: AdminUpcomingAppointment[]
 }
 
+export interface AdminProviderQualificationItem {
+	id?: number | string
+	qualification: string
+	institution?: string
+	specialization?: string
+	year_of_passing?: string | number
+	proof_url?: string | null
+	proof_s3_key?: string | null
+	qualification_proof_s3_key?: string | null
+}
+
 export interface AdminProviderDetail {
 	provider_id: string
 	provider_type: 'pharmacy' | 'radiology' | 'laboratory' | 'ancillary' | 'nurse' | string
@@ -196,6 +205,7 @@ export interface AdminProviderDetail {
 	is_verified: boolean
 	is_suspended?: boolean | null
 	license_number?: string | null
+	license_proof_s3_key?: string | null
 	gst_number?: string | null
 	address?: string | null
 	city?: string | null
@@ -204,6 +214,7 @@ export interface AdminProviderDetail {
 	registration_date?: string
 	specialty?: string | null
 	qualifications?: string | null
+	qualifications_list?: AdminProviderQualificationItem[]
 	capabilities?: string[] | null
 	verification_status?: string | null
 }
@@ -258,7 +269,8 @@ export interface DoctorDegreeItem {
 }
 
 export interface DoctorVerificationDocument {
-	id: number | string
+	id?: number | string | null
+	document_type?: string
 	name: string
 	url: string
 	type: string
@@ -285,6 +297,7 @@ export interface DoctorVerificationDetail {
 	specialities?: string[]
 	qualification?: string
 	degrees?: DoctorDegreeItem[]
+	qualifications?: DoctorDegreeItem[]
 	experience_years?: number
 	registration_number?: string
 	registration_proof_s3_key?: string
@@ -611,8 +624,7 @@ export const getVerificationAuditHistory = async (targetType: string, targetId: 
 export interface SingleDocumentReviewPayload {
 	target_type: string
 	target_id: string
-	document_id: string
-	document_name: string
+	document_id?: string | null
 	status: 'verified' | 'requires_reupload' | 'rejected' | 'not_reviewed' | 'flagged' | 'under_review'
 	issue_tags?: string[]
 	notes?: string

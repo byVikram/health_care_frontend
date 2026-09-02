@@ -57,7 +57,8 @@ export type DocumentStatus =
 	| 'under_review'
 
 export interface VerificationDocumentItem {
-	id: string
+	id: string | null
+	document_type?: string
 	name: string
 	url: string
 	type: string
@@ -166,33 +167,66 @@ export default function AdminVerificationReviewPage() {
 						id: item.id,
 						reviewerName: item.reviewer_name || 'Admin Auditor',
 						action: item.action.replace('_', ' ').toUpperCase(),
-						documentName: item.document_name,
+						documentName: item.document_id
+							? (documents.find((d) => String(d.id) === String(item.document_id))?.name || `Qualification #${item.document_id}`)
+							: (item.action.startsWith('registration') ? 'Medical Registration' : item.action.startsWith('license') ? 'Professional License' : undefined),
 						timestamp: item.timestamp ? new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
 						reason: item.notes || (item.issue_tags && item.issue_tags.length > 0 ? item.issue_tags.join(', ') : undefined),
 					}))
 				)
 			}
 
-			const getDocStatus = (docId: string, docName: string): DocumentStatus => {
-				const latestLog = fetchedAuditLogs.find(
-					(log) =>
-						log.document_id === docId ||
-						(log.document_name && log.document_name.toLowerCase() === docName.toLowerCase())
-				)
+			// Deterministic matching based on action prefix and exact document_id (no document_type or document_name matching)
+			const getDocStatus = (docId: string | null, docCategory: 'registration' | 'license' | 'qualification' | string): DocumentStatus => {
+				const latestLog = fetchedAuditLogs.find((log) => {
+					const act = log.action || ''
+					const logDocId = log.document_id
+
+					if (docCategory === 'registration') {
+						return act.startsWith('registration_') && (logDocId === null || logDocId === undefined || logDocId === 'None' || logDocId === '')
+					}
+					if (docCategory === 'license') {
+						return act.startsWith('license_') && (logDocId === null || logDocId === undefined || logDocId === 'None' || logDocId === '')
+					}
+					if (docCategory === 'qualification') {
+						if (!docId) return false
+						return act.startsWith('qualification_') && String(logDocId) === String(docId)
+					}
+					if (docId === null) {
+						return logDocId === null || logDocId === undefined || logDocId === 'None' || logDocId === ''
+					}
+					return String(logDocId) === String(docId)
+				})
+
 				if (latestLog) {
-					if (latestLog.action === 'document_verified') return 'verified'
-					if (latestLog.action === 'document_rejected') return 'rejected'
-					if (latestLog.action === 'document_requires_reupload') return 'requires_reupload'
+					const act = latestLog.action
+					if (act.endsWith('_verified')) return 'verified'
+					if (act.endsWith('_rejected')) return 'rejected'
+					if (act.endsWith('_requires_reupload')) return 'requires_reupload'
 				}
 				return 'not_reviewed'
 			}
 
-			const getDocIssueTag = (docId: string, docName: string): string | undefined => {
-				const latestLog = fetchedAuditLogs.find(
-					(log) =>
-						log.document_id === docId ||
-						(log.document_name && log.document_name.toLowerCase() === docName.toLowerCase())
-				)
+			const getDocIssueTag = (docId: string | null, docCategory: 'registration' | 'license' | 'qualification' | string): string | undefined => {
+				const latestLog = fetchedAuditLogs.find((log) => {
+					const act = log.action || ''
+					const logDocId = log.document_id
+
+					if (docCategory === 'registration') {
+						return act.startsWith('registration_') && (logDocId === null || logDocId === undefined || logDocId === 'None' || logDocId === '')
+					}
+					if (docCategory === 'license') {
+						return act.startsWith('license_') && (logDocId === null || logDocId === undefined || logDocId === 'None' || logDocId === '')
+					}
+					if (docCategory === 'qualification') {
+						if (!docId) return false
+						return act.startsWith('qualification_') && String(logDocId) === String(docId)
+					}
+					if (docId === null) {
+						return logDocId === null || logDocId === undefined || logDocId === 'None' || logDocId === ''
+					}
+					return String(logDocId) === String(docId)
+				})
 				return latestLog?.issue_tags && latestLog.issue_tags.length > 0
 					? latestLog.issue_tags.join(', ')
 					: undefined
@@ -208,59 +242,48 @@ export default function AdminVerificationReviewPage() {
 
 					if (data.documents && data.documents.length > 0) {
 						data.documents.forEach((d) => {
+							const isReg = d.document_type === 'registration' || d.type === 'license' || d.type === 'registration_license' || d.id === null || d.id === 'null'
+							const docId = isReg ? null : (d.id !== null && d.id !== undefined && d.id !== 'null' ? String(d.id) : null)
+							const category = isReg ? 'registration' : 'qualification'
 							docs.push({
-								id: String(d.id),
+								id: docId,
+								document_type: category,
 								name: d.name,
 								url: d.url,
 								type: d.type,
-								status: getDocStatus(String(d.id), d.name),
-								issueTag: getDocIssueTag(String(d.id), d.name),
+								status: getDocStatus(docId, category),
+								issueTag: getDocIssueTag(docId, category),
 							})
 						})
-					}
+					} else {
+						if (data.registration_proof_s3_key) {
+							docs.push({
+								id: null,
+								document_type: 'registration',
+								name: 'Medical Registration License Proof',
+								url: data.registration_proof_s3_key,
+								type: 'registration_license',
+								status: getDocStatus(null, 'registration'),
+								issueTag: getDocIssueTag(null, 'registration'),
+							})
+						}
 
-					if (data.degrees && data.degrees.length > 0) {
-						data.degrees.forEach((deg, idx) => {
-							if (deg.qualification_proof_s3_key) {
-								const dId = `deg_proof_${idx}`
-								const dName = `${deg.degree} Certificate${deg.college ? ` (${deg.college})` : ''}`
-								if (!docs.some((d) => d.url === deg.qualification_proof_s3_key)) {
-									docs.push({
-										id: dId,
-										name: dName,
-										url: deg.qualification_proof_s3_key,
-										type: 'degree_certificate',
-										status: getDocStatus(dId, dName),
-										issueTag: getDocIssueTag(dId, dName),
-									})
-								}
+						const degList = (data.qualifications || data.degrees || [])
+						degList.forEach((deg: any) => {
+							const proof = deg.proof_url || deg.proof_s3_key || deg.qualification_proof_s3_key
+							if (proof) {
+								const dId = deg.id ? String(deg.id) : null
+								const dName = `${deg.qualification || deg.degree || 'Degree'} Certificate${deg.institution || deg.college ? ` (${deg.institution || deg.college})` : ''}`
+								docs.push({
+									id: dId,
+									document_type: 'qualification',
+									name: dName,
+									url: proof,
+									type: 'qualification',
+									status: getDocStatus(dId, 'qualification'),
+									issueTag: getDocIssueTag(dId, 'qualification'),
+								})
 							}
-						})
-					}
-
-					if (data.registration_proof_s3_key && !docs.some((d) => d.url === data.registration_proof_s3_key)) {
-						const dId = 'reg_proof'
-						const dName = 'Medical Registration License Proof'
-						docs.push({
-							id: dId,
-							name: dName,
-							url: data.registration_proof_s3_key,
-							type: 'registration_license',
-							status: getDocStatus(dId, dName),
-							issueTag: getDocIssueTag(dId, dName),
-						})
-					}
-
-					if (data.identity_proof_s3_key && !docs.some((d) => d.url === data.identity_proof_s3_key)) {
-						const dId = 'id_proof'
-						const dName = 'Government Photo ID Proof'
-						docs.push({
-							id: dId,
-							name: dName,
-							url: data.identity_proof_s3_key,
-							type: 'identity_proof',
-							status: getDocStatus(dId, dName),
-							issueTag: getDocIssueTag(dId, dName),
 						})
 					}
 
@@ -270,11 +293,15 @@ export default function AdminVerificationReviewPage() {
 				}
 			} else {
 				let matchedProvider: ProviderVerificationItem | null = null
+				let providerQualifications: any[] = []
 
 				try {
 					const detailRes = await getProviderAdminDetail(isNurse ? 'ancillary' : type || 'pharmacy', id)
 					if (detailRes.success && detailRes.data) {
 						const d = detailRes.data
+						if (d.qualifications_list && Array.isArray(d.qualifications_list)) {
+							providerQualifications = d.qualifications_list
+						}
 						matchedProvider = {
 							id: d.provider_id || id,
 							public_id: d.provider_id || id,
@@ -284,7 +311,7 @@ export default function AdminVerificationReviewPage() {
 							email: d.email || undefined,
 							contact_number: d.contact_number || undefined,
 							license_number: d.license_number || undefined,
-							license_proof_s3_key: d.avatar_s3_key || undefined,
+							license_proof_s3_key: d.license_proof_s3_key || d.avatar_s3_key || undefined,
 							specialty: d.specialty || undefined,
 							qualifications: d.qualifications || undefined,
 							capabilities: d.capabilities || [],
@@ -323,28 +350,37 @@ export default function AdminVerificationReviewPage() {
 					const docs: VerificationDocumentItem[] = []
 
 					if (matchedProvider.license_proof_s3_key) {
-						const dId = 'prov_license'
 						const dName = isNurse ? 'Nurse Professional Registration & License' : 'Business License Proof'
 						docs.push({
-							id: dId,
+							id: null,
+							document_type: 'license',
 							name: dName,
 							url: matchedProvider.license_proof_s3_key,
 							type: 'registration_license',
-							status: getDocStatus(dId, dName),
-							issueTag: getDocIssueTag(dId, dName),
-						})
-					} else {
-						const dId = 'nurse_credential'
-						const dName = isNurse ? 'Nurse Professional Registration & License' : 'Facility Provider Registration'
-						docs.push({
-							id: dId,
-							name: dName,
-							url: '',
-							type: 'registration_license',
-							status: getDocStatus(dId, dName),
-							issueTag: getDocIssueTag(dId, dName),
+							status: getDocStatus(null, 'license'),
+							issueTag: getDocIssueTag(null, 'license'),
 						})
 					}
+
+					if (providerQualifications.length > 0) {
+						providerQualifications.forEach((q: any) => {
+							const qUrl = q.proof_url || q.proof_s3_key || q.qualification_proof_s3_key
+							if (qUrl) {
+								const qId = q.id ? String(q.id) : null
+								const qName = `${q.qualification || 'Qualification'}${q.institution ? ` (${q.institution})` : ''}`
+								docs.push({
+									id: qId,
+									document_type: 'qualification',
+									name: qName,
+									url: qUrl,
+									type: 'qualification',
+									status: getDocStatus(qId, 'qualification'),
+									issueTag: getDocIssueTag(qId, 'qualification'),
+								})
+							}
+						})
+					}
+
 					setDocuments(docs)
 				} else {
 					setError('Verification details could not be loaded.')
@@ -437,7 +473,6 @@ export default function AdminVerificationReviewPage() {
 				target_type: targetType,
 				target_id: id,
 				document_id: activeDoc.id,
-				document_name: activeDoc.name,
 				status: nextStatus,
 				issue_tags: selectedFlags,
 				notes: reviewerNotes.trim() || undefined,
@@ -458,7 +493,6 @@ export default function AdminVerificationReviewPage() {
 
 			const docReviewsPayload = documents.map((d) => ({
 				document_id: d.id,
-				document_name: d.name,
 				status: d.status,
 				issue_tags: d.issueTag ? [d.issueTag] : [],
 			}))
