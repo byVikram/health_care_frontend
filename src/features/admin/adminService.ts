@@ -333,10 +333,43 @@ export interface BillingTransactionItem {
 export interface OperationalLogItem {
 	id: number | string
 	admin_user_id: number
+	admin_name?: string | null
+	admin_email?: string | null
+	admin_role?: string | null
+	is_sub_admin?: boolean
 	action: string
+	action_label?: string
 	target_table?: string
-	new_value?: unknown
+	target_row_id?: number | null
+	target_type?: string
+	target_name?: string | null
+	target_public_id?: string | null
+	old_value?: Record<string, unknown> | null
+	new_value?: Record<string, unknown> | null
+	state_change?: string | null
+	notes?: string | null
 	created_at: string
+}
+
+export interface OperationalLogListParams {
+	page?: number
+	pageSize?: number
+	adminUserId?: number | string
+	role?: string
+	isSubAdmin?: boolean
+	action?: string
+	targetTable?: string
+	startDate?: string
+	endDate?: string
+	search?: string
+}
+
+export interface OperationalLogListResult {
+	items: OperationalLogItem[]
+	total: number
+	page: number
+	page_size: number
+	total_pages: number
 }
 
 export interface ChatbotSessionLogItem {
@@ -757,10 +790,24 @@ export const refundAppointment = async (appointmentPublicId: string) => {
 }
 
 /** GET /api/admin/audits/operational-logs */
-export const getOperationalLogs = async () => {
-	const res = await ApiService.get<{ success: boolean; data: OperationalLogItem[] }>(
-		API_ENDPOINTS.ADMIN.OPERATIONAL_LOGS
-	)
+export const getOperationalLogs = async (params: OperationalLogListParams = {}) => {
+	const res = await ApiService.get<{
+		success: boolean
+		data: OperationalLogListResult | OperationalLogItem[]
+	}>(API_ENDPOINTS.ADMIN.OPERATIONAL_LOGS, {
+		params: {
+			page: params.page,
+			page_size: params.pageSize,
+			admin_user_id: params.adminUserId || undefined,
+			role: params.role || undefined,
+			is_sub_admin: params.isSubAdmin !== undefined ? params.isSubAdmin : undefined,
+			action: params.action || undefined,
+			target_table: params.targetTable || undefined,
+			start_date: params.startDate || undefined,
+			end_date: params.endDate || undefined,
+			search: params.search || undefined,
+		},
+	})
 	return res.data
 }
 
@@ -1274,6 +1321,7 @@ export const deleteAdminArticle = async (articleId: string) => {
 // ── Admin Management (Sub Admins) ──
 export interface SubAdminItem {
 	id?: string | number
+	user_id?: number
 	public_id: string
 	name: string
 	email: string

@@ -48,13 +48,14 @@ import {
 	listSubAdmins,
 	assignDoctorsToSubadmin,
 	assignProvidersToSubadmin,
+	listSpecialities,
 	SubAdminItem,
 } from '../adminService'
 
 const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
 
 const DEFAULT_ANCILLARY_SUBCATEGORIES = [
-	{ label: 'All', value: '', icon: <PeopleIcon sx={{ fontSize: 14 }} /> },
+	{ label: 'All Specialities', value: '', icon: <PeopleIcon sx={{ fontSize: 14 }} /> },
 	{ label: 'Nursing Care', value: 'Nursing Care', icon: <MedicalServicesIcon sx={{ fontSize: 14 }} /> },
 	{ label: 'Physiotherapy', value: 'Physiotherapy', icon: <MedicalServicesIcon sx={{ fontSize: 14 }} /> },
 	{ label: 'Rehabilitation', value: 'Rehabilitation', icon: <MedicalServicesIcon sx={{ fontSize: 14 }} /> },
@@ -88,6 +89,28 @@ export default function AdminVerificationsPage() {
 	const [selectedAncillarySubcategory, setSelectedAncillarySubcategory] = useState<string>('')
 	const [selectedProviderSubcategory, setSelectedProviderSubcategory] = useState<string>('')
 
+	// ── Doctor Specialities Filter ──────────────────────────────────────────
+	const [doctorSpecialities, setDoctorSpecialities] = useState<{ label: string; value: string }[]>([
+		{ label: 'All Specialities', value: '' },
+	])
+	const [selectedDoctorSpeciality, setSelectedDoctorSpeciality] = useState<string>('')
+
+	useEffect(() => {
+		listSpecialities()
+			.then((res) => {
+				if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+					const opts = [
+						{ label: 'All Specialities', value: '' },
+						...res.data.map((s) => ({ label: s.label, value: s.label })),
+					]
+					setDoctorSpecialities(opts)
+				}
+			})
+			.catch(() => {
+				// Keep default
+			})
+	}, [])
+
 	useEffect(() => {
 		const paramTab = searchParams.get('tab')
 		if (paramTab === 'providers' || paramTab === 'doctors' || paramTab === 'ancillary' || paramTab === 'nurses') {
@@ -101,7 +124,7 @@ export default function AdminVerificationsPage() {
 			.then((res) => {
 				if (res.success && Array.isArray(res.data) && res.data.length > 0) {
 					const dynamicOptions = [
-						{ label: 'All', value: '', icon: <PeopleIcon sx={{ fontSize: 14 }} /> },
+						{ label: 'All Specialities', value: '', icon: <PeopleIcon sx={{ fontSize: 14 }} /> },
 						...res.data.map((cat) => ({
 							label: cat.title || cat.code,
 							value: cat.title || cat.code,
@@ -121,6 +144,7 @@ export default function AdminVerificationsPage() {
 		setSelectedIds([])
 		setSelectedAncillarySubcategory('')
 		setSelectedProviderSubcategory('')
+		setSelectedDoctorSpeciality('')
 		if (val === 'doctors') {
 			setDocPage(1)
 		} else if (val === 'ancillary') {
@@ -826,6 +850,45 @@ export default function AdminVerificationsPage() {
 				)}
 			</Box>
 
+			{/* Doctor Specialities Filter Pills */}
+			{activeTab === 'doctors' && doctorSpecialities.length > 1 && (
+				<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2.5 }}>
+					{doctorSpecialities.map((opt) => {
+						const isSelected = selectedDoctorSpeciality === opt.value
+						return (
+							<Chip
+								key={opt.value || 'all'}
+								icon={<LocalHospitalIcon sx={{ fontSize: 14 }} />}
+								label={opt.label}
+								onClick={() => {
+									setSelectedDoctorSpeciality(opt.value)
+									setDocPage(1)
+									setSelectedIds([])
+								}}
+								sx={{
+									bgcolor: isSelected ? '#0f172a' : '#ffffff',
+									color: isSelected ? '#ffffff' : '#475569',
+									fontWeight: isSelected ? 700 : 500,
+									border: '1px solid',
+									borderColor: isSelected ? '#0f172a' : '#e2e8f0',
+									fontSize: '0.75rem',
+									py: 1.75,
+									px: 0.5,
+									cursor: 'pointer',
+									boxShadow: isSelected ? '0 2px 8px rgba(15,23,42,0.15)' : 'none',
+									'& .MuiChip-icon': {
+										color: isSelected ? '#2dd4bf !important' : '#64748b !important',
+									},
+									'&:hover': {
+										bgcolor: isSelected ? '#0f172a' : '#f8fafc',
+									},
+								}}
+							/>
+						)
+					})}
+				</Stack>
+			)}
+
 			{/* Subcategory Filter Pills (Matching Admin Users UI styling) */}
 			{activeTab === 'ancillary' && (
 				<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2.5 }}>
@@ -926,7 +989,13 @@ export default function AdminVerificationsPage() {
 				) : (
 					<AppTable
 						columns={doctorColumns}
-						rows={doctorsQueue}
+						rows={
+							selectedDoctorSpeciality
+								? doctorsQueue.filter(
+										(doc) => doc.speciality?.toLowerCase() === selectedDoctorSpeciality.toLowerCase()
+								  )
+								: doctorsQueue
+						}
 						emptyMessage="No doctors awaiting verification."
 						onRowClick={(doc) => handleOpenReview('doctor', doc)}
 						page={docPage}

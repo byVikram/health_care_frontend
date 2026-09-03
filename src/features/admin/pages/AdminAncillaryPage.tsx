@@ -486,15 +486,15 @@ export default function AdminAncillaryPage() {
 						sx={{ gap: 1.25 }}
 					>
 						{/* KPI Specialty Filter */}
-						<FormControl size="small" sx={{ minWidth: 155 }}>
-							<InputLabel id="kpi-specialty-filter-label">Specialty</InputLabel>
+						<FormControl size="small" sx={{ minWidth: 165 }}>
+							<InputLabel id="kpi-specialty-filter-label">Speciality</InputLabel>
 							<Select
 								labelId="kpi-specialty-filter-label"
-								value={kpiSpecialty}
-								label="Specialty"
+								value={kpiSpecialty || 'all'}
+								label="Speciality"
 								onChange={(e) => setKpiSpecialty(e.target.value)}
 							>
-								<MenuItem value="all">All Specialties</MenuItem>
+								<MenuItem value="all">All Specialities</MenuItem>
 								{categories.length > 0
 									? categories.map((cat) => (
 											<MenuItem key={cat.id || cat.code} value={cat.id || cat.code}>
