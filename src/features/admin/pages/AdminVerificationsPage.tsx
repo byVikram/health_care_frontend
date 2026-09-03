@@ -527,6 +527,11 @@ export default function AdminVerificationsPage() {
 						status={row.is_verified ? 'verified' : (row.verification_status === 'rejected' ? 'rejected' : 'pending')}
 						label={row.is_verified ? 'Verified' : (row.verification_status === 'rejected' ? 'Rejected' : 'Awaiting Review')}
 					/>
+					{row.assigned_admin_name && (
+						<Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+							Assigned: {row.assigned_admin_name}
+						</Typography>
+					)}
 				</Box>
 			),
 		},

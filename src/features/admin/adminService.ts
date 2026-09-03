@@ -55,6 +55,9 @@ export interface NurseVerificationItem {
 	verification_status?: string
 	is_verified: boolean
 	created_at: string
+	assigned_admin_id?: string | null
+	assigned_admin_name?: string | null
+	assigned_at?: string | null
 }
 
 export interface ProviderVerificationItem {
@@ -437,6 +440,9 @@ export const getNursesVerificationQueue = async (params: VerificationQueueListPa
 					verification_status: p.verification_status || (p.is_verified ? 'approved' : 'pending'),
 					is_verified: Boolean(p.is_verified),
 					created_at: p.created_at || '',
+					assigned_admin_id: p.assigned_admin_id ?? null,
+					assigned_admin_name: p.assigned_admin_name ?? null,
+					assigned_at: p.assigned_at ?? null,
 				}))
 				return { success: true, data: { items, total: res.data.data.total ?? items.length } }
 			}
@@ -1352,21 +1358,13 @@ export const assignDoctorsToSubadmin = async (doctorIds: string[], assignedToId:
 export const assignProvidersToSubadmin = async (
 	providerIds: string[],
 	assignedToId: string,
-	providerType?: string
+	providerType: string = 'ancillary'
 ) => {
-	try {
-		const res = await ApiService.post<AdminMutationResponse<AssignDoctorsResult>>(
-			API_ENDPOINTS.ADMIN.ASSIGN_DOCTORS,
-			{ doctor_ids: providerIds, assigned_to_id: assignedToId, provider_type: providerType }
-		)
-		return res.data
-	} catch {
-		return {
-			success: true,
-			message: 'Applications assigned to Sub Admin successfully',
-			data: { assigned_to_id: assignedToId, assigned_count: providerIds.length, doctor_ids: providerIds },
-		}
-	}
+	const res = await ApiService.post<AdminMutationResponse<AssignDoctorsResult>>(
+		API_ENDPOINTS.ADMIN.ASSIGN_DOCTORS,
+		{ provider_ids: providerIds, doctor_ids: providerIds, assigned_to_id: assignedToId, provider_type: providerType }
+	)
+	return res.data
 }
 
 
