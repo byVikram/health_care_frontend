@@ -13,6 +13,7 @@ import {
 import AddIcon from '@mui/icons-material/Add'
 import BlockIcon from '@mui/icons-material/Block'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
+import HistoryIcon from '@mui/icons-material/History'
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 import { toast } from 'react-toastify'
 
@@ -23,6 +24,7 @@ import AppButton from '../../../components/common/Button/AppButton'
 import AppSelect from '../../../components/common/Select/AppSelect'
 import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
 import AddAdminModal from '../components/AddAdminModal'
+import SubAdminLogsDrawer from '../components/SubAdminLogsDrawer'
 
 import { useAuth } from '../../../hooks/useAuth'
 import {
@@ -65,12 +67,15 @@ export default function AdminAdminsPage() {
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
-	// Drawer state
+	// Drawer state for adding admin
 	const [drawerOpen, setDrawerOpen] = useState(false)
 
 	// Confirm modal state for suspend / unsuspend
 	const [confirmTarget, setConfirmTarget] = useState<SubAdminItem | null>(null)
 	const [actionLoading, setActionLoading] = useState(false)
+
+	// Activity Logs Drawer state for selected Sub Admin
+	const [selectedSubAdminForLogs, setSelectedSubAdminForLogs] = useState<SubAdminItem | null>(null)
 
 	const fetchSubAdmins = useCallback(async () => {
 		setLoading(true)
@@ -98,22 +103,22 @@ export default function AdminAdminsPage() {
 		if (isSuperAdmin) {
 			fetchSubAdmins()
 		}
-	}, [fetchSubAdmins, isSuperAdmin])
+	}, [isSuperAdmin, fetchSubAdmins])
 
-	const handleStatusToggleConfirm = async () => {
+	const handleStatusToggle = async () => {
 		if (!confirmTarget) return
 		setActionLoading(true)
-		const newStatus = !confirmTarget.is_suspended
 		try {
+			const newStatus = !confirmTarget.is_suspended
 			const res = await updateSubAdminStatus(confirmTarget.public_id, newStatus)
 			if (res.success) {
 				toast.success(
-					`Sub Admin "${confirmTarget.name}" has been ${newStatus ? 'suspended' : 'activated'}.`
+					`Sub Admin ${confirmTarget.name} ${newStatus ? 'suspended' : 'unsuspended'} successfully.`
 				)
 				setConfirmTarget(null)
 				fetchSubAdmins()
 			} else {
-				toast.error(res.message || 'Failed to update Sub Admin status.')
+				toast.error(res.message || 'Status update failed.')
 			}
 		} catch (err: unknown) {
 			toast.error(getErrorMessage(err, 'Failed to update Sub Admin status.'))
@@ -122,28 +127,31 @@ export default function AdminAdminsPage() {
 		}
 	}
 
-	if (!isSuperAdmin) {
-		return (
-			<Box sx={{ p: 3 }}>
-				<Alert severity="error" sx={{ borderRadius: 2 }}>
-					Access Denied: Only Super Admin accounts have permission to manage Sub Admin users.
-				</Alert>
-			</Box>
-		)
+	const handleAdminCreated = () => {
+		fetchSubAdmins()
 	}
 
 	const columns: Column<SubAdminItem>[] = [
 		{
 			field: 'name',
-			label: 'Name',
+			label: 'Sub Admin',
 			render: (_: unknown, row: SubAdminItem) => {
-				const initials = (row.name || 'A').substring(0, 2).toUpperCase()
+				const initials = row.name
+					? row.name
+							.split(' ')
+							.map((n) => n[0])
+							.join('')
+							.toUpperCase()
+							.slice(0, 2)
+					: 'A'
+				const roleColor = ROLE_CHIP_COLORS[row.role] || { bg: '#f1f5f9', color: '#475569' }
+
 				return (
 					<Stack direction="row" spacing={1.5} alignItems="center">
 						<Avatar
 							sx={{
-								bgcolor: 'rgba(43,111,113,0.12)',
-								color: '#2B6F71',
+								bgcolor: roleColor.bg,
+								color: roleColor.color,
 								width: 36,
 								height: 36,
 								fontSize: 13,
@@ -228,123 +236,177 @@ export default function AdminAdminsPage() {
 			label: 'Actions',
 			align: 'right',
 			render: (_: unknown, row: SubAdminItem) => {
-				return row.is_suspended ? (
-					<Tooltip title="Unsuspend Admin">
-						<IconButton
-							size="small"
-							color="success"
-							onClick={() => setConfirmTarget(row)}
-							sx={{ bgcolor: 'rgba(34, 197, 94, 0.08)', '&:hover': { bgcolor: 'rgba(34, 197, 94, 0.16)' } }}
-						>
-							<CheckCircleOutlineIcon fontSize="small" />
-						</IconButton>
-					</Tooltip>
-				) : (
-					<Tooltip title="Suspend Admin">
-						<IconButton
-							size="small"
-							color="error"
-							onClick={() => setConfirmTarget(row)}
-							sx={{ bgcolor: 'rgba(239, 68, 68, 0.08)', '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.16)' } }}
-						>
-							<BlockIcon fontSize="small" />
-						</IconButton>
-					</Tooltip>
+				return (
+					<Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
+						{/* Suspend / Unsuspend action */}
+						{row.is_suspended ? (
+							<Tooltip title="Unsuspend Admin">
+								<IconButton
+									size="small"
+									color="success"
+									onClick={() => setConfirmTarget(row)}
+									sx={{ bgcolor: 'rgba(34, 197, 94, 0.08)', '&:hover': { bgcolor: 'rgba(34, 197, 94, 0.16)' } }}
+								>
+									<CheckCircleOutlineIcon fontSize="small" />
+								</IconButton>
+							</Tooltip>
+						) : (
+							<Tooltip title="Suspend Admin">
+								<IconButton
+									size="small"
+									color="error"
+									onClick={() => setConfirmTarget(row)}
+									sx={{ bgcolor: 'rgba(239, 68, 68, 0.08)', '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.16)' } }}
+								>
+									<BlockIcon fontSize="small" />
+								</IconButton>
+							</Tooltip>
+						)}
+
+						{/* View Logs Button specifically scoped to this Sub Admin */}
+						<Tooltip title={`View activity logs for ${row.name}`}>
+							<AppButton
+								label="Logs"
+								size="small"
+								variant="outlined"
+								startIcon={<HistoryIcon sx={{ fontSize: 16 }} />}
+								onClick={() => setSelectedSubAdminForLogs(row)}
+								sx={{
+									borderRadius: '8px',
+									textTransform: 'none',
+									fontWeight: 700,
+									fontSize: '0.75rem',
+									color: '#0d9488',
+									borderColor: '#99f6e4',
+									bgcolor: '#f0fdfa',
+									'&:hover': { bgcolor: '#ccfbf1', borderColor: '#0d9488' },
+									height: 32,
+									px: 1.5,
+								}}
+							/>
+						</Tooltip>
+					</Stack>
 				)
 			},
 		},
 	]
 
+	if (!isSuperAdmin) {
+		return (
+			<Box sx={{ p: 4, textAlign: 'center' }}>
+				<AdminPanelSettingsIcon sx={{ fontSize: 56, color: '#94a3b8', mb: 2 }} />
+				<Typography variant="h6" fontWeight={700} color="#0f172a" gutterBottom>
+					Access Restricted
+				</Typography>
+				<Typography variant="body2" color="text.secondary">
+					Only Super Admins have permission to manage Sub Admins.
+				</Typography>
+			</Box>
+		)
+	}
+
 	return (
 		<Box>
 			{/* Page Header */}
 			<AdminPageHeader
-				title="Admins"
-				subtitle="Manage Sub Admin accounts and operational permissions across the portal"
+				title="Sub Admins"
+				subtitle="Manage delegated operational admin accounts and inspect individual Sub Admin activity logs."
 				count={total}
-				countLabel="admins"
+				countLabel="sub admins"
 				actions={
 					<AppButton
 						label="Add Admin"
 						startIcon={<AddIcon />}
+						variant="contained"
+						color="primary"
 						onClick={() => setDrawerOpen(true)}
 						sx={{
-							borderRadius: '8px',
-							fontWeight: 600,
+							borderRadius: '10px',
+							bgcolor: '#0f172a',
+							color: '#ffffff',
+							fontWeight: 700,
+							fontSize: 13,
+							textTransform: 'none',
 							px: 2.5,
 							py: 1,
+							'&:hover': { bgcolor: '#1e293b' },
 						}}
 					/>
 				}
 			/>
 
-			{/* Filters Bar */}
+			{/* Filter Bar */}
 			<Stack
 				direction={{ xs: 'column', sm: 'row' }}
 				spacing={2}
 				alignItems={{ xs: 'stretch', sm: 'center' }}
-				justifyContent="space-between"
 				sx={{ mb: 3 }}
 			>
-				<Box sx={{ width: { xs: '100%', sm: 260 } }}>
+				<Box sx={{ minWidth: 200 }}>
 					<AppSelect
 						placeholder="Filter by Role"
 						value={selectedRole}
+						options={ROLE_OPTIONS}
 						onChange={(e) => {
 							setSelectedRole(e.target.value as string)
 							setPage(1)
 						}}
-						options={ROLE_OPTIONS}
-						startIcon={<AdminPanelSettingsIcon sx={{ fontSize: 16, color: 'text.secondary' }} />}
 					/>
 				</Box>
 			</Stack>
 
-			{/* Error Alert */}
+			{/* Error State */}
 			{error && (
-				<Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+				<Alert severity="error" sx={{ mb: 3, borderRadius: '10px' }}>
 					{error}
 				</Alert>
 			)}
 
-			{/* Data Table */}
+			{/* Sub Admins Table */}
 			<AppTable
 				columns={columns}
 				rows={subAdmins}
 				loading={loading}
-				emptyMessage="No Admins found."
+				emptyMessage="No Sub Admins found."
 				page={page}
 				pageSize={pageSize}
 				totalRows={total}
+				pageSizeOptions={[10, 25, 50]}
 				onPageChange={(newPage) => setPage(newPage)}
-				onPageSizeChange={(newPageSize) => {
-					setPageSize(newPageSize)
+				onPageSizeChange={(newSize) => {
+					setPageSize(newSize)
 					setPage(1)
 				}}
 			/>
 
-			{/* Add Admin Modal */}
+			{/* Add Admin Drawer */}
 			<AddAdminModal
 				open={drawerOpen}
 				onClose={() => setDrawerOpen(false)}
-				onSuccess={fetchSubAdmins}
+				onSuccess={handleAdminCreated}
 			/>
 
-			{/* Status Confirmation Modal */}
+			{/* Activity Logs Drawer for Selected Sub Admin */}
+			<SubAdminLogsDrawer
+				open={Boolean(selectedSubAdminForLogs)}
+				subAdmin={selectedSubAdminForLogs}
+				onClose={() => setSelectedSubAdminForLogs(null)}
+			/>
+
+			{/* Suspend / Unsuspend Confirmation Modal */}
 			<ConfirmModal
-				open={!!confirmTarget}
-				onClose={() => setConfirmTarget(null)}
-				onConfirm={handleStatusToggleConfirm}
-				loading={actionLoading}
-				variant={confirmTarget?.is_suspended ? 'success' : 'warning'}
-				title={confirmTarget?.is_suspended ? 'Unsuspend Admin?' : 'Suspend Admin?'}
+				open={Boolean(confirmTarget)}
+				title={confirmTarget?.is_suspended ? 'Unsuspend Sub Admin' : 'Suspend Sub Admin'}
 				description={
 					confirmTarget?.is_suspended
-						? `Are you sure you want to activate ${confirmTarget?.name}?`
-						: `Are you sure you want to suspend ${confirmTarget?.name}?`
+						? `Are you sure you want to unsuspend "${confirmTarget?.name}"? They will regain access to their assigned operational dashboard.`
+						: `Are you sure you want to suspend "${confirmTarget?.name}"? They will immediately lose access to all admin capabilities.`
 				}
 				confirmLabel={confirmTarget?.is_suspended ? 'Unsuspend' : 'Suspend'}
-				cancelLabel="Cancel"
+				variant={confirmTarget?.is_suspended ? 'confirm' : 'delete'}
+				loading={actionLoading}
+				onConfirm={handleStatusToggle}
+				onClose={() => setConfirmTarget(null)}
 			/>
 		</Box>
 	)

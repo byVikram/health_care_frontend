@@ -62,6 +62,8 @@ const AppSelect = forwardRef<HTMLDivElement, AppSelectProps>((props, ref) => {
 		? Array.isArray(value) ? (value as string[]) : []
 		: []
 
+	const hasEmptyOption = options.some((o) => o.value === '')
+
 	const selectField = (
 		<TextField
 			select
@@ -78,8 +80,8 @@ const AppSelect = forwardRef<HTMLDivElement, AppSelectProps>((props, ref) => {
 			SelectProps={{
 				displayEmpty: true,
 				multiple,
-				...(multiple && {
-					renderValue: (selected: unknown) => {
+				renderValue: (selected: unknown) => {
+					if (multiple) {
 						const arr = selected as string[]
 						if (!arr || arr.length === 0) {
 							return (
@@ -110,8 +112,27 @@ const AppSelect = forwardRef<HTMLDivElement, AppSelectProps>((props, ref) => {
 								})}
 							</Box>
 						)
-					},
-				}),
+					}
+
+					// Single select
+					if (selected === '' || selected === undefined || selected === null) {
+						const emptyOpt = options.find((o) => o.value === '')
+						if (emptyOpt) {
+							return emptyOpt.label
+						}
+						if (placeholder) {
+							return (
+								<Box component="span" sx={{ color: 'text.disabled', fontSize: '14px' }}>
+									{placeholder}
+								</Box>
+							)
+						}
+						return ''
+					}
+
+					const opt = options.find((o) => String(o.value) === String(selected))
+					return opt?.label ?? String(selected)
+				},
 				MenuProps: {
 					PaperProps: {
 						sx: { mt: 1, boxShadow: '0 6px 20px rgba(0,0,0,0.12)' },
@@ -131,7 +152,7 @@ const AppSelect = forwardRef<HTMLDivElement, AppSelectProps>((props, ref) => {
 			}}
 			{...rest}
 		>
-			{!multiple && placeholder && (
+			{!multiple && placeholder && !hasEmptyOption && (
 				<MenuItem value="" disabled>
 					{placeholder}
 				</MenuItem>

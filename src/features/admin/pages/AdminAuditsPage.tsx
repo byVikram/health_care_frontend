@@ -50,7 +50,10 @@ export default function AdminAuditsPage() {
 				getOperationalLogs(),
 				getChatbotSessionLogs(),
 			])
-			if (auditsRes.success) setOperationalLogs(auditsRes.data || [])
+			if (auditsRes.success && auditsRes.data) {
+				const items = Array.isArray(auditsRes.data) ? auditsRes.data : auditsRes.data.items
+				setOperationalLogs(items || [])
+			}
 			if (chatbotRes.success) setChatbotLogs(chatbotRes.data || [])
 		} catch (err: unknown) {
 			setError(getErrorMessage(err, 'Failed to fetch audit logs'))
