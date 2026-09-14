@@ -158,6 +158,17 @@ const AppInput = forwardRef<HTMLDivElement, AppInputProps>((props, ref) => {
                     transition: 'all 0.2s ease',
                     borderRadius: '6px',
                 },
+                ...(type === 'number'
+                    ? {
+                            '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                                WebkitAppearance: 'none',
+                                margin: 0,
+                            },
+                            '& input[type=number]': {
+                                MozAppearance: 'textfield',
+                            },
+                      }
+                    : {}),
                 ...sx,
             }}
             {...rest}

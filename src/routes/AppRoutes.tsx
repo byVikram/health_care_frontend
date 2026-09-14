@@ -55,6 +55,7 @@ import AdminUserDetailPage from '../features/admin/pages/AdminUserDetailPage'
 import AdminAppointmentsPage from '../features/admin/pages/AdminAppointmentsPage'
 import AdminAuditsPage from '../features/admin/pages/AdminAuditsPage'
 import AdminSpecialitiesPage from '../features/admin/pages/AdminSpecialitiesPage'
+import AdminAncillaryCategoriesPage from '../features/admin/pages/AdminAncillaryCategoriesPage'
 import AdminBlogsPage from '../features/admin/pages/AdminBlogsPage'
 import AdminBlogCreatePage from '../features/admin/pages/AdminBlogCreatePage'
 import AdminBlogEditPage from '../features/admin/pages/AdminBlogEditPage'
@@ -168,6 +169,7 @@ export default function AppRoutes() {
 						<Route path={ROUTES.ADMIN.APPOINTMENTS} element={<AdminAppointmentsPage />} />
 						<Route path={ROUTES.ADMIN.AUDITS} element={<AdminAuditsPage />} />
 						<Route path={ROUTES.ADMIN.SPECIALITIES} element={<AdminSpecialitiesPage />} />
+						<Route path={ROUTES.ADMIN.ANCILLARY_CATEGORIES} element={<AdminAncillaryCategoriesPage />} />
 						<Route path={ROUTES.ADMIN.BLOGS} element={<AdminBlogsPage />} />
 						<Route path={ROUTES.ADMIN.BLOG_CREATE} element={<AdminBlogCreatePage />} />
 						<Route path={ROUTES.ADMIN.BLOG_EDIT} element={<AdminBlogEditPage />} />

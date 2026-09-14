@@ -1591,3 +1591,149 @@ export const getAvailableAncillaryProviders = async (procedureId?: string) => {
 }
 
 
+
+// -- 16. Ancillary Category & Service Catalog Management ---------------------
+// Admin CRUD for the Specialty -> Category -> Procedure hierarchy.
+// NOTE: LookupAncillaryCategory only has (label, specialty_id) on the backend --
+// there is no description or active/inactive status column for categories, so
+// neither is modeled here. LookupAncillaryProcedure has no "provider" text field
+// and no step-builder structure; `whats_included` is the closest existing field
+// to a service checklist and is reused as-is.
+
+export interface AncillarySpecialtyOption {
+	id: string
+	specialtyId: string
+	label: string
+	description?: string
+}
+
+export interface AncillarySpecialtyCreatePayload {
+	label: string
+	description?: string
+}
+
+/** GET /api/ancillary/categories -- reused for the Specialty dropdown (returns ancillary specialties) */
+export const listAncillarySpecialtyOptions = async () => {
+	const res = await ApiService.get<{ success: boolean; data: AncillarySpecialtyOption[] }>(
+		'/api/ancillary/categories'
+	)
+	return res.data
+}
+
+/** POST /api/admin/ancillary/specialties */
+export const createAdminAncillarySpecialty = async (payload: AncillarySpecialtyCreatePayload) => {
+	const res = await ApiService.post<AdminMutationResponse<AncillarySpecialtyOption>>(
+		API_ENDPOINTS.ADMIN.ANCILLARY_SPECIALTIES,
+		payload
+	)
+	return res.data
+}
+
+export interface AdminAncillaryProcedureItem {
+	id: string
+	category_id: string | null
+	label: string
+	price: number
+	provider_price: number
+	about_service?: string
+	whats_included?: string[]
+	image_url?: string | null
+}
+
+export interface AdminAncillaryCategoryItem {
+	id: string
+	label: string
+	specialty_id: string | null
+	specialty_label: string | null
+	procedure_count: number
+	procedures: AdminAncillaryProcedureItem[]
+}
+
+export interface AncillaryProcedureFormPayload {
+	label: string
+	price: number
+	provider_price?: number
+	about_service?: string
+	whats_included?: string[]
+	image_url?: string | null
+}
+
+export interface AncillaryCategoryCreatePayload {
+	label: string
+	specialty_id: string
+	procedures?: AncillaryProcedureFormPayload[]
+}
+
+export interface AncillaryCategoryUpdatePayload {
+	label?: string
+	specialty_id?: string
+}
+
+/** GET /api/admin/ancillary/categories */
+export const listAdminAncillaryCategories = async (params: { specialtyId?: string; search?: string } = {}) => {
+	const res = await ApiService.get<AdminMutationResponse<AdminAncillaryCategoryItem[]>>(
+		API_ENDPOINTS.ADMIN.ANCILLARY_CATEGORIES,
+		{
+			params: {
+				specialty_id: params.specialtyId || undefined,
+				search: params.search || undefined,
+			},
+		}
+	)
+	return res.data
+}
+
+/** POST /api/admin/ancillary/categories */
+export const createAdminAncillaryCategory = async (payload: AncillaryCategoryCreatePayload) => {
+	const res = await ApiService.post<AdminMutationResponse<AdminAncillaryCategoryItem>>(
+		API_ENDPOINTS.ADMIN.ANCILLARY_CATEGORIES,
+		payload
+	)
+	return res.data
+}
+
+/** PATCH /api/admin/ancillary/categories/:categoryId */
+export const updateAdminAncillaryCategory = async (categoryId: string, payload: AncillaryCategoryUpdatePayload) => {
+	const res = await ApiService.patch<AdminMutationResponse<AdminAncillaryCategoryItem>>(
+		API_ENDPOINTS.ADMIN.ANCILLARY_CATEGORY_DETAIL(categoryId),
+		payload
+	)
+	return res.data
+}
+
+/** DELETE /api/admin/ancillary/categories/:categoryId */
+export const deleteAdminAncillaryCategory = async (categoryId: string) => {
+	const res = await ApiService.delete<AdminMutationResponse<{ id: string; label: string }>>(
+		API_ENDPOINTS.ADMIN.ANCILLARY_CATEGORY_DETAIL(categoryId)
+	)
+	return res.data
+}
+
+/** POST /api/admin/ancillary/categories/:categoryId/procedures */
+export const addAdminAncillaryProcedure = async (categoryId: string, payload: AncillaryProcedureFormPayload) => {
+	const res = await ApiService.post<AdminMutationResponse<AdminAncillaryProcedureItem>>(
+		API_ENDPOINTS.ADMIN.ANCILLARY_CATEGORY_PROCEDURES(categoryId),
+		payload
+	)
+	return res.data
+}
+
+/** PATCH /api/admin/ancillary/procedures/:procedureId */
+export const updateAdminAncillaryProcedure = async (
+	procedureId: string,
+	payload: Partial<AncillaryProcedureFormPayload>
+) => {
+	const res = await ApiService.patch<AdminMutationResponse<AdminAncillaryProcedureItem>>(
+		API_ENDPOINTS.ADMIN.ANCILLARY_PROCEDURE_DETAIL(procedureId),
+		payload
+	)
+	return res.data
+}
+
+/** DELETE /api/admin/ancillary/procedures/:procedureId */
+export const deleteAdminAncillaryProcedure = async (procedureId: string) => {
+	const res = await ApiService.delete<AdminMutationResponse<{ id: string; label: string }>>(
+		API_ENDPOINTS.ADMIN.ANCILLARY_PROCEDURE_DETAIL(procedureId)
+	)
+	return res.data
+}

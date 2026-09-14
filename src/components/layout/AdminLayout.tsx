@@ -41,6 +41,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer'
 import MenuBookIcon from '@mui/icons-material/MenuBook'
 import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
+import AccountTreeIcon from '@mui/icons-material/AccountTree'
 
 import { useAuth, clearAuth } from '../../hooks/useAuth'
 import { ROUTES } from '../../constants/routes'
@@ -103,6 +104,7 @@ const getNavGroups = (userRole: string | null): NavGroup[] => {
 		groupLabel: 'System',
 		items: [
 			{ label: 'Specialities', path: ROUTES.ADMIN.SPECIALITIES, icon: <CategoryIcon /> },
+			{ label: 'Ancillary Categories', path: ROUTES.ADMIN.ANCILLARY_CATEGORIES, icon: <AccountTreeIcon /> },
 			{ label: 'Audit Logs', path: ROUTES.ADMIN.AUDITS, icon: <AssessmentIcon /> },
 		],
 	})
@@ -129,10 +131,14 @@ export default function AdminLayout() {
 		navigate(ROUTES.ADMIN.LOGIN, { replace: true })
 	}
 
-	const isActive = (path: string) =>
-		path === ROUTES.ADMIN.DASHBOARD
-			? location.pathname === path
-			: location.pathname.startsWith(path)
+	const isActive = (path: string) => {
+		if (path === ROUTES.ADMIN.DASHBOARD) return location.pathname === path
+		// Exact match, or a genuine sub-route (path + '/...').
+		// A plain startsWith() would also match sibling routes that share a
+		// prefix (e.g. '/admin/ancillary-categories'.startsWith('/admin/ancillary')),
+		// which lit up two sidebar items at once.
+		return location.pathname === path || location.pathname.startsWith(path + "/")
+	}
 
 	const drawerContent = (
 		<Box
