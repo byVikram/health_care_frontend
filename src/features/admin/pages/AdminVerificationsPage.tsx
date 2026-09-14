@@ -15,6 +15,7 @@ import {
 	Avatar,
 	Grid,
 	Checkbox,
+	Button,
 } from '@mui/material'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
@@ -22,6 +23,8 @@ import StorefrontIcon from '@mui/icons-material/Storefront'
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser'
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn'
 import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
+import PeopleIcon from '@mui/icons-material/People'
+import RefreshIcon from '@mui/icons-material/Refresh'
 import { toast } from 'react-toastify'
 
 import { useAuth } from '../../../hooks/useAuth'
@@ -36,49 +39,132 @@ import {
 	getDoctorsVerificationQueue,
 	getNursesVerificationQueue,
 	getProvidersVerificationQueue,
+	getVerificationKpiCounts,
+	VerificationKpiCounts,
+	getAncillaryCategories,
 	DoctorVerificationItem,
 	NurseVerificationItem,
 	ProviderVerificationItem,
 	listSubAdmins,
 	assignDoctorsToSubadmin,
+	assignProvidersToSubadmin,
+	listSpecialities,
 	SubAdminItem,
 } from '../adminService'
 
 const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
+
+const DEFAULT_ANCILLARY_SUBCATEGORIES = [
+	{ label: 'All Specialities', value: '', icon: <PeopleIcon sx={{ fontSize: 14 }} /> },
+	{ label: 'Nursing Care', value: 'Nursing Care', icon: <MedicalServicesIcon sx={{ fontSize: 14 }} /> },
+	{ label: 'Physiotherapy', value: 'Physiotherapy', icon: <MedicalServicesIcon sx={{ fontSize: 14 }} /> },
+	{ label: 'Rehabilitation', value: 'Rehabilitation', icon: <MedicalServicesIcon sx={{ fontSize: 14 }} /> },
+	{ label: 'Elderly Care', value: 'Elderly Care', icon: <MedicalServicesIcon sx={{ fontSize: 14 }} /> },
+]
+
+const PROVIDER_SUBCATEGORIES = [
+	{ label: 'All', value: '', icon: <StorefrontIcon sx={{ fontSize: 14 }} /> },
+	{ label: 'Pharmacies', value: 'pharmacy', icon: <StorefrontIcon sx={{ fontSize: 14 }} /> },
+	{ label: 'Radiology', value: 'radiology', icon: <StorefrontIcon sx={{ fontSize: 14 }} /> },
+	{ label: 'Laboratories', value: 'laboratory', icon: <StorefrontIcon sx={{ fontSize: 14 }} /> },
+]
 
 export default function AdminVerificationsPage() {
 	const { role } = useAuth()
 	const isSuperAdmin = role === 'super_admin'
 	const navigate = useNavigate()
 	const [searchParams, setSearchParams] = useSearchParams()
+
 	const initialTab =
-		searchParams.get('tab') === 'nurses'
-			? 'nurses'
+		searchParams.get('tab') === 'nurses' || searchParams.get('tab') === 'ancillary'
+			? 'ancillary'
 			: searchParams.get('tab') === 'providers'
 			? 'providers'
 			: 'doctors'
-	const [activeTab, setActiveTab] = useState<'doctors' | 'nurses' | 'providers'>(initialTab)
+
+	const [activeTab, setActiveTab] = useState<'doctors' | 'ancillary' | 'providers'>(initialTab)
+
+	// ── Subcategory State ───────────────────────────────────────────────────
+	const [ancillarySubcategories, setAncillarySubcategories] = useState(DEFAULT_ANCILLARY_SUBCATEGORIES)
+	const [selectedAncillarySubcategory, setSelectedAncillarySubcategory] = useState<string>('')
+	const [selectedProviderSubcategory, setSelectedProviderSubcategory] = useState<string>('')
+
+	// ── Doctor Specialities Filter ──────────────────────────────────────────
+	const [doctorSpecialities, setDoctorSpecialities] = useState<{ label: string; value: string }[]>([
+		{ label: 'All Specialities', value: '' },
+	])
+	const [selectedDoctorSpeciality, setSelectedDoctorSpeciality] = useState<string>('')
+
+	useEffect(() => {
+		listSpecialities()
+			.then((res) => {
+				if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+					const opts = [
+						{ label: 'All Specialities', value: '' },
+						...res.data.map((s) => ({ label: s.label, value: s.label })),
+					]
+					setDoctorSpecialities(opts)
+				}
+			})
+			.catch(() => {
+				// Keep default
+			})
+	}, [])
 
 	useEffect(() => {
 		const paramTab = searchParams.get('tab')
-		if (paramTab === 'providers' || paramTab === 'doctors' || paramTab === 'nurses') {
-			setActiveTab(paramTab)
+		if (paramTab === 'providers' || paramTab === 'doctors' || paramTab === 'ancillary' || paramTab === 'nurses') {
+			setActiveTab(paramTab === 'nurses' ? 'ancillary' : (paramTab as 'doctors' | 'ancillary' | 'providers'))
 		}
 	}, [searchParams])
 
-	const handleTabChange = (_: React.SyntheticEvent, val: 'doctors' | 'nurses' | 'providers') => {
+	// Fetch dynamic ancillary categories if available
+	useEffect(() => {
+		getAncillaryCategories()
+			.then((res) => {
+				if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+					const dynamicOptions = [
+						{ label: 'All Specialities', value: '', icon: <PeopleIcon sx={{ fontSize: 14 }} /> },
+						...res.data.map((cat) => ({
+							label: cat.title || cat.code,
+							value: cat.title || cat.code,
+							icon: <MedicalServicesIcon sx={{ fontSize: 14 }} />,
+						})),
+					]
+					setAncillarySubcategories(dynamicOptions)
+				}
+			})
+			.catch(() => {
+				// Keep default subcategories
+			})
+	}, [])
+
+	const handleTabChange = (_: React.SyntheticEvent, val: 'doctors' | 'ancillary' | 'providers') => {
 		setActiveTab(val)
+		setSelectedIds([])
+		setSelectedAncillarySubcategory('')
+		setSelectedProviderSubcategory('')
+		setSelectedDoctorSpeciality('')
 		if (val === 'doctors') {
 			setDocPage(1)
-		} else if (val === 'nurses') {
+		} else if (val === 'ancillary') {
 			setNursePage(1)
 		} else {
 			setProvPage(1)
 		}
 		setSearchParams(val !== 'doctors' ? { tab: val } : {})
 	}
+
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
+
+	// ── Dedicated KPI Counts State (Independent from queue lists) ───────────
+	const [kpiCounts, setKpiCounts] = useState<VerificationKpiCounts>({
+		pending_doctors: 0,
+		pending_ancillary: 0,
+		pending_providers: 0,
+		total_applications: 0,
+	})
 
 	// ── Pagination ──────────────────────────────────────────────────────────
 	const [docPage, setDocPage] = useState(1)
@@ -97,8 +183,8 @@ export default function AdminVerificationsPage() {
 	const [nursesQueue, setNursesQueue] = useState<NurseVerificationItem[]>([])
 	const [providersQueue, setProvidersQueue] = useState<ProviderVerificationItem[]>([])
 
-	// ── Doctor -> Sub Admin assignment (bulk select + assign) ────────────────
-	const [selectedDoctorIds, setSelectedDoctorIds] = useState<string[]>([])
+	// ── Multi Selection & Sub Admin assignment ──────────────────────────────
+	const [selectedIds, setSelectedIds] = useState<string[]>([])
 	const [subAdmins, setSubAdmins] = useState<SubAdminItem[]>([])
 	const [assigning, setAssigning] = useState(false)
 
@@ -115,69 +201,134 @@ export default function AdminVerificationsPage() {
 			})
 	}, [isSuperAdmin])
 
-	const toggleDoctorSelection = (id: string) => {
-		setSelectedDoctorIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+	const toggleSelection = (id: string) => {
+		setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
 	}
 
-	const handleAssignToSubAdmin: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
-		const assignedToId = e.target.value
-		if (!assignedToId) return
-		if (selectedDoctorIds.length === 0) {
-			toast.info('Select at least one doctor to assign first.')
-			return
-		}
-
-		setAssigning(true)
+	// ── 1. Fetch Dedicated KPI Counts (Card Counts) ──────────────────────────
+	const fetchKpiCounts = useCallback(async () => {
 		try {
-			const res = await assignDoctorsToSubadmin(selectedDoctorIds, assignedToId)
-			if (res.success) {
-				const subAdminName = subAdmins.find((s) => s.public_id === assignedToId)?.name
-				toast.success(`${selectedDoctorIds.length} doctor(s) assigned to ${subAdminName || 'Sub Admin'}.`)
-				setSelectedDoctorIds([])
-				fetchQueues()
+			const res = await getVerificationKpiCounts()
+			if (res.success && res.data) {
+				setKpiCounts(res.data)
 			}
-		} catch (err: unknown) {
-			toast.error(getErrorMessage(err, 'Failed to assign doctors.'))
-		} finally {
-			setAssigning(false)
+		} catch (err) {
+			console.warn('Failed to load verification KPI counts:', err)
 		}
-	}
+	}, [])
 
-	const fetchQueues = useCallback(async () => {
+	useEffect(() => {
+		fetchKpiCounts()
+	}, [fetchKpiCounts])
+
+	// ── 2. Lazy-Load Active Queue Only (Called only for active tab) ──────────
+	const fetchActiveQueue = useCallback(async () => {
 		setLoading(true)
 		setError(null)
 		try {
-			const [docRes, nurseRes, provRes] = await Promise.allSettled([
-				getDoctorsVerificationQueue({ page: docPage, pageSize: docPageSize }),
-				getNursesVerificationQueue({ page: nursePage, pageSize: nursePageSize }),
-				getProvidersVerificationQueue({ page: provPage, pageSize: provPageSize }),
-			])
-
-			if (docRes.status === 'fulfilled' && docRes.value?.success && docRes.value?.data) {
-				setDoctorsQueue(docRes.value.data.items || [])
-				setDocTotalRows(docRes.value.data.total ?? 0)
-			}
-			if (nurseRes.status === 'fulfilled' && nurseRes.value?.success && nurseRes.value?.data) {
-				setNursesQueue(nurseRes.value.data.items || [])
-				setNurseTotalRows(nurseRes.value.data.total ?? 0)
-			} else {
-				setNursesQueue([])
-				setNurseTotalRows(0)
-			}
-			if (provRes.status === 'fulfilled' && provRes.value?.success && provRes.value?.data) {
-				setProvidersQueue(provRes.value.data.items || [])
-				setProvTotalRows(provRes.value.data.total ?? 0)
+			if (activeTab === 'doctors') {
+				const res = await getDoctorsVerificationQueue({ page: docPage, pageSize: docPageSize })
+				if (res.success && res.data) {
+					setDoctorsQueue(res.data.items || [])
+					setDocTotalRows(res.data.total ?? 0)
+				}
+			} else if (activeTab === 'ancillary') {
+				const res = await getNursesVerificationQueue({
+					page: nursePage,
+					pageSize: nursePageSize,
+					subcategory: selectedAncillarySubcategory || undefined,
+				})
+				if (res.success && res.data) {
+					setNursesQueue(res.data.items || [])
+					setNurseTotalRows(res.data.total ?? 0)
+				} else {
+					setNursesQueue([])
+					setNurseTotalRows(0)
+				}
+			} else if (activeTab === 'providers') {
+				const res = await getProvidersVerificationQueue({
+					page: provPage,
+					pageSize: provPageSize,
+					subcategory: selectedProviderSubcategory || undefined,
+				})
+				if (res.success && res.data) {
+					setProvidersQueue(res.data.items || [])
+					setProvTotalRows(res.data.total ?? 0)
+				} else {
+					setProvidersQueue([])
+					setProvTotalRows(0)
+				}
 			}
 		} catch (err: unknown) {
 			setError(getErrorMessage(err, 'Failed to load verification queue.'))
 		} finally {
 			setLoading(false)
 		}
-	}, [docPage, docPageSize, nursePage, nursePageSize, provPage, provPageSize])
+	}, [
+		activeTab,
+		docPage,
+		docPageSize,
+		nursePage,
+		nursePageSize,
+		selectedAncillarySubcategory,
+		provPage,
+		provPageSize,
+		selectedProviderSubcategory,
+	])
 
 	useEffect(() => {
-		fetchQueues()
-	}, [fetchQueues])
+		fetchActiveQueue()
+	}, [fetchActiveQueue])
+
+	const handleRefresh = async () => {
+		await Promise.all([fetchKpiCounts(), fetchActiveQueue()])
+	}
+
+	const handleAssignToSubAdmin: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+		const assignedToId = e.target.value
+		if (!assignedToId) return
+		if (selectedIds.length === 0) {
+			const label = activeTab === 'doctors' ? 'doctor' : activeTab === 'ancillary' ? 'ancillary application' : 'provider'
+			toast.info(`Select at least one ${label} to assign first.`)
+			return
+		}
+
+		setAssigning(true)
+		try {
+			if (activeTab === 'doctors') {
+				const res = await assignDoctorsToSubadmin(selectedIds, assignedToId)
+				if (res.success) {
+					const subAdminName = subAdmins.find((s) => s.public_id === assignedToId)?.name
+					toast.success(`${selectedIds.length} doctor(s) assigned to ${subAdminName || 'Sub Admin'}.`)
+					setSelectedIds([])
+					fetchKpiCounts()
+					fetchActiveQueue()
+				}
+			} else if (activeTab === 'ancillary') {
+				const res = await assignProvidersToSubadmin(selectedIds, assignedToId, 'ancillary')
+				if (res.success) {
+					const subAdminName = subAdmins.find((s) => s.public_id === assignedToId)?.name
+					toast.success(`${selectedIds.length} ancillary application(s) assigned to ${subAdminName || 'Sub Admin'}.`)
+					setSelectedIds([])
+					fetchKpiCounts()
+					fetchActiveQueue()
+				}
+			} else {
+				const res = await assignProvidersToSubadmin(selectedIds, assignedToId, selectedProviderSubcategory || 'provider')
+				if (res.success) {
+					const subAdminName = subAdmins.find((s) => s.public_id === assignedToId)?.name
+					toast.success(`${selectedIds.length} provider(s) assigned to ${subAdminName || 'Sub Admin'}.`)
+					setSelectedIds([])
+					fetchKpiCounts()
+					fetchActiveQueue()
+				}
+			}
+		} catch (err: unknown) {
+			toast.error(getErrorMessage(err, 'Failed to assign applications.'))
+		} finally {
+			setAssigning(false)
+		}
+	}
 
 	const handleOpenReview = (
 		type: 'doctor' | 'nurse' | 'provider',
@@ -206,9 +357,9 @@ export default function AdminVerificationsPage() {
 						{isSuperAdmin && (
 							<Checkbox
 								size="medium"
-								checked={selectedDoctorIds.includes(rowId)}
+								checked={selectedIds.includes(rowId)}
 								onClick={(e) => e.stopPropagation()}
-								onChange={() => toggleDoctorSelection(rowId)}
+								onChange={() => toggleSelection(rowId)}
 								sx={{ p: 0.75, color: '#cbd5e1', '& .MuiSvgIcon-root': { fontSize: 24 }, '&.Mui-checked': { color: '#0d9488' } }}
 							/>
 						)}
@@ -311,20 +462,32 @@ export default function AdminVerificationsPage() {
 		},
 	]
 
-	// ── Dedicated Nurse Columns ───────────────────────────────────────────────
+	// ── Dedicated Ancillary / Nurse Columns ────────────────────────────────────
 	const nurseColumns: Column<NurseVerificationItem>[] = [
 		{
 			field: 'name',
 			label: 'Applicant',
 			render: (_: unknown, row: NurseVerificationItem) => {
+				const rowId = row.public_id || row.id
 				const rawName = row.name || row.owner_name || 'Nurse'
 				const displayName = rawName.startsWith('Nurse') ? rawName : `Nurse ${rawName}`
 				return (
-					<Box sx={{ minWidth: 0 }}>
-						<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
-							{displayName}
-						</Typography>
-					</Box>
+					<Stack direction="row" spacing={1} alignItems="center">
+						{isSuperAdmin && (
+							<Checkbox
+								size="medium"
+								checked={selectedIds.includes(rowId)}
+								onClick={(e) => e.stopPropagation()}
+								onChange={() => toggleSelection(rowId)}
+								sx={{ p: 0.75, color: '#cbd5e1', '& .MuiSvgIcon-root': { fontSize: 24 }, '&.Mui-checked': { color: '#0d9488' } }}
+							/>
+						)}
+						<Box sx={{ minWidth: 0 }}>
+							<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
+								{displayName}
+							</Typography>
+						</Box>
+					</Stack>
 				)
 			},
 		},
@@ -388,6 +551,11 @@ export default function AdminVerificationsPage() {
 						status={row.is_verified ? 'verified' : (row.verification_status === 'rejected' ? 'rejected' : 'pending')}
 						label={row.is_verified ? 'Verified' : (row.verification_status === 'rejected' ? 'Rejected' : 'Awaiting Review')}
 					/>
+					{row.assigned_admin_name && (
+						<Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+							Assigned: {row.assigned_admin_name}
+						</Typography>
+					)}
 				</Box>
 			),
 		},
@@ -426,21 +594,33 @@ export default function AdminVerificationsPage() {
 		{
 			field: 'name',
 			label: 'Facility Name',
-			render: (_: unknown, row: ProviderVerificationItem) => (
-				<Stack direction="row" spacing={1.5} alignItems="center">
-					<Avatar sx={{ bgcolor: 'rgba(37,99,235,0.1)', color: '#2563eb', width: 38, height: 38, fontSize: 14, fontWeight: 800 }}>
-						{(row.name || 'P').substring(0, 1).toUpperCase()}
-					</Avatar>
-					<Box sx={{ minWidth: 0 }}>
-						<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
-							{row.name}
-						</Typography>
-						<Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-							Owner: {row.owner_name || 'N/A'}
-						</Typography>
-					</Box>
-				</Stack>
-			),
+			render: (_: unknown, row: ProviderVerificationItem) => {
+				const rowId = row.public_id || row.id
+				return (
+					<Stack direction="row" spacing={1.5} alignItems="center">
+						{isSuperAdmin && (
+							<Checkbox
+								size="medium"
+								checked={selectedIds.includes(rowId)}
+								onClick={(e) => e.stopPropagation()}
+								onChange={() => toggleSelection(rowId)}
+								sx={{ p: 0.75, color: '#cbd5e1', '& .MuiSvgIcon-root': { fontSize: 24 }, '&.Mui-checked': { color: '#0d9488' } }}
+							/>
+						)}
+						<Avatar sx={{ bgcolor: 'rgba(37,99,235,0.1)', color: '#2563eb', width: 38, height: 38, fontSize: 14, fontWeight: 800 }}>
+							{(row.name || 'P').substring(0, 1).toUpperCase()}
+						</Avatar>
+						<Box sx={{ minWidth: 0 }}>
+							<Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
+								{row.name}
+							</Typography>
+							<Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+								Owner: {row.owner_name || 'N/A'}
+							</Typography>
+						</Box>
+					</Stack>
+				)
+			},
 		},
 		{
 			field: 'email',
@@ -525,15 +705,39 @@ export default function AdminVerificationsPage() {
 		},
 	]
 
-	const totalAllApplications = docTotalRows + nurseTotalRows + provTotalRows
-
 	return (
 		<Box>
 			<AdminPageHeader
 				title="Verifications Center"
 				subtitle="Review, audit, approve, or reject healthcare providers, doctors, and nurses credential applications."
-				count={totalAllApplications}
+				count={kpiCounts.total_applications}
 				countLabel="pending applications"
+				actions={
+					<Button
+						variant="outlined"
+						size="small"
+						startIcon={<RefreshIcon sx={{ fontSize: 17 }} />}
+						onClick={handleRefresh}
+						disabled={loading}
+						sx={{
+							borderRadius: 2,
+							fontWeight: 700,
+							textTransform: 'none',
+							border: '1px solid #e2e8f0',
+							color: '#0d9488',
+							bgcolor: '#ffffff',
+							fontSize: '0.8rem',
+							height: 38,
+							px: 2,
+							'&:hover': {
+								borderColor: '#0d9488',
+								bgcolor: 'rgba(13,148,136,0.04)',
+							},
+						}}
+					>
+						Refresh
+					</Button>
+				}
 			/>
 
 			{/* Top Metric Cards */}
@@ -541,7 +745,7 @@ export default function AdminVerificationsPage() {
 				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 					<AdminStatCard
 						label="Pending Doctors"
-						value={docTotalRows}
+						value={kpiCounts.pending_doctors}
 						icon={<LocalHospitalIcon />}
 						iconColor="#d97706"
 						iconBg="rgba(217,119,6,0.12)"
@@ -551,19 +755,19 @@ export default function AdminVerificationsPage() {
 				</Grid>
 				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 					<AdminStatCard
-						label="Pending Nurses"
-						value={nurseTotalRows}
+						label="Pending Ancillary"
+						value={kpiCounts.pending_ancillary}
 						icon={<MedicalServicesIcon />}
 						iconColor="#0d9488"
 						iconBg="rgba(13,148,136,0.12)"
-						description="Nurses awaiting registration verification"
-						onClick={() => setActiveTab('nurses')}
+						description="Ancillary care providers awaiting registration verification"
+						onClick={() => setActiveTab('ancillary')}
 					/>
 				</Grid>
 				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 					<AdminStatCard
 						label="Pending Providers"
-						value={provTotalRows}
+						value={kpiCounts.pending_providers}
 						icon={<StorefrontIcon />}
 						iconColor="#7e22ce"
 						iconBg="rgba(126,34,206,0.12)"
@@ -574,7 +778,7 @@ export default function AdminVerificationsPage() {
 				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 					<AdminStatCard
 						label="Total Applications"
-						value={totalAllApplications}
+						value={kpiCounts.total_applications}
 						icon={<AssignmentTurnedInIcon />}
 						iconColor="#2563eb"
 						iconBg="rgba(37,99,235,0.1)"
@@ -583,7 +787,7 @@ export default function AdminVerificationsPage() {
 				</Grid>
 			</Grid>
 
-			{/* Main Queue Tabs & Table */}
+			{/* Main Queue Tabs & Sub Admin Assignment Bar */}
 			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 2.5 }}>
 				<Tabs
 					value={activeTab}
@@ -596,29 +800,29 @@ export default function AdminVerificationsPage() {
 				>
 					<Tab
 						value="doctors"
-						label={`Doctors Queue (${docTotalRows})`}
+						label="Doctors Queue"
 						icon={<LocalHospitalIcon sx={{ fontSize: 17 }} />}
 						iconPosition="start"
 					/>
 					<Tab
-						value="nurses"
-						label={`Nurses Queue (${nurseTotalRows})`}
+						value="ancillary"
+						label="Ancillary Queue"
 						icon={<MedicalServicesIcon sx={{ fontSize: 17 }} />}
 						iconPosition="start"
 					/>
 					<Tab
 						value="providers"
-						label={`Providers Queue (${provTotalRows})`}
+						label="Providers Queue"
 						icon={<StorefrontIcon sx={{ fontSize: 17 }} />}
 						iconPosition="start"
 					/>
 				</Tabs>
 
-				{activeTab === 'doctors' && isSuperAdmin && (
+				{isSuperAdmin && (
 					<Stack direction="row" spacing={1.5} alignItems="center">
-						{selectedDoctorIds.length > 0 && (
+						{selectedIds.length > 0 && (
 							<Chip
-								label={`${selectedDoctorIds.length} selected`}
+								label={`${selectedIds.length} selected`}
 								size="small"
 								sx={{ bgcolor: 'rgba(13,148,136,0.1)', color: '#0d9488', fontWeight: 700 }}
 							/>
@@ -628,8 +832,8 @@ export default function AdminVerificationsPage() {
 								placeholder={
 									assigning
 										? 'Assigning...'
-										: selectedDoctorIds.length === 0
-										? 'Select doctors to assign'
+										: selectedIds.length === 0
+										? `Select ${activeTab === 'doctors' ? 'doctors' : activeTab === 'ancillary' ? 'ancillary' : 'providers'} to assign`
 										: 'Assign to Sub Admin'
 								}
 								value=""
@@ -645,6 +849,122 @@ export default function AdminVerificationsPage() {
 					</Stack>
 				)}
 			</Box>
+
+			{/* Doctor Specialities Filter Pills */}
+			{activeTab === 'doctors' && doctorSpecialities.length > 1 && (
+				<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2.5 }}>
+					{doctorSpecialities.map((opt) => {
+						const isSelected = selectedDoctorSpeciality === opt.value
+						return (
+							<Chip
+								key={opt.value || 'all'}
+								icon={<LocalHospitalIcon sx={{ fontSize: 14 }} />}
+								label={opt.label}
+								onClick={() => {
+									setSelectedDoctorSpeciality(opt.value)
+									setDocPage(1)
+									setSelectedIds([])
+								}}
+								sx={{
+									bgcolor: isSelected ? '#0f172a' : '#ffffff',
+									color: isSelected ? '#ffffff' : '#475569',
+									fontWeight: isSelected ? 700 : 500,
+									border: '1px solid',
+									borderColor: isSelected ? '#0f172a' : '#e2e8f0',
+									fontSize: '0.75rem',
+									py: 1.75,
+									px: 0.5,
+									cursor: 'pointer',
+									boxShadow: isSelected ? '0 2px 8px rgba(15,23,42,0.15)' : 'none',
+									'& .MuiChip-icon': {
+										color: isSelected ? '#2dd4bf !important' : '#64748b !important',
+									},
+									'&:hover': {
+										bgcolor: isSelected ? '#0f172a' : '#f8fafc',
+									},
+								}}
+							/>
+						)
+					})}
+				</Stack>
+			)}
+
+			{/* Subcategory Filter Pills (Matching Admin Users UI styling) */}
+			{activeTab === 'ancillary' && (
+				<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2.5 }}>
+					{ancillarySubcategories.map((opt) => {
+						const isSelected = selectedAncillarySubcategory === opt.value
+						return (
+							<Chip
+								key={opt.value || 'all'}
+								icon={opt.icon}
+								label={opt.label}
+								onClick={() => {
+									setSelectedAncillarySubcategory(opt.value)
+									setNursePage(1)
+									setSelectedIds([])
+								}}
+								sx={{
+									bgcolor: isSelected ? '#0f172a' : '#ffffff',
+									color: isSelected ? '#ffffff' : '#475569',
+									fontWeight: isSelected ? 700 : 500,
+									border: '1px solid',
+									borderColor: isSelected ? '#0f172a' : '#e2e8f0',
+									fontSize: '0.75rem',
+									py: 1.75,
+									px: 0.5,
+									cursor: 'pointer',
+									boxShadow: isSelected ? '0 2px 8px rgba(15,23,42,0.15)' : 'none',
+									'& .MuiChip-icon': {
+										color: isSelected ? '#2dd4bf !important' : '#64748b !important',
+									},
+									'&:hover': {
+										bgcolor: isSelected ? '#0f172a' : '#f8fafc',
+									},
+								}}
+							/>
+						)
+					})}
+				</Stack>
+			)}
+
+			{activeTab === 'providers' && (
+				<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2.5 }}>
+					{PROVIDER_SUBCATEGORIES.map((opt) => {
+						const isSelected = selectedProviderSubcategory === opt.value
+						return (
+							<Chip
+								key={opt.value || 'all'}
+								icon={opt.icon}
+								label={opt.label}
+								onClick={() => {
+									setSelectedProviderSubcategory(opt.value)
+									setProvPage(1)
+									setSelectedIds([])
+								}}
+								sx={{
+									bgcolor: isSelected ? '#0f172a' : '#ffffff',
+									color: isSelected ? '#ffffff' : '#475569',
+									fontWeight: isSelected ? 700 : 500,
+									border: '1px solid',
+									borderColor: isSelected ? '#0f172a' : '#e2e8f0',
+									fontSize: '0.75rem',
+									py: 1.75,
+									px: 0.5,
+									cursor: 'pointer',
+									boxShadow: isSelected ? '0 2px 8px rgba(15,23,42,0.15)' : 'none',
+									'& .MuiChip-icon': {
+										color: isSelected ? '#2dd4bf !important' : '#64748b !important',
+									},
+									'&:hover': {
+										bgcolor: isSelected ? '#0f172a' : '#f8fafc',
+									},
+								}}
+							/>
+						)
+					})}
+				</Stack>
+			)}
 
 			{error && (
 				<Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
@@ -669,7 +989,13 @@ export default function AdminVerificationsPage() {
 				) : (
 					<AppTable
 						columns={doctorColumns}
-						rows={doctorsQueue}
+						rows={
+							selectedDoctorSpeciality
+								? doctorsQueue.filter(
+										(doc) => doc.speciality?.toLowerCase() === selectedDoctorSpeciality.toLowerCase()
+								  )
+								: doctorsQueue
+						}
 						emptyMessage="No doctors awaiting verification."
 						onRowClick={(doc) => handleOpenReview('doctor', doc)}
 						page={docPage}
@@ -682,18 +1008,18 @@ export default function AdminVerificationsPage() {
 						}}
 					/>
 				)
-			) : activeTab === 'nurses' ? (
+			) : activeTab === 'ancillary' ? (
 				nurseTotalRows === 0 ? (
 					<AdminEmptyState
 						icon={<MedicalServicesIcon />}
-						title="Nurses queue is clear"
-						description="No nurse verification applications pending at this time."
+						title="Ancillary queue is clear"
+						description="No ancillary verification applications pending at this time."
 					/>
 				) : (
 					<AppTable
 						columns={nurseColumns}
 						rows={nursesQueue}
-						emptyMessage="No nurses awaiting verification."
+						emptyMessage="No ancillary applications awaiting verification."
 						onRowClick={(nurse) => handleOpenReview('nurse', nurse)}
 						page={nursePage}
 						pageSize={nursePageSize}

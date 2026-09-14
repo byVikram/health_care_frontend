@@ -27,8 +27,7 @@ export interface DoctorVerificationItem {
 }
 
 export interface DocumentReviewItemPayload {
-	document_id: string
-	document_name: string
+	document_id?: string | null
 	status: 'verified' | 'requires_reupload' | 'rejected' | 'not_reviewed' | 'flagged' | 'under_review'
 	issue_tags?: string[]
 }
@@ -56,6 +55,9 @@ export interface NurseVerificationItem {
 	verification_status?: string
 	is_verified: boolean
 	created_at: string
+	assigned_admin_id?: string | null
+	assigned_admin_name?: string | null
+	assigned_at?: string | null
 }
 
 export interface ProviderVerificationItem {
@@ -88,8 +90,7 @@ export interface AuditHistoryEventItem {
 	id: string
 	reviewer_name: string
 	action: string
-	document_id?: string
-	document_name?: string
+	document_id?: string | null
 	timestamp: string
 	issue_tags?: string[]
 	notes?: string
@@ -183,6 +184,17 @@ export interface AdminPatientDetail {
 	upcoming_appointments: AdminUpcomingAppointment[]
 }
 
+export interface AdminProviderQualificationItem {
+	id?: number | string
+	qualification: string
+	institution?: string
+	specialization?: string
+	year_of_passing?: string | number
+	proof_url?: string | null
+	proof_s3_key?: string | null
+	qualification_proof_s3_key?: string | null
+}
+
 export interface AdminProviderDetail {
 	provider_id: string
 	provider_type: 'pharmacy' | 'radiology' | 'laboratory' | 'ancillary' | 'nurse' | string
@@ -196,6 +208,7 @@ export interface AdminProviderDetail {
 	is_verified: boolean
 	is_suspended?: boolean | null
 	license_number?: string | null
+	license_proof_s3_key?: string | null
 	gst_number?: string | null
 	address?: string | null
 	city?: string | null
@@ -204,6 +217,7 @@ export interface AdminProviderDetail {
 	registration_date?: string
 	specialty?: string | null
 	qualifications?: string | null
+	qualifications_list?: AdminProviderQualificationItem[]
 	capabilities?: string[] | null
 	verification_status?: string | null
 }
@@ -258,7 +272,8 @@ export interface DoctorDegreeItem {
 }
 
 export interface DoctorVerificationDocument {
-	id: number | string
+	id?: number | string | null
+	document_type?: string
 	name: string
 	url: string
 	type: string
@@ -285,6 +300,7 @@ export interface DoctorVerificationDetail {
 	specialities?: string[]
 	qualification?: string
 	degrees?: DoctorDegreeItem[]
+	qualifications?: DoctorDegreeItem[]
 	experience_years?: number
 	registration_number?: string
 	registration_proof_s3_key?: string
@@ -317,10 +333,43 @@ export interface BillingTransactionItem {
 export interface OperationalLogItem {
 	id: number | string
 	admin_user_id: number
+	admin_name?: string | null
+	admin_email?: string | null
+	admin_role?: string | null
+	is_sub_admin?: boolean
 	action: string
+	action_label?: string
 	target_table?: string
-	new_value?: unknown
+	target_row_id?: number | null
+	target_type?: string
+	target_name?: string | null
+	target_public_id?: string | null
+	old_value?: Record<string, unknown> | null
+	new_value?: Record<string, unknown> | null
+	state_change?: string | null
+	notes?: string | null
 	created_at: string
+}
+
+export interface OperationalLogListParams {
+	page?: number
+	pageSize?: number
+	adminUserId?: number | string
+	role?: string
+	isSubAdmin?: boolean
+	action?: string
+	targetTable?: string
+	startDate?: string
+	endDate?: string
+	search?: string
+}
+
+export interface OperationalLogListResult {
+	items: OperationalLogItem[]
+	total: number
+	page: number
+	page_size: number
+	total_pages: number
 }
 
 export interface ChatbotSessionLogItem {
@@ -361,9 +410,26 @@ export const getDashboardStats = async () => {
 	return res.data
 }
 
+export interface VerificationKpiCounts {
+	pending_doctors: number
+	pending_ancillary: number
+	pending_providers: number
+	total_applications: number
+}
+
+/** GET /api/admin/verifications/kpi-counts -- Dedicated KPI counts for Verification Center */
+export const getVerificationKpiCounts = async () => {
+	const res = await ApiService.get<{ success: boolean; data: VerificationKpiCounts }>(
+		API_ENDPOINTS.ADMIN.VERIFICATION_KPI_COUNTS
+	)
+	return res.data
+}
+
 export interface VerificationQueueListParams {
 	page?: number
 	pageSize?: number
+	category?: 'doctor' | 'ancillary' | 'provider' | string
+	subcategory?: string
 }
 
 export interface DoctorVerificationListResult {
@@ -376,26 +442,23 @@ export interface NurseVerificationListResult {
 	total: number
 }
 
-/** GET /api/admin/providers/verification-queue (filtered for nurses) */
+/** GET /api/admin/providers/verification-queue?category=ancillary */
 export const getNursesVerificationQueue = async (params: VerificationQueueListParams = {}) => {
-	const { page = 1, pageSize = 10 } = params
+	const { page = 1, pageSize = 10, subcategory } = params
 	try {
 		const res = await ApiService.getWithParams<{
 			success: boolean
-			data: {
-				pharmacies?: any[]
-				radiology?: any[]
-				laboratories?: any[]
-				ancillary?: any[]
-			} | { items: any[]; total: number } | any[]
-		}>(API_ENDPOINTS.ADMIN.PROVIDERS_VERIFICATION_QUEUE, { page, page_size: pageSize })
+			data: NurseVerificationListResult | { items: any[]; total: number }
+		}>(API_ENDPOINTS.ADMIN.PROVIDERS_VERIFICATION_QUEUE, {
+			page,
+			page_size: pageSize,
+			category: 'ancillary',
+			subcategory: subcategory || undefined,
+		})
 
 		if (res.data?.success && res.data.data) {
-			const payload = res.data.data
-
-			if (Array.isArray(payload)) {
-				const allNurses = payload.filter((p: any) => p && (p.provider_type === 'ancillary' || p.provider_type === 'nurse'))
-				const mapped: NurseVerificationItem[] = allNurses.map((p: any) => ({
+			if ('items' in res.data.data && Array.isArray(res.data.data.items)) {
+				const items: NurseVerificationItem[] = res.data.data.items.map((p: any) => ({
 					id: p.id || p.public_id || '',
 					public_id: p.public_id || p.id,
 					name: p.name || p.owner_name || 'Nurse',
@@ -410,59 +473,12 @@ export const getNursesVerificationQueue = async (params: VerificationQueueListPa
 					verification_status: p.verification_status || (p.is_verified ? 'approved' : 'pending'),
 					is_verified: Boolean(p.is_verified),
 					created_at: p.created_at || '',
+					assigned_admin_id: p.assigned_admin_id ?? null,
+					assigned_admin_name: p.assigned_admin_name ?? null,
+					assigned_at: p.assigned_at ?? null,
 				}))
-				const total = mapped.length
-				const start = (page - 1) * pageSize
-				return { success: true, data: { items: mapped.slice(start, start + pageSize), total } }
+				return { success: true, data: { items, total: res.data.data.total ?? items.length } }
 			}
-
-			if ('items' in payload && Array.isArray(payload.items)) {
-				const allNurses = payload.items.filter(
-					(p: any) => p && (p.provider_type === 'ancillary' || p.provider_type === 'nurse')
-				)
-				const mapped: NurseVerificationItem[] = allNurses.map((p: any) => ({
-					id: p.id || p.public_id || '',
-					public_id: p.public_id || p.id,
-					name: p.name || p.owner_name || 'Nurse',
-					owner_name: p.owner_name || p.name,
-					email: p.email || '',
-					contact_number: p.contact_number || '',
-					license_number: p.license_number || '',
-					license_proof_s3_key: p.license_proof_s3_key,
-					speciality: p.specialty || p.speciality || 'General Nursing',
-					qualifications: p.qualifications || '',
-					capabilities: Array.isArray(p.capabilities) ? p.capabilities : [],
-					verification_status: p.verification_status || (p.is_verified ? 'approved' : 'pending'),
-					is_verified: Boolean(p.is_verified),
-					created_at: p.created_at || '',
-				}))
-				const total = mapped.length
-				const start = (page - 1) * pageSize
-				return { success: true, data: { items: mapped.slice(start, start + pageSize), total } }
-			}
-
-			const rawData = payload as any
-			const ancillary = Array.isArray(rawData.ancillary) ? rawData.ancillary : []
-			const mapped: NurseVerificationItem[] = ancillary.map((item: any) => ({
-				id: item.id || item.public_id || '',
-				public_id: item.public_id || item.id,
-				name: item.name || item.owner_name || 'Nurse',
-				owner_name: item.owner_name || item.name,
-				email: item.email || '',
-				contact_number: item.contact_number || '',
-				license_number: item.license_number || '',
-				license_proof_s3_key: item.license_proof_s3_key,
-				speciality: item.specialty || item.speciality || 'General Nursing',
-				qualifications: item.qualifications || '',
-				capabilities: Array.isArray(item.capabilities) ? item.capabilities : [],
-				verification_status: item.verification_status || (item.is_verified ? 'approved' : 'pending'),
-				is_verified: Boolean(item.is_verified),
-				created_at: item.created_at || '',
-			}))
-			const total = mapped.length
-			const start = (page - 1) * pageSize
-			const items = mapped.slice(start, start + pageSize)
-			return { success: true, data: { items, total } }
 		}
 	} catch (err) {
 		console.warn('getNursesVerificationQueue safe catch:', err)
@@ -481,18 +497,21 @@ export interface ProviderVerificationListResult {
 	total: number
 }
 
-/** GET /api/admin/doctors/verification-queue */
+/** GET /api/admin/providers/verification-queue?category=doctor */
 export const getDoctorsVerificationQueue = async (params: VerificationQueueListParams = {}) => {
-	const { page = 1, pageSize = 10 } = params
+	const { page = 1, pageSize = 10, subcategory } = params
 	const res = await ApiService.getWithParams<{
 		success: boolean
 		data: DoctorVerificationItem[] | DoctorVerificationListResult
 	}>(
-		API_ENDPOINTS.ADMIN.DOCTORS_VERIFICATION_QUEUE,
-		{ page, page_size: pageSize }
+		API_ENDPOINTS.ADMIN.PROVIDERS_VERIFICATION_QUEUE,
+		{ page, page_size: pageSize, category: 'doctor', subcategory: subcategory || undefined }
 	)
 
 	if (res.data?.success && res.data.data) {
+		if ('items' in res.data.data && Array.isArray(res.data.data.items)) {
+			return { success: true, data: res.data.data }
+		}
 		if (Array.isArray(res.data.data)) {
 			const all = res.data.data
 			const total = all.length
@@ -500,9 +519,8 @@ export const getDoctorsVerificationQueue = async (params: VerificationQueueListP
 			const items = all.slice(start, start + pageSize)
 			return { success: true, data: { items, total } }
 		}
-		return { success: true, data: res.data.data }
 	}
-	return { success: false, data: { items: [], total: 0 } }
+	return { success: true, data: { items: [], total: 0 } }
 }
 
 /** POST /api/admin/doctors/:doctor_id/verify */
@@ -523,61 +541,102 @@ export const getDoctorVerificationDetail = async (doctorId: string) => {
 	return res.data
 }
 
-/** GET /api/admin/providers/verification-queue */
+/** GET /api/admin/providers/verification-queue?category=provider */
 export const getProvidersVerificationQueue = async (params: VerificationQueueListParams = {}) => {
-	const { page = 1, pageSize = 10 } = params
+	const { page = 1, pageSize = 10, subcategory } = params
 	const res = await ApiService.getWithParams<{
 		success: boolean
 		data: {
-			pharmacies: Array<{ id: string; owner_name: string; is_verified: boolean; created_at: string }>
-			radiology: Array<{ id: string; owner_name: string; is_verified: boolean; created_at: string }>
-			laboratories: Array<{ id: string; owner_name: string; is_verified: boolean; created_at: string }>
+			pharmacies?: Array<{ id: string; name?: string; owner_name: string; is_verified: boolean; created_at: string; email?: string; contact_number?: string; license_number?: string }>
+			radiology?: Array<{ id: string; name?: string; owner_name: string; is_verified: boolean; created_at: string; email?: string; contact_number?: string; license_number?: string }>
+			laboratories?: Array<{ id: string; name?: string; owner_name: string; is_verified: boolean; created_at: string; email?: string; contact_number?: string; license_number?: string }>
 		} | ProviderVerificationListResult
-	}>(API_ENDPOINTS.ADMIN.PROVIDERS_VERIFICATION_QUEUE, { page, page_size: pageSize })
+	}>(API_ENDPOINTS.ADMIN.PROVIDERS_VERIFICATION_QUEUE, {
+		page,
+		page_size: pageSize,
+		category: 'provider',
+		subcategory: subcategory || undefined,
+	})
 
 	if (res.data?.success && res.data.data) {
 		if ('items' in res.data.data && Array.isArray(res.data.data.items)) {
-			return { success: true, data: res.data.data as ProviderVerificationListResult }
+			const items: ProviderVerificationItem[] = res.data.data.items.map((item: any) => ({
+				id: item.id || item.public_id || '',
+				public_id: item.public_id || item.id,
+				name: item.name || item.owner_name || 'Provider',
+				owner_name: item.owner_name,
+				provider_type: item.provider_type || 'pharmacy',
+				email: item.email || '',
+				contact_number: item.contact_number || '',
+				license_number: item.license_number || '',
+				license_proof_s3_key: item.license_proof_s3_key,
+				is_verified: Boolean(item.is_verified),
+				created_at: item.created_at || '',
+			}))
+			return { success: true, data: { items, total: res.data.data.total ?? items.length } }
 		}
 		const rawData = res.data.data as {
-			pharmacies?: Array<{ id: string; owner_name: string; is_verified: boolean; created_at: string }>
-			radiology?: Array<{ id: string; owner_name: string; is_verified: boolean; created_at: string }>
-			laboratories?: Array<{ id: string; owner_name: string; is_verified: boolean; created_at: string }>
+			pharmacies?: Array<{ id: string; name?: string; owner_name: string; is_verified: boolean; created_at: string; email?: string; contact_number?: string; license_number?: string }>
+			radiology?: Array<{ id: string; name?: string; owner_name: string; is_verified: boolean; created_at: string; email?: string; contact_number?: string; license_number?: string }>
+			laboratories?: Array<{ id: string; name?: string; owner_name: string; is_verified: boolean; created_at: string; email?: string; contact_number?: string; license_number?: string }>
 		}
 		const { pharmacies = [], radiology = [], laboratories = [] } = rawData
-		const flattened: ProviderVerificationItem[] = [
-			...pharmacies.map((item) => ({
-				id: item.id,
-				name: item.owner_name || 'Pharmacy',
-				owner_name: item.owner_name,
-				provider_type: 'pharmacy' as const,
-				is_verified: item.is_verified,
-				created_at: item.created_at,
-			})),
-			...radiology.map((item) => ({
-				id: item.id,
-				name: item.owner_name || 'Radiology Center',
-				owner_name: item.owner_name,
-				provider_type: 'radiology' as const,
-				is_verified: item.is_verified,
-				created_at: item.created_at,
-			})),
-			...laboratories.map((item) => ({
-				id: item.id,
-				name: item.owner_name || 'Diagnostic Lab',
-				owner_name: item.owner_name,
-				provider_type: 'laboratory' as const,
-				is_verified: item.is_verified,
-				created_at: item.created_at,
-			})),
-		]
+
+		let flattened: ProviderVerificationItem[] = []
+		if (!subcategory || subcategory === 'pharmacy') {
+			flattened.push(
+				...pharmacies.map((item) => ({
+					id: item.id,
+					public_id: item.id,
+					name: item.name || item.owner_name || 'Pharmacy',
+					owner_name: item.owner_name,
+					provider_type: 'pharmacy' as const,
+					email: item.email || '',
+					contact_number: item.contact_number || '',
+					license_number: item.license_number || '',
+					is_verified: item.is_verified,
+					created_at: item.created_at,
+				}))
+			)
+		}
+		if (!subcategory || subcategory === 'radiology') {
+			flattened.push(
+				...radiology.map((item) => ({
+					id: item.id,
+					public_id: item.id,
+					name: item.name || item.owner_name || 'Radiology Center',
+					owner_name: item.owner_name,
+					provider_type: 'radiology' as const,
+					email: item.email || '',
+					contact_number: item.contact_number || '',
+					license_number: item.license_number || '',
+					is_verified: item.is_verified,
+					created_at: item.created_at,
+				}))
+			)
+		}
+		if (!subcategory || subcategory === 'laboratory') {
+			flattened.push(
+				...laboratories.map((item) => ({
+					id: item.id,
+					public_id: item.id,
+					name: item.name || item.owner_name || 'Diagnostic Lab',
+					owner_name: item.owner_name,
+					provider_type: 'laboratory' as const,
+					email: item.email || '',
+					contact_number: item.contact_number || '',
+					license_number: item.license_number || '',
+					is_verified: item.is_verified,
+					created_at: item.created_at,
+				}))
+			)
+		}
 		const total = flattened.length
 		const start = (page - 1) * pageSize
 		const items = flattened.slice(start, start + pageSize)
 		return { success: true, data: { items, total } }
 	}
-
-	return { success: false, data: { items: [], total: 0 } }
+	return { success: true, data: { items: [], total: 0 } }
 }
 
 /** POST /api/admin/providers/:provider_type/:provider_id/verify */
@@ -604,8 +663,7 @@ export const getVerificationAuditHistory = async (targetType: string, targetId: 
 export interface SingleDocumentReviewPayload {
 	target_type: string
 	target_id: string
-	document_id: string
-	document_name: string
+	document_id?: string | null
 	status: 'verified' | 'requires_reupload' | 'rejected' | 'not_reviewed' | 'flagged' | 'under_review'
 	issue_tags?: string[]
 	notes?: string
@@ -732,10 +790,24 @@ export const refundAppointment = async (appointmentPublicId: string) => {
 }
 
 /** GET /api/admin/audits/operational-logs */
-export const getOperationalLogs = async () => {
-	const res = await ApiService.get<{ success: boolean; data: OperationalLogItem[] }>(
-		API_ENDPOINTS.ADMIN.OPERATIONAL_LOGS
-	)
+export const getOperationalLogs = async (params: OperationalLogListParams = {}) => {
+	const res = await ApiService.get<{
+		success: boolean
+		data: OperationalLogListResult | OperationalLogItem[]
+	}>(API_ENDPOINTS.ADMIN.OPERATIONAL_LOGS, {
+		params: {
+			page: params.page,
+			page_size: params.pageSize,
+			admin_user_id: params.adminUserId || undefined,
+			role: params.role || undefined,
+			is_sub_admin: params.isSubAdmin !== undefined ? params.isSubAdmin : undefined,
+			action: params.action || undefined,
+			target_table: params.targetTable || undefined,
+			start_date: params.startDate || undefined,
+			end_date: params.endDate || undefined,
+			search: params.search || undefined,
+		},
+	})
 	return res.data
 }
 
@@ -1249,6 +1321,7 @@ export const deleteAdminArticle = async (articleId: string) => {
 // ── Admin Management (Sub Admins) ──
 export interface SubAdminItem {
 	id?: string | number
+	user_id?: number
 	public_id: string
 	name: string
 	email: string
@@ -1325,6 +1398,19 @@ export const assignDoctorsToSubadmin = async (doctorIds: string[], assignedToId:
 	const res = await ApiService.post<AdminMutationResponse<AssignDoctorsResult>>(
 		API_ENDPOINTS.ADMIN.ASSIGN_DOCTORS,
 		{ doctor_ids: doctorIds, assigned_to_id: assignedToId }
+	)
+	return res.data
+}
+
+/** Super Admin routes providers / ancillary applications to a compliance_admin Sub Admin. */
+export const assignProvidersToSubadmin = async (
+	providerIds: string[],
+	assignedToId: string,
+	providerType: string = 'ancillary'
+) => {
+	const res = await ApiService.post<AdminMutationResponse<AssignDoctorsResult>>(
+		API_ENDPOINTS.ADMIN.ASSIGN_DOCTORS,
+		{ provider_ids: providerIds, doctor_ids: providerIds, assigned_to_id: assignedToId, provider_type: providerType }
 	)
 	return res.data
 }
@@ -1461,8 +1547,13 @@ export interface AdminAncillaryStats {
 	in_progress: number
 	completed_today: number
 	cancelled: number
-	nurses_online: number
-	total_requests: number
+}
+
+export interface AdminAncillaryStatsParams {
+	specialtyId?: string
+	dateFilter?: string
+	startDate?: string
+	endDate?: string
 }
 
 export interface AdminAncillaryDetail extends AdminAncillaryRequestItem {
@@ -1543,13 +1634,24 @@ export const listAdminAncillaryRequests = async (params: AdminAncillaryListParam
 	return res.data
 }
 
-/** GET /api/admin/ancillary/stats -- Fetch summary KPI metrics */
-export const getAdminAncillaryStats = async () => {
-	const res = await ApiService.get<AdminMutationResponse<AdminAncillaryStats>>(
-		API_ENDPOINTS.ADMIN.ANCILLARY_STATS
-	)
+/** GET /api/admin/ancillary/stats -- Dedicated KPI counts for Ancillary Operations */
+export const getAncillaryOperationsKpi = async (params: AdminAncillaryStatsParams = {}) => {
+	const res = await ApiService.get<{
+		success: boolean
+		data: AdminAncillaryStats
+	}>(API_ENDPOINTS.ADMIN.ANCILLARY_STATS, {
+		params: {
+			specialty_id: params.specialtyId && params.specialtyId !== 'all' ? params.specialtyId : undefined,
+			date_filter: params.dateFilter || undefined,
+			start_date: params.startDate || undefined,
+			end_date: params.endDate || undefined,
+		},
+	})
 	return res.data
 }
+
+/** GET /api/admin/ancillary/stats -- Alias for backward compatibility */
+export const getAdminAncillaryStats = getAncillaryOperationsKpi
 
 /** GET /api/admin/ancillary/requests/:requestId -- Fetch full operational detail */
 export const getAdminAncillaryRequestDetail = async (requestId: string) => {

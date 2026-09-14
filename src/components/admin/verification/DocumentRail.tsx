@@ -1,11 +1,10 @@
-﻿// src/components/admin/verification/DocumentRail.tsx
+// src/components/admin/verification/DocumentRail.tsx
 import React from 'react'
 import {
 	Box,
 	Typography,
 	Stack,
 	LinearProgress,
-	Avatar,
 	Chip,
 } from '@mui/material'
 import DescriptionIcon from '@mui/icons-material/Description'
@@ -27,7 +26,7 @@ export type DocumentStatus =
 	| 'requires_reupload'
 
 export interface VerificationDocumentItem {
-	id: string
+	id: string | null
 	name: string
 	url: string
 	type: string
@@ -45,43 +44,49 @@ interface DocumentRailProps {
 
 const STATUS_CONFIG: Record<
 	DocumentStatus,
-	{ label: string; color: string; bg: string; icon: React.ReactElement }
+	{ label: string; color: string; bg: string; border: string; icon: React.ReactElement }
 > = {
 	not_reviewed: {
 		label: 'Not Reviewed',
-		color: '#64748b',
-		bg: '#f1f5f9',
-		icon: <HourglassEmptyIcon sx={{ fontSize: 13 }} />,
+		color: '#475569',
+		bg: '#f8fafc',
+		border: '#e2e8f0',
+		icon: <HourglassEmptyIcon sx={{ fontSize: 12 }} />,
 	},
 	under_review: {
 		label: 'Under Review',
 		color: '#2563eb',
-		bg: '#dbeafe',
-		icon: <RateReviewIcon sx={{ fontSize: 13 }} />,
+		bg: '#eff6ff',
+		border: '#bfdbfe',
+		icon: <RateReviewIcon sx={{ fontSize: 12 }} />,
 	},
 	verified: {
 		label: 'Verified',
 		color: '#16a34a',
 		bg: '#f0fdf4',
-		icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+		border: '#bbf7d0',
+		icon: <CheckCircleIcon sx={{ fontSize: 12 }} />,
 	},
 	flagged: {
 		label: 'Flagged',
 		color: '#d97706',
 		bg: '#fffbeb',
-		icon: <WarningIcon sx={{ fontSize: 13 }} />,
+		border: '#fde68a',
+		icon: <WarningIcon sx={{ fontSize: 12 }} />,
 	},
 	rejected: {
 		label: 'Rejected',
 		color: '#dc2626',
 		bg: '#fff1f2',
-		icon: <CancelIcon sx={{ fontSize: 13 }} />,
+		border: '#fecaca',
+		icon: <CancelIcon sx={{ fontSize: 12 }} />,
 	},
 	requires_reupload: {
 		label: 'Requires Re-upload',
 		color: '#9333ea',
 		bg: '#faf5ff',
-		icon: <ReplayIcon sx={{ fontSize: 13 }} />,
+		border: '#e9d5ff',
+		icon: <ReplayIcon sx={{ fontSize: 12 }} />,
 	},
 }
 
@@ -96,14 +101,14 @@ export default function DocumentRail({
 	const progressPercent = documents.length > 0 ? (completedCount / documents.length) * 100 : 0
 
 	return (
-		<Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+		<Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: '#ffffff', p: 2 }}>
 			{/* Review Progress Banner */}
-			<Box sx={{ p: 2, borderBottom: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
-				<Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-					<Typography variant="caption" fontWeight={800} color="#475569" sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+			<Box sx={{ mb: 1.75 }}>
+				<Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.75 }}>
+					<Typography variant="caption" fontWeight={800} color="#0f172a" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '11px' }}>
 						Review Progress
 					</Typography>
-					<Typography variant="caption" fontWeight={800} color="#0d9488">
+					<Typography variant="caption" fontWeight={800} color="#0d9488" sx={{ fontSize: '11.5px' }}>
 						{completedCount} / {documents.length} Completed
 					</Typography>
 				</Stack>
@@ -112,7 +117,7 @@ export default function DocumentRail({
 					variant="determinate"
 					value={progressPercent}
 					sx={{
-						height: 6,
+						height: 4,
 						borderRadius: 2,
 						bgcolor: '#e2e8f0',
 						'& .MuiLinearProgress-bar': { bgcolor: '#0d9488', borderRadius: 2 },
@@ -121,80 +126,84 @@ export default function DocumentRail({
 			</Box>
 
 			{/* Vertical Document List */}
-			<Box sx={{ flex: 1, overflowY: 'auto', p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+			<Box sx={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
 				{documents.map((doc, index) => {
 					const isSelected = index === selectedIndex
 					const cfg = STATUS_CONFIG[doc.status] || STATUS_CONFIG.not_reviewed
 					const s3Url = buildS3Url(doc.url)
-					const isImage = s3Url ? /\.(png|jpe?g|webp|gif)$/i.test(s3Url) : false
+					const cleanPath = s3Url ? s3Url.split('?')[0].split('#')[0] : ''
+					const isPdf = Boolean(cleanPath && /\.pdf$/i.test(cleanPath))
+					const isImage = !isPdf || /\.(png|jpe?g|webp|gif|svg|bmp|avif)$/i.test(cleanPath) || s3Url?.startsWith('data:image/')
 
 					return (
 						<Box
-							key={doc.id}
+							key={doc.id !== null && doc.id !== undefined ? String(doc.id) : 'doc-item-' + index}
 							onClick={() => onSelectDocument(index)}
 							sx={{
-								p: 1.75,
-								borderRadius: '12px',
-								border: '2px solid',
+								p: 1.5,
+								borderRadius: '10px',
+								border: '1.5px solid',
 								borderColor: isSelected ? '#0d9488' : '#e2e8f0',
-								bgcolor: isSelected ? 'rgba(13,148,136,0.04)' : '#ffffff',
+								bgcolor: '#ffffff',
 								cursor: 'pointer',
 								transition: 'all 0.15s ease',
-								boxShadow: isSelected ? '0 4px 12px rgba(13,148,136,0.12)' : 'none',
+								boxShadow: isSelected ? '0 2px 6px rgba(13,148,136,0.08)' : 'none',
 								'&:hover': {
 									borderColor: isSelected ? '#0d9488' : '#cbd5e1',
-									bgcolor: isSelected ? 'rgba(13,148,136,0.06)' : '#f8fafc',
+									bgcolor: '#f8fafc',
 								},
 							}}
 						>
-							<Stack direction="row" spacing={1.5} alignItems="center">
-								{/* Document Thumbnail / Icon */}
+							<Stack direction="row" spacing={1.25} alignItems="center">
+								{/* Document Thumbnail / Teal Icon */}
 								{isImage && s3Url ? (
 									<Box
 										component="img"
 										src={s3Url}
 										alt={doc.name}
 										sx={{
-											width: 44,
-											height: 44,
-											borderRadius: '8px',
+											width: 36,
+											height: 36,
+											borderRadius: '6px',
 											objectFit: 'cover',
 											border: '1px solid #cbd5e1',
 											flexShrink: 0,
 										}}
 									/>
 								) : (
-									<Avatar
+									<Box
 										sx={{
-											width: 44,
-											height: 44,
-											borderRadius: '8px',
-											bgcolor: isSelected ? '#0d9488' : '#f1f5f9',
-											color: isSelected ? '#ffffff' : '#64748b',
-											fontSize: 20,
+											width: 36,
+											height: 36,
+											borderRadius: '6px',
+											bgcolor: '#0d9488',
+											color: '#ffffff',
+											display: 'flex',
+											alignItems: 'center',
+											justifyContent: 'center',
 											flexShrink: 0,
 										}}
 									>
-										<DescriptionIcon fontSize="small" />
-									</Avatar>
+										<DescriptionIcon sx={{ fontSize: 18 }} />
+									</Box>
 								)}
 
 								{/* Document Info & Status Badge */}
 								<Box sx={{ minWidth: 0, flex: 1 }}>
 									<Typography
 										variant="body2"
-										fontWeight={800}
-										color={isSelected ? '#0f172a' : '#334155'}
+										fontWeight={700}
+										color="#0f172a"
 										noWrap
-										fontSize={13}
+										sx={{ fontSize: '12.5px' }}
 									>
 										{doc.name}
 									</Typography>
-									<Typography variant="caption" color="text.secondary" noWrap display="block" sx={{ fontSize: 11 }}>
+									<Typography variant="caption" color="text.secondary" noWrap display="block" sx={{ fontSize: '10.5px', mt: 0.25 }}>
 										TYPE: {doc.type.toUpperCase()}
 									</Typography>
 
-									<Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 0.75 }}>
+									<Box sx={{ mt: 0.75 }}>
 										<Chip
 											icon={cfg.icon}
 											label={cfg.label}
@@ -202,14 +211,15 @@ export default function DocumentRail({
 											sx={{
 												height: 20,
 												fontSize: '0.62rem',
-												fontWeight: 800,
+												fontWeight: 700,
 												color: cfg.color,
 												bgcolor: cfg.bg,
-												border: `1px solid ${cfg.color}30`,
+												border: `1px solid ${cfg.border}`,
+												borderRadius: '5px',
 												'& .MuiChip-icon': { color: cfg.color },
 											}}
 										/>
-									</Stack>
+									</Box>
 								</Box>
 							</Stack>
 
@@ -218,15 +228,15 @@ export default function DocumentRail({
 									variant="caption"
 									sx={{
 										display: 'block',
-										mt: 1,
-										pt: 0.75,
+										mt: 0.75,
+										pt: 0.5,
 										borderTop: '1px dashed #e2e8f0',
 										color: '#d97706',
 										fontWeight: 700,
-										fontSize: '11px',
+										fontSize: '10.5px',
 									}}
 								>
-									âš ï¸ Issue: {doc.issueTag}
+									⚠️ Issue: {doc.issueTag}
 								</Typography>
 							)}
 						</Box>

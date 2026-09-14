@@ -154,6 +154,7 @@ export const API_ENDPOINTS = {
 	},
 	ADMIN: {
 		DASHBOARD_STATS: '/api/admin/dashboard/stats',
+		VERIFICATION_KPI_COUNTS: '/api/admin/verifications/kpi-counts',
 		DOCTORS_VERIFICATION_QUEUE: '/api/admin/doctors/verification-queue',
 		VERIFY_DOCTOR: (doctorId: string) => `/api/admin/doctors/${doctorId}/verify`,
 		DOCTOR_VERIFICATION_DETAIL: (doctorId: string) => `/api/admin/doctors/${doctorId}/verification-detail`,

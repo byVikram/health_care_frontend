@@ -15,11 +15,13 @@ import {
 	DialogActions,
 	InputAdornment,
 	Avatar,
+	Button,
 } from '@mui/material'
 import AppInput from '../../../components/common/Input/AppInput'
 import CancelIcon from '@mui/icons-material/Cancel'
 import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee'
 import SearchIcon from '@mui/icons-material/Search'
+import RefreshIcon from '@mui/icons-material/Refresh'
 
 // import SectionCard from '../../../components/common/Card/SectionCard'
 import AppTable, { Column } from '../../../components/common/Table/AppTable'
@@ -246,6 +248,23 @@ export default function AdminAppointmentsPage() {
 				subtitle="Monitor system-wide appointments, handle admin overrides, perform reschedules, and trigger refunds."
 				count={totalRows}
 				countLabel="appointments"
+				actions={
+					<Button
+						onClick={fetchAppointments}
+						startIcon={<RefreshIcon sx={{ fontSize: 17 }} />}
+						sx={{
+							textTransform: 'none',
+							fontWeight: 700,
+							fontSize: 13,
+							color: '#0d9488',
+							border: '1px solid #e2e8f0',
+							borderRadius: '8px',
+							'&:hover': { bgcolor: 'rgba(13,148,136,0.08)' },
+						}}
+					>
+						Refresh
+					</Button>
+				}
 			/>
 
 			<Box sx={{ mb: 2.5, maxWidth: 360 }}>
