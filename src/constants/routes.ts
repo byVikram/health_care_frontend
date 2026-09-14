@@ -123,5 +123,6 @@ export const ROUTES = {
 		ADMINS: '/admin/admins',
 		ANCILLARY: '/admin/ancillary',
 		ANCILLARY_DETAIL: '/admin/ancillary/:id',
+		ANCILLARY_CATEGORIES: '/admin/ancillary-categories',
 	},
 }

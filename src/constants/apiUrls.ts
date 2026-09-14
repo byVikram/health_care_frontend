@@ -213,6 +213,11 @@ export const API_ENDPOINTS = {
 		CANCEL_ANCILLARY_REQUEST: (requestId: string) => `/api/admin/ancillary/requests/${requestId}/cancel`,
 		REASSIGN_ANCILLARY_REQUEST: (requestId: string) => `/api/admin/ancillary/requests/${requestId}/reassign`,
 		AVAILABLE_ANCILLARY_PROVIDERS: '/api/admin/ancillary/available-providers',
+		ANCILLARY_SPECIALTIES: '/api/admin/ancillary/specialties',
+		ANCILLARY_CATEGORIES: '/api/admin/ancillary/categories',
+		ANCILLARY_CATEGORY_DETAIL: (categoryId: string) => `/api/admin/ancillary/categories/${categoryId}`,
+		ANCILLARY_CATEGORY_PROCEDURES: (categoryId: string) => `/api/admin/ancillary/categories/${categoryId}/procedures`,
+		ANCILLARY_PROCEDURE_DETAIL: (procedureId: string) => `/api/admin/ancillary/procedures/${procedureId}`,
 	},
 	EVENTS: {
 		PUBLIC: '/api/events/public',
