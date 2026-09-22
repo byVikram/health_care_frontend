@@ -1,5 +1,5 @@
 ---
-description: Scaffold a new admin list/create/edit page set, following the existing ~20-page admin section pattern
+description: Scaffold a new admin list/create/edit page set, following the existing ~24-page admin section pattern
 ---
 
 # Add an Admin Page
