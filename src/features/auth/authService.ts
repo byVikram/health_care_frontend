@@ -1,7 +1,7 @@
 // src/features/auth/authService.ts
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
-import { LookupData } from '../../hooks/useAuth'
+import { LookupData, clearAuth, getRefreshToken } from '../../hooks/useAuth'
 
 export interface SendOtpResponse {
 	success: boolean
@@ -93,3 +93,67 @@ export const createUser = async (data: CreateUserRequest): Promise<VerifyUserCre
 	const res = await ApiService.post<VerifyUserCreationResponse>(API_ENDPOINTS.AUTH.CREATE_USER, data)
 	return res.data
 }
+
+export interface RefreshTokenRequest {
+	refresh_token: string
+}
+
+export interface RefreshTokenResponse {
+	success: boolean
+	message: string
+	data: {
+		user: VerifyOtpUser
+		access_token: string
+		refresh_token: string
+		token_type: string
+		expires_in: number
+		notification_prompt_shown?: boolean
+	}
+}
+
+export const refreshToken = async (refreshTokenValue: string): Promise<RefreshTokenResponse> => {
+	const res = await ApiService.post<RefreshTokenResponse>(
+		API_ENDPOINTS.AUTH.REFRESH,
+		{ refresh_token: refreshTokenValue },
+		{ _skipAuthRefresh: true }
+	)
+	return res.data
+}
+
+export interface LogoutRequest {
+	refresh_token: string
+}
+
+export interface LogoutResponse {
+	message: string
+}
+
+let logoutPromise: Promise<void> | null = null
+
+export const logout = async (): Promise<void> => {
+	if (logoutPromise) {
+		return logoutPromise
+	}
+
+	logoutPromise = (async () => {
+		const refreshTokenValue = getRefreshToken()
+		if (refreshTokenValue) {
+			try {
+				await ApiService.post<LogoutResponse>(
+					API_ENDPOINTS.AUTH.LOGOUT,
+					{ refresh_token: refreshTokenValue },
+					{ _skipAuthRefresh: true, suppressErrorToast: true }
+				)
+			} catch (error) {
+				console.error('Server-side logout failed:', error)
+			}
+		}
+		clearAuth()
+	})().finally(() => {
+		logoutPromise = null
+	})
+
+	return logoutPromise
+}
+
+

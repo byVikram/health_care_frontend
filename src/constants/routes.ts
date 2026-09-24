@@ -67,9 +67,6 @@ export const ROUTES = {
 
 	SPECIALITIES: '/specialities',
 
-	TEST: '/test',
-	TEST_REGISTER: '/test-register',
-
 	ROLE_SELECT: '/role-select',
 	ONBOARDING_ROLE: '/onboarding/:roleId',
 	ONBOARDING_REGISTER: '/onboarding/register',

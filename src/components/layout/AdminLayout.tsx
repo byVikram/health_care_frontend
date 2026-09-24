@@ -43,7 +43,8 @@ import MenuBookIcon from '@mui/icons-material/MenuBook'
 import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 
-import { useAuth, clearAuth } from '../../hooks/useAuth'
+import { useAuth } from '../../hooks/useAuth'
+import { logout } from '../../features/auth/authService'
 import { ROUTES } from '../../constants/routes'
 import { customScrollbar } from '../../styles/commonStyles'
 
@@ -125,10 +126,17 @@ export default function AdminLayout() {
 
 
 	const sidebarWidth = collapsed ? 76 : 260
+	const [isLoggingOut, setIsLoggingOut] = useState(false)
 
-	const handleLogout = () => {
-		clearAuth()
-		navigate(ROUTES.ADMIN.LOGIN, { replace: true })
+	const handleLogout = async () => {
+		if (isLoggingOut) return
+		setIsLoggingOut(true)
+		try {
+			await logout()
+			navigate(ROUTES.ADMIN.LOGIN, { replace: true })
+		} finally {
+			setIsLoggingOut(false)
+		}
 	}
 
 	const isActive = (path: string) => {
@@ -475,7 +483,7 @@ export default function AdminLayout() {
 								</Typography>
 							</Box>
 							<Divider />
-							<MenuItem onClick={handleLogout} sx={{ color: '#ef4444', gap: 1, py: 1.25 }}>
+							<MenuItem onClick={handleLogout} disabled={isLoggingOut} sx={{ color: '#ef4444', gap: 1, py: 1.25 }}>
 								<LogoutIcon fontSize="small" />
 								<Typography variant="body2" fontWeight={600}>
 									Sign Out
