@@ -1,16 +1,16 @@
 import { Box, Typography, Divider, Container } from '@mui/material'
 import BannerImage from '../../assets/Banner/banner.png'
-import SpecialitySection from './SpecialitySection'
-import ConsultSection from './ConsultSection'
-import QuickServicesSection from './QuickServicesSection'
-import ArticleSection from './ArticleSection'
-import UpcomingEventsSection from './UpcomingEventsSection'
-import CommunityBlogsSection from './CommunityBlogsSection'
-import PodcastsSection from './PodcastsSection'
+import SpecialitySection from './sections/SpecialitySection'
+import ConsultSection from './sections/ConsultSection'
+import QuickServicesSection from './sections/QuickServicesSection'
+import ArticleSection from './sections/ArticleSection'
+import UpcomingEventsSection from './sections/UpcomingEventsSection'
+import CommunityBlogsSection from './sections/CommunityBlogsSection'
+import PodcastsSection from './sections/PodcastsSection'
 import PatientHealthQuestionsSection from '../patient/components/PatientHealthQuestionsSection'
 
-import ServicesSection from './ServiceSection'
-import EmergencyBannerSection from './EmergencySection'
+import ServicesSection from './sections/ServiceSection'
+import EmergencyBannerSection from './sections/EmergencySection'
 
 export default function DashboardPage() {
 	return (

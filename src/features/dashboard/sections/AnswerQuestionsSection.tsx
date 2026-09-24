@@ -1,6 +1,6 @@
 // src/features/dashboard/AnswerQuestionsSection.tsx
 import { Box, Typography, Avatar, TextField } from '@mui/material'
-import AppButton from '../../components/common/Button/AppButton'
+import AppButton from '../../../components/common/Button/AppButton'
 
 const questions = [
 	{

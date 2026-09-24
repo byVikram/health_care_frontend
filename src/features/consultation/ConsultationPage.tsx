@@ -26,7 +26,7 @@ import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { toast } from 'react-toastify'
-import { updateAppointmentsStatus } from '../dashboard/dashboardService'
+import { updateAppointmentsStatus } from '../../services/appointmentService'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import { customCardStyle } from '../../styles/commonStyles'
 import AppointmentDetailsDrawer from '../appointments/components/AppointmentDetailsDrawer'

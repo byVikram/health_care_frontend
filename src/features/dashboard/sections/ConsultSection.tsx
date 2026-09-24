@@ -1,17 +1,17 @@
 // src/features/dashboard/ConsultSection.tsx
 import { useEffect, useState } from 'react'
 import { Box, Typography, Grid, Skeleton } from '@mui/material'
-import AppButton from '../../components/common/Button/AppButton'
-import ConsultCard from '../../components/common/Card/ConsultCard'
+import AppButton from '../../../components/common/Button/AppButton'
+import ConsultCard from '../../../components/common/Card/ConsultCard'
 import { useNavigate } from 'react-router-dom'
-import { ROUTES } from '../../constants/routes'
-import { getSpecialities } from '../doctor/doctorService'
-import { SpecialityItem } from '../../types/speciality'
+import { ROUTES } from '../../../constants/routes'
+import { getSpecialities } from '../../doctor/doctorService'
+import { SpecialityItem } from '../../../types/speciality'
 
-import dentistImage from '../../assets/specialties/dentist.png'
-import gynoCologistImage from '../../assets/specialties/gynocologist.png'
-import nutritionImage from '../../assets/specialties/nutrition.png'
-import physiotherapistImage from '../../assets/specialties/physiotherapist.png'
+import dentistImage from '../../../assets/specialties/dentist.png'
+import gynoCologistImage from '../../../assets/specialties/gynocologist.png'
+import nutritionImage from '../../../assets/specialties/nutrition.png'
+import physiotherapistImage from '../../../assets/specialties/physiotherapist.png'
 
 // Each dashboard card maps to the real specialty by its DB label -- this is
 // only used to pick the right illustration/description; the id used for
@@ -54,18 +54,21 @@ export default function ConsultSection() {
 
 	useEffect(() => {
 		let active = true
-		setLoading(true)
-		getSpecialities()
-			.then((res) => {
+		const load = async () => {
+			setLoading(true)
+			try {
+				const res = await getSpecialities()
 				if (!active) return
 				setSpecialities(res.data)
-			})
-			.catch((err) => {
+			} catch (err) {
+				// ApiService's shared axios interceptor already shows a global
+				// error toast on failure -- just log for developers here.
 				console.error('Failed to load specialities:', err)
-			})
-			.finally(() => {
+			} finally {
 				if (active) setLoading(false)
-			})
+			}
+		}
+		void load()
 		return () => {
 			active = false
 		}

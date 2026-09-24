@@ -1,7 +1,7 @@
 // features/dashboard/EmergencyBannerSection.tsx
 import { Box, Button, Typography } from '@mui/material'
-import SirenImg from '../../assets/Banner/siren.png'
-import SosImg from '../../assets/Banner/sos.png'
+import SirenImg from '../../../assets/Banner/siren.png'
+import SosImg from '../../../assets/Banner/sos.png'
 
 export default function EmergencyBannerSection() {
 	return (

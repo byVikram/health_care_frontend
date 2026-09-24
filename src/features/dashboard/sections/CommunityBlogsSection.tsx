@@ -1,13 +1,13 @@
 // src/features/dashboard/CommunityBlogsSection.tsx
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Box, Typography, Grid } from '@mui/material'
-import AppButton from '../../components/common/Button/AppButton'
-import blogImage from '../../assets/blog-and-community/blog-1.svg'
-import groupImage from '../../assets/blog-and-community/community-1.svg'
+import { Box, Typography, Grid, Skeleton } from '@mui/material'
+import AppButton from '../../../components/common/Button/AppButton'
+import DashboardEmptyState from '../components/DashboardEmptyState'
+import groupImage from '../../../assets/blog-and-community/community-1.svg'
 
-import { listBlogs, BlogPost } from '../../services/blogService'
-import { listCommunityGroups, CommunityGroup } from '../../services/communityService'
+import { listBlogs, BlogPost } from '../../../services/blogService'
+import { listCommunityGroups, CommunityGroup } from '../../../services/communityService'
 
 interface CommunityBlogsProps {
 	variant?: string
@@ -17,22 +17,33 @@ export default function CommunityBlogsSection({ variant = 'row' }: CommunityBlog
 	const navigate = useNavigate()
 	const [featuredBlogs, setFeaturedBlogs] = useState<BlogPost[]>([])
 	const [featuredCommunities, setFeaturedCommunities] = useState<CommunityGroup[]>([])
+	const [loading, setLoading] = useState(true)
 
 	useEffect(() => {
-		const loadData = async () => {
+		let active = true
+		const load = async () => {
+			setLoading(true)
 			try {
-				// Fetch up to 2 featured blogs
-				const blogsRes = await listBlogs(undefined, 1, 2, true)
+				// Fetch up to 2 featured blogs and featured communities in parallel.
+				const [blogsRes, groupsRes] = await Promise.all([
+					listBlogs(undefined, 1, 2, true),
+					listCommunityGroups(true),
+				])
+				if (!active) return
 				setFeaturedBlogs(blogsRes.data)
-
-				// Fetch featured communities
-				const groupsRes = await listCommunityGroups(true)
 				setFeaturedCommunities(groupsRes.data.slice(0, 4))
 			} catch (err) {
+				// ApiService's shared axios interceptor already shows a global
+				// error toast on failure -- just log for developers here.
 				console.error('Error loading featured dashboard content:', err)
+			} finally {
+				if (active) setLoading(false)
 			}
 		}
-		loadData()
+		void load()
+		return () => {
+			active = false
+		}
 	}, [])
 
 	return (
@@ -51,12 +62,14 @@ export default function CommunityBlogsSection({ variant = 'row' }: CommunityBlog
 				{/* Left: Community List */}
 				<Grid container size={{ xs: 12, md: variant === 'column' ? 12 : 4 }} spacing={2}>
 					<Grid container size={{ xs: 12 }} spacing={2}>
-						{featuredCommunities.length === 0 ? (
-							<Box sx={{ p: 3, textAlign: 'center', width: '100%' }}>
-								<Typography variant="body2" color="text.secondary">
-									No featured networks configured.
-								</Typography>
-							</Box>
+						{loading ? (
+							Array.from({ length: 3 }).map((_, i) => (
+								<Grid key={i} sx={{ width: '100%' }}>
+									<Skeleton variant="rounded" height={72} />
+								</Grid>
+							))
+						) : featuredCommunities.length === 0 ? (
+							<DashboardEmptyState message="No featured networks configured." />
 						) : (
 							featuredCommunities.map((c) => (
 								<Grid
@@ -122,12 +135,14 @@ export default function CommunityBlogsSection({ variant = 'row' }: CommunityBlog
 				{/* Right: Blog Cards */}
 				<Grid size={{ xs: 12, md: variant === 'column' ? 12 : 8 }}>
 					<Grid container spacing={2}>
-						{featuredBlogs.length === 0 ? (
-							<Box sx={{ p: 5, textAlign: 'center', width: '100%' }}>
-								<Typography variant="body2" color="text.secondary">
-									No featured blog posts configured.
-								</Typography>
-							</Box>
+						{loading ? (
+							Array.from({ length: 2 }).map((_, i) => (
+								<Grid key={i} size={{ xs: 12, sm: 6 }}>
+									<Skeleton variant="rounded" height={variant === 'column' ? 140 : 380} />
+								</Grid>
+							))
+						) : featuredBlogs.length === 0 ? (
+							<DashboardEmptyState message="No featured blog posts configured." py={5} />
 						) : (
 							featuredBlogs.map((blog) => (
 								<Grid

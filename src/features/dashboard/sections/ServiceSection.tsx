@@ -1,12 +1,12 @@
 import { Grid } from '@mui/material'
-import ServiceCard from '../../components/common/Card/ServiceCard'
+import ServiceCard from '../../../components/common/Card/ServiceCard'
 
-import DoctorsService from '../../assets/Services/doctors-service.png'
-import VideoConsultation from '../../assets/Services/doctor-video-consultation.png'
-import LabTests from '../../assets/Services/lab-service.png'
-import Surgeries from '../../assets/Services/serguries.png'
+import DoctorsService from '../../../assets/Services/doctors-service.png'
+import VideoConsultation from '../../../assets/Services/doctor-video-consultation.png'
+import LabTests from '../../../assets/Services/lab-service.png'
+import Surgeries from '../../../assets/Services/serguries.png'
 import { useNavigate } from 'react-router-dom'
-import { ROUTES } from '../../constants/routes'
+import { ROUTES } from '../../../constants/routes'
 
 interface ServicesType {
 	id: number
