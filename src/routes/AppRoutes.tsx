@@ -23,15 +23,13 @@ import RideTrackingPage from '../features/careTransit/pages/RideTrackingPage'
 import ProfilePage from '../features/profile/ProfilePage'
 import ConsultationPage from '../features/consultation/ConsultationPage'
 import DoctorAccountDetailsPage from '../features/auth/DoctorAccountDetailsPage'
-import TestPage from '../features/auth/test/TestPage'
-import TestRegister from '../features/auth/test/TestRegister'
 import PortalPage from '../features/portal/PortalPage'
 import DoctorAppointmentList from '../features/appointments/AppointmentList'
 import PatientAppointmentDetailPage from '../features/patient/PatientAppointmentDetailPage'
 import WelcomePage from '../features/auth/WelcomePage'
-import OrderList from '../features/Pharmacy/orders/OrderList'
-import OrderDetailPage from '../features/Pharmacy/orders/OrderDeatailPage'
-import PharmacySearchPage from '../features/Pharmacy/components/PharmacySearchPage'
+import OrderList from '../features/pharmacy/orders/OrderList'
+import OrderDetailPage from '../features/pharmacy/orders/OrderDeatailPage'
+import PharmacySearchPage from '../features/pharmacy/components/PharmacySearchPage'
 import RadiologyProfilePage from '../features/radiology/profile/RadiologyProfilePage'
 import BookingsList from '../features/radiology/bookings/BookingsList'
 import BookingDetailPage from '../features/radiology/bookings/BookingDetailPage'
@@ -138,11 +136,6 @@ export default function AppRoutes() {
 				<Route path={ROUTES.AUTH.LOGIN} element={<LoginPage />} />
 
 				<Route path={ROUTES.AUTH.REGISTER} element={<RegisterPage />} />
-
-				<Route
-					path={ROUTES.TEST_REGISTER}
-					element={<TestRegister onSubmit={(email) => console.log('Registered:', email)} />}
-				/>
 				<Route path={ROUTES.DOCTOR_ACCOUNT_DETAILS} element={<DoctorAccountDetailsPage />} />
 
 
@@ -195,7 +188,6 @@ export default function AppRoutes() {
 						<Route path={ROUTES.DOCTORS.DETAIL} element={<DoctorDetailPage />} />
 						<Route path={ROUTES.DOCTORS.SEARCH} element={<DoctorSearchPage />} />
 						<Route path={ROUTES.PAYMENT} element={<PaymentPage />} />
-						<Route path={ROUTES.TEST} element={<TestPage />} />
 						<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
 						<Route path={ROUTES.SPECIALITIES} element={<AllSpecialitiesPage />} />
 						<Route path={ROUTES.RADIOLOGY.SEARCH} element={<RadiologySearchPage />} />
