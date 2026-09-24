@@ -4,7 +4,8 @@ import { ReactNode } from 'react'
 import { Box } from '@mui/material'
 import AppSidebar from '../common/Sidebar/AppSidebar'
 import DoctorNavBar from '../common/Navbar/DoctorNavBar'
-import { useAuth, clearAuth } from '../../hooks/useAuth'
+import { useAuth } from '../../hooks/useAuth'
+import { logout } from '../../features/auth/authService'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routes'
 
@@ -119,9 +120,17 @@ export default function SidebarLayout({ children, activeMenuId }: SidebarLayoutP
 			}
 		: undefined
 
-	const handleLogout = () => {
-		clearAuth()
-		navigate('/login')
+	const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+	const handleLogout = async () => {
+		if (isLoggingOut) return
+		setIsLoggingOut(true)
+		try {
+			await logout()
+			navigate('/login')
+		} finally {
+			setIsLoggingOut(false)
+		}
 	}
 
 	return (

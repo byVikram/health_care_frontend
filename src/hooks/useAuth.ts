@@ -139,6 +139,18 @@ export function getAccessToken(): string | null {
 	return localStorage.getItem('access_token')
 }
 
+export function getRefreshToken(): string | null {
+	return localStorage.getItem('refresh_token')
+}
+
+export function setAuthTokens(accessToken: string, refreshToken?: string): void {
+	localStorage.setItem('access_token', accessToken)
+	if (refreshToken) {
+		localStorage.setItem('refresh_token', refreshToken)
+	}
+	window.dispatchEvent(new Event('auth-changed'))
+}
+
 export function setNotificationPromptShown(value: boolean): void {
 	localStorage.setItem('notification_prompt_shown', String(value))
 	window.dispatchEvent(new Event('auth-changed'))
