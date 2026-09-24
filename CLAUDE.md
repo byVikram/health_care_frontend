@@ -1,4 +1,4 @@
-# health-care/ — Web App (React + Vite)
+# health_care_frontend/ — Web App (React + Vite)
 
 Part of the [healthcare2](../CLAUDE.md) monorepo. See root CLAUDE.md for cross-service context. Package name in `package.json` is `whisper-ai`.
 
@@ -58,7 +58,7 @@ Central table: `src/routes/AppRoutes.tsx`, path constants in `src/constants/rout
 
 ## Skills
 
-`.claude/skills/` has directory-scoped Claude Code skills for common tasks: `api-integration`, `feature-page`, `ui-feedback` (mirror the equivalent skills in `gemini-mobile-app/`, adapted to this app's MUI/toast conventions), plus `add-form` and `add-admin-page`. Note: `add-form` documents that this app's real forms use plain `useState`, not the installed-but-unused `formik`/`yup` dependencies.
+`.claude/skills/` has directory-scoped Claude Code skills for common tasks: `api-integration`, `feature-page`, `ui-feedback` (mirror the equivalent skills in `health_care_mobile/`, adapted to this app's MUI/toast conventions), plus `add-form` and `add-admin-page`. Note: `add-form` documents that this app's real forms use plain `useState`, not the installed-but-unused `formik`/`yup` dependencies.
 
 ## Conventions
 
