@@ -263,7 +263,7 @@ export default function ChatMessage({ message, onFeedbackSubmit }: ChatMessagePr
 											<Typography variant="subtitle2" noWrap sx={{ fontWeight: 700, fontSize: '13px', color: 'text.primary' }}>
 												{doc.name}
 											</Typography>
-											{doc.rating !== undefined && (
+											{doc.rating != null && (
 												<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
 													<Typography sx={{ fontSize: '11px', fontWeight: 700, color: 'warning.main' }}>★</Typography>
 													<Typography sx={{ fontSize: '11px', fontWeight: 700, color: 'text.secondary' }}>
@@ -274,7 +274,8 @@ export default function ChatMessage({ message, onFeedbackSubmit }: ChatMessagePr
 										</Box>
 
 										<Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '11px', mt: 0.25, fontWeight: 500 }}>
-											{doc.speciality.join(', ')} • {doc.experience_years} Years Exp
+											{doc.speciality.join(', ')}
+											{doc.experience_years ? ` • ${doc.experience_years} Years Exp` : ''}
 										</Typography>
 
 										{doc.hospitals && doc.hospitals.length > 0 ? (

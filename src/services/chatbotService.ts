@@ -1,10 +1,10 @@
 // src/services/chatbotService.ts
-import ApiService, { API_BASE_URL } from './apiService'
+import ApiService from './apiService'
 import { API_ENDPOINTS } from '../constants/apiUrls'
 import {
 	ChatSessionResponse,
 	ChatMessageResponse,
-	ChatResponse
+	ChatTurnResponse
 } from '../types/chatbot'
 
 interface ApiResponseWrapper<T> {
@@ -67,74 +67,14 @@ export async function logFeedback(
 }
 
 /**
- * Send a message and stream the response word-by-word, ending with structured metadata.
+ * Send a message and get the assistant's full reply (answer + structured details).
+ * The chat UI shows its own inline error, so the global error toast is suppressed.
  */
-export async function sendMessageStream(
-	sessionId: string,
-	message: string,
-	onChunk: (text: string) => void,
-	onStructured: (payload: ChatResponse) => void,
-	onSessionTitle: (title: string) => void,
-	onError: (err: any) => void
-): Promise<void> {
-	try {
-		const token = localStorage.getItem('access_token')
-		const baseUrl = API_BASE_URL || 'http://localhost:8000'
-		const url = `${baseUrl}${API_ENDPOINTS.CHATBOT.SEND_MESSAGE(sessionId)}`
-
-		const response = await fetch(url, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'Authorization': token ? `Bearer ${token}` : '',
-			},
-			body: JSON.stringify({ message }),
-		})
-
-		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`)
-		}
-
-		const reader = response.body?.getReader()
-		if (!reader) {
-			throw new Error('ReadableStream not supported')
-		}
-
-		const decoder = new TextDecoder('utf-8')
-		let buffer = ''
-
-		while (true) {
-			const { done, value } = await reader.read()
-			if (done) break
-
-			buffer += decoder.decode(value, { stream: true })
-			const lines = buffer.split('\n')
-			// Keep the last partial line in the buffer
-			buffer = lines.pop() || ''
-
-			for (const line of lines) {
-				const trimmed = line.trim()
-				if (trimmed.startsWith('data:')) {
-					const dataStr = trimmed.slice(5).trim()
-					if (!dataStr) continue
-					try {
-						const parsed = JSON.parse(dataStr)
-						if (parsed.type === 'content') {
-							onChunk(parsed.delta)
-						} else if (parsed.type === 'structured') {
-							onStructured(parsed.payload)
-							if (parsed.session_title) {
-								onSessionTitle(parsed.session_title)
-							}
-						}
-					} catch (e) {
-						console.error('Error parsing SSE data:', e, dataStr)
-					}
-				}
-			}
-		}
-	} catch (error) {
-		console.error('Error in sendMessageStream:', error)
-		onError(error)
-	}
+export async function sendMessage(sessionId: string, message: string): Promise<ChatTurnResponse> {
+	const res = await ApiService.post<ApiResponseWrapper<ChatTurnResponse>>(
+		API_ENDPOINTS.CHATBOT.SEND_MESSAGE(sessionId),
+		{ message },
+		{ suppressErrorToast: true }
+	)
+	return res.data.data
 }
