@@ -34,7 +34,7 @@ import CommunityBlogsSection from '../dashboard/sections/CommunityBlogsSection'
 import { useDebouncedValue } from '../../utils/debounce'
 import { ROUTES } from '../../constants/routes'
 
-import OrderDetails from '../pharmacy/orders/OrderDeatailPage'
+import OrderDetails from '../Pharmacy/orders/OrderDeatailPage'
 import { customCardStyle } from '../../styles/commonStyles'
 
 // ----------------------------- Video Slide Component -----------------------------
