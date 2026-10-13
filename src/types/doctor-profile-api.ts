@@ -52,6 +52,8 @@ export interface DoctorDegreeApi {
 	specialization?: string
 	college: string
 	year_of_passing: string
+	/** Where the certificate is stored. `qualification_proof_s3_key` is the same value under its older name. */
+	degree_certificate?: string | null
 	qualification_proof_s3_key?: string | null
 }
 
@@ -76,6 +78,8 @@ export interface DoctorProfileApiData {
 		qualification_proof_s3_key?: string | null
 		degrees: DoctorDegreeApi[]
 		registration_number: string
+		/** `registration_proof_s3_key` is the same value under its older name. */
+		registration_proof?: string | null
 		registration_proof_s3_key?: string | null
 		about: string
 		specialities: DoctorProfileApiSpeciality[]

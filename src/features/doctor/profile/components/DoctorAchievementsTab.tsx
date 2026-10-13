@@ -282,10 +282,10 @@ export default function DoctorAchievementsTab() {
 			}
 
 			if (editingId) {
-				const res = await updateAchievement(editingId, payload)
+				const res = await updateAchievement(editingId, payload, form.documentFile)
 				toast.success(res.message || 'Achievement updated successfully')
 			} else {
-				const res = await createAchievement(payload)
+				const res = await createAchievement(payload, form.documentFile)
 				toast.success(res.message || 'Achievement added successfully')
 			}
 

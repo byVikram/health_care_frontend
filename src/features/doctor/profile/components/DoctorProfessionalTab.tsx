@@ -47,11 +47,14 @@ function UploadBox({
 	label,
 	required,
 	description,
+	fileName,
 	onChange,
 }: {
 	label: string
 	required?: boolean
 	description?: string
+	/** The file picked now, or the one already stored: a key or a signed link, shown as its file name. */
+	fileName?: string
 	onChange?: (f: File) => void
 }) {
 	const ref = useRef<HTMLInputElement>(null)
@@ -76,6 +79,14 @@ function UploadBox({
 						sx={{ color: 'text.secondary', fontSize: '11.5px', display: 'block', lineHeight: 1.5 }}
 					>
 						{description}
+					</Typography>
+				)}
+				{fileName && (
+					<Typography
+						variant="caption"
+						sx={{ color: 'primary.main', fontSize: '11.5px', display: 'block', wordBreak: 'break-all' }}
+					>
+						{fileName.split('?')[0].split('/').pop()}
 					</Typography>
 				)}
 			</Box>
@@ -207,18 +218,21 @@ export default function DoctorProfessionalTab({ data, onChange, onSaveSuccess }:
 				// experience_years: data.experience || undefined,
 				registration_number: data.registrationNumber,
 				about: data.about,
-				registration_proof_s3_key: data.registrationProof || null,
+				// (a proof is never sent as text: a picked file goes in the same request, see below)
 				specialities: [data.specialization_id],
 				degrees: degrees.map((d) => ({
 					degree: d.degree,
 					specialization: d.specialization || null,
 					college: d.college,
 					year_of_passing: d.yearOfPassing,
-					qualification_proof_s3_key: d.qualificationProof || null,
+					id: d.id, // keeps the degree, and its saved certificate, when no new file is picked
 				})),
 			}
 
-			await updateProfessionalDetails(payload)
+			await updateProfessionalDetails(payload, {
+				degreeCertificates: degrees.map((d) => d.qualificationFile),
+				registrationProof: data.registrationFile,
+			})
 
 			toast.success('Professional details saved successfully!')
 			setSaved(data)
@@ -405,8 +419,12 @@ export default function DoctorProfessionalTab({ data, onChange, onSaveSuccess }:
 											label="Upload image or PDF of Qualification proofs"
 											required
 											description="Submit council registration proof or passing certificate."
+											fileName={deg.qualificationProof}
 											onChange={(file) =>
-												handleDegreeFieldChange(index, { qualificationProof: file.name })
+												handleDegreeFieldChange(index, {
+													qualificationProof: file.name,
+													qualificationFile: file,
+												})
 											}
 										/>
 									</Box>
@@ -449,7 +467,11 @@ export default function DoctorProfessionalTab({ data, onChange, onSaveSuccess }:
 								/>
 							</Grid>
 							<Grid size={{ xs: 12, sm: 4 }}>
-								<UploadBox label="" onChange={(file) => onChange({ registrationProof: file.name })} />
+								<UploadBox
+										label=""
+										fileName={data.registrationProof}
+										onChange={(file) => onChange({ registrationProof: file.name, registrationFile: file })}
+									/>
 							</Grid>
 						</Grid>
 						<AppInput
