@@ -28,6 +28,8 @@ export interface DoctorVerificationItem {
 
 export interface DocumentReviewItemPayload {
 	document_id?: string | null
+	/** Only needed for a government ID ('identity'); the other kinds are told apart by their document_id. */
+	document_type?: string
 	status: 'verified' | 'requires_reupload' | 'rejected' | 'not_reviewed' | 'flagged' | 'under_review'
 	issue_tags?: string[]
 }
@@ -277,6 +279,8 @@ export interface DoctorVerificationDocument {
 	name: string
 	url: string
 	type: string
+	/** Review state stored on the document: pending / approved / rejected / reupload */
+	status?: string | null
 }
 
 export interface AdminDoctorReviewItem {
@@ -664,6 +668,8 @@ export interface SingleDocumentReviewPayload {
 	target_type: string
 	target_id: string
 	document_id?: string | null
+	/** Only needed for a government ID ('identity'); the other kinds are told apart by their document_id. */
+	document_type?: string
 	status: 'verified' | 'requires_reupload' | 'rejected' | 'not_reviewed' | 'flagged' | 'under_review'
 	issue_tags?: string[]
 	notes?: string
