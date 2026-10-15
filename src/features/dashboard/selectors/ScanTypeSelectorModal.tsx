@@ -1,13 +1,13 @@
 // src/features/dashboard/ScanTypeSelectorModal.tsx
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ROUTES } from '../../constants/routes'
-import { getScanTypes, ScanType } from '../radiology/radiologyService'
-import allScansIcon from '../../assets/Radiology/allscans.png'
-import mriIcon from '../../assets/Radiology/mri.png'
-import ctIcon from '../../assets/Radiology/ct-scan.png'
-import xrayIcon from '../../assets/Radiology/xray.png'
-import ultrasoundIcon from '../../assets/Radiology/ultrasound.png'
+import { ROUTES } from '../../../constants/routes'
+import { getScanTypes, ScanType } from '../../radiology/radiologyService'
+import allScansIcon from '../../../assets/Radiology/allscans.png'
+import mriIcon from '../../../assets/Radiology/mri.png'
+import ctIcon from '../../../assets/Radiology/ct-scan.png'
+import xrayIcon from '../../../assets/Radiology/xray.png'
+import ultrasoundIcon from '../../../assets/Radiology/ultrasound.png'
 import CardGridSelectorModal, { SelectorCardItem } from './CardGridSelectorModal'
 
 interface ScanTypeSelectorModalProps {
@@ -77,23 +77,25 @@ export default function ScanTypeSelectorModal({ open, onClose }: ScanTypeSelecto
 	useEffect(() => {
 		if (!open) return
 		let active = true
-		setLoading(true)
-		setError(null)
-
-		const fetchTypes = async () => {
+		const load = async () => {
+			setLoading(true)
+			setError(null)
 			try {
 				const res = await getScanTypes()
 				if (!active) return
 				if (res.success && res.data) setScanTypes(res.data)
 			} catch (err) {
-				console.error('Failed to load scan types', err)
+				// ApiService's shared axios interceptor already shows a global
+				// error toast on failure -- this inline error is additional
+				// context inside the modal, not a duplicate toast.
+				console.error('Failed to load scan types:', err)
 				if (!active) return
 				setError('Failed to load scan types. Please try again.')
 			} finally {
 				if (active) setLoading(false)
 			}
 		}
-		void fetchTypes()
+		void load()
 		return () => {
 			active = false
 		}

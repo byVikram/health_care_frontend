@@ -2,10 +2,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Box, Typography, Grid, Container, Chip, Divider } from '@mui/material'
-import AppButton from '../../components/common/Button/AppButton'
-import AppModal from '../../components/common/Modal/AppModal'
-import AuthorInfoCard from '../../components/common/AuthorInfoCard'
-import { BlogAuthor } from '../../services/blogService'
+import AppButton from '../../../components/common/Button/AppButton'
+import AppModal from '../../../components/common/Modal/AppModal'
+import AuthorInfoCard from '../../../components/common/AuthorInfoCard'
+import { BlogAuthor } from '../../../services/blogService'
 
 export interface ArticleItem {
 	id: number

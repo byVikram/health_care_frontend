@@ -1,7 +1,7 @@
 // src/features/dashboard/CardGridSelectorModal.tsx
 import { Dialog, DialogTitle, DialogContent, Box, Typography, IconButton, Alert } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
-import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
+import AppSkeleton from '../../../components/common/Skeleton/AppSkeleton'
 
 export interface SelectorCardItem {
 	key: string

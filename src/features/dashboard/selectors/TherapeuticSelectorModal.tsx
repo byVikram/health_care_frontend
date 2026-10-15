@@ -1,6 +1,6 @@
 ﻿// src/features/dashboard/TherapeuticSelectorModal.tsx
-import rehabilitationIcon from '../../assets/therapeutic/rehabilitation.png'
-import specializedServiceIcon from '../../assets/therapeutic/specialized-service.png'
+import rehabilitationIcon from '../../../assets/therapeutic/rehabilitation.png'
+import specializedServiceIcon from '../../../assets/therapeutic/specialized-service.png'
 import CardGridSelectorModal, { SelectorCardItem } from './CardGridSelectorModal'
 
 interface TherapeuticSelectorModalProps {

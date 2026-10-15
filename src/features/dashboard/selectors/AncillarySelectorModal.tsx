@@ -1,8 +1,8 @@
 ﻿// src/features/dashboard/AncillarySelectorModal.tsx
-import elderDayCareIcon from '../../assets/ancillary/elder-day-care.png'
-import homeCareIcon from '../../assets/ancillary/home-care.png'
-import nursingCareIcon from '../../assets/ancillary/nursing-care.png'
-import physiotherapyIcon from '../../assets/ancillary/physiotherapy.png'
+import elderDayCareIcon from '../../../assets/ancillary/elder-day-care.png'
+import homeCareIcon from '../../../assets/ancillary/home-care.png'
+import nursingCareIcon from '../../../assets/ancillary/nursing-care.png'
+import physiotherapyIcon from '../../../assets/ancillary/physiotherapy.png'
 import CardGridSelectorModal, { SelectorCardItem } from './CardGridSelectorModal'
 
 interface AncillarySelectorModalProps {

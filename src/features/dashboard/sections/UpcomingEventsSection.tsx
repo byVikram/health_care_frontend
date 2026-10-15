@@ -1,17 +1,16 @@
 // src/features/dashboard/UpcomingEventsSection.tsx
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ROUTES } from '../../constants/routes'
+import { ROUTES } from '../../../constants/routes'
 import { Box, Typography, Grid, CircularProgress, Stack, Chip } from '@mui/material'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
 import VideocamOutlinedIcon from '@mui/icons-material/VideocamOutlined'
 import CategoryIcon from '@mui/icons-material/Category'
-import AppButton from '../../components/common/Button/AppButton'
-import ApiService from '../../services/apiService'
-import { API_ENDPOINTS } from '../../constants/apiUrls'
-import { toast } from 'react-toastify'
+import AppButton from '../../../components/common/Button/AppButton'
+import ApiService from '../../../services/apiService'
+import { API_ENDPOINTS } from '../../../constants/apiUrls'
 
 export interface EventItem {
 	id: string
@@ -43,19 +42,25 @@ export default function UpcomingEventsSection({ variant = 'row' }: UpcommingEven
 	const [loading, setLoading] = useState(true)
 
 	useEffect(() => {
-		const fetchEvents = async () => {
+		let active = true
+		const load = async () => {
+			setLoading(true)
 			try {
 				const res = await ApiService.get<any>(API_ENDPOINTS.EVENTS.PUBLIC)
+				if (!active) return
 				setEvents(res.data?.data || [])
 			} catch (err) {
-				console.error('Failed to fetch events', err)
-				toast.error('Could not load upcoming events')
+				// ApiService's shared axios interceptor already shows a global
+				// error toast on failure -- just log for developers here.
+				console.error('Failed to fetch events:', err)
 			} finally {
-				setLoading(false)
+				if (active) setLoading(false)
 			}
 		}
-
-		fetchEvents()
+		void load()
+		return () => {
+			active = false
+		}
 	}, [])
 
 	const formatDate = (dateString: string) => {

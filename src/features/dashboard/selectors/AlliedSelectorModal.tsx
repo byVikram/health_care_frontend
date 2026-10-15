@@ -1,7 +1,7 @@
 ﻿// src/features/dashboard/AlliedSelectorModal.tsx
-import acupunctureIcon from '../../assets/allied-health/acupuncture.png'
-import ayurvedaIcon from '../../assets/allied-health/ayurveda.png'
-import homeopathyIcon from '../../assets/allied-health/homeopathy.png'
+import acupunctureIcon from '../../../assets/allied-health/acupuncture.png'
+import ayurvedaIcon from '../../../assets/allied-health/ayurveda.png'
+import homeopathyIcon from '../../../assets/allied-health/homeopathy.png'
 import CardGridSelectorModal, { SelectorCardItem } from './CardGridSelectorModal'
 
 interface AlliedSelectorModalProps {
