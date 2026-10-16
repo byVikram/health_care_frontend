@@ -227,8 +227,35 @@ export const updatePersonalDetails = async (data: Record<string, unknown>) => {
 	return res.data
 }
 
-export const updateProfessionalDetails = async (data: Record<string, unknown>) => {
-	const res = await ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.PROFESSIONAL_DETAILS, data)
+export interface ProfessionalDetailsFiles {
+	/** Index-aligned with `data.degrees`: the newly picked certificate for that degree, if any. */
+	degreeCertificates?: (File | null | undefined)[]
+	registrationProof?: File | null
+}
+
+/**
+ * Saves the professional details. Without files this is the plain JSON update; with files it is one multipart
+ * request (`payload` + `degree_certificate_<ref>` / `registration_proof`), so the details and the files are saved
+ * together. The app never sends a storage key: the server stores the files and links them.
+ */
+export const updateProfessionalDetails = async (data: Record<string, unknown>, files?: ProfessionalDetailsFiles) => {
+	const certificates = files?.degreeCertificates ?? []
+	const registrationProof = files?.registrationProof
+	if (!registrationProof && !certificates.some(Boolean)) {
+		const res = await ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.PROFESSIONAL_DETAILS, data)
+		return res.data
+	}
+
+	const degrees = (data.degrees as Record<string, unknown>[] | undefined)?.map((d, i) =>
+		certificates[i] ? { ...d, ref: `d${i}` } : d
+	)
+	const form = new FormData()
+	form.append('payload', JSON.stringify({ ...data, ...(degrees && { degrees }) }))
+	certificates.forEach((file, i) => {
+		if (file) form.append(`degree_certificate_d${i}`, file)
+	})
+	if (registrationProof) form.append('registration_proof', registrationProof)
+	const res = await ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.PROFESSIONAL_DETAILS, form)
 	return res.data
 }
 
@@ -329,11 +356,11 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 						specialization: d.specialization || '',
 						college: d.college,
 						yearOfPassing: d.year_of_passing,
-						qualificationProof: d.qualification_proof_s3_key || '',
+						qualificationProof: d.degree_certificate || d.qualification_proof_s3_key || '',
 					}))
 				: [],
 			registrationNumber: prof?.registration_number ?? '',
-			registrationProof: prof?.registration_proof_s3_key ?? '',
+			registrationProof: prof?.registration_proof ?? prof?.registration_proof_s3_key ?? '',
 			about: prof?.about ?? '',
 		},
 		hospitals,
@@ -514,8 +541,19 @@ export interface AchievementPayload {
 	organization?: string | null
 	achievement_date?: string | null // YYYY-MM-DD
 	description?: string | null
-	document_s3_key?: string | null
 	is_public?: boolean
+}
+
+/**
+ * An achievement's body: plain JSON without a document, or one multipart request (`payload` + `document`) with
+ * one. The app never sends a storage key: the server stores the file and links it.
+ */
+const achievementBody = (payload: Partial<AchievementPayload>, document?: File | null): unknown => {
+	if (!document) return payload
+	const form = new FormData()
+	form.append('payload', JSON.stringify(payload))
+	form.append('document', document, document.name)
+	return form
 }
 
 export const getAchievements = async (): Promise<AchievementsResponse> => {
@@ -523,18 +561,25 @@ export const getAchievements = async (): Promise<AchievementsResponse> => {
 	return res.data
 }
 
-export const createAchievement = async (payload: AchievementPayload): Promise<AchievementResponse> => {
-	const res = await ApiService.post<AchievementResponse>(API_ENDPOINTS.DOCTOR_PROFILE.ACHIEVEMENTS, payload)
+export const createAchievement = async (
+	payload: AchievementPayload,
+	document?: File | null
+): Promise<AchievementResponse> => {
+	const res = await ApiService.post<AchievementResponse>(
+		API_ENDPOINTS.DOCTOR_PROFILE.ACHIEVEMENTS,
+		achievementBody(payload, document)
+	)
 	return res.data
 }
 
 export const updateAchievement = async (
 	publicId: string,
-	payload: Partial<AchievementPayload>
+	payload: Partial<AchievementPayload>,
+	document?: File | null
 ): Promise<AchievementResponse> => {
 	const res = await ApiService.put<AchievementResponse>(
 		API_ENDPOINTS.DOCTOR_PROFILE.ACHIEVEMENT_BY_ID(publicId),
-		payload
+		achievementBody(payload, document)
 	)
 	return res.data
 }

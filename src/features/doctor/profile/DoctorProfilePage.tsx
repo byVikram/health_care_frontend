@@ -33,6 +33,7 @@ import { customCardStyle } from '../../../styles/commonStyles'
 import { getDoctorProfile, mapDoctorProfileApi, updateAdditionalDetails } from '../doctorService'
 import { useAuth, setAuth } from '../../../hooks/useAuth'
 import ApiService from '../../../services/apiService'
+import { API_ENDPOINTS } from '../../../constants/apiUrls'
 
 const DOCTOR_NAV_ITEMS = [
 	{ id: 'personal', label: 'Personal details', icon: <PersonOutlineIcon fontSize="small" /> },
@@ -122,20 +123,27 @@ export default function DoctorProfilePage() {
 		setDoctor((prev) => (prev ? { ...prev, professional: { ...prev.professional, ...updated } } : prev))
 
 	const handleAvatarChange = async (file: File) => {
+		const previousAvatar = doctor?.personal.avatar ?? ''
 		const localPreviewUrl = URL.createObjectURL(file)
 		setDoctor((prev) => (prev ? { ...prev, personal: { ...prev.personal, avatar: localPreviewUrl } } : prev))
 
 		try {
 			const formData = new FormData()
 			formData.append('file', file)
-			const res = await ApiService.post<{ avatar_url: string }>('/api/doctors/upload-avatar', formData)
-			const newAvatarUrl = res.data.avatar_url
+			// The common photo API: the server stores the file and links it to this doctor's profile.
+			const res = await ApiService.put<{ data?: { avatar_url?: string | null; avatar_s3_key?: string | null } }>(
+				API_ENDPOINTS.UPLOADS.AVATAR,
+				formData
+			)
+			const newAvatarUrl = res.data.data?.avatar_url || res.data.data?.avatar_s3_key || ''
 
 			setDoctor((prev) => (prev ? { ...prev, personal: { ...prev.personal, avatar: newAvatarUrl } } : prev))
 
 			setAuth(role!, { ...user!, avatar: newAvatarUrl }, accessToken!, refreshToken!, lookupData)
 		} catch (err) {
 			console.error('Avatar upload failed', err)
+			// not saved: go back to the photo that is actually on the profile
+			setDoctor((prev) => (prev ? { ...prev, personal: { ...prev.personal, avatar: previousAvatar } } : prev))
 		}
 	}
 

@@ -23,7 +23,10 @@ export interface DoctorDegree {
 	specialization?: string
 	college: string
 	yearOfPassing: string
+	/** What the server stored for this degree (or the picked file's name until it is saved). */
 	qualificationProof?: string
+	/** A certificate picked in the browser and not saved yet. Uploaded together with the rest on save. */
+	qualificationFile?: File
 }
 
 export interface DoctorProfileProfessional {
@@ -35,7 +38,10 @@ export interface DoctorProfileProfessional {
 	qualificationProof?: string
 	degrees: DoctorDegree[]
 	registrationNumber: string
+	/** What the server stored (or the picked file's name until it is saved). */
 	registrationProof: string
+	/** A registration proof picked in the browser and not saved yet. */
+	registrationFile?: File
 	about: string
 }
 

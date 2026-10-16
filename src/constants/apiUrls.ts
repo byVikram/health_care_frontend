@@ -19,6 +19,10 @@ export const API_ENDPOINTS = {
 	PHARMACIES: {
 		LIST: '/api/pharmacies',
 	},
+	UPLOADS: {
+		/** PUT (multipart `file`): the signed-in user's own profile photo, for every role. */
+		AVATAR: '/api/uploads/avatar',
+	},
 	DOCTOR_PROFILE: {
 		STATUS: '/api/doctors/me/status',
 		DETAILS: '/api/doctors/details',

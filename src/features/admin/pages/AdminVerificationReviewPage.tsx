@@ -126,6 +126,24 @@ function InfoTile({
 	)
 }
 
+// The review state stored on the document itself (pending / approved / rejected / reupload) is the source of truth:
+// unlike the audit log it goes back to "pending" when the doctor uploads a new file. The audit-log result is only the
+// fallback for an older response that has no status.
+const docStatusFromApi = (apiStatus: string | null | undefined, fallback: DocumentStatus): DocumentStatus => {
+	switch (apiStatus) {
+		case 'approved':
+			return 'verified'
+		case 'rejected':
+			return 'rejected'
+		case 'reupload':
+			return 'requires_reupload'
+		case 'pending':
+			return 'not_reviewed'
+		default:
+			return fallback
+	}
+}
+
 const getDocStatusFromLogs = (
 	docId: string | null,
 	category: string,
@@ -247,16 +265,17 @@ export default function AdminVerificationReviewPage() {
 
 					if (data.documents && Array.isArray(data.documents) && data.documents.length > 0) {
 						data.documents.forEach((d) => {
-							const isReg = d.document_type === 'registration' || d.type === 'license' || d.type === 'registration_license' || d.id === null || d.id === 'null'
+							const isIdentity = d.document_type === 'identity'
+							const isReg = !isIdentity && (d.document_type === 'registration' || d.type === 'license' || d.type === 'registration_license' || d.id === null || d.id === 'null')
 							const docId = isReg ? null : (d.id !== null && d.id !== undefined && d.id !== 'null' ? String(d.id) : null)
-							const category = isReg ? 'registration' : 'qualification'
+							const category = isReg ? 'registration' : isIdentity ? 'identity' : 'qualification'
 							docs.push({
 								id: docId,
 								document_type: category,
 								name: d.name,
 								url: d.url,
 								type: d.type || category,
-								status: getDocStatusFromLogs(docId, category, fetchedAuditLogs),
+								status: docStatusFromApi(d.status, getDocStatusFromLogs(docId, category, fetchedAuditLogs)),
 								issueTag: getDocIssueTagFromLogs(docId, category, fetchedAuditLogs),
 							})
 						})
@@ -401,7 +420,7 @@ export default function AdminVerificationReviewPage() {
 								name: dItem.name,
 								url: dItem.url,
 								type: dItem.type || category,
-								status: getDocStatusFromLogs(docId, category, fetchedAuditLogs),
+								status: docStatusFromApi(dItem.status, getDocStatusFromLogs(docId, category, fetchedAuditLogs)),
 								issueTag: getDocIssueTagFromLogs(docId, category, fetchedAuditLogs),
 							})
 						})
@@ -515,6 +534,7 @@ export default function AdminVerificationReviewPage() {
 				target_type: targetType,
 				target_id: id,
 				document_id: activeDoc.id,
+				...(activeDoc.document_type === 'identity' ? { document_type: 'identity' } : {}),
 				status: nextStatus,
 				issue_tags: selectedFlags,
 				notes: reviewerNotes.trim() || undefined,
@@ -535,6 +555,7 @@ export default function AdminVerificationReviewPage() {
 
 			const docReviewsPayload = documents.map((d) => ({
 				document_id: d.id,
+				...(d.document_type === 'identity' ? { document_type: 'identity' } : {}),
 				status: d.status,
 				issue_tags: d.issueTag ? [d.issueTag] : [],
 			}))
