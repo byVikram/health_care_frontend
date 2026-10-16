@@ -32,7 +32,7 @@ import AppInput from '../../../components/common/Input/AppInput'
 import DocumentRail from '../../../components/admin/verification/DocumentRail'
 import DocumentViewer from '../../../components/admin/verification/DocumentViewer'
 import IssueFlagSelector from '../../../components/admin/verification/IssueFlagSelector'
-import AuditTimeline, { AuditTimelineEvent } from '../../../components/admin/verification/AuditTimeline'
+import AuditTimeline, { type AuditTimelineEvent } from '../../../components/admin/verification/AuditTimeline'
 import VerificationActionBar from '../../../components/admin/verification/VerificationActionBar'
 
 import {
@@ -44,9 +44,11 @@ import {
 	verifyProvider,
 	getVerificationAuditHistory,
 	recordSingleDocumentReview,
-	DoctorVerificationDetail,
-	ProviderVerificationItem,
-	AuditHistoryEventItem,
+	type AdminProviderQualificationItem,
+	type DoctorVerificationDetail,
+	type DoctorVerificationDocument,
+	type ProviderVerificationItem,
+	type AuditHistoryEventItem,
 } from '../adminService'
 
 export type DocumentStatus =
@@ -203,6 +205,19 @@ const getDocIssueTagFromLogs = (
 		: undefined
 }
 
+/** The audit timeline for the log, naming each reviewed document from the documents just loaded for this page. */
+const toAuditEvents = (logs: AuditHistoryEventItem[], docs: VerificationDocumentItem[]): AuditTimelineEvent[] =>
+	logs.map((item) => ({
+		id: item.id,
+		reviewerName: item.reviewer_name || 'Admin Auditor',
+		action: item.action.replace('_', ' ').toUpperCase(),
+		documentName: item.document_id
+			? (docs.find((d) => String(d.id) === String(item.document_id))?.name || `Qualification #${item.document_id}`)
+			: (item.action.startsWith('registration') ? 'Medical Registration' : item.action.startsWith('license') ? 'Professional License' : undefined),
+		timestamp: item.timestamp ? new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+		reason: item.notes || (item.issue_tags && item.issue_tags.length > 0 ? item.issue_tags.join(', ') : undefined),
+	}))
+
 export default function AdminVerificationReviewPage() {
 	const { type, id } = useParams<{ type: string; id: string }>()
 	const navigate = useNavigate()
@@ -241,18 +256,6 @@ export default function AdminVerificationReviewPage() {
 
 			if (auditRes.success && auditRes.data) {
 				fetchedAuditLogs = auditRes.data
-				setAuditEvents(
-					auditRes.data.map((item) => ({
-						id: item.id,
-						reviewerName: item.reviewer_name || 'Admin Auditor',
-						action: item.action.replace('_', ' ').toUpperCase(),
-						documentName: item.document_id
-							? (documents.find((d) => String(d.id) === String(item.document_id))?.name || `Qualification #${item.document_id}`)
-							: (item.action.startsWith('registration') ? 'Medical Registration' : item.action.startsWith('license') ? 'Professional License' : undefined),
-						timestamp: item.timestamp ? new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-						reason: item.notes || (item.issue_tags && item.issue_tags.length > 0 ? item.issue_tags.join(', ') : undefined),
-					}))
-				)
 			}
 
 			if (isDoctor) {
@@ -293,7 +296,7 @@ export default function AdminVerificationReviewPage() {
 						}
 
 						const degList = (data.qualifications || data.degrees || [])
-						degList.forEach((deg: any) => {
+						degList.forEach((deg) => {
 							const proof = deg.proof_url || deg.proof_s3_key || deg.qualification_proof_s3_key
 							if (proof) {
 								const dId = deg.id ? String(deg.id) : null
@@ -312,19 +315,20 @@ export default function AdminVerificationReviewPage() {
 					}
 
 					setDocuments(docs)
+					setAuditEvents(toAuditEvents(fetchedAuditLogs, docs))
 					setSelectedDocIndex(0)
 				} else {
 					setError('Doctor verification details could not be loaded.')
 				}
 			} else {
 				let matchedProvider: ProviderVerificationItem | null = null
-				let providerQualifications: any[] = []
-				let backendDocs: any[] = []
+				let providerQualifications: AdminProviderQualificationItem[] = []
+				let backendDocs: DoctorVerificationDocument[] = []
 
 				try {
 					const detailRes = await getProviderAdminDetail(isAncillary ? 'ancillary' : type || 'pharmacy', id)
 					if (detailRes.success && detailRes.data) {
-						const d = detailRes.data as any
+						const d = detailRes.data
 						if (d.documents && Array.isArray(d.documents) && d.documents.length > 0) {
 							backendDocs = d.documents
 						}
@@ -336,7 +340,7 @@ export default function AdminVerificationReviewPage() {
 						matchedProvider = {
 							id: d.provider_id || id,
 							public_id: d.provider_id || id,
-							provider_type: (d.provider_type as any) || (type as any) || 'ancillary',
+							provider_type: (d.provider_type || type || 'ancillary') as ProviderVerificationItem['provider_type'],
 							name: d.owner_name || d.business_name || (isAncillary ? 'Ancillary Professional' : 'Provider'),
 							owner_name: (d.owner_name || d.business_name) ?? undefined,
 							email: d.email || undefined,
@@ -359,7 +363,7 @@ export default function AdminVerificationReviewPage() {
 					if (isAncillary) {
 						const res = await getNursesVerificationQueue()
 						if (res && res.success && res.data && res.data.items) {
-							const matched = res.data.items.find((p: any) => p.id === id || p.public_id === id)
+							const matched = res.data.items.find((p) => p.id === id || p.public_id === id)
 							if (matched) {
 								matchedProvider = {
 									id: matched.id,
@@ -386,16 +390,21 @@ export default function AdminVerificationReviewPage() {
 					} else {
 						const res = await getProvidersVerificationQueue()
 						if (res.success && res.data) {
-							const rawData = res.data as any
-							const items: ProviderVerificationItem[] = Array.isArray(res.data)
-								? res.data
-								: Array.isArray(rawData.items)
-								? rawData.items
+							// the queue comes back as a list, as { items }, or grouped by provider type
+							const queue = res.data as unknown as
+								| ProviderVerificationItem[]
+								| ({ items?: ProviderVerificationItem[] } & Partial<
+										Record<'ancillary' | 'pharmacies' | 'radiology' | 'laboratories', ProviderVerificationItem[]>
+								  >)
+							const items: ProviderVerificationItem[] = Array.isArray(queue)
+								? queue
+								: Array.isArray(queue.items)
+								? queue.items
 								: [
-										...(rawData.ancillary || []),
-										...(rawData.pharmacies || []),
-										...(rawData.radiology || []),
-										...(rawData.laboratories || []),
+										...(queue.ancillary || []),
+										...(queue.pharmacies || []),
+										...(queue.radiology || []),
+										...(queue.laboratories || []),
 								  ]
 							const matched = items.find((p: ProviderVerificationItem) => p.id === id || p.public_id === id)
 							if (matched) {
@@ -410,10 +419,11 @@ export default function AdminVerificationReviewPage() {
 					const docs: VerificationDocumentItem[] = []
 
 					if (backendDocs.length > 0) {
-						backendDocs.forEach((dItem: any) => {
-							const isLic = dItem.document_type === 'license' || dItem.type === 'registration_license' || dItem.id === null || dItem.id === 'null'
+						backendDocs.forEach((dItem) => {
+							const isIdentity = dItem.document_type === 'identity'
+							const isLic = !isIdentity && (dItem.document_type === 'license' || dItem.type === 'registration_license' || dItem.id === null || dItem.id === 'null')
 							const docId = isLic ? null : (dItem.id !== null && dItem.id !== undefined && dItem.id !== 'null' ? String(dItem.id) : null)
-							const category = isLic ? 'license' : 'qualification'
+							const category = isLic ? 'license' : isIdentity ? 'identity' : 'qualification'
 							docs.push({
 								id: docId,
 								document_type: category,
@@ -439,7 +449,7 @@ export default function AdminVerificationReviewPage() {
 						}
 
 						if (providerQualifications.length > 0) {
-							providerQualifications.forEach((q: any) => {
+							providerQualifications.forEach((q) => {
 								const qUrl = q.proof_url || q.proof_s3_key || q.qualification_proof_s3_key
 								if (qUrl) {
 									const qId = q.id ? String(q.id) : null
@@ -459,6 +469,7 @@ export default function AdminVerificationReviewPage() {
 					}
 
 					setDocuments(docs)
+					setAuditEvents(toAuditEvents(fetchedAuditLogs, docs))
 					setSelectedDocIndex(0)
 				} else {
 					setError('Verification details could not be loaded.')
@@ -469,7 +480,7 @@ export default function AdminVerificationReviewPage() {
 		} finally {
 			setLoading(false)
 		}
-	}, [id, isDoctor, isAncillary, isPharmacyOrDiagnostic, type])
+	}, [id, isDoctor, isAncillary, type])
 
 	useEffect(() => {
 		fetchData()
@@ -573,7 +584,7 @@ export default function AdminVerificationReviewPage() {
 					navigate(ROUTES.ADMIN.VERIFICATIONS)
 				}
 			} else {
-				const pType = isAncillary ? 'ancillary' : providerItem?.provider_type || (type as any) || 'pharmacy'
+				const pType = isAncillary ? 'ancillary' : providerItem?.provider_type || type || 'pharmacy'
 				const res = await verifyProvider(pType, id, {
 					is_verified: isApproved,
 					rejection_reason: !isApproved ? notesPayload.trim() || undefined : undefined,
@@ -611,7 +622,7 @@ export default function AdminVerificationReviewPage() {
 			? doctorDetail.degrees.map((d) => `${d.degree}${d.college ? ` (${d.college})` : ''}`).join(', ')
 			: doctorDetail?.qualification
 		: Array.isArray(providerItem?.qualifications)
-		? (providerItem.qualifications as any[]).map((q) => `${q.qualification || 'Degree'}${q.institution ? ` (${q.institution})` : ''}`).join(', ')
+		? providerItem.qualifications.map((q) => `${q.qualification || 'Degree'}${q.institution ? ` (${q.institution})` : ''}`).join(', ')
 		: typeof providerItem?.qualifications === 'string'
 		? providerItem.qualifications
 		: (isAncillary ? 'Qualifications Registered' : undefined)
