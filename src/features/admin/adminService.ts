@@ -52,7 +52,7 @@ export interface NurseVerificationItem {
 	license_number?: string
 	license_proof_s3_key?: string
 	speciality?: string
-	qualifications?: string
+	qualifications?: string | AdminProviderQualificationItem[]
 	capabilities?: string[]
 	verification_status?: string
 	is_verified: boolean
@@ -73,7 +73,7 @@ export interface ProviderVerificationItem {
 	license_number?: string
 	license_proof_s3_key?: string
 	specialty?: string
-	qualifications?: string
+	qualifications?: string | AdminProviderQualificationItem[]
 	capabilities?: string[]
 	verification_status?: string
 	is_verified: boolean
@@ -220,6 +220,8 @@ export interface AdminProviderDetail {
 	specialty?: string | null
 	qualifications?: string | null
 	qualifications_list?: AdminProviderQualificationItem[]
+	/** Licence, qualification and government ID documents, each with a signed `url` and its review `status`. */
+	documents?: DoctorVerificationDocument[]
 	capabilities?: string[] | null
 	verification_status?: string | null
 }
@@ -267,9 +269,13 @@ export interface AdminAppointmentListResult {
 export interface DoctorDegreeItem {
 	id?: number | string
 	degree: string
+	qualification?: string
 	specialization?: string
 	college?: string
+	institution?: string
 	year_of_passing?: string | number
+	proof_url?: string | null
+	proof_s3_key?: string | null
 	qualification_proof_s3_key?: string | null
 }
 
@@ -446,13 +452,16 @@ export interface NurseVerificationListResult {
 	total: number
 }
 
+/** A provider as the verification queue returns it: which fields it has varies by provider type, so all are optional. */
+type RawProviderQueueItem = Partial<NurseVerificationItem> & { specialty?: string; provider_type?: string }
+
 /** GET /api/admin/providers/verification-queue?category=ancillary */
 export const getNursesVerificationQueue = async (params: VerificationQueueListParams = {}) => {
 	const { page = 1, pageSize = 10, subcategory } = params
 	try {
 		const res = await ApiService.getWithParams<{
 			success: boolean
-			data: NurseVerificationListResult | { items: any[]; total: number }
+			data: NurseVerificationListResult | { items: RawProviderQueueItem[]; total: number }
 		}>(API_ENDPOINTS.ADMIN.PROVIDERS_VERIFICATION_QUEUE, {
 			page,
 			page_size: pageSize,
@@ -462,7 +471,7 @@ export const getNursesVerificationQueue = async (params: VerificationQueueListPa
 
 		if (res.data?.success && res.data.data) {
 			if ('items' in res.data.data && Array.isArray(res.data.data.items)) {
-				const items: NurseVerificationItem[] = res.data.data.items.map((p: any) => ({
+				const items: NurseVerificationItem[] = res.data.data.items.map((p: RawProviderQueueItem) => ({
 					id: p.id || p.public_id || '',
 					public_id: p.public_id || p.id,
 					name: p.name || p.owner_name || 'Nurse',
@@ -564,7 +573,7 @@ export const getProvidersVerificationQueue = async (params: VerificationQueueLis
 
 	if (res.data?.success && res.data.data) {
 		if ('items' in res.data.data && Array.isArray(res.data.data.items)) {
-			const items: ProviderVerificationItem[] = res.data.data.items.map((item: any) => ({
+			const items: ProviderVerificationItem[] = res.data.data.items.map((item) => ({
 				id: item.id || item.public_id || '',
 				public_id: item.public_id || item.id,
 				name: item.name || item.owner_name || 'Provider',
@@ -586,7 +595,7 @@ export const getProvidersVerificationQueue = async (params: VerificationQueueLis
 		}
 		const { pharmacies = [], radiology = [], laboratories = [] } = rawData
 
-		let flattened: ProviderVerificationItem[] = []
+		const flattened: ProviderVerificationItem[] = []
 		if (!subcategory || subcategory === 'pharmacy') {
 			flattened.push(
 				...pharmacies.map((item) => ({
