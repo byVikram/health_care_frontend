@@ -20,7 +20,6 @@ import AppointmentsIcon from '../../assets/quick-services/appointments.svg'
 import PharmacyIcon from '../../assets/quick-services/pharmacy.svg'
 import RadiologyIcon from '../../assets/quick-services/radiology.svg'
 import AncilaryIcon from '../../assets/quick-services/ancilary.svg'
-import LabIcon from '../../assets/quick-services/lab.svg'
 import AmbulanceIcon from '../../assets/quick-services/ambulance.svg'
 import BloodBankIcon from '../../assets/quick-services/blood-bank.svg'
 import IcuIcon from '../../assets/quick-services/icu.svg'
@@ -269,7 +268,6 @@ export default function PortalPage() {
 		const baseServices = [
 			{ title: 'Appointment', image: AppointmentsIcon },
 			{ title: 'Pharmacy', image: PharmacyIcon },
-			{ title: 'Laboratory', image: LabIcon },
 			{ title: 'Radiology', image: RadiologyIcon },
 			{ title: 'Paramedicals', image: null },
 		]
@@ -278,7 +276,6 @@ export default function PortalPage() {
 			return [
 				{ title: 'Orders', image: AppointmentsIcon },
 				{ title: 'Pharmacy', image: PharmacyIcon },
-				{ title: 'Laboratory', image: LabIcon },
 				{ title: 'Radiology', image: RadiologyIcon },
 				{ title: 'Paramedicals', image: null },
 			]
@@ -288,7 +285,6 @@ export default function PortalPage() {
 			return [
 				{ title: 'Bookings', image: AppointmentsIcon },
 				{ title: 'Pharmacy', image: PharmacyIcon },
-				{ title: 'Laboratory', image: LabIcon },
 				{ title: 'Radiology', image: RadiologyIcon },
 				{ title: 'Paramedicals', image: null },
 			]

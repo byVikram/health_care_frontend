@@ -7,28 +7,23 @@ import AppSelect from '../../../components/common/Select/AppSelect'
 import AppButton from '../../../components/common/Button/AppButton'
 import { customCardStyle, customScrollbar } from '../../../styles/commonStyles'
 import { getPharmacies, PharmacyListItem } from '../../Pharmacy/pharmacyService'
-import { searchLaboratories } from '../../laboratory/laboratoryService'
 import { searchRadiologyCenters } from '../../radiology/radiologyService'
-import { LaboratorySearchResultItem } from '../../../types/laboratory-search'
 import { RadiologySearchResultItem } from '../../../types/radiology-search'
 import ApiService from '../../../services/apiService'
 import { toast } from 'react-toastify'
 
 const TABS = [
 	{ id: 'pharmacy', label: 'Pharmacy' },
-	{ id: 'laboratory', label: 'Laboratory' },
 	{ id: 'radiology', label: 'Radiology' },
 	{ id: 'ancillary', label: 'Ancillary' },
 ]
 
 import PrescriptionIcon from '../../../assets/icons/consultation/prescription.svg'
-import LabIcon from '../../../assets/icons/consultation/lab.svg'
 import RadiologyIcon from '../../../assets/icons/consultation/radiology.svg'
 import AncillaryIcon from '../../../assets/icons/consultation/ancillary.svg'
 
 const TAB_ICONS: Record<string, string> = {
 	pharmacy: PrescriptionIcon,
-	laboratory: LabIcon,
 	radiology: RadiologyIcon,
 	ancillary: AncillaryIcon,
 }
@@ -123,7 +118,7 @@ interface ShareWithProps {
 }
 
 export default function ShareWith({ appointmentId }: ShareWithProps) {
-	const [activeTab, setActiveTab] = useState('laboratory')
+	const [activeTab, setActiveTab] = useState('pharmacy')
 	const [city, setCity] = useState('')
 	const [area, setArea] = useState('')
 
@@ -145,12 +140,11 @@ export default function ShareWith({ appointmentId }: ShareWithProps) {
 	}
 
 	const [pharmacyPlaces, setPharmacyPlaces] = useState<Place[]>([])
-	const [laboratoryPlaces, setLaboratoryPlaces] = useState<Place[]>([])
 	const [radiologyPlaces, setRadiologyPlaces] = useState<Place[]>([])
 	const [placesLoading, setPlacesLoading] = useState(false)
 	const [placesError, setPlacesError] = useState<string | null>(null)
 
-	const isBackedTab = activeTab === 'pharmacy' || activeTab === 'laboratory' || activeTab === 'radiology'
+	const isBackedTab = activeTab === 'pharmacy' || activeTab === 'radiology'
 
 	useEffect(() => {
 		if (!isBackedTab) return
@@ -165,9 +159,6 @@ export default function ShareWith({ appointmentId }: ShareWithProps) {
 				if (activeTab === 'pharmacy') {
 					const res = await getPharmacies({ city: city || undefined, limit: 50 })
 					if (!cancelled) setPharmacyPlaces(toPharmacyPlaces(res.data))
-				} else if (activeTab === 'laboratory') {
-					const res = await searchLaboratories({ city: city || undefined, limit: 50 })
-					if (!cancelled) setLaboratoryPlaces(toPlaces<LaboratorySearchResultItem>(res.data))
 				} else {
 					const res = await searchRadiologyCenters({ city: city || undefined, limit: 50 })
 					if (!cancelled) setRadiologyPlaces(toPlaces<RadiologySearchResultItem>(res.data))
@@ -189,11 +180,9 @@ export default function ShareWith({ appointmentId }: ShareWithProps) {
 	const places: Place[] =
 		activeTab === 'pharmacy'
 			? pharmacyPlaces
-			: activeTab === 'laboratory'
-				? laboratoryPlaces
-				: activeTab === 'radiology'
-					? radiologyPlaces
-					: ANCILLARY_MOCK_PLACES
+			: activeTab === 'radiology'
+				? radiologyPlaces
+				: ANCILLARY_MOCK_PLACES
 
 	const showLoading = isBackedTab && placesLoading
 	const showError = isBackedTab && !placesLoading && !!placesError
@@ -203,11 +192,9 @@ export default function ShareWith({ appointmentId }: ShareWithProps) {
 	const emptyStateLabel =
 		activeTab === 'pharmacy'
 			? 'No pharmacies found nearby.'
-			: activeTab === 'laboratory'
-				? 'No laboratories found nearby.'
-				: activeTab === 'radiology'
-					? 'No radiology centers found nearby.'
-					: 'No results found nearby.'
+			: activeTab === 'radiology'
+				? 'No radiology centers found nearby.'
+				: 'No results found nearby.'
 
 	return (
 		<Box sx={{ ...customCardStyle, mt: 2 }}>

@@ -42,7 +42,6 @@ const ROLE_OPTIONS = [
 	{ label: 'Nurses / Ancillary', value: 'ancillary', icon: <MedicalServicesIcon sx={{ fontSize: 14 }} /> },
 	{ label: 'Pharmacies', value: 'pharmacy', icon: <StorefrontIcon sx={{ fontSize: 14 }} /> },
 	{ label: 'Radiology', value: 'radiology', icon: <StorefrontIcon sx={{ fontSize: 14 }} /> },
-	{ label: 'Laboratories', value: 'laboratory', icon: <StorefrontIcon sx={{ fontSize: 14 }} /> },
 ]
 
 const ROLE_COLORS: Record<string, { bg: string; color: string }> = {
@@ -52,7 +51,6 @@ const ROLE_COLORS: Record<string, { bg: string; color: string }> = {
 	nurse:      { bg: '#ccfbf1', color: '#0f766e' },
 	pharmacy:   { bg: '#f3e8ff', color: '#7e22ce' },
 	radiology:  { bg: '#fff7ed', color: '#c2410c' },
-	laboratory: { bg: '#fef9c3', color: '#a16207' },
 	admin:      { bg: '#fce7f3', color: '#be185d' },
 }
 
@@ -63,7 +61,6 @@ function resolveDetailId(user: AdminUserItem): string | null {
 		case 'patient':    return user.patient_id || user.public_id || String(user.id) || null
 		case 'doctor':     return user.doctor_id || user.public_id || String(user.id) || null
 		case 'pharmacy':   return user.pharmacy_id || user.public_id || String(user.id) || null
-		case 'laboratory': return user.laboratory_id || user.public_id || String(user.id) || null
 		case 'radiology':  return user.radiology_id || user.public_id || String(user.id) || null
 		case 'ancillary':
 		case 'nurse':      return user.ancillary_id || user.public_id || String(user.id) || null

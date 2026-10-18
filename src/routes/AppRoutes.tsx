@@ -35,11 +35,8 @@ import BookingsList from '../features/radiology/bookings/BookingsList'
 import BookingDetailPage from '../features/radiology/bookings/BookingDetailPage'
 import AllSpecialitiesPage from '../features/dashboard/AllSpecialitiesPage'
 import RadiologySearchPage from '../features/radiology/search/RadiologySearchPage'
-import LaboratorySearchPage from '../features/laboratory/search/LaboratorySearchPage'
 import FavouriteDoctorsPage from '../features/doctor/favourites/FavouriteDoctorsPage'
 
-import LaboratoryOrdersList from '../features/laboratory/bookings/LaboratoryOrdersList'
-import LaboratoryBookingDetailPage from '../features/laboratory/bookings/LaboratoryBookingDetailPage'
 
 // Admin Portal Components
 import AdminLoginPage from '../features/admin/auth/AdminLoginPage'
@@ -191,7 +188,6 @@ export default function AppRoutes() {
 						<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
 						<Route path={ROUTES.SPECIALITIES} element={<AllSpecialitiesPage />} />
 						<Route path={ROUTES.RADIOLOGY.SEARCH} element={<RadiologySearchPage />} />
-						<Route path={ROUTES.LABORATORY.SEARCH} element={<LaboratorySearchPage />} />
 						
 					</Route>
 
@@ -216,8 +212,6 @@ export default function AppRoutes() {
 						<Route path={ROUTES.RADIOLOGY.BOOKING_DETAIL} element={<BookingDetailPage />} />
 						<Route path={ROUTES.RADIOLOGY.BOOK_RIDE} element={<BookRidePage />} />
 						<Route path={ROUTES.PORTAL.FAVOURITES} element={<FavouriteDoctorsPage />} />
-						<Route path={ROUTES.LABORATORY.ORDERS} element={<LaboratoryOrdersList />} />
-						<Route path={ROUTES.LABORATORY.ORDER_DETAIL} element={<LaboratoryBookingDetailPage />} />
 						
 						{/* Doctor Events */}
 						<Route path={ROUTES.DOCTOR.EVENTS} element={<DoctorEventListPage />} />
@@ -235,7 +229,6 @@ export default function AppRoutes() {
 					</Route>
 				</Route>
 
-				{/* <Route path={ROUTES.LABORATORY.PROFILE} element={<LaboratoryProfilePage />} /> */}
 
 
 				<Route path="*" element={<NotFoundPage />} />

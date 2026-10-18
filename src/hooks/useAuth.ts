@@ -7,7 +7,6 @@ import { UserRole as OnboardingUserRole } from '../data/onboardingData'
 export type UserRole =
 	| 'doctor'
 	| 'patient'
-	| 'laboratory'
 	| 'pharmacy'
 	| 'radiology'
 	| 'super_admin'
@@ -160,7 +159,6 @@ export function setNotificationPromptShown(value: boolean): void {
 export const ROLE_ID_MAP: Record<OnboardingUserRole, number> = {
 	PATIENT:    1,
 	DOCTOR:     2,
-	LABORATORY: 3,
 	PHARMACY: 4,
 	RADIOLOGY:  5,
 }

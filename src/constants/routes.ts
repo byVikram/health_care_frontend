@@ -31,12 +31,6 @@ export const ROUTES = {
 		BOOK_RIDE: '/radiology/bookings/:bookingId/book-ride',
 	},
 
-	LABORATORY: {
-		SEARCH: '/laboratory/search',
-		ORDERS: '/laboratory/orders',
-		ORDER_DETAIL: '/laboratory/orders/:bookingId',
-	},
-
 	ANCILLARY: {
 		SEARCH: '/ancillary/search',
 	},

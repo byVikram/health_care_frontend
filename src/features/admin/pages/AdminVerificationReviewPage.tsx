@@ -241,7 +241,7 @@ export default function AdminVerificationReviewPage() {
 	const [auditEvents, setAuditEvents] = useState<AuditTimelineEvent[]>([])
 
 	const isDoctor = type === 'doctor'
-	const isPharmacyOrDiagnostic = type === 'pharmacy' || type === 'radiology' || type === 'laboratory'
+	const isPharmacyOrDiagnostic = type === 'pharmacy' || type === 'radiology'
 	const isAncillary = !isDoctor && !isPharmacyOrDiagnostic
 
 	const fetchData = useCallback(async () => {
@@ -394,7 +394,7 @@ export default function AdminVerificationReviewPage() {
 							const queue = res.data as unknown as
 								| ProviderVerificationItem[]
 								| ({ items?: ProviderVerificationItem[] } & Partial<
-										Record<'ancillary' | 'pharmacies' | 'radiology' | 'laboratories', ProviderVerificationItem[]>
+										Record<'ancillary' | 'pharmacies' | 'radiology', ProviderVerificationItem[]>
 								  >)
 							const items: ProviderVerificationItem[] = Array.isArray(queue)
 								? queue
@@ -404,7 +404,6 @@ export default function AdminVerificationReviewPage() {
 										...(queue.ancillary || []),
 										...(queue.pharmacies || []),
 										...(queue.radiology || []),
-										...(queue.laboratories || []),
 								  ]
 							const matched = items.find((p: ProviderVerificationItem) => p.id === id || p.public_id === id)
 							if (matched) {

@@ -3,7 +3,6 @@ import ServiceCard from '../../../components/common/Card/ServiceCard'
 
 import DoctorsService from '../../../assets/Services/doctors-service.png'
 import VideoConsultation from '../../../assets/Services/doctor-video-consultation.png'
-import LabTests from '../../../assets/Services/lab-service.png'
 import Surgeries from '../../../assets/Services/serguries.png'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../../constants/routes'
@@ -48,7 +47,6 @@ export default function ServicesSection() {
 			description: 'Connect within 60 sec',
 			bgColor: '#B98C8D',
 		},
-		{ id: 3, image: LabTests, title: 'Lab Tests', description: 'Safe and trusted Lab tests', bgColor: '#8CAFB9' },
 		{
 			id: 4,
 			image: Surgeries,

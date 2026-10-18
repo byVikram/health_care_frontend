@@ -8,7 +8,7 @@ import { ROUTES } from '../../constants/routes'
 
 // ── Per-role config ────────────────────────────────────────────────────────
 
-type RoleKey = 'doctor' | 'patient' | 'laboratory' | 'pharmacy' | 'radiology'
+type RoleKey = 'doctor' | 'patient' | 'pharmacy' | 'radiology'
 
 interface WelcomeConfig {
 	greeting: string
@@ -70,30 +70,6 @@ const WELCOME_CONFIG: Record<RoleKey, WelcomeConfig> = {
 		],
 	},
 
-	laboratory: {
-		greeting: 'Welcome to Whisper ai!👋',
-		subtitle: "Let's set up your laboratory profile and start serving patients.",
-		buttonLabel: 'Set Up Lab Profile',
-		image: welcomeDoctorImg,
-		nextRoute: ROUTES.PORTAL.PROFILE,
-		features: [
-			{
-				icon: 'https://cdn-icons-png.flaticon.com/128/9439/9439123.png',
-				title: 'Profile',
-				description: 'Make your laboratory visible to patients and doctors on Whisper ai',
-			},
-			{
-				icon: 'https://cdn-icons-png.flaticon.com/128/2913/2913584.png',
-				title: 'Services',
-				description: 'List your diagnostic tests and services with pricing and turnaround times',
-			},
-			{
-				icon: 'https://cdn-icons-png.flaticon.com/128/15869/15869487.png',
-				title: 'Reports',
-				description: 'Deliver digital reports to patients and doctors seamlessly',
-			},
-		],
-	},
 
 	pharmacy: {
 		greeting: 'Welcome PHARMACY👋',

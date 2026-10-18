@@ -66,7 +66,6 @@ const PROVIDER_SUBCATEGORIES = [
 	{ label: 'All', value: '', icon: <StorefrontIcon sx={{ fontSize: 14 }} /> },
 	{ label: 'Pharmacies', value: 'pharmacy', icon: <StorefrontIcon sx={{ fontSize: 14 }} /> },
 	{ label: 'Radiology', value: 'radiology', icon: <StorefrontIcon sx={{ fontSize: 14 }} /> },
-	{ label: 'Laboratories', value: 'laboratory', icon: <StorefrontIcon sx={{ fontSize: 14 }} /> },
 ]
 
 export default function AdminVerificationsPage() {
@@ -1035,7 +1034,7 @@ export default function AdminVerificationsPage() {
 				<AdminEmptyState
 					icon={<VerifiedUserIcon />}
 					title="Providers queue is clear"
-					description="No pharmacy, lab, or diagnostic applications pending."
+					description="No pharmacy or diagnostic applications pending."
 				/>
 			) : (
 				<AppTable

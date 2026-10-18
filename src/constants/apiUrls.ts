@@ -39,23 +39,6 @@ export const API_ENDPOINTS = {
 		BANK_DETAILS_REQUEST_OTP: '/api/doctors/bank-details/request-otp',
 		BANK_DETAILS_VERIFY_OTP: '/api/doctors/bank-details/verify-otp',
 	},
-	LABORATORY_PROFILE: {
-		DETAILS: '/api/laboratory/details',
-		PROFESSIONAL_DETAILS: '/api/laboratory/professional-details',
-		SERVICES: '/api/laboratory/services',
-		DELETE_ACCOUNT: '/api/laboratory/profile',
-	},
-	LABORATORY: {
-		TEST_TYPES: '/api/laboratory/test-types',
-		SEARCH: '/api/laboratory/search',
-		TESTS: '/api/laboratory/tests',
-		BOOKINGS: '/api/laboratory/bookings',
-		BOOKING_DETAIL: (id: string) => `/api/laboratory/bookings/${id}`,
-		VERIFY_PRESCRIPTION: (id: string) => `/api/laboratory/bookings/${id}/verify`,
-		SUBMIT_QUOTE: (id: string) => `/api/laboratory/bookings/${id}/quote`,
-		UPDATE_STATUS: (id: string) => `/api/laboratory/bookings/${id}/status`,
-		UPLOAD_REPORT: (id: string) => `/api/laboratory/bookings/${id}/report`,
-	},
 	SPECIALITIES: {
 		LIST: '/api/specialities',
 		SYMPTOMS: '/api/specialities/symptoms',

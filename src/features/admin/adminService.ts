@@ -65,7 +65,7 @@ export interface NurseVerificationItem {
 export interface ProviderVerificationItem {
 	id: string
 	public_id?: string
-	provider_type: 'pharmacy' | 'radiology' | 'laboratory' | 'ancillary' | 'nurse'
+	provider_type: 'pharmacy' | 'radiology' | 'ancillary' | 'nurse'
 	name?: string
 	owner_name?: string
 	email?: string
@@ -112,8 +112,6 @@ export interface AdminUserItem {
 	doctor_id?: string | null
 	/** Only present for pharmacy-role rows -- opens the pharmacy details drawer. */
 	pharmacy_id?: string | null
-	/** Only present for laboratory-role rows -- opens the laboratory details drawer. */
-	laboratory_id?: string | null
 	/** Only present for radiology-role rows -- opens the radiology details drawer. */
 	radiology_id?: string | null
 	/** Only present for ancillary/nurse-role rows. */
@@ -199,7 +197,7 @@ export interface AdminProviderQualificationItem {
 
 export interface AdminProviderDetail {
 	provider_id: string
-	provider_type: 'pharmacy' | 'radiology' | 'laboratory' | 'ancillary' | 'nurse' | string
+	provider_type: 'pharmacy' | 'radiology' | 'ancillary' | 'nurse' | string
 	owner_name: string
 	business_name?: string | null
 	email?: string | null
@@ -562,7 +560,6 @@ export const getProvidersVerificationQueue = async (params: VerificationQueueLis
 		data: {
 			pharmacies?: Array<{ id: string; name?: string; owner_name: string; is_verified: boolean; created_at: string; email?: string; contact_number?: string; license_number?: string }>
 			radiology?: Array<{ id: string; name?: string; owner_name: string; is_verified: boolean; created_at: string; email?: string; contact_number?: string; license_number?: string }>
-			laboratories?: Array<{ id: string; name?: string; owner_name: string; is_verified: boolean; created_at: string; email?: string; contact_number?: string; license_number?: string }>
 		} | ProviderVerificationListResult
 	}>(API_ENDPOINTS.ADMIN.PROVIDERS_VERIFICATION_QUEUE, {
 		page,
@@ -591,9 +588,8 @@ export const getProvidersVerificationQueue = async (params: VerificationQueueLis
 		const rawData = res.data.data as {
 			pharmacies?: Array<{ id: string; name?: string; owner_name: string; is_verified: boolean; created_at: string; email?: string; contact_number?: string; license_number?: string }>
 			radiology?: Array<{ id: string; name?: string; owner_name: string; is_verified: boolean; created_at: string; email?: string; contact_number?: string; license_number?: string }>
-			laboratories?: Array<{ id: string; name?: string; owner_name: string; is_verified: boolean; created_at: string; email?: string; contact_number?: string; license_number?: string }>
 		}
-		const { pharmacies = [], radiology = [], laboratories = [] } = rawData
+		const { pharmacies = [], radiology = [] } = rawData
 
 		const flattened: ProviderVerificationItem[] = []
 		if (!subcategory || subcategory === 'pharmacy') {
@@ -620,22 +616,6 @@ export const getProvidersVerificationQueue = async (params: VerificationQueueLis
 					name: item.name || item.owner_name || 'Radiology Center',
 					owner_name: item.owner_name,
 					provider_type: 'radiology' as const,
-					email: item.email || '',
-					contact_number: item.contact_number || '',
-					license_number: item.license_number || '',
-					is_verified: item.is_verified,
-					created_at: item.created_at,
-				}))
-			)
-		}
-		if (!subcategory || subcategory === 'laboratory') {
-			flattened.push(
-				...laboratories.map((item) => ({
-					id: item.id,
-					public_id: item.id,
-					name: item.name || item.owner_name || 'Diagnostic Lab',
-					owner_name: item.owner_name,
-					provider_type: 'laboratory' as const,
 					email: item.email || '',
 					contact_number: item.contact_number || '',
 					license_number: item.license_number || '',

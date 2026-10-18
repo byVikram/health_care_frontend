@@ -23,7 +23,6 @@ import drImage from '../../assets/Services/doctors-service.png'
 
 import AppointmentIcon from '../../assets/icons/appointments.svg'
 import PharmacyIcon from '../../assets/icons/pharmacy.svg'
-import LabIcon from '../../assets/icons/lab.svg'
 import RadiologyIcon from '../../assets/icons/radiology.svg'
 import AncillaryIcon from '../../assets/icons/ancillary.svg'
 import TreatmentIcon from '../../assets/icons/treatment.svg'
@@ -50,7 +49,6 @@ const DOCTOR_MENU_ITEMS = [
 		path: `${ROUTES.APPOINTMENTS}?view=doctor`,
 	},
 	{ id: 'pharmacy', label: 'Pharmacy', icon: PharmacyIcon },
-	{ id: 'lab', label: 'Lab', icon: LabIcon },
 	{ id: 'radiology', label: 'Radiology', icon: RadiologyIcon },
 	{ id: 'reminders', label: 'Reminders', icon: RemindersIcon },
 	{ id: 'events', label: 'Events & Seminars', icon: AppointmentIcon, path: ROUTES.DOCTOR.EVENTS },
@@ -71,7 +69,6 @@ const PATIENT_MENU_ITEMS = [
 		path: `${ROUTES.APPOINTMENTS}?view=patient`,
 	},
 	{ id: 'pharmacy', label: 'Pharmacy', icon: PharmacyIcon },
-	{ id: 'lab', label: 'Lab', icon: LabIcon },
 	{ id: 'radiology', label: 'Radiology', icon: RadiologyIcon },
 	{ id: 'ancillary', label: 'Ancillary', icon: AncillaryIcon },
 	{ id: 'history', label: 'Treatment History', icon: TreatmentIcon },

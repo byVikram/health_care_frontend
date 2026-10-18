@@ -10,7 +10,6 @@ import TherapeuticSelectorModal from '../selectors/TherapeuticSelectorModal'
 import PharmacyIcon from '../../../assets/quick-services/pharmacy.svg'
 import RadiologyIcon from '../../../assets/quick-services/radiology.svg'
 import AncilaryIcon from '../../../assets/quick-services/ancilary.svg'
-import LabIcon from '../../../assets/quick-services/lab.svg'
 import AmbulanceIcon from '../../../assets/quick-services/ambulance.svg'
 import BloodBankIcon from '../../../assets/quick-services/blood-bank.svg'
 import IcuIcon from '../../../assets/quick-services/icu.svg'
@@ -18,13 +17,12 @@ import EmergencyIcon from '../../../assets/quick-services/emergency.svg'
 import AlliedIcon from '../../../assets/quick-services/allied.png'
 import TherapeuticIcon from '../../../assets/quick-services/therapeutic.png'
 
-// Row 1: Pharmacy, Radiology, Laboratory, Ancillary, Allied
+// Row 1: Pharmacy, Radiology, Ancillary, Allied
 // Row 2: Ambulance, Blood Bank, ICU, Emergency, Therapeutic
 const ROW_1 = [
 	{ id: 1, title: 'Pharmacy',   image: PharmacyIcon },
 	{ id: 2, title: 'Radiology',  image: RadiologyIcon },
-	{ id: 3, title: 'Laboratory', image: LabIcon },
-	{ id: 4, title: 'Ancillary',  image: AncilaryIcon },
+	{ id: 3, title: 'Ancillary',  image: AncilaryIcon },
 	{ id: 5, title: 'Allied',     image: AlliedIcon },
 ]
 
@@ -103,8 +101,6 @@ export default function QuickServicesSection() {
 			setTherapeuticPickerOpen(true)
 		} else if (title === 'Pharmacy') {
 			navigate(ROUTES.PHARMACY.SEARCH)
-		} else if (title === 'Laboratory') {
-			navigate(ROUTES.LABORATORY.SEARCH)
 		}
 	}
 
