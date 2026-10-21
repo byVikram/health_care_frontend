@@ -49,6 +49,11 @@ export default function DoctorPersonalTab({ data, onChange, onSaveSuccess }: Doc
 	}, [data, saved])
 
 	const handleSave = async () => {
+		// a profile photo is compulsory for doctors (added from the picture in the sidebar)
+		if (!data.avatar) {
+			toast.error('Please add a profile photo to continue.')
+			return
+		}
 		try {
 			const payload: Record<string, unknown> = {
 				name: data.name,

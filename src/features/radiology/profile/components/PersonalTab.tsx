@@ -1,5 +1,5 @@
 // src/features/radiology/profile/components/PersonalTab.tsx
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Box, Typography, Grid, InputAdornment } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import AppInput from '../../../../components/common/Input/AppInput'
@@ -37,12 +37,9 @@ const verifiedAdornment = (
 
 
 export default function RadiologyPersonalTab({ data, onChange }: RadiologyPersonalTabProps) {
-	const [isDirty, setIsDirty] = useState(false)
 	const [saved, setSaved] = useState(data)
-
-	useEffect(() => {
-		setIsDirty(JSON.stringify(data) !== JSON.stringify(saved))
-	}, [data, saved])
+	// the photo is saved by its own upload, not by this form
+	const isDirty = JSON.stringify({ ...data, avatar: '' }) !== JSON.stringify({ ...saved, avatar: '' })
 
 	const handleSave = async () => {
 		try {
@@ -50,7 +47,6 @@ export default function RadiologyPersonalTab({ data, onChange }: RadiologyPerson
 			if (data.name !== saved.name) payload.owner_name = data.name
 			if (data.alternateMobile !== saved.alternateMobile) payload.alternate_mobile = data.alternateMobile || null
 			if (data.whatsappNumber !== saved.whatsappNumber) payload.whatsapp_number = data.whatsappNumber || null
-			if (data.avatar !== saved.avatar) payload.logo_s3_key = data.avatar || null
 
 			if (Object.keys(payload).length === 0) {
 				toast.info('No changes to save.')

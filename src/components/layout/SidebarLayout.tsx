@@ -5,6 +5,7 @@ import { Box } from '@mui/material'
 import AppSidebar from '../common/Sidebar/AppSidebar'
 import DoctorNavBar from '../common/Navbar/DoctorNavBar'
 import { useAuth } from '../../hooks/useAuth'
+import { useSyncedAvatar } from '../../hooks/useSyncedAvatar'
 import { logout } from '../../features/auth/authService'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routes'
@@ -19,7 +20,6 @@ import { ROUTES } from '../../constants/routes'
 
 // MUI Icons - Common
 // import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined'
-import drImage from '../../assets/Services/doctors-service.png'
 
 import AppointmentIcon from '../../assets/icons/appointments.svg'
 import PharmacyIcon from '../../assets/icons/pharmacy.svg'
@@ -92,6 +92,7 @@ interface SidebarLayoutProps {
 // -- Component -----------------------------------------------------------------
 export default function SidebarLayout({ children, activeMenuId }: SidebarLayoutProps) {
 	const { role, user } = useAuth()
+	useSyncedAvatar() // keep the sidebar photo the same as the profile's
 	const navigate = useNavigate()
 
 	const isDoctor = role === 'doctor'
@@ -103,7 +104,7 @@ export default function SidebarLayout({ children, activeMenuId }: SidebarLayoutP
 
 	const sidebarUser = {
 		name: user?.name ?? (isDoctor ? 'Dr. Ashika Rao' : 'Nitin'),
-		avatar: user?.avatar ?? (isDoctor ? drImage : ''),
+		avatar: user?.avatar ?? '', // no stock photo for a missing one
 		profileCompletion: user?.profileCompletion ?? (isDoctor ? 65 : 22),
 		profilePath: user?.profilePath ?? (isDoctor ? '/profile' : '/profile'),
 		showQr: user?.showQr ?? !isDoctor,

@@ -12,6 +12,8 @@ import LifeStyleTab from './components/LifeStyleTab'
 import { Patient, PatientPersonal, PatientMedical, PatientLifeStyle } from '../../types/patient'
 import { updatePatientProfile, getPatientDetails } from './patientService'
 import { toast } from 'react-toastify'
+import { useAvatarChange } from '../../hooks/useAvatarChange'
+import { useAuth, setAuth } from '../../hooks/useAuth'
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
 import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
@@ -132,10 +134,25 @@ export default function PatientProfilePage() {
 		handleLifeStyleDirtyChange(updated)
 	}
 
-	const handleAvatarChange = (file: File) => {
-		const url = URL.createObjectURL(file)
-		setPatient((prev) => ({ ...prev, personal: { ...prev.personal, avatar: url } }))
-	}
+	const { role, user, accessToken, refreshToken, lookupData } = useAuth()
+	const { change: handleAvatarChange, remove: handleAvatarRemove, busy: avatarBusy } = useAvatarChange({
+		current: patient.personal.avatar ?? '',
+		onChanged: (avatar) => setPatient((prev) => ({ ...prev, personal: { ...prev.personal, avatar } })),
+		// keep the header's copy of the photo in step (the signed-in user and their own entry in the account list)
+		onSaved: (avatar) =>
+			setAuth(
+				role!,
+				{ ...user!, avatar },
+				accessToken!,
+				refreshToken!,
+				lookupData && {
+					...lookupData,
+					patient_profiles: lookupData.patient_profiles.map((p) =>
+						p.is_self ? { ...p, avatar_s3_key: avatar } : p
+					),
+				}
+			),
+	})
 
 	const handlePersonalSave = async () => {
 		if (!Object.keys(dirtyPersonal).length) return
@@ -296,6 +313,8 @@ export default function PatientProfilePage() {
 									activeTab={activeTab}
 									onTabChange={setActiveTab}
 									onAvatarChange={handleAvatarChange}
+									onAvatarRemove={handleAvatarRemove}
+									avatarBusy={avatarBusy}
 								/>
 							</Grid>
 							<Grid size={{ xs: 12, md: 9 }}>{renderTab()}</Grid>

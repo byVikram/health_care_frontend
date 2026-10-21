@@ -14,6 +14,8 @@ import { RadiologyProfileProfessional, EMPTY_RADIOLOGY_PROFESSIONAL } from '../.
 import RadiologySettingTab from './components/SettingsTab'
 import RadiologyServiceTab from './components/RadiologyServiceTab'
 import { customCardStyle } from '../../../styles/commonStyles'
+import { useAvatarChange } from '../../../hooks/useAvatarChange'
+import { useAuth, setAuth } from '../../../hooks/useAuth'
 import {
 	getMyRadiologyProfile,
 	getStoredRadiologyProfessionalOverrides,
@@ -105,10 +107,13 @@ export default function RadiologyProfilePage() {
 	const handleProfessionalChange = (updated: Partial<RadiologyProfileProfessional>) =>
 		setProfile((prev) => ({ ...prev, professional: { ...prev.professional, ...updated } }))
 
-	const handleAvatarChange = (file: File) => {
-		const localPreviewUrl = URL.createObjectURL(file)
-		setProfile((prev) => ({ ...prev, personal: { ...prev.personal, avatar: localPreviewUrl } }))
-	}
+	const { role, user, accessToken, refreshToken, lookupData } = useAuth()
+	// only patients may delete their photo (the server refuses it for every other role)
+	const { change: handleAvatarChange, busy: avatarBusy } = useAvatarChange({
+		current: profile.personal.avatar,
+		onChanged: (avatar) => setProfile((prev) => ({ ...prev, personal: { ...prev.personal, avatar } })),
+		onSaved: (avatar) => setAuth(role!, { ...user!, avatar }, accessToken!, refreshToken!, lookupData),
+	})
 
 	if (loading) {
 		return (
@@ -164,6 +169,7 @@ export default function RadiologyProfilePage() {
 							activeTab={activeTab}
 							onTabChange={setActiveTab}
 							onAvatarChange={handleAvatarChange}
+							avatarBusy={avatarBusy}
 						/>
 					</Grid>
 					<Grid size={{ xs: 12, md: 9 }}>{renderTab()}</Grid>
