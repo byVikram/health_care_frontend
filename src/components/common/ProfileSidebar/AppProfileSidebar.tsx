@@ -1,7 +1,8 @@
 ﻿// src/components/common/ProfileSidebar/AppProfileSidebar.tsx
 import { useRef } from 'react'
-import { Box, Typography, Avatar, LinearProgress, IconButton, Divider } from '@mui/material'
+import { Box, Typography, Avatar, LinearProgress, IconButton, Divider, CircularProgress } from '@mui/material'
 import CameraAltOutlinedIcon from '@mui/icons-material/CameraAltOutlined'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import LogoutIcon from '@mui/icons-material/Logout'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
 import { useNavigate } from 'react-router-dom'
@@ -22,6 +23,10 @@ export interface AppProfileSidebarProps {
 	activeTab: string
 	onTabChange: (id: string) => void
 	onAvatarChange?: (file: File) => void
+	onAvatarRemove?: () => void
+	avatarBusy?: boolean
+	/** A photo is compulsory for this account type: show a hint while there is none. */
+	avatarRequired?: boolean
 	onLogout?: () => void
 }
 
@@ -35,6 +40,9 @@ export default function AppProfileSidebar({
 	activeTab,
 	onTabChange,
 	onAvatarChange,
+	onAvatarRemove,
+	avatarBusy = false,
+	avatarRequired = false,
 	onLogout,
 }: AppProfileSidebarProps) {
 	const fileInputRef = useRef<HTMLInputElement>(null)
@@ -92,6 +100,7 @@ export default function AppProfileSidebar({
 					<IconButton
 						size="small"
 						onClick={() => fileInputRef.current?.click()}
+						disabled={avatarBusy}
 						sx={{
 							position: 'absolute',
 							bottom: 2,
@@ -104,20 +113,38 @@ export default function AppProfileSidebar({
 							'&:focus': { outline: 'none' },
 						}}
 					>
-						<CameraAltOutlinedIcon sx={{ fontSize: 24 }} />
+						{avatarBusy ? <CircularProgress size={22} /> : <CameraAltOutlinedIcon sx={{ fontSize: 24 }} />}
 					</IconButton>
+
+					{avatar && onAvatarRemove && (
+						<IconButton
+							size="small"
+							aria-label="Remove photo"
+							onClick={onAvatarRemove}
+							disabled={avatarBusy}
+							sx={{ position: 'absolute', top: 2, right: 2, color: 'error.main', '&:focus': { outline: 'none' } }}
+						>
+							<DeleteOutlineIcon sx={{ fontSize: 22 }} />
+						</IconButton>
+					)}
 
 					<input
 						ref={fileInputRef}
 						type="file"
-						accept="image/*"
+						accept="image/jpeg,image/png,image/webp"
 						hidden
 						onChange={(e) => {
 							const f = e.target.files?.[0]
 							if (f) onAvatarChange?.(f)
+							e.target.value = '' // allow picking the same file again
 						}}
 					/>
 				</Box>
+				{avatarRequired && !avatar && (
+					<Typography variant="caption" sx={{ color: 'error.main', mb: 1 }}>
+						Profile photo required
+					</Typography>
+				)}
 				<Box
 					sx={{
 						bgcolor: '#2B982B29',
