@@ -5,7 +5,6 @@ import { Box } from '@mui/material'
 import AppSidebar from '../common/Sidebar/AppSidebar'
 import DoctorNavBar from '../common/Navbar/DoctorNavBar'
 import { useAuth } from '../../hooks/useAuth'
-import { useSyncedAvatar } from '../../hooks/useSyncedAvatar'
 import { logout } from '../../features/auth/authService'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routes'
@@ -92,7 +91,6 @@ interface SidebarLayoutProps {
 // -- Component -----------------------------------------------------------------
 export default function SidebarLayout({ children, activeMenuId }: SidebarLayoutProps) {
 	const { role, user } = useAuth()
-	useSyncedAvatar() // keep the sidebar photo the same as the profile's
 	const navigate = useNavigate()
 
 	const isDoctor = role === 'doctor'

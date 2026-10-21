@@ -37,7 +37,6 @@ import ChatBot from '../ChatBot'
 import { buildS3Url } from '../../utils/s3'
 import { getPatientDetails } from '../../features/patient/patientService'
 import { AVATAR_CHANGED_EVENT } from '../../hooks/useAvatarChange'
-import { useSyncedAvatar } from '../../hooks/useSyncedAvatar'
 
 const NAVBAR_HEIGHT = 64
 
@@ -495,7 +494,6 @@ interface NavbarLayoutProps {
 
 export default function NavbarLayout({ children }: NavbarLayoutProps) {
 	const { role, user, lookupData } = useAuth()
-	useSyncedAvatar() // keep the header photo the same as the profile's
 	const navigate = useNavigate()
 	const activePatientId = localStorage.getItem('patient_id')
 	const [dropdownOpen, setDropdownOpen] = useState(false)

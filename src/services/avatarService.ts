@@ -23,12 +23,6 @@ export async function uploadAvatar(file: File): Promise<string> {
 	return res.data?.data?.avatar_url || res.data?.data?.avatar_s3_key || ''
 }
 
-/** The signed URL of the caller's current photo, or '' when there is none. */
-export async function fetchCurrentAvatar(): Promise<string> {
-	const res = await ApiService.get<AvatarResponse>(API_ENDPOINTS.UPLOADS.AVATAR)
-	return res.data?.data?.avatar_url || ''
-}
-
 export async function removeAvatar(): Promise<void> {
 	await ApiService.delete(API_ENDPOINTS.UPLOADS.AVATAR)
 }
