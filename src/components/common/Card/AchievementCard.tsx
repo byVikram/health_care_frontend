@@ -1,4 +1,4 @@
-// src/components/common/Card/AchievementCard.tsx
+﻿// src/components/common/Card/AchievementCard.tsx
 
 import { useState } from 'react'
 import { Box, Typography } from '@mui/material'
@@ -55,7 +55,7 @@ export default function AchievementCard({
 				bgcolor: 'background.paper',
 				border: '1px solid',
 				borderColor: 'divider',
-				borderRadius: 3,
+				borderRadius: 2,
 				overflow: 'hidden',
 				cursor: onClick ? 'pointer' : 'default',
 				display: 'flex',
@@ -165,7 +165,7 @@ export default function AchievementCard({
 							WebkitBoxOrient: 'vertical',
 						}}
 					>
-						{achievement.organization || '—'}
+						{achievement.organization || 'â€”'}
 					</Typography>
 				</Box>
 
@@ -191,7 +191,7 @@ export default function AchievementCard({
 							color: 'text.secondary',
 						}}
 					>
-						{dateLabel || '—'}
+						{dateLabel || 'â€”'}
 					</Typography>
 				</Box>
 

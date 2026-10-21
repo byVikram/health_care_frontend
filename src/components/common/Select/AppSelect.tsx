@@ -1,6 +1,6 @@
 // src/components/common/Select/AppSelect.tsx
 import React, { forwardRef, ReactNode } from 'react'
-import { TextField, MenuItem, InputAdornment, SxProps, Theme, TextFieldProps, Chip, Box, Checkbox } from '@mui/material'
+import { TextField, MenuItem, InputAdornment, Typography, SxProps, Theme, TextFieldProps, Chip, Box, Checkbox } from '@mui/material'
 
 interface SelectOption {
 	value: string | number
@@ -62,11 +62,12 @@ const AppSelect = forwardRef<HTMLDivElement, AppSelectProps>((props, ref) => {
 		? Array.isArray(value) ? (value as string[]) : []
 		: []
 
-	return (
+	const hasEmptyOption = options.some((o) => o.value === '')
+
+	const selectField = (
 		<TextField
 			select
 			ref={ref}
-			label={label}
 			value={multiple ? selectedValues : (value ?? '')}
 			onChange={onChange}
 			error={error}
@@ -76,12 +77,11 @@ const AppSelect = forwardRef<HTMLDivElement, AppSelectProps>((props, ref) => {
 			size={size}
 			variant={variant}
 			InputProps={inputProps}
-			InputLabelProps={{ shrink: true }}
 			SelectProps={{
 				displayEmpty: true,
 				multiple,
-				...(multiple && {
-					renderValue: (selected: unknown) => {
+				renderValue: (selected: unknown) => {
+					if (multiple) {
 						const arr = selected as string[]
 						if (!arr || arr.length === 0) {
 							return (
@@ -112,8 +112,27 @@ const AppSelect = forwardRef<HTMLDivElement, AppSelectProps>((props, ref) => {
 								})}
 							</Box>
 						)
-					},
-				}),
+					}
+
+					// Single select
+					if (selected === '' || selected === undefined || selected === null) {
+						const emptyOpt = options.find((o) => o.value === '')
+						if (emptyOpt) {
+							return emptyOpt.label
+						}
+						if (placeholder) {
+							return (
+								<Box component="span" sx={{ color: 'text.disabled', fontSize: '14px' }}>
+									{placeholder}
+								</Box>
+							)
+						}
+						return ''
+					}
+
+					const opt = options.find((o) => String(o.value) === String(selected))
+					return opt?.label ?? String(selected)
+				},
 				MenuProps: {
 					PaperProps: {
 						sx: { mt: 1, boxShadow: '0 6px 20px rgba(0,0,0,0.12)' },
@@ -133,7 +152,7 @@ const AppSelect = forwardRef<HTMLDivElement, AppSelectProps>((props, ref) => {
 			}}
 			{...rest}
 		>
-			{!multiple && placeholder && (
+			{!multiple && placeholder && !hasEmptyOption && (
 				<MenuItem value="" disabled>
 					{placeholder}
 				</MenuItem>
@@ -156,6 +175,29 @@ const AppSelect = forwardRef<HTMLDivElement, AppSelectProps>((props, ref) => {
 				</MenuItem>
 			))}
 		</TextField>
+	)
+
+	if (!label) {
+		return selectField
+	}
+
+	return (
+		<Box sx={{ width: fullWidth ? '100%' : 'auto', display: 'flex', flexDirection: 'column' }}>
+			<Typography
+				variant="caption"
+				sx={{
+					display: 'block',
+					fontWeight: 400,
+					fontSize: '0.8rem',
+					color: disabled ? 'text.disabled' : error ? 'error.main' : '#0f172a',
+					mb: 0.75,
+					letterSpacing: '0.01em',
+				}}
+			>
+				{label}
+			</Typography>
+			{selectField}
+		</Box>
 	)
 })
 

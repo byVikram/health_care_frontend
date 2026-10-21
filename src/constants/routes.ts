@@ -9,6 +9,7 @@ export const ROUTES = {
 	PUBLIC: {
 		WELCOME: '/welcome',
 		WELCOME_DOCTOR: '/welcome-doctor',
+		HEALTH_QUESTIONS: '/health-questions',
 	},
 
 	DOCTORS: {
@@ -27,12 +28,7 @@ export const ROUTES = {
 		BOOKINGS: '/radiology/bookings',
 		BOOKING_DETAIL: '/radiology/bookings/:bookingId',
 		SEARCH: '/radiology/search',
-	},
-
-	LABORATORY: {
-		SEARCH: '/laboratory/search',
-		ORDERS: '/laboratory/orders',
-		ORDER_DETAIL: '/laboratory/orders/:bookingId',
+		BOOK_RIDE: '/radiology/bookings/:bookingId/book-ride',
 	},
 
 	ANCILLARY: {
@@ -47,16 +43,35 @@ export const ROUTES = {
 		SEARCH: '/therapeutic/search',
 	},
 
-	SPECIALITIES: '/specialities',
+	BLOGS: {
+		LIST: '/blogs',
+		DETAIL: '/blogs/:slug',
+	},
 
-	TEST: '/test',
-	TEST_REGISTER: '/test-register',
+	COMMUNITIES: {
+		LIST: '/communities',
+		DETAIL: '/communities/:groupId',
+		THREAD: '/communities/threads/:threadId',
+	},
+
+	EVENTS: {
+		LIST: '/events',
+		DETAIL: '/events/:id',
+	},
+
+	SPECIALITIES: '/specialities',
 
 	ROLE_SELECT: '/role-select',
 	ONBOARDING_ROLE: '/onboarding/:roleId',
 	ONBOARDING_REGISTER: '/onboarding/register',
 
 	DOCTOR_ACCOUNT_DETAILS: '/doctor/account-details',
+
+	DOCTOR: {
+		EVENTS: '/doctor/events',
+		EVENT_CREATE: '/doctor/events/create',
+		EVENT_EDIT: '/doctor/events/:id/edit',
+	},
 
 	PAYMENT: '/payment',
 
@@ -68,5 +83,37 @@ export const ROUTES = {
 		FAVOURITES: '/portal/favourites',
 		CONSULTATION: '/consultation/:patientId/:appointmentId',
 		APPOINTMENT_DETAIL: '/portal/appointments/:appointmentId',
+		BOOK_RIDE: '/portal/appointments/:appointmentId/book-ride',
+		TRANSPORTATION: '/portal/transportation',
+		TRACK_RIDE: '/portal/transit/track/:bookingType/:bookingId',
+	},
+
+	ADMIN: {
+		LOGIN: '/admin/login',
+		DASHBOARD: '/admin',
+		VERIFICATIONS: '/admin/verifications',
+		VERIFICATION_REVIEW: '/admin/verifications/:type/:id',
+		USERS: '/admin/users',
+		USER_DETAIL: '/admin/users/:role/:id',
+		APPOINTMENTS: '/admin/appointments',
+		BILLING: '/admin/billing',
+		AUDITS: '/admin/audits',
+		SPECIALITIES: '/admin/specialities',
+		BLOGS: '/admin/blogs',
+		BLOG_CREATE: '/admin/blogs/create',
+		BLOG_EDIT: '/admin/blogs/edit/:id',
+		COMMENTS: '/admin/comments',
+		REVIEWS: '/admin/reviews',
+		ADS: '/admin/ads',
+		COMMUNITIES: '/admin/communities',
+		EVENTS: '/admin/events',
+		QA: '/admin/qa',
+		ARTICLES: '/admin/articles',
+		ARTICLE_CREATE: '/admin/articles/create',
+		ARTICLE_EDIT: '/admin/articles/edit/:id',
+		ADMINS: '/admin/admins',
+		ANCILLARY: '/admin/ancillary',
+		ANCILLARY_DETAIL: '/admin/ancillary/:id',
+		ANCILLARY_CATEGORIES: '/admin/ancillary-categories',
 	},
 }

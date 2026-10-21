@@ -7,6 +7,7 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import LocalTaxiIcon from '@mui/icons-material/LocalTaxi'
 import AppTable from '../../components/common/Table/AppTable'
 import { customCardStyle } from '../../styles/commonStyles'
 // import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
@@ -21,7 +22,7 @@ import AppDatePicker from '../../components/common/DatePicker/AppDatePicker'
 import Grid from '@mui/material/Grid'
 import AppInput from '../../components/common/Input/AppInput'
 import { toast } from 'react-toastify'
-import { updateAppointmentsStatus } from '../dashboard/dashboardService'
+import { updateAppointmentsStatus } from '../../services/appointmentService'
 import { getDoctorAvailability, getAvailabilityModeBlocks, getDoctorById } from '../doctor/doctorService'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
 import type { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
@@ -150,7 +151,7 @@ export default function AppointmentList() {
 
 	const [search, setSearch] = useState('')
 	const [page, setPage] = useState(1)
-	const size = 10
+	const [size, setSize] = useState(10)
 	const [rows, setRows] = useState<AppointmentRow[]>([])
 	const [meta, setMeta] = useState<AppointmentMeta>({ total: 0, page: 1, limit: 10, pages: 0 })
 	const [loading, setLoading] = useState(true)
@@ -833,6 +834,23 @@ export default function AppointmentList() {
 							<img src={RescheduleIcon} width={16} height={16} alt="Reschedule" />
 						</IconButton>
 					</Tooltip>
+					<Tooltip title="Book Cab">
+						<IconButton
+							size="small"
+							onClick={(e) => {
+								e.stopPropagation()
+								navigate(`/portal/appointments/${row.id}/book-ride?type=onward`)
+							}}
+							sx={{
+								bgcolor: '#e0f2f1',
+								borderRadius: '8px',
+								p: 0.9,
+								'&:hover': { bgcolor: '#b2dfdb' },
+							}}
+						>
+							<LocalTaxiIcon sx={{ fontSize: 16, color: '#00796b' }} />
+						</IconButton>
+					</Tooltip>
 				</Box>
 			)
 		},
@@ -942,6 +960,27 @@ export default function AppointmentList() {
 			: [doctorNameColumn, ...baseColumns, actionColumn, viewColumn]
 	return (
 		<Box sx={{ p: 3 }}>
+			{/* Page header */}
+			<Box
+				sx={{
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'space-between',
+					mb: 2.5,
+				}}
+			>
+				<Box>
+					<Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', lineHeight: 1.2 }}>
+						{viewAs === 'patient' ? 'My Appointments' : 'My Appointments'}
+					</Typography>
+					<Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5, fontSize: '13px' }}>
+						{viewAs === 'patient'
+							? 'View, reschedule or cancel your healthcare visits'
+							: 'Manage your patient consultations'}
+					</Typography>
+				</Box>
+				{/* no header CTA */}
+			</Box>
 			{/* Filter bar */}
 			{loading ? (
 				<Grid container spacing={2} sx={{ mb: 2.5, alignItems: 'center' }}>
@@ -1088,18 +1127,15 @@ export default function AppointmentList() {
 								)
 							)
 						}
+						page={page}
+						pageSize={size}
+						totalRows={meta.total}
+						onPageChange={(value) => setPage(value)}
+						onPageSizeChange={(value) => {
+							setSize(value)
+							setPage(1)
+						}}
 					/>
-					{meta.pages > 1 && (
-						<Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-							<Pagination
-								page={page}
-								count={meta.pages}
-								color="primary"
-								shape="rounded"
-								onChange={(_, value) => setPage(value)}
-							/>
-						</Box>
-					)}
 				</Card>
 			)}
 

@@ -7,7 +7,7 @@ import {
 	createSession,
 	listSessions,
 	getSession,
-	sendMessageStream,
+	sendMessage,
 	logFeedback
 } from '../../services/chatbotService'
 import { ChatSessionResponse } from '../../types/chatbot'
@@ -180,21 +180,14 @@ export default function ChatBot() {
 	const handleSend = async (text: string) => {
 		if (!text.trim()) return
 
-		// 1. Immediately render user message bubble and bot placeholder to prevent freeze
+		// Render the user's bubble immediately; the typing indicator covers the wait for the reply.
 		const userMsg: Message = {
 			id: `${Date.now()}-user`,
 			sender: 'user',
 			text,
 			timestamp: new Date(),
 		}
-		const botMessageId = `${Date.now()}-bot`
-		const initialBotMsg: Message = {
-			id: botMessageId,
-			sender: 'bot',
-			text: '',
-			timestamp: new Date(),
-		}
-		setMessages((prev) => [...prev, userMsg, initialBotMsg])
+		setMessages((prev) => [...prev, userMsg])
 		setIsLoading(true)
 
 		let currentSessionId = sessionId
@@ -211,58 +204,37 @@ export default function ChatBot() {
 				setSessions((prev) => [newSession, ...prev])
 			}
 
-			// Stream message response
-			await sendMessageStream(
-				currentSessionId,
-				text,
-				(chunkText) => {
-					setMessages((prev) =>
-						prev.map((msg) =>
-							msg.id === botMessageId
-								? { ...msg, text: msg.text + chunkText }
-								: msg
-						)
-					)
-				},
-				(payload) => {
-					setMessages((prev) =>
-						prev.map((msg) =>
-							msg.id === botMessageId
-								? {
-										...msg,
-										text: payload.answer || msg.text,
-										sources: payload.sources,
-										structured_payload: payload,
-								  }
-								: msg
-						)
-					)
-					setIsLoading(false)
-				},
-				(title) => {
-					// Backend auto-names new conversations on the first prompt and sends the
-					// current title on every "structured" event — patch it in place instead
-					// of refetching the whole session list.
-					setSessions((prev) =>
-						prev.map((session) => (session.id === currentSessionId ? { ...session, title } : session))
-					)
-				},
-				(err) => {
-					setMessages((prev) =>
-						prev.map((msg) =>
-							msg.id === botMessageId
-								? {
-										...msg,
-										text: 'Sorry, I encountered an issue connecting to the server. Please try again.',
-								  }
-								: msg
-						)
-					)
-					setIsLoading(false)
-				}
+			const turn = await sendMessage(currentSessionId, text)
+			// Use the server's message id so feedback on this reply hits the real record.
+			const botMsg: Message = {
+				id: turn.message_id,
+				sender: 'bot',
+				text: turn.answer,
+				timestamp: new Date(),
+				sources: turn.payload.sources,
+				structured_payload: turn.payload,
+			}
+			setMessages((prev) => [...prev, botMsg])
+
+			// Backend auto-names new conversations on the first prompt — patch the title in
+			// place instead of refetching the whole session list.
+			setSessions((prev) =>
+				prev.map((session) =>
+					session.id === currentSessionId ? { ...session, title: turn.session_title } : session
+				)
 			)
 		} catch (err) {
 			console.error('Failed to send message:', err)
+			setMessages((prev) => [
+				...prev,
+				{
+					id: `${Date.now()}-error`,
+					sender: 'bot',
+					text: 'Sorry, I encountered an issue connecting to the server. Please try again.',
+					timestamp: new Date(),
+				},
+			])
+		} finally {
 			setIsLoading(false)
 		}
 	}

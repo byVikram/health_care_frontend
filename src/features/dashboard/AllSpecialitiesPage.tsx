@@ -4,7 +4,7 @@ import SearchIcon from '@mui/icons-material/Search'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
 import AppButton from '../../components/common/Button/AppButton'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import ConsultCard from '../../components/common/Card/ConsultCard'
 import { getSpecialities } from '../doctor/doctorService'
 import { SpecialityItem } from '../../types/speciality'
@@ -149,12 +149,12 @@ interface EnrichedSpeciality extends SpecialityItem {
 }
 
 function enrich(s: SpecialityItem): EnrichedSpeciality {
-	const details = resolveSpecialityDetails(s.icon_key, s.label)
+	const details = resolveSpecialityDetails(s.icon_key || '', s.label)
 	return {
 		...s,
 		image: details.image,
 		objectPosition: details.objectPosition,
-		description: details.description,
+		description: s.description || details.description,
 	}
 }
 
@@ -178,22 +178,24 @@ export default function AllSpecialitiesPage() {
 	const [searchParams] = useSearchParams()
 	const consultationType = searchParams.get('consultation_type')
 
+	const [search, setSearch] = useState('')
 	const [specialities, setSpecialities] = useState<EnrichedSpeciality[]>([])
 	const [apiLoading, setApiLoading] = useState(true)
 	const [apiError, setApiError] = useState<string | null>(null)
-	const [search, setSearch] = useState('')
 
-	// Fetch from API on mount
 	useEffect(() => {
 		let active = true
-		setApiLoading(true)
 		const load = async () => {
+			setApiLoading(true)
 			try {
 				const res = await getSpecialities()
 				if (!active) return
 				setSpecialities(res.data.map(enrich))
 				setApiError(null)
 			} catch (err) {
+				// ApiService's shared axios interceptor already shows a global
+				// error toast on failure -- this Alert is additional inline
+				// context appropriate for a full page, not a duplicate toast.
 				console.error('Failed to load specialities:', err)
 				if (!active) return
 				setApiError('Failed to load specialities. Please try again.')

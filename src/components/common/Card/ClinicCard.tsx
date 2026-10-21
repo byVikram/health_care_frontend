@@ -1,4 +1,4 @@
-// src/components/common/Card/ClinicCard.tsx
+﻿// src/components/common/Card/ClinicCard.tsx
 import { Box, Typography, Button } from '@mui/material'
 
 interface ClinicCardProps {
@@ -16,7 +16,7 @@ export default function ClinicCard({ image, title, description, onConsult }: Cli
 				sx={{
 					width: '100%',
 					aspectRatio: '4/3',
-					borderRadius: 3,
+					borderRadius: 2,
 					overflow: 'hidden',
 					mb: 1.5,
 				}}

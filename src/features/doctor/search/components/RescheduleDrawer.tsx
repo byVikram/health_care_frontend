@@ -2,6 +2,7 @@ import AppSelect from '../../../../components/common/Select/AppSelect'
 import AppDrawer from '../../../../components/common/Drawer/AppDrawer'
 import DateSlotPicker, { SlotGroup } from '../../../../components/common/DateSlotPicker/DateSlotPicker'
 import { Box, Typography } from '@mui/material'
+import type { SxProps, Theme } from '@mui/material/styles'
 import { Appointment } from '../../../../types/appointment'
 import { LookupHospital } from '../../../../hooks/useAuth'
 
@@ -28,6 +29,9 @@ type Props = {
 
 	appointmentType: 'clinic' | 'video'
 	setAppointmentType: (type: 'clinic' | 'video') => void
+
+	/** Optional override for the drawer paper's sx (e.g. positioning it below a fixed navbar) */
+	sx?: SxProps<Theme>
 }
 
 export default function RescheduleDrawer({
@@ -47,6 +51,7 @@ export default function RescheduleDrawer({
 	setRescheduleHospitalId,
 	appointmentType,
 	setAppointmentType,
+	sx,
 }: Props) {
 	return (
 		<AppDrawer
@@ -56,6 +61,7 @@ export default function RescheduleDrawer({
 			subtitle={rescheduleAppt?.patient?.name ?? ''}
 			onConfirm={handleRescheduleConfirm}
 			confirmLoading={rescheduleSubmitting}
+			sx={sx}
 		>
 			<Box sx={{ mb: 3 }}>
 				<Typography sx={{ fontWeight: 600, fontSize: '14px', mb: 1, color: 'text.primary' }}>
@@ -85,7 +91,6 @@ export default function RescheduleDrawer({
 				}}
 				selectedTime={rescheduleTime}
 				onTimeChange={setRescheduleTime}
-				// availableSlots={rescheduleSlots.length > 0 ? rescheduleSlots : undefined}
 				availableSlots={rescheduleSlots}
 				loading={rescheduleSlotsLoading}
 				disableBookedSlots={true}

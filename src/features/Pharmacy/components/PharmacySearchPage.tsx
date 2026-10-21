@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
 	Box,
@@ -254,7 +254,7 @@ export default function PharmacySearchPage() {
 								))}
 							</Grid>
 						) : error ? (
-							<Card sx={{ py: 6, px: 3, borderRadius: 3 }}>
+							<Card sx={{ py: 6, px: 3, borderRadius: 2 }}>
 								<Typography variant="body1" sx={{ color: 'error.main' }}>
 									{error}
 								</Typography>
@@ -286,7 +286,7 @@ export default function PharmacySearchPage() {
 									textAlign: 'center',
 									py: 10,
 									px: 3,
-									borderRadius: 3,
+									borderRadius: 2,
 									border: '1px solid',
 									borderColor: 'divider',
 								}}
@@ -304,7 +304,7 @@ export default function PharmacySearchPage() {
 			</Container>
 		</Box>
 
-		{/* Place Order drawer — single instance lifted up from PharmacySearchCard */}
+		{/* Place Order drawer â€” single instance lifted up from PharmacySearchCard */}
 		{selectedPharmacy && (
 			<PlaceOrderPage
 				open={placeOrderOpen}

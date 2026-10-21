@@ -1,13 +1,13 @@
 // src/features/patient/PatientPortalPage.tsx
 import { Box, Container } from '@mui/material'
-import QuickServicesSection from '../dashboard/QuickServicesSection'
-import ServicesSection from '../dashboard/ServiceSection'
-import EmergencyBannerSection from '../dashboard/EmergencySection'
-import SpecialitySection from '../dashboard/SpecialitySection'
-import ConsultSection from '../dashboard/ConsultSection'
-import ArticleSection from '../dashboard/ArticleSection'
-import UpcomingEventsSection from '../dashboard/UpcomingEventsSection'
-import CommunityBlogsSection from '../dashboard/CommunityBlogsSection'
+import QuickServicesSection from '../dashboard/sections/QuickServicesSection'
+import ServicesSection from '../dashboard/sections/ServiceSection'
+import EmergencyBannerSection from '../dashboard/sections/EmergencySection'
+import SpecialitySection from '../dashboard/sections/SpecialitySection'
+import ConsultSection from '../dashboard/sections/ConsultSection'
+import ArticleSection from '../dashboard/sections/ArticleSection'
+import UpcomingEventsSection from '../dashboard/sections/UpcomingEventsSection'
+import CommunityBlogsSection from '../dashboard/sections/CommunityBlogsSection'
 import PatientHealthQuestionsSection from './components/PatientHealthQuestionsSection'
 import BannerImage from '../../assets/Banner/banner.png'
 import { Typography, Divider } from '@mui/material'
@@ -92,8 +92,9 @@ export default function PatientPortalPage() {
 
 			{/* Quick Services + Services */}
 			<Container
+				id="services"
 				maxWidth="lg"
-				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6 }}
+				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6, scrollMarginTop: { xs: 80, md: 96 } }}
 			>
 				<QuickServicesSection />
 				<Divider />
@@ -105,8 +106,9 @@ export default function PatientPortalPage() {
 
 			{/* Specialities + Consult */}
 			<Container
+				id="about"
 				maxWidth="lg"
-				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6 }}
+				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6, scrollMarginTop: { xs: 80, md: 96 } }}
 			>
 				<Divider />
 				<SpecialitySection />
@@ -114,28 +116,30 @@ export default function PatientPortalPage() {
 			</Container>
 
 			{/* Articles / Blogs */}
-			<Box>
+			<Box id="blog-media" sx={{ scrollMarginTop: { xs: 80, md: 96 } }}>
 				<ArticleSection />
 			</Box>
 
 			{/* Upcoming Events */}
 			<Container
+				id="events"
 				maxWidth="lg"
-				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6 }}
+				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6, scrollMarginTop: { xs: 80, md: 96 } }}
 			>
 				<UpcomingEventsSection />
 			</Container>
 
 			{/* Community & Blogs */}
 			<Container
+				id="community"
 				maxWidth="lg"
-				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6 }}
+				sx={{ py: 5, display: 'flex', flexDirection: 'column', gap: 6, scrollMarginTop: { xs: 80, md: 96 } }}
 			>
 				<CommunityBlogsSection />
 			</Container>
 
 			{/* Patient-specific Health Questions — unchanged */}
-			<Container maxWidth="lg" sx={{ py: 2 }}>
+			<Container id="contact" maxWidth="lg" sx={{ py: 2, scrollMarginTop: { xs: 80, md: 96 } }}>
 				<PatientHealthQuestionsSection />
 			</Container>
 		</Box>

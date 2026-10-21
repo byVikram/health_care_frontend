@@ -3,6 +3,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import VideocamIcon from '@mui/icons-material/Videocam'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routes'
@@ -268,9 +269,37 @@ export function PatientAppointments() {
 		<Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 			<Box sx={{ mb: 2, flexShrink: 0 }}>
 				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-					<Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.25rem', color: 'text.primary' }}>
-						Upcoming Appointments
-					</Typography>
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+						<Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.25rem', color: 'text.primary' }}>
+							Upcoming Appointments
+						</Typography>
+						<Box
+							component="button"
+							type="button"
+							onClick={() => navigate(ROUTES.DOCTORS.SEARCH)}
+							sx={{
+								display: 'flex',
+								alignItems: 'center',
+								gap: 0.5,
+								px: 1.25,
+								py: 0.4,
+								background: 'linear-gradient(135deg, #0f4c4c 0%, #0c7c7c 100%)',
+								border: 'none',
+								borderRadius: '20px',
+								cursor: 'pointer',
+								transition: 'all 0.2s ease',
+								'&:hover': {
+									transform: 'translateY(-1px)',
+									boxShadow: '0 4px 10px rgba(12,124,124,0.3)',
+								},
+							}}
+						>
+							<AddCircleOutlineIcon sx={{ fontSize: '13px', color: '#fff' }} />
+							<Typography sx={{ fontSize: '11px', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap' }}>
+								Book
+							</Typography>
+						</Box>
+					</Box>
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
 						<Chip
 							label={appointments.length}

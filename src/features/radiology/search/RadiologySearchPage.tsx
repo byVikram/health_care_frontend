@@ -12,7 +12,7 @@ import AppSkeleton from '../../../components/common/Skeleton/AppSkeleton'
 import { customCardStyle } from '../../../styles/commonStyles'
 import { searchRadiologyCenters } from '../radiologyService'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
-import ScanTypeSelectorModal from '../../dashboard/ScanTypeSelectorModal'
+import ScanTypeSelectorModal from '../../dashboard/selectors/ScanTypeSelectorModal'
 import { RadiologySearchResultItem } from '../../../types/radiology-search'
 import RadiologyBookingPage from '../bookings/RadiologyBookingPage'
 

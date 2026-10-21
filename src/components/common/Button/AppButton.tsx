@@ -32,6 +32,7 @@ export default function AppButton({
 	onClick,
 	sx = {},
 	size = 'medium',
+	children,
 	...rest
 }: AppButtonProps) {
 	const sizeStyles = {
@@ -39,6 +40,8 @@ export default function AppButton({
 		medium: { minWidth: 100, fontSize: 14, padding: '8px 12px' },
 		large: { minWidth: 120, fontSize: 16, padding: '6px 16px' },
 	}
+
+	const displayContent = label ?? children
 
 	return (
 		<Button
@@ -70,7 +73,7 @@ export default function AppButton({
 					Loading
 				</>
 			) : (
-				label
+				displayContent
 			)}
 		</Button>
 	)

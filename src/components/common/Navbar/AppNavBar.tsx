@@ -27,10 +27,9 @@ const navItems = [
 	{ label: 'Home', href: '/#home' },
 	{ label: 'Services', href: '/#services' },
 	{ label: 'Find doctors', href: '/doctors/search' },
-	// { label: 'Radiology', href: '/radiology/search' },
-	{ label: 'Community', href: '/#community' },
+	{ label: 'Community', href: '/communities' },
+	{ label: 'Blogs', href: '/blogs' },
 	{ label: 'Contact', href: '/#contact' },
-	{ label: 'Demo', href: '#' },
 ]
 
 const LOCATIONS = [
@@ -64,9 +63,21 @@ const AppNavBar: React.FC<AppNavBarProps> = ({ onProfileClick, avatarSrc }) => {
 	const selectedLocation = LOCATIONS[selectedIdx]
 
 	const { accessToken } = useAuth()
+	const isAuthenticated = Boolean(accessToken)
+
+	const resolveHref = (href: string) => {
+		if (!isAuthenticated) return href
+		if (href === '/#home') return '/portal#home'
+		if (href.startsWith('/#')) return `/portal${href.slice(1)}`
+		return href
+	}
 
 	//  Derive activeHref from location — no setState inside effect
 	const activeHref = useMemo(() => {
+		if (location.pathname === '/portal') {
+			if (!location.hash) return '/#home'
+			return `/${location.hash}`
+		}
 		const current = `${location.pathname}${location.hash || ''}`
 		if (location.pathname !== '/') return current
 		if (location.hash) return `/${location.hash}`
@@ -87,7 +98,7 @@ const AppNavBar: React.FC<AppNavBarProps> = ({ onProfileClick, avatarSrc }) => {
 
 	// Scroll tracking — only runs on home page
 	useEffect(() => {
-		if (location.pathname !== '/') return
+		if (location.pathname !== '/' && location.pathname !== '/portal') return
 		let ticking = false
 		const updateActive = () => {
 			if (ticking) return
@@ -114,22 +125,31 @@ const AppNavBar: React.FC<AppNavBarProps> = ({ onProfileClick, avatarSrc }) => {
 		}
 	}, [isMdUp, location.pathname])
 
+	useEffect(() => {
+		if ((location.pathname !== '/' && location.pathname !== '/portal') || !location.hash) return
+		window.requestAnimationFrame(() => {
+			const target = document.getElementById(location.hash.slice(1))
+			if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+		})
+	}, [location.pathname, location.hash])
+
 	const handleDrawerToggle = () => setMobileOpen((prev) => !prev)
 
 	const handleNavClick = (href: string) => {
 		if (href === '#') return
-		if (href.startsWith('/#')) {
-			if (location.pathname === '/') {
-				const targetId = href.replace('/#', '')
+		const nextHref = resolveHref(href)
+		if (nextHref.includes('#')) {
+			const [nextPath, targetId] = nextHref.split('#')
+			if (location.pathname === nextPath) {
 				const target = document.getElementById(targetId)
 				if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' })
-				window.history.replaceState(null, '', href)
+				window.history.replaceState(null, '', nextHref)
 				return
 			}
-			navigate(href)
+			navigate(nextHref)
 			return
 		}
-		navigate(href)
+		navigate(nextHref)
 	}
 
 	return (
@@ -148,7 +168,7 @@ const AppNavBar: React.FC<AppNavBarProps> = ({ onProfileClick, avatarSrc }) => {
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
 						<Box
 							sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}
-							onClick={() => navigate('/')}
+							onClick={() => navigate(isAuthenticated ? '/portal' : '/')}
 						>
 							<Typography
 								variant="h6"

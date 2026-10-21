@@ -6,7 +6,7 @@ import amazonPayImg from '../../assets/payment/amazone-pay.png'
 import whatsappImg from '../../assets/payment/whatsapp.png'
 import paytmImg from '../../assets/payment/paytm.png'
 import creditCardImg from '../../assets/payment/credit-card.png'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
 	Box,
@@ -32,12 +32,12 @@ import {
 	AccessTime,
 	MedicalServices,
 	LocationOn,
-
 	// UploadFile,
 } from '@mui/icons-material'
 import AppButton from '../../components/common/Button/AppButton'
 import ConfirmModal from '../../components/common/Modal/ConfirmModal'
 import { createAppointment, updatePreIntake } from '../doctor/doctorService'
+import TransportationWidget from '../transportation/components/TransportationWidget'
 import AppInput from '../../components/common/Input/AppInput'
 
 /* ─── types ─────────────────────────────────────────────────── */
@@ -105,7 +105,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
 export default function PaymentPage() {
 	const location = useLocation()
 	const navigate = useNavigate()
-	const state = (location.state as PaymentState) ?? {}
+	const state = (location.state as PaymentState) ?? ({} as PaymentState)
 
 	const {
 		doctorName = 'Doctor',
@@ -127,7 +127,23 @@ export default function PaymentPage() {
 		consentVersionId,
 	} = state
 
-	const total = consultationFee + serviceFee
+	// Transportation option states (synced from widget plugin)
+	const [needRide, setNeedRide] = useState(false)
+	const [selectedRideOption, setSelectedRideOption] = useState<string | null>(null)
+	const [isReturnRideRequested, setIsReturnRideRequested] = useState(false)
+	const [selectedRideDetails, setSelectedRideDetails] = useState<{
+		label: string
+		price: number
+		address: string
+		wheelchair?: boolean
+		assistance?: boolean
+		companion?: boolean
+		paymentMethod?: 'pay_now' | 'hospital_bill' | 'insurance'
+	} | null>(null)
+
+	const ridePrice = needRide && selectedRideDetails ? selectedRideDetails.price : 0
+	const returnRidePrice = needRide && isReturnRideRequested && selectedRideDetails ? selectedRideDetails.price : 0
+	const total = consultationFee + serviceFee + ridePrice + returnRidePrice
 
 	const [paymentChoice, setPaymentChoice] = useState<'now' | 'later'>(allowPayLater ? 'later' : 'now')
 	const [selectedPayment, setSelectedPayment] = useState('phonepe')
@@ -139,7 +155,6 @@ export default function PaymentPage() {
 	const [duration, setDuration] = useState('')
 	const [severity, setSeverity] = useState<'mild' | 'moderate' | 'severe' | ''>('')
 	const [appointmentId, setAppointmentId] = useState('')
-	// const [reportFile, setReportFile] = useState<File | null>(null)
 	const [errorMsg, setErrorMsg] = useState<string | null>(null)
 	const patientId = localStorage.getItem('patient_id')
 
@@ -171,9 +186,38 @@ export default function PaymentPage() {
 
 			const response = await createAppointment(payload as unknown as Parameters<typeof createAppointment>[0])
 
-			setAppointmentId((response.data as { id: string }).id)
+			const apptId = (response.data as { id: string }).id
+			setAppointmentId(apptId)
 
-			setSuccessOpen(true)
+			if (needRide && selectedRideDetails) {
+				const mockRide = {
+					appointment_id: apptId,
+					pickup_address: selectedRideDetails.address,
+					dropoff_address: clinic,
+					ride_provider: 'Uber',
+					vehicle_type: selectedRideDetails.label,
+					estimated_fare: selectedRideDetails.price,
+					is_return_ride: false,
+					status: 'scheduled',
+					wheelchair: selectedRideDetails.wheelchair,
+					assistance: selectedRideDetails.assistance,
+					companion: selectedRideDetails.companion,
+					payment_method: selectedRideDetails.paymentMethod,
+				}
+				localStorage.setItem(`ride_${apptId}`, JSON.stringify(mockRide))
+
+				if (isReturnRideRequested) {
+					const mockReturnRide = {
+						...mockRide,
+						pickup_address: clinic,
+						dropoff_address: selectedRideDetails.address,
+						is_return_ride: true,
+						estimated_fare: selectedRideDetails.price,
+					}
+					localStorage.setItem(`ride_return_${apptId}`, JSON.stringify(mockReturnRide))
+				}
+			}
+
 			setSuccessOpen(true)
 		} catch {
 			setErrorMsg('Failed to book appointment. Please try again.')
@@ -181,6 +225,7 @@ export default function PaymentPage() {
 			setBooking(false)
 		}
 	}
+
 
 	return (
 		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
@@ -330,6 +375,28 @@ export default function PaymentPage() {
 							</Box>
 						</Box>
 
+						{needRide && selectedRideDetails && (
+							<Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.8 }}>
+								<Typography variant="body2" color="text.secondary">
+									Onward Ride ({selectedRideDetails.label}):
+								</Typography>
+								<Typography variant="body2" fontWeight={500} color="text.primary">
+									{formatINR(selectedRideDetails.price)}
+								</Typography>
+							</Box>
+						)}
+
+						{needRide && isReturnRideRequested && selectedRideDetails && (
+							<Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.8 }}>
+								<Typography variant="body2" color="text.secondary">
+									Return Ride ({selectedRideDetails.label}):
+								</Typography>
+								<Typography variant="body2" fontWeight={500} color="text.primary">
+									{formatINR(selectedRideDetails.price)}
+								</Typography>
+							</Box>
+						)}
+
 						<Divider sx={{ my: 1.5 }} />
 
 						<Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -341,6 +408,30 @@ export default function PaymentPage() {
 							</Typography>
 						</Box>
 					</Box>
+
+					{/* Transportation Option (Only for Clinic Visit) */}
+					{appointmentMode === 'clinic_visit' && (
+						<>
+							<Divider />
+							<TransportationWidget
+								clinicAddress={clinic}
+								needRide={needRide}
+								setNeedRide={setNeedRide}
+								selectedRideOption={selectedRideOption}
+								setSelectedRideOption={setSelectedRideOption}
+								isReturnRideRequested={isReturnRideRequested}
+								setIsReturnRideRequested={setIsReturnRideRequested}
+								appointmentTime={startTime}
+								onRideSelect={(ride) => {
+									if (ride) {
+										setSelectedRideDetails(ride)
+									} else {
+										setSelectedRideDetails(null)
+									}
+								}}
+							/>
+						</>
+					)}
 
 					<Divider />
 

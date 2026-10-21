@@ -1,11 +1,12 @@
 // src/features/doctor/doctorService.ts
 import ApiService from '../../services/apiService'
+import axios from 'axios'
 import dayjs from 'dayjs'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { AppointmentsResponse } from '../../types/appointment'
 import { DoctorSearchResponse } from '../../types/doctor-search'
 import { DoctorDetailResponse } from '../../types/doctor-detail'
-import { SpecialitiesResponse } from '../../types/speciality'
+import { SpecialitiesResponse, SymptomsResponse } from '../../types/speciality'
 import {
 	DoctorProfileApiResponse,
 	DoctorProfileApiData,
@@ -98,6 +99,11 @@ export const getSpecialities = async (): Promise<SpecialitiesResponse> => {
 	return res.data
 }
 
+export const getSymptoms = async (): Promise<SymptomsResponse> => {
+	const res = await ApiService.get<SymptomsResponse>(API_ENDPOINTS.SPECIALITIES.SYMPTOMS)
+	return res.data
+}
+
 export type ApiAvailabilityMode = 'clinic_visit' | 'video_call'
 
 export interface AvailabilityModeBlock {
@@ -155,8 +161,21 @@ export interface DoctorStatusResponse {
 }
 
 export const getDoctorStatus = async (): Promise<DoctorStatusResponse['data']> => {
-	const res = await ApiService.get<DoctorStatusResponse>(API_ENDPOINTS.DOCTOR_PROFILE.STATUS)
-	return res.data.data
+	try {
+		const res = await ApiService.get<DoctorStatusResponse>(API_ENDPOINTS.DOCTOR_PROFILE.STATUS, {
+			suppressErrorToast: true,
+		})
+		return res.data.data
+	} catch (error) {
+		if (axios.isAxiosError(error) && error.response?.status === 404) {
+			return {
+				profile_completed: true,
+				is_verified: true,
+			}
+		}
+
+		throw error
+	}
 }
 
 // ── Slot overrides ────────────────────────────────────────────────────────────
@@ -208,8 +227,35 @@ export const updatePersonalDetails = async (data: Record<string, unknown>) => {
 	return res.data
 }
 
-export const updateProfessionalDetails = async (data: Record<string, unknown>) => {
-	const res = await ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.PROFESSIONAL_DETAILS, data)
+export interface ProfessionalDetailsFiles {
+	/** Index-aligned with `data.degrees`: the newly picked certificate for that degree, if any. */
+	degreeCertificates?: (File | null | undefined)[]
+	registrationProof?: File | null
+}
+
+/**
+ * Saves the professional details. Without files this is the plain JSON update; with files it is one multipart
+ * request (`payload` + `degree_certificate_<ref>` / `registration_proof`), so the details and the files are saved
+ * together. The app never sends a storage key: the server stores the files and links them.
+ */
+export const updateProfessionalDetails = async (data: Record<string, unknown>, files?: ProfessionalDetailsFiles) => {
+	const certificates = files?.degreeCertificates ?? []
+	const registrationProof = files?.registrationProof
+	if (!registrationProof && !certificates.some(Boolean)) {
+		const res = await ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.PROFESSIONAL_DETAILS, data)
+		return res.data
+	}
+
+	const degrees = (data.degrees as Record<string, unknown>[] | undefined)?.map((d, i) =>
+		certificates[i] ? { ...d, ref: `d${i}` } : d
+	)
+	const form = new FormData()
+	form.append('payload', JSON.stringify({ ...data, ...(degrees && { degrees }) }))
+	certificates.forEach((file, i) => {
+		if (file) form.append(`degree_certificate_d${i}`, file)
+	})
+	if (registrationProof) form.append('registration_proof', registrationProof)
+	const res = await ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.PROFESSIONAL_DETAILS, form)
 	return res.data
 }
 
@@ -310,11 +356,11 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 						specialization: d.specialization || '',
 						college: d.college,
 						yearOfPassing: d.year_of_passing,
-						qualificationProof: d.qualification_proof_s3_key || '',
+						qualificationProof: d.degree_certificate || d.qualification_proof_s3_key || '',
 					}))
 				: [],
 			registrationNumber: prof?.registration_number ?? '',
-			registrationProof: prof?.registration_proof_s3_key ?? '',
+			registrationProof: prof?.registration_proof ?? prof?.registration_proof_s3_key ?? '',
 			about: prof?.about ?? '',
 		},
 		hospitals,
@@ -495,8 +541,19 @@ export interface AchievementPayload {
 	organization?: string | null
 	achievement_date?: string | null // YYYY-MM-DD
 	description?: string | null
-	document_s3_key?: string | null
 	is_public?: boolean
+}
+
+/**
+ * An achievement's body: plain JSON without a document, or one multipart request (`payload` + `document`) with
+ * one. The app never sends a storage key: the server stores the file and links it.
+ */
+const achievementBody = (payload: Partial<AchievementPayload>, document?: File | null): unknown => {
+	if (!document) return payload
+	const form = new FormData()
+	form.append('payload', JSON.stringify(payload))
+	form.append('document', document, document.name)
+	return form
 }
 
 export const getAchievements = async (): Promise<AchievementsResponse> => {
@@ -504,23 +561,95 @@ export const getAchievements = async (): Promise<AchievementsResponse> => {
 	return res.data
 }
 
-export const createAchievement = async (payload: AchievementPayload): Promise<AchievementResponse> => {
-	const res = await ApiService.post<AchievementResponse>(API_ENDPOINTS.DOCTOR_PROFILE.ACHIEVEMENTS, payload)
+export const createAchievement = async (
+	payload: AchievementPayload,
+	document?: File | null
+): Promise<AchievementResponse> => {
+	const res = await ApiService.post<AchievementResponse>(
+		API_ENDPOINTS.DOCTOR_PROFILE.ACHIEVEMENTS,
+		achievementBody(payload, document)
+	)
 	return res.data
 }
 
 export const updateAchievement = async (
 	publicId: string,
-	payload: Partial<AchievementPayload>
+	payload: Partial<AchievementPayload>,
+	document?: File | null
 ): Promise<AchievementResponse> => {
 	const res = await ApiService.put<AchievementResponse>(
 		API_ENDPOINTS.DOCTOR_PROFILE.ACHIEVEMENT_BY_ID(publicId),
-		payload
+		achievementBody(payload, document)
 	)
 	return res.data
 }
 
 export const deleteAchievement = async (publicId: string) => {
 	const res = await ApiService.delete(API_ENDPOINTS.DOCTOR_PROFILE.ACHIEVEMENT_BY_ID(publicId))
+	return res.data
+}
+
+// -- Doctor bank details --------------------------------------------------------
+
+export type BankAccountType = 'savings' | 'current'
+
+export interface BankDetails {
+	account_holder_name: string
+	bank_name: string
+	branch_name: string | null
+	account_number: string
+	ifsc_code: string
+	account_type: BankAccountType
+	upi_id: string | null
+	pan_number: string | null
+	is_locked: boolean
+	updated_at: string
+}
+
+export interface BankDetailsPayload {
+	account_holder_name: string
+	bank_name: string
+	branch_name?: string | null
+	account_number: string
+	confirm_account_number: string
+	ifsc_code: string
+	account_type: BankAccountType
+	upi_id?: string | null
+	pan_number?: string | null
+}
+
+export interface BankDetailsResponse {
+	success: boolean
+	message: string
+	data: BankDetails | null
+}
+
+export const getBankDetails = async (): Promise<BankDetailsResponse> => {
+	const res = await ApiService.get<BankDetailsResponse>(API_ENDPOINTS.DOCTOR_PROFILE.BANK_DETAILS)
+	return res.data
+}
+
+export const createBankDetails = async (payload: BankDetailsPayload): Promise<BankDetailsResponse> => {
+	const res = await ApiService.post<BankDetailsResponse>(API_ENDPOINTS.DOCTOR_PROFILE.BANK_DETAILS, payload)
+	return res.data
+}
+
+export const updateBankDetails = async (payload: BankDetailsPayload): Promise<BankDetailsResponse> => {
+	const res = await ApiService.patch<BankDetailsResponse>(API_ENDPOINTS.DOCTOR_PROFILE.BANK_DETAILS, payload)
+	return res.data
+}
+
+export const requestBankDetailsEditOtp = async (): Promise<{ success: boolean; message: string }> => {
+	const res = await ApiService.post<{ success: boolean; message: string }>(
+		API_ENDPOINTS.DOCTOR_PROFILE.BANK_DETAILS_REQUEST_OTP,
+		{}
+	)
+	return res.data
+}
+
+export const verifyBankDetailsEditOtp = async (otp: string): Promise<BankDetailsResponse> => {
+	const res = await ApiService.post<BankDetailsResponse>(API_ENDPOINTS.DOCTOR_PROFILE.BANK_DETAILS_VERIFY_OTP, {
+		otp,
+	})
 	return res.data
 }

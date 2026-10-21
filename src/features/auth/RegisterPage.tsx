@@ -13,7 +13,6 @@ function labelToUserRole(label: string): UserRole {
 		patient:    'PATIENT',
 		doctor:     'DOCTOR',
 		pharmacy:   'PHARMACY',
-		laboratory: 'LABORATORY',
 		radiology:  'RADIOLOGY',
 	}
 	return map[label.toLowerCase()] ?? 'PATIENT'

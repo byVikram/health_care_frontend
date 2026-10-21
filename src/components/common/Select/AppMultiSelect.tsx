@@ -4,6 +4,7 @@ import {
 	TextField,
 	MenuItem,
 	InputAdornment,
+	Typography,
 	Chip,
 	Box,
 	Checkbox,
@@ -64,11 +65,10 @@ const AppMultiSelect = forwardRef<HTMLDivElement, AppMultiSelectProps>((props, r
 
 	const getLabelForValue = (val: string | number) => options.find((o) => o.value === val)?.label ?? String(val)
 
-	return (
+	const multiSelectField = (
 		<TextField
 			select
 			ref={ref}
-			label={label}
 			value={value}
 			onChange={handleChange as React.ChangeEventHandler<HTMLInputElement>}
 			error={error}
@@ -174,6 +174,29 @@ const AppMultiSelect = forwardRef<HTMLDivElement, AppMultiSelectProps>((props, r
 				)
 			})}
 		</TextField>
+	)
+
+	if (!label) {
+		return multiSelectField
+	}
+
+	return (
+		<Box sx={{ width: fullWidth ? '100%' : 'auto', display: 'flex', flexDirection: 'column' }}>
+			<Typography
+				variant="caption"
+				sx={{
+					display: 'block',
+					fontWeight: 400,
+					fontSize: '0.8rem',
+					color: disabled ? 'text.disabled' : error ? 'error.main' : '#0f172a',
+					mb: 0.75,
+					letterSpacing: '0.01em',
+				}}
+			>
+				{label}
+			</Typography>
+			{multiSelectField}
+		</Box>
 	)
 })
 

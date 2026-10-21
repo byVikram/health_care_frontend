@@ -1,4 +1,4 @@
-// features/auth/onboarding/OnBoardingPage.tsx
+﻿// features/auth/onboarding/OnBoardingPage.tsx
 import { useState } from 'react'
 import { Box, Typography } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
@@ -126,7 +126,7 @@ export default function OnBoardingPage({ role, roleId, onFinish, onBack }: Props
 							sx={{
 								width: i === currentIndex ? 28 : 8,
 								height: 8,
-								borderRadius: 4,
+								borderRadius: 2,
 								bgcolor: i === currentIndex ? '#fff' : 'rgba(255,255,255,0.35)',
 								transition: 'width 0.3s ease',
 							}}

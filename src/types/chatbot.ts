@@ -22,12 +22,12 @@ export interface DoctorSuggestion {
 	speciality: string[]
 	location: string
 	hospital_name?: string
-	avatar_s3_key?: string
+	avatar_s3_key?: string | null
 	fees: number
 	availability?: string[]
-	rating?: number
+	rating?: number | null
 	consultation_mode: string
-	distance?: string
+	distance?: string | null
 	experience_years: number
 	earliest_slot?: string
 	hospitals?: HospitalSuggestion[]
@@ -35,16 +35,26 @@ export interface DoctorSuggestion {
 
 export interface ChatResponse {
 	answer: string
+	conversation_mode?: string
 	home_remedies: string[]
 	possible_conditions: string[]
-	severity: 'low' | 'medium' | 'high' | 'emergency'
+	severity: 'non-urgent' | 'urgent' | 'emergency'
 	doctor_needed: boolean
-	recommended_speciality?: string
+	recommended_speciality?: string | null
 	nearby_doctors: DoctorSuggestion[]
 	sources: SourceReference[]
 	confidence_category: 'High' | 'Moderate' | 'Low'
 	confidence_score: number
 	disclaimer: string
+}
+
+/** Response of POST /api/chatbot/sessions/{id}/message — one complete assistant turn. */
+export interface ChatTurnResponse {
+	message_id: string
+	answer: string
+	payload: ChatResponse
+	metrics: Record<string, unknown>
+	session_title: string
 }
 
 export interface ChatMessageResponse {

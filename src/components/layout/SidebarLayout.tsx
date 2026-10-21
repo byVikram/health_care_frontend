@@ -4,7 +4,8 @@ import { ReactNode } from 'react'
 import { Box } from '@mui/material'
 import AppSidebar from '../common/Sidebar/AppSidebar'
 import DoctorNavBar from '../common/Navbar/DoctorNavBar'
-import { useAuth, clearAuth } from '../../hooks/useAuth'
+import { useAuth } from '../../hooks/useAuth'
+import { logout } from '../../features/auth/authService'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routes'
 
@@ -22,7 +23,6 @@ import drImage from '../../assets/Services/doctors-service.png'
 
 import AppointmentIcon from '../../assets/icons/appointments.svg'
 import PharmacyIcon from '../../assets/icons/pharmacy.svg'
-import LabIcon from '../../assets/icons/lab.svg'
 import RadiologyIcon from '../../assets/icons/radiology.svg'
 import AncillaryIcon from '../../assets/icons/ancillary.svg'
 import TreatmentIcon from '../../assets/icons/treatment.svg'
@@ -34,8 +34,8 @@ import PaymentsIcon from '../../assets/icons/payments.svg'
 import BlogsIcon from '../../assets/icons/blogs.svg'
 import HelpCenterIcon from '../../assets/icons/help-center.svg'
 import SettingsIcon from '../../assets/icons/settings.svg'
-
 import CarePlanIcon from '../../assets/icons/care-plan.svg'
+import CabIcon from '../../assets/icons/cab.svg'
 
 const SIDEBAR_WIDTH = 280
 const NAVBAR_HEIGHT = 64
@@ -49,9 +49,9 @@ const DOCTOR_MENU_ITEMS = [
 		path: `${ROUTES.APPOINTMENTS}?view=doctor`,
 	},
 	{ id: 'pharmacy', label: 'Pharmacy', icon: PharmacyIcon },
-	{ id: 'lab', label: 'Lab', icon: LabIcon },
 	{ id: 'radiology', label: 'Radiology', icon: RadiologyIcon },
 	{ id: 'reminders', label: 'Reminders', icon: RemindersIcon },
+	{ id: 'events', label: 'Events & Seminars', icon: AppointmentIcon, path: ROUTES.DOCTOR.EVENTS },
 	// { id: 'patients', label: 'My Patients', icon: , path: '/doctor/patients' },
 	// { id: 'hospitals', label: 'My Hospitals', icon: , path: '/profile' },
 	// { id: 'availability', label: 'Availability', icon: <EventAvailableOutlinedIcon />, path: '/profile' },
@@ -69,7 +69,6 @@ const PATIENT_MENU_ITEMS = [
 		path: `${ROUTES.APPOINTMENTS}?view=patient`,
 	},
 	{ id: 'pharmacy', label: 'Pharmacy', icon: PharmacyIcon },
-	{ id: 'lab', label: 'Lab', icon: LabIcon },
 	{ id: 'radiology', label: 'Radiology', icon: RadiologyIcon },
 	{ id: 'ancillary', label: 'Ancillary', icon: AncillaryIcon },
 	{ id: 'history', label: 'Treatment History', icon: TreatmentIcon },
@@ -78,6 +77,7 @@ const PATIENT_MENU_ITEMS = [
 	{ id: 'insurance', label: 'My Insurance Policy', icon: InsuranceIcon },
 	{ id: 'reminders', label: 'Reminders', icon: RemindersIcon },
 	{ id: 'payments', label: 'Payments', icon: PaymentsIcon },
+	{ id: 'cabs', label: 'Book a Cab', icon: CabIcon, path: '/portal/transportation' },
 	{ id: 'blogs', label: 'Blogs', icon: BlogsIcon },
 	{ id: 'help', label: 'Help Center', icon: HelpCenterIcon },
 	{ id: 'settings', label: 'Settings', icon: SettingsIcon, path: '/profile' },
@@ -117,9 +117,17 @@ export default function SidebarLayout({ children, activeMenuId }: SidebarLayoutP
 			}
 		: undefined
 
-	const handleLogout = () => {
-		clearAuth()
-		navigate('/login')
+	const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+	const handleLogout = async () => {
+		if (isLoggingOut) return
+		setIsLoggingOut(true)
+		try {
+			await logout()
+			navigate('/login')
+		} finally {
+			setIsLoggingOut(false)
+		}
 	}
 
 	return (

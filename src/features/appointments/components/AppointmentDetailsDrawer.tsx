@@ -25,6 +25,7 @@ import {
 import AppDrawer from '../../../components/common/Drawer/AppDrawer'
 import { getAppointmentById } from '../../../services/appointmentService'
 import { Appointment, AppointmentHistoryEntry } from '../../../types/appointment'
+import { buildS3Url } from '../../../utils/s3'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 

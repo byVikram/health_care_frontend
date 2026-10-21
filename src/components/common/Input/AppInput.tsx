@@ -1,6 +1,6 @@
 // src/components/common/Input/AppInput.tsx
 import React, { forwardRef, ReactNode, useState } from 'react'
-import { Box, TextField, InputAdornment, SxProps, Theme, TextFieldProps } from '@mui/material'
+import { Box, TextField, InputAdornment, Typography, SxProps, Theme, TextFieldProps } from '@mui/material'
 import MicIcon from '@mui/icons-material/Mic'
 
 interface AppInputProps extends Omit<TextFieldProps, 'variant'> {
@@ -136,15 +136,9 @@ const AppInput = forwardRef<HTMLDivElement, AppInputProps>((props, ref) => {
         ),
     }
 
-    //             {!endIcon && !enableVoiceSearch && InputProps?.endAdornment}
-    //         </>
-    //     ),
-    // }
-
-    return (
+    const inputField = (
         <TextField
             ref={ref}
-            label={label}
             value={value}
             onChange={onChange}
             placeholder={placeholder}
@@ -164,10 +158,44 @@ const AppInput = forwardRef<HTMLDivElement, AppInputProps>((props, ref) => {
                     transition: 'all 0.2s ease',
                     borderRadius: '6px',
                 },
+                ...(type === 'number'
+                    ? {
+                            '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                                WebkitAppearance: 'none',
+                                margin: 0,
+                            },
+                            '& input[type=number]': {
+                                MozAppearance: 'textfield',
+                            },
+                      }
+                    : {}),
                 ...sx,
             }}
             {...rest}
         />
+    )
+
+    if (!label) {
+        return inputField
+    }
+
+    return (
+        <Box sx={{ width: fullWidth ? '100%' : 'auto', display: 'flex', flexDirection: 'column' }}>
+            <Typography
+                variant="caption"
+                sx={{
+                    display: 'block',
+                    fontWeight: 400,
+                    fontSize: '0.8rem',
+                    color: disabled ? 'text.disabled' : error ? 'error.main' : '#0f172a',
+                    mb: 0.75,
+                    letterSpacing: '0.01em',
+                }}
+            >
+                {label}
+            </Typography>
+            {inputField}
+        </Box>
     )
 })
 

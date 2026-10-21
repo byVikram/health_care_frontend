@@ -25,7 +25,8 @@ import {
 } from '@mui/icons-material'
 import DoctorNavBar from '../common/Navbar/DoctorNavBar'
 import AppNavBar from '../common/Navbar/AppNavBar'
-import { clearAuth, useAuth } from '../../hooks/useAuth'
+import { useAuth } from '../../hooks/useAuth'
+import { logout } from '../../features/auth/authService'
 import type { LookupHospital, PatientProfile } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { USER_ROLES } from '../../constants/constants'
@@ -57,9 +58,9 @@ const PATIENT_PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
 	{ divider: true },
 	{ label: 'My Appointments', path: ROUTES.APPOINTMENTS },
 	{ label: 'Medicine Orders', path: ROUTES.PHARMACY.ORDERS },
-	{ label: 'Lab Bookings', path: ROUTES.LABORATORY.ORDERS },
 	{ label: 'Radiology Bookings', path: ROUTES.RADIOLOGY.BOOKINGS },
 	{ label: 'My Favourite Doctors', path: ROUTES.PORTAL.FAVOURITES },
+	{ label: 'Book a Cab', path: ROUTES.PORTAL.TRANSPORTATION },
 	{ label: 'My Feedback', path: '#' },
 	{ divider: true },
 	{ label: 'Profile', path: ROUTES.PORTAL.PROFILE },
@@ -352,18 +353,27 @@ function ProfileDropdown({
 		return () => document.removeEventListener('mousedown', handleClickOutside)
 	}, [onClose])
 
-	const handleClick = (item: ProfileMenuItem) => {
+	const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+	const handleClick = async (item: ProfileMenuItem) => {
 		if (isDividerMenuItem(item)) return
 		if (item.special === 'add-user') {
 			onClose()
 			onOpenAddUser()
 			return
 		}
-		onClose()
 		if (item.path === '/logout') {
-			clearAuth()
-			navigate('/login')
+			if (isLoggingOut) return
+			setIsLoggingOut(true)
+			try {
+				onClose()
+				await logout()
+				navigate('/login')
+			} finally {
+				setIsLoggingOut(false)
+			}
 		} else {
+			onClose()
 			navigate(item.path)
 		}
 	}
