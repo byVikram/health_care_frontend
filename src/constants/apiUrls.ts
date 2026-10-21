@@ -44,10 +44,10 @@ export const API_ENDPOINTS = {
 		SYMPTOMS: '/api/specialities/symptoms',
 	},
 	AREA_OF_EXPERTISE: {
-		LIST: '/api/area-of-expertise',
+		LIST: '/api/doctors/area-of-expertise',
 	},
 	TREATMENT_OFFERINGS: {
-		LIST: '/api/treatments-offering',
+		LIST: '/api/doctors/treatments-offering',
 	},
 	USERS: {
 		GET: '/api/users',
