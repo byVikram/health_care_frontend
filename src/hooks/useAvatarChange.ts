@@ -15,6 +15,8 @@ type Options = {
 	onChanged: (avatarUrl: string) => void
 	/** Called only with a confirmed (server-side) URL, e.g. to update the signed-in user's avatar. */
 	onSaved?: (avatarUrl: string) => void
+	/** A family member's public id: the photo is theirs, not the signed-in patient's. */
+	patientId?: string
 }
 
 const messageOf = (error: unknown): string => {
@@ -22,7 +24,7 @@ const messageOf = (error: unknown): string => {
 	return e?.response?.data?.message || e?.response?.data?.detail || e?.message || 'Please try again.'
 }
 
-export function useAvatarChange({ current, onChanged, onSaved }: Options) {
+export function useAvatarChange({ current, onChanged, onSaved, patientId }: Options) {
 	const [busy, setBusy] = useState(false)
 	const previewRef = useRef<string | null>(null)
 
@@ -43,11 +45,11 @@ export function useAvatarChange({ current, onChanged, onSaved }: Options) {
 			previewRef.current = URL.createObjectURL(file)
 			onChanged(previewRef.current)
 			try {
-				const url = await uploadAvatar(file)
+				const url = await uploadAvatar(file, patientId)
 				releasePreview()
 				onChanged(url)
 				onSaved?.(url)
-				announce(url)
+				if (!patientId) announce(url) // the header follows the signed-in user's own photo only
 				toast.success('Profile photo updated')
 			} catch (error) {
 				releasePreview()
@@ -57,23 +59,23 @@ export function useAvatarChange({ current, onChanged, onSaved }: Options) {
 				setBusy(false)
 			}
 		},
-		[current, onChanged, onSaved]
+		[current, onChanged, onSaved, patientId]
 	)
 
 	const remove = useCallback(async () => {
 		setBusy(true)
 		try {
-			await removeAvatar()
+			await removeAvatar(patientId)
 			onChanged('')
 			onSaved?.('')
-			announce('')
+			if (!patientId) announce('')
 			toast.success('Profile photo removed')
 		} catch (error) {
 			toast.error(`Photo not removed. ${messageOf(error)}`)
 		} finally {
 			setBusy(false)
 		}
-	}, [onChanged, onSaved])
+	}, [onChanged, onSaved, patientId])
 
 	return { change, remove, busy }
 }
