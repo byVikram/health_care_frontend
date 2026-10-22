@@ -80,14 +80,21 @@ export default function PatientProfilePage() {
 	const [activeTab, setActiveTab] = useState<string>('personal')
 	const [patient, setPatient] = useState<Patient>(EMPTY_PATIENT)
 	const [loading, setLoading] = useState(false)
+	const { role, user, accessToken, refreshToken, lookupData } = useAuth()
+
+	// Whose profile this is: the account chosen in the header's switcher, which is the signed-in patient or one of
+	// their family members. A photo change must go to that person (`memberId` is set only for a family member).
+	const selfId = lookupData?.patient_profiles?.find((p) => p.is_self)?.id ?? user?.id
+	const activePatientId = localStorage.getItem('patient_id') || selfId
+	const memberId = activePatientId && selfId && activePatientId !== selfId ? activePatientId : undefined
 
 	useEffect(() => {
 		const fetchPatient = async () => {
 			try {
 				setLoading(true)
-				const patientId = localStorage.getItem('patient_id')
+				const patientId = localStorage.getItem('patient_id') || selfId
 				if (!patientId) {
-					console.error('Patient ID not found')
+					toast.error('We could not find your patient profile. Please log in again.')
 					return
 				}
 				const data = await getPatientDetails(patientId)
@@ -99,7 +106,7 @@ export default function PatientProfilePage() {
 			}
 		}
 		fetchPatient()
-	}, [])
+	}, [selfId])
 
 	const [dirtyPersonal, setDirtyPersonal] = useState<Partial<PatientPersonal>>({})
 	const [dirtyMedical, setDirtyMedical] = useState<Partial<PatientMedical>>({})
@@ -134,21 +141,22 @@ export default function PatientProfilePage() {
 		handleLifeStyleDirtyChange(updated)
 	}
 
-	const { role, user, accessToken, refreshToken, lookupData } = useAuth()
 	const { change: handleAvatarChange, remove: handleAvatarRemove, busy: avatarBusy } = useAvatarChange({
 		current: patient.personal.avatar ?? '',
+		patientId: memberId,
 		onChanged: (avatar) => setPatient((prev) => ({ ...prev, personal: { ...prev.personal, avatar } })),
-		// keep the header's copy of the photo in step (the signed-in user and their own entry in the account list)
+		// keep the header's copies in step: the account list entry of the person whose photo changed and, only when it
+		// is the signed-in patient's own photo, the signed-in user's avatar
 		onSaved: (avatar) =>
 			setAuth(
 				role!,
-				{ ...user!, avatar },
+				memberId ? user! : { ...user!, avatar },
 				accessToken!,
 				refreshToken!,
 				lookupData && {
 					...lookupData,
 					patient_profiles: lookupData.patient_profiles.map((p) =>
-						p.is_self ? { ...p, avatar_s3_key: avatar } : p
+						p.id === (memberId ?? selfId) ? { ...p, avatar_s3_key: avatar } : p
 					),
 				}
 			),
