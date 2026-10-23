@@ -60,6 +60,8 @@ interface PaymentState {
 	/** Present only when booking from a referral */
 	referralId?: string
 	consentVersionId: string
+	/** Public id of the person the appointment is for (the signed-in patient or one of their family members) */
+	patientId?: string
 }
 
 interface PaymentOption {
@@ -125,6 +127,7 @@ export default function PaymentPage() {
 		allowPayLater = true,
 		referralId,
 		consentVersionId,
+		patientId,
 	} = state
 
 	// Transportation option states (synced from widget plugin)
@@ -156,7 +159,6 @@ export default function PaymentPage() {
 	const [severity, setSeverity] = useState<'mild' | 'moderate' | 'severe' | ''>('')
 	const [appointmentId, setAppointmentId] = useState('')
 	const [errorMsg, setErrorMsg] = useState<string | null>(null)
-	const patientId = localStorage.getItem('patient_id')
 
 	const infoRows = [
 		{ icon: <CalendarToday sx={{ fontSize: 14, color: 'text.secondary' }} />, label: 'Date:', value: date },
@@ -219,8 +221,13 @@ export default function PaymentPage() {
 			}
 
 			setSuccessOpen(true)
-		} catch {
-			setErrorMsg('Failed to book appointment. Please try again.')
+		} catch (error) {
+			const reason = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+			setErrorMsg(
+				reason
+					? `Your appointment was not booked: ${reason}`
+					: 'Your appointment was not booked. Please check your connection and try again.'
+			)
 		} finally {
 			setBooking(false)
 		}

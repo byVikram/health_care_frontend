@@ -14,8 +14,9 @@ import { customCardStyle } from '../../styles/commonStyles'
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../hooks/useAuth'
+import { useAuth, accountHolderId } from '../../hooks/useAuth'
 import type { LookupHospital } from '../../hooks/useAuth'
+import { useFamilyMembers } from '../../hooks/useFamilyMembers'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import AppSelect from '../../components/common/Select/AppSelect'
 import AppDatePicker from '../../components/common/DatePicker/AppDatePicker'
@@ -142,12 +143,12 @@ export default function AppointmentList() {
 	const highlightedAppointmentId = searchParams.get('appointment_id') || searchParams.get('open_appointment_id')
 	const viewAs: 'doctor' | 'patient' =
 		queryView === 'doctor' || queryView === 'patient' ? queryView : role === 'patient' ? 'patient' : 'doctor'
-	const activePatientId =
-		localStorage.getItem('patient_id') ||
-		lookupData?.patient_profiles?.find((profile) => profile.is_self)?.id ||
-		lookupData?.patient_profiles?.[0]?.id ||
-		(role === 'patient' ? user?.id : '') ||
-		''
+	// whose appointments are listed: the signed-in patient (the account holder) or one of their family members, chosen in
+	// the selector in the header. A booking made for a family member is listed under that person, not under the account holder.
+	const holderPatientId = (role === 'patient' ? accountHolderId({ lookupData, user }) : '') || ''
+	const { members } = useFamilyMembers()
+	const [selectedPatientId, setSelectedPatientId] = useState('') // '' = the account holder
+	const activePatientId = selectedPatientId || holderPatientId
 
 	const [search, setSearch] = useState('')
 	const [page, setPage] = useState(1)
@@ -966,6 +967,8 @@ export default function AppointmentList() {
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'space-between',
+					flexWrap: 'wrap',
+					gap: 2,
 					mb: 2.5,
 				}}
 			>
@@ -979,7 +982,20 @@ export default function AppointmentList() {
 							: 'Manage your patient consultations'}
 					</Typography>
 				</Box>
-				{/* no header CTA */}
+				{viewAs === 'patient' && members.length > 1 && (
+					<Box sx={{ width: { xs: '100%', sm: 280 } }}>
+						<AppSelect
+							label="Appointments for"
+							value={activePatientId}
+							onChange={(e) => {
+								setSelectedPatientId(e.target.value === holderPatientId ? '' : e.target.value)
+								setPage(1)
+							}}
+							options={members.map((m) => ({ value: m.id, label: `${m.name} (${m.relationship})` }))}
+							fullWidth
+						/>
+					</Box>
+				)}
 			</Box>
 			{/* Filter bar */}
 			{loading ? (
@@ -1005,7 +1021,7 @@ export default function AppointmentList() {
 					</Grid>
 				</Grid>
 			) : (
-				<Grid container spacing={2} sx={{ mb: 2.5, alignItems: 'center' }}>
+				<Grid container spacing={2} sx={{ mb: 2.5, alignItems: 'flex-end' }}>
 					<Grid size={{ xs: 12, lg: 8 }}>
 						<Grid container spacing={2}>
 							<Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -1039,8 +1055,14 @@ export default function AppointmentList() {
 							</Grid>
 
 							<Grid size={{ xs: 12, sm: 6, md: 3 }}>
+								{/* caption above the box, like the Hospital / Mode / Status filters, so the boxes sit level */}
+								<Typography
+									variant="caption"
+									sx={{ display: 'block', fontWeight: 400, fontSize: '0.8rem', color: '#0f172a', mb: 0.75, letterSpacing: '0.01em' }}
+								>
+									Date
+								</Typography>
 								<AppDatePicker
-									label="Date"
 									value={filterDate}
 									onChange={(value) => {
 										setFilterDate(value)

@@ -2,6 +2,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Box, Container, Grid, Divider } from '@mui/material'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
+import AppSelect from '../../components/common/Select/AppSelect'
 import AppProfileSidebar from '../../components/common/ProfileSidebar/AppProfileSidebar'
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline'
 import MedicalServicesOutlinedIcon from '@mui/icons-material/MedicalServicesOutlined'
@@ -13,7 +14,8 @@ import { Patient, PatientPersonal, PatientMedical, PatientLifeStyle } from '../.
 import { updatePatientProfile, getPatientDetails } from './patientService'
 import { toast } from 'react-toastify'
 import { useAvatarChange } from '../../hooks/useAvatarChange'
-import { useAuth, setAuth } from '../../hooks/useAuth'
+import { useAuth, setAuth, accountHolderId } from '../../hooks/useAuth'
+import { useFamilyMembers } from '../../hooks/useFamilyMembers'
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
 import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
@@ -82,23 +84,34 @@ export default function PatientProfilePage() {
 	const [loading, setLoading] = useState(false)
 	const { role, user, accessToken, refreshToken, lookupData } = useAuth()
 
-	// Whose profile this is: the account chosen in the header's switcher, which is the signed-in patient or one of
-	// their family members. A photo change must go to that person (`memberId` is set only for a family member).
-	const selfId = lookupData?.patient_profiles?.find((p) => p.is_self)?.id ?? user?.id
-	const activePatientId = localStorage.getItem('patient_id') || selfId
-	const memberId = activePatientId && selfId && activePatientId !== selfId ? activePatientId : undefined
+	// Whose details this page shows and saves: the signed-in patient (the account holder) or one of their family
+	// members, chosen in the selector below. Choosing one never changes who is signed in; the backend still checks the
+	// caller is that member's guardian on every request. `memberId` is set only for a family member (a photo change
+	// must go to that person).
+	const selfId = accountHolderId({ lookupData, user })
+	const { members } = useFamilyMembers()
+	const [selectedPatientId, setSelectedPatientId] = useState('') // '' = the account holder
+	const activePatientId = selectedPatientId || selfId
+	const memberId = selectedPatientId && selectedPatientId !== selfId ? selectedPatientId : undefined
+
+	const [dirtyPersonal, setDirtyPersonal] = useState<Partial<PatientPersonal>>({})
+	const [dirtyMedical, setDirtyMedical] = useState<Partial<PatientMedical>>({})
+	const [dirtyLifeStyle, setDirtyLifeStyle] = useState<Partial<PatientLifeStyle>>({})
 
 	useEffect(() => {
 		const fetchPatient = async () => {
 			try {
 				setLoading(true)
-				const patientId = localStorage.getItem('patient_id') || selfId
-				if (!patientId) {
+				if (!activePatientId) {
 					toast.error('We could not find your patient profile. Please log in again.')
 					return
 				}
-				const data = await getPatientDetails(patientId)
+				const data = await getPatientDetails(activePatientId)
 				setPatient(data.data)
+				// unsaved edits belong to the person they were typed for
+				setDirtyPersonal({})
+				setDirtyMedical({})
+				setDirtyLifeStyle({})
 			} catch (err) {
 				console.error('Failed to load patient:', err)
 			} finally {
@@ -106,11 +119,7 @@ export default function PatientProfilePage() {
 			}
 		}
 		fetchPatient()
-	}, [selfId])
-
-	const [dirtyPersonal, setDirtyPersonal] = useState<Partial<PatientPersonal>>({})
-	const [dirtyMedical, setDirtyMedical] = useState<Partial<PatientMedical>>({})
-	const [dirtyLifeStyle, setDirtyLifeStyle] = useState<Partial<PatientLifeStyle>>({})
+	}, [activePatientId])
 
 	const completionPercent = useMemo(() => calcCompletion(patient), [patient])
 
@@ -225,6 +234,17 @@ export default function PatientProfilePage() {
 	return (
 		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
 			<Container maxWidth="lg">
+				{members.length > 1 && (
+					<Box sx={{ mb: 3, maxWidth: 360 }}>
+						<AppSelect
+							label="Profile of"
+							value={activePatientId ?? ''}
+							onChange={(e) => setSelectedPatientId(e.target.value === selfId ? '' : e.target.value)}
+							options={members.map((m) => ({ value: m.id, label: `${m.name} (${m.relationship})` }))}
+							fullWidth
+						/>
+					</Box>
+				)}
 				<Grid container spacing={3}>
 					{loading ? (
 						<>

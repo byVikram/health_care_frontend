@@ -59,11 +59,12 @@ export const getPatientDetails = async (patientId: string) => {
   return res.data;
 };
 
-// GET /api/patients/me/details is patient-role-only and always resolves to the
-// calling user's own record (no id needed) -- used instead of getPatientDetails
-// when the viewer is the patient themselves, since GET_BY_ID is doctor-only.
-export const getMyPatientDetails = async () => {
-  const res = await ApiService.get(API_ENDPOINTS.PATIENT.ME);
+// GET /api/patients/me/details is patient-role-only -- used instead of getPatientDetails
+// when the viewer is the patient themselves, since GET_BY_ID is doctor-only. With no id it
+// is the calling user's own record; with `patientId` (a family member's public id) it is
+// that family member's, after the backend checks the caller is their guardian.
+export const getMyPatientDetails = async (patientId?: string) => {
+  const res = await ApiService.get(API_ENDPOINTS.PATIENT.ME, patientId ? { params: { patient_id: patientId } } : undefined);
   return res.data;
 };
 
