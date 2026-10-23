@@ -134,6 +134,14 @@ export function clearAuth(): void {
 	window.dispatchEvent(new Event('auth-changed'))
 }
 
+/**
+ * The signed-in patient's own profile id: the account holder. Family members are separate profiles under it; choosing
+ * one on a page never changes who is signed in.
+ */
+export function accountHolderId(auth: Pick<AuthState, 'lookupData' | 'user'>): string | undefined {
+	return auth.lookupData?.patient_profiles?.find((p) => p.is_self)?.id ?? auth.user?.id
+}
+
 export function getAccessToken(): string | null {
 	return localStorage.getItem('access_token')
 }

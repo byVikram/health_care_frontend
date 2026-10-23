@@ -30,6 +30,140 @@ export const updatePatientProfile = async (
 	return res.data
 }
 
+/** One entry of GET /api/patients/family-members: the signed-in patient (`is_self`) or one of their family members. */
+export interface FamilyMemberApi {
+	/** The person's public id: what the backend takes as `patient_id`. */
+	id: string
+	name: string
+	relation: string
+	relationship?: string
+	is_self: boolean
+	age?: number | null
+	gender?: string | null
+	blood_group?: string | null
+	avatar_s3_key?: string | null
+	date_of_birth?: string | null
+	contact_number?: string | null
+	/** The member's own Karola ID */
+	patient_code?: string | null
+	/** Date of birth and gender are filled in */
+	is_complete?: boolean
+}
+
+export const getFamilyMembers = async (): Promise<FamilyMemberApi[]> => {
+	const res = await ApiService.get<{ data?: FamilyMemberApi[] }>(API_ENDPOINTS.PATIENT.FAMILY_MEMBERS)
+	return res.data?.data ?? []
+}
+
+export interface FamilyMemberInput {
+	name: string
+	/** Upper-case relation, e.g. 'SPOUSE' (the backend also accepts any case). */
+	relation: string
+	gender?: string
+	/** YYYY-MM-DD */
+	date_of_birth?: string | null
+	contact_number?: string | null
+}
+
+export const createFamilyMember = async (input: FamilyMemberInput): Promise<FamilyMemberApi> => {
+	const res = await ApiService.post<{ data: FamilyMemberApi }>(API_ENDPOINTS.PATIENT.FAMILY_MEMBERS, input)
+	return res.data.data
+}
+
+/** What PATCH /api/patients/family-members/{id} takes: the basics plus the health fields (all optional). */
+export interface MedicationItem {
+	name: string
+	dose: string
+	frequency: string
+}
+
+export interface FamilyMemberUpdate extends Partial<FamilyMemberInput> {
+	blood_group?: string
+	height?: number
+	weight?: number
+	allergies?: string[]
+	chronic_conditions?: string[]
+	/** The full list of current medicines (replaces what is saved) */
+	medications?: MedicationItem[]
+}
+
+export const updateFamilyMember = async (memberId: string, patch: FamilyMemberUpdate): Promise<void> => {
+	await ApiService.patch(API_ENDPOINTS.PATIENT.FAMILY_MEMBER_BY_ID(memberId), patch)
+}
+
+/** One family member: GET /api/patients/family-members/{id} */
+export const getFamilyMember = async (memberId: string): Promise<FamilyMemberApi> => {
+	const res = await ApiService.get<{ data: FamilyMemberApi }>(API_ENDPOINTS.PATIENT.FAMILY_MEMBER_BY_ID(memberId))
+	return res.data.data
+}
+
+/** The health part of a member's details: GET /api/patients/me/details?patient_id={id} */
+export interface MemberHealthDetails {
+	personal: { blood_group?: string | null; height?: number | string | null; weight?: number | string | null }
+	medical: {
+		allergies?: string[] | null
+		chronic_conditions?: string[] | null
+		medications?: MedicationItem[] | null
+		current_medications?: string[] | null
+	}
+}
+
+export const getMemberHealthDetails = async (memberId: string): Promise<MemberHealthDetails> => {
+	const res = await ApiService.get<{ data: MemberHealthDetails }>(API_ENDPOINTS.PATIENT.ME, {
+		params: { patient_id: memberId },
+	})
+	return res.data.data
+}
+
+/** Soft delete on the backend: the member's past bookings and reports are kept. */
+export const removeFamilyMember = async (memberId: string): Promise<void> => {
+	await ApiService.delete(API_ENDPOINTS.PATIENT.FAMILY_MEMBER_BY_ID(memberId))
+}
+
+/** A member's government ID. The file is private: `url` is a short-lived signed link. */
+export interface IdentityDocument {
+	id: string
+	file_name: string | null
+	type_label: string
+	/** pending | approved | rejected | reupload */
+	status: string
+	url: string | null
+}
+
+export const IDENTITY_DOCUMENT_MAX_BYTES = 10 * 1024 * 1024
+export const IDENTITY_DOCUMENT_ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png']
+
+/** Returns an error message when the file can't be used as an ID document, otherwise null. */
+export const validateIdentityDocument = (file: File): string | null => {
+	if (!IDENTITY_DOCUMENT_ACCEPTED_TYPES.includes(file.type)) return 'Please choose a PDF, JPG or PNG file.'
+	if (file.size === 0) return 'That file is empty.'
+	if (file.size > IDENTITY_DOCUMENT_MAX_BYTES) return 'The document must be 10 MB or smaller.'
+	return null
+}
+
+/** GET /api/patients/family-members/{id}/identity-document -- null when none has been uploaded */
+export const getIdentityDocument = async (memberId: string): Promise<IdentityDocument | null> => {
+	const res = await ApiService.get<{ data: IdentityDocument | null }>(
+		API_ENDPOINTS.PATIENT.FAMILY_MEMBER_IDENTITY_DOCUMENT(memberId)
+	)
+	return res.data.data
+}
+
+/**
+ * PUT the picked file as the member's ID document (replaces the previous one). The server stores it privately.
+ * The caller shows the failure itself, so the global error toast is off (it would repeat the same message).
+ */
+export const uploadIdentityDocument = async (memberId: string, file: File): Promise<IdentityDocument> => {
+	const form = new FormData()
+	form.append('file', file)
+	const res = await ApiService.put<{ data: IdentityDocument }>(
+		API_ENDPOINTS.PATIENT.FAMILY_MEMBER_IDENTITY_DOCUMENT(memberId),
+		form,
+		{ suppressErrorToast: true }
+	)
+	return res.data.data
+}
+
 export const getPatientDetails = async (patientId: string): Promise<PatientProfileApiResponse> => {
 	const res = await ApiService.get<PatientProfileApiResponse>(API_ENDPOINTS.PATIENT.ME, {
 		params: {

@@ -13,6 +13,7 @@ import {
 	Theme,
 	TextFieldProps,
 } from '@mui/material'
+import { customScrollbar } from '../../../styles/commonStyles'
 
 export interface MultiSelectOption {
 	value: string | number
@@ -85,7 +86,7 @@ const AppMultiSelect = forwardRef<HTMLDivElement, AppMultiSelectProps>((props, r
 				displayEmpty: false,
 				MenuProps: {
 					PaperProps: {
-						sx: { mt: 1, boxShadow: '0 6px 20px rgba(0,0,0,0.12)', maxHeight: 280 },
+						sx: { mt: 1, boxShadow: '0 6px 20px rgba(0,0,0,0.12)', maxHeight: 280, ...customScrollbar },
 					},
 				},
 				renderValue: (selected) => {

@@ -58,6 +58,9 @@ export const API_ENDPOINTS = {
 	PATIENT: {
 		ME: '/api/patients/me/details',
 		UPDATE: '/api/patients/me/details',
+		FAMILY_MEMBERS: '/api/patients/family-members',
+		FAMILY_MEMBER_BY_ID: (id: string) => `/api/patients/family-members/${id}`,
+		FAMILY_MEMBER_IDENTITY_DOCUMENT: (id: string) => `/api/patients/family-members/${id}/identity-document`,
 		GET_BY_ID: (id: string) => `/api/patients/${id}/details`,
 		ADDRESSES: '/api/patients/me/addresses',
 		ADDRESS_UPDATE: (id: string) => `/api/patients/me/addresses/${id}`,

@@ -27,6 +27,7 @@ import SortIcon from '@mui/icons-material/Sort'
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety'
 
 import { customScrollbar } from '../../../styles/commonStyles'
+import { useAuth, accountHolderId } from '../../../hooks/useAuth'
 import {
 	listHealthQuestions,
 	likeDoctorAnswer,
@@ -415,6 +416,8 @@ const formatProfileAge = (dateOfBirth?: string) => {
 }
 
 export default function PatientHealthQuestionsSection({ isPortalPage = false }: QuestionsSectionProps) {
+	const { user, lookupData } = useAuth()
+	const holderId = accountHolderId({ lookupData, user }) // the signed-in patient (the account holder)
 	const navigate = useNavigate()
 	const [searchParams] = useSearchParams()
 
@@ -464,7 +467,7 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 
 	useEffect(() => {
 		const loadPatientProfile = async () => {
-			const patientId = localStorage.getItem('patient_id')
+			const patientId = holderId
 			if (!patientId) return
 
 			setProfileLoading(true)
@@ -484,7 +487,7 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 		if (askDialogOpen) {
 			loadPatientProfile()
 		}
-	}, [askDialogOpen])
+	}, [askDialogOpen, holderId])
 
 	const handleSearchChange = (val: string) => {
 		setSearch(val)

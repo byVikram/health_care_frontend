@@ -232,7 +232,7 @@ export default function ConsultationPage() {
 				const [patientRes, appointmentRes] = await Promise.allSettled([
 					(role === 'doctor'
 						? getPatientDetails(patientId)
-						: getMyPatientDetails()) as Promise<PatientDetailsResponse>,
+						: getMyPatientDetails(patientId)) as Promise<PatientDetailsResponse>,
 					getAppointmentById(appointmentId) as Promise<AppointmentDetailsResponse>,
 				])
 
