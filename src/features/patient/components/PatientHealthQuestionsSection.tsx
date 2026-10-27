@@ -38,15 +38,19 @@ import {
 } from '../../../services/qaService'
 import { toast } from 'react-toastify'
 import { getPatientDetails } from '../patientService'
+import { getDoctorStatus } from '../../doctor/doctorService'
+import { USER_ROLES } from '../../../constants/constants'
 
 // â”€â”€â”€ Recursive Reply Rendering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ReplyNode({
 	reply,
 	onReplySubmit,
+	canReply,
 }: {
 	reply: DoctorAnswerReply
 	onReplySubmit: (parentId: string, text: string) => void
+	canReply: boolean
 }) {
 	const [showReplyBox, setShowReplyBox] = useState(false)
 	const [replyText, setReplyText] = useState('')
@@ -82,16 +86,18 @@ function ReplyNode({
 			<Typography sx={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5 }}>
 				{reply.content}
 			</Typography>
-			<Box sx={{ mt: 0.5 }}>
-				<Typography
-					onClick={() => setShowReplyBox(!showReplyBox)}
-					sx={{ fontSize: '0.75rem', color: '#0c7c7c', cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
-				>
-					Reply
-				</Typography>
-			</Box>
+			{canReply && (
+				<Box sx={{ mt: 0.5 }}>
+					<Typography
+						onClick={() => setShowReplyBox(!showReplyBox)}
+						sx={{ fontSize: '0.75rem', color: '#0c7c7c', cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
+					>
+						Reply
+					</Typography>
+				</Box>
+			)}
 
-			{showReplyBox && (
+			{canReply && showReplyBox && (
 				<Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
 					<TextField
 						size="small"
@@ -114,7 +120,7 @@ function ReplyNode({
 
 			{reply.replies &&
 				reply.replies.map((child) => (
-					<ReplyNode key={child.id} reply={child} onReplySubmit={onReplySubmit} />
+					<ReplyNode key={child.id} reply={child} onReplySubmit={onReplySubmit} canReply={canReply} />
 				))}
 		</Box>
 	)
@@ -185,10 +191,13 @@ function QuestionDetailPanel({
 	q,
 	onReplySubmitted,
 	onAnswerLiked,
+	canReply,
 }: {
 	q: PatientQuestion
 	onReplySubmitted: (answerId: string, reply: DoctorAnswerReply) => void
 	onAnswerLiked: (answerId: string, likes: number) => void
+	/** False for a doctor an admin has not verified yet: they can read but not reply. */
+	canReply: boolean
 }) {
 	const [activeReplyId, setActiveReplyId] = useState<string | null>(null)
 	const [replyInputText, setReplyInputText] = useState('')
@@ -337,23 +346,25 @@ function QuestionDetailPanel({
 											{ans.likes} Helpful
 										</Typography>
 									</Box>
-									<Box
-										onClick={() => setActiveReplyId(activeReplyId === ans.id ? null : ans.id)}
-										sx={{
-											display: 'flex',
-											alignItems: 'center',
-											gap: 0.5,
-											cursor: 'pointer',
-											'&:hover svg': { color: '#0c7c7c' },
-											'&:hover p': { color: '#0c7c7c' },
-										}}
-									>
-										<ChatBubbleOutlineIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-										<Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>Reply</Typography>
-									</Box>
+									{canReply && (
+										<Box
+											onClick={() => setActiveReplyId(activeReplyId === ans.id ? null : ans.id)}
+											sx={{
+												display: 'flex',
+												alignItems: 'center',
+												gap: 0.5,
+												cursor: 'pointer',
+												'&:hover svg': { color: '#0c7c7c' },
+												'&:hover p': { color: '#0c7c7c' },
+											}}
+										>
+											<ChatBubbleOutlineIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+											<Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>Reply</Typography>
+										</Box>
+									)}
 								</Box>
 
-								{activeReplyId === ans.id && (
+								{canReply && activeReplyId === ans.id && (
 									<Box sx={{ display: 'flex', gap: 1, mt: 1.5, pl: 0.5 }}>
 										<TextField
 											size="small"
@@ -380,6 +391,7 @@ function QuestionDetailPanel({
 										key={reply.id}
 										reply={reply}
 										onReplySubmit={(parentId, text) => handleChildReplySubmit(ans.id, parentId, text)}
+										canReply={canReply}
 									/>
 								))}
 							</Box>
@@ -416,7 +428,17 @@ const formatProfileAge = (dateOfBirth?: string) => {
 }
 
 export default function PatientHealthQuestionsSection({ isPortalPage = false }: QuestionsSectionProps) {
-	const { user, lookupData } = useAuth()
+	const { user, lookupData, role } = useAuth()
+	// Doctors answer patients' questions, so an unverified one can read but not reply (the server refuses them too).
+	// Until the status is known the box is hidden, and a failed lookup keeps it hidden: fail closed.
+	const [doctorVerified, setDoctorVerified] = useState(false)
+	useEffect(() => {
+		if (role !== USER_ROLES.DOCTOR) return
+		getDoctorStatus()
+			.then((status) => setDoctorVerified(status.is_verified))
+			.catch(() => setDoctorVerified(false))
+	}, [role])
+	const canReply = role !== USER_ROLES.DOCTOR || doctorVerified
 	const holderId = accountHolderId({ lookupData, user }) // the signed-in patient (the account holder)
 	const navigate = useNavigate()
 	const [searchParams] = useSearchParams()
@@ -739,6 +761,7 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 									q={selectedQuestion}
 									onReplySubmitted={handleReplyAdded}
 									onAnswerLiked={handleAnswerLiked}
+									canReply={canReply}
 								/>
 							) : (
 								<Box sx={{ m: 'auto', textAlign: 'center', py: 8 }}>
