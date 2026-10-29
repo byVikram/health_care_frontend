@@ -32,14 +32,18 @@ import {
 	listHealthQuestions,
 	likeDoctorAnswer,
 	submitAnswerReply,
+	submitDoctorAnswer,
 	submitHealthQuestion,
-	PatientQuestion,
-	DoctorAnswerReply,
+	type PatientQuestion,
+	type DoctorAnswer,
+	type DoctorAnswerReply,
 } from '../../../services/qaService'
 import { toast } from 'react-toastify'
 import { getPatientDetails } from '../patientService'
-import { getDoctorStatus } from '../../doctor/doctorService'
-import { USER_ROLES } from '../../../constants/constants'
+import { useQuestionAccess } from '../../../hooks/useQuestionAccess'
+
+// Same minimum as the mobile app, so a one-liner is not posted as an expert answer.
+const MIN_ANSWER_LENGTH = 60
 
 // â”€â”€â”€ Recursive Reply Rendering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -191,16 +195,44 @@ function QuestionDetailPanel({
 	q,
 	onReplySubmitted,
 	onAnswerLiked,
+	onAnswerSubmitted,
 	canReply,
+	canAnswer,
+	awaitingVerification,
 }: {
 	q: PatientQuestion
 	onReplySubmitted: (answerId: string, reply: DoctorAnswerReply) => void
 	onAnswerLiked: (answerId: string, likes: number) => void
+	onAnswerSubmitted: (questionId: string, answer: DoctorAnswer) => void
 	/** False for a doctor an admin has not verified yet: they can read but not reply. */
 	canReply: boolean
+	/** A verified doctor: shows the box to post an answer to this question. */
+	canAnswer: boolean
+	/** A doctor whose verification is pending: shows why there is no answer box. */
+	awaitingVerification: boolean
 }) {
 	const [activeReplyId, setActiveReplyId] = useState<string | null>(null)
 	const [replyInputText, setReplyInputText] = useState('')
+	const [answerText, setAnswerText] = useState('')
+	const [posting, setPosting] = useState(false)
+	const answerLength = answerText.trim().length
+	const answerReady = answerLength >= MIN_ANSWER_LENGTH
+
+	const handleAnswerSubmit = async () => {
+		if (!answerReady || posting) return
+		setPosting(true)
+		try {
+			const res = await submitDoctorAnswer(q.id, answerText.trim())
+			onAnswerSubmitted(q.id, res.data)
+			setAnswerText('')
+			toast.success('Your answer is live. The patient has been notified.')
+		} catch (err) {
+			// the global error toast already shows the server's reason (e.g. the doctor is not verified)
+			console.error('Error posting answer:', err)
+		} finally {
+			setPosting(false)
+		}
+	}
 
 	const handleAnswerLike = async (ansId: string) => {
 		try {
@@ -275,6 +307,48 @@ function QuestionDetailPanel({
 					</Typography>
 					<Typography sx={{ fontSize: '12px', color: 'text.primary', fontWeight: 600, mt: 0.2 }}>
 						{q.history}
+					</Typography>
+				</Box>
+			)}
+
+			{canAnswer && (
+				<Box sx={{ mb: 2, p: 1.5, bgcolor: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: '10px' }}>
+					<Typography sx={{ fontWeight: 700, fontSize: '13px', color: 'text.primary', mb: 1 }}>
+						Your answer
+					</Typography>
+					<TextField
+						multiline
+						minRows={3}
+						fullWidth
+						size="small"
+						value={answerText}
+						onChange={(e) => setAnswerText(e.target.value)}
+						placeholder="General guidance in simple words, and when to see a doctor"
+						sx={{ bgcolor: '#fff', '& .MuiOutlinedInput-root': { fontSize: '13px', borderRadius: '8px' } }}
+					/>
+					<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, mt: 1 }}>
+						<Typography sx={{ fontSize: '11px', color: 'text.secondary' }}>
+							Public answer. Don't diagnose or give doses.{' '}
+							{answerReady ? `${answerLength} characters` : `Min ${MIN_ANSWER_LENGTH} characters (${answerLength})`}
+						</Typography>
+						<Button
+							variant="contained"
+							size="small"
+							disabled={!answerReady || posting}
+							onClick={handleAnswerSubmit}
+							sx={{ bgcolor: '#0c7c7c', textTransform: 'none', borderRadius: '6px', '&:hover': { bgcolor: '#0b6c6c' } }}
+						>
+							{posting ? 'Posting...' : 'Post answer'}
+						</Button>
+					</Box>
+				</Box>
+			)}
+
+			{awaitingVerification && (
+				<Box sx={{ mb: 2, p: 1.5, bgcolor: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '10px' }}>
+					<Typography sx={{ fontSize: '12px', color: '#92400e', lineHeight: 1.6 }}>
+						<strong>Answering isn't open yet.</strong> Patients read these as expert answers, so you can answer
+						questions once an admin has verified your profile.
 					</Typography>
 				</Box>
 			)}
@@ -428,17 +502,9 @@ const formatProfileAge = (dateOfBirth?: string) => {
 }
 
 export default function PatientHealthQuestionsSection({ isPortalPage = false }: QuestionsSectionProps) {
-	const { user, lookupData, role } = useAuth()
-	// Doctors answer patients' questions, so an unverified one can read but not reply (the server refuses them too).
-	// Until the status is known the box is hidden, and a failed lookup keeps it hidden: fail closed.
-	const [doctorVerified, setDoctorVerified] = useState(false)
-	useEffect(() => {
-		if (role !== USER_ROLES.DOCTOR) return
-		getDoctorStatus()
-			.then((status) => setDoctorVerified(status.is_verified))
-			.catch(() => setDoctorVerified(false))
-	}, [role])
-	const canReply = role !== USER_ROLES.DOCTOR || doctorVerified
+	const { user, lookupData } = useAuth()
+	// What this persona may do here: patients ask, verified doctors answer, an unverified doctor only reads.
+	const { canAsk, canAnswer, canReply, awaitingVerification } = useQuestionAccess()
 	const holderId = accountHolderId({ lookupData, user }) // the signed-in patient (the account holder)
 	const navigate = useNavigate()
 	const [searchParams] = useSearchParams()
@@ -542,6 +608,10 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 				return { ...q, answers: updatedAnswers }
 			})
 		)
+	}
+
+	const handleAnswerAdded = (questionId: string, answer: DoctorAnswer) => {
+		setQuestions((prev) => prev.map((q) => (q.id === questionId ? { ...q, answers: [...q.answers, answer] } : q)))
 	}
 
 	const handleAnswerLiked = (answerId: string, likes: number) => {
@@ -758,10 +828,14 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 						<Box sx={{ flex: 1, p: 3, overflowY: 'auto', display: 'flex', flexDirection: 'column', ...customScrollbar }}>
 							{selectedQuestion ? (
 								<QuestionDetailPanel
+									key={selectedQuestion.id}
 									q={selectedQuestion}
 									onReplySubmitted={handleReplyAdded}
 									onAnswerLiked={handleAnswerLiked}
+									onAnswerSubmitted={handleAnswerAdded}
 									canReply={canReply}
+									canAnswer={canAnswer}
+									awaitingVerification={awaitingVerification}
 								/>
 							) : (
 								<Box sx={{ m: 'auto', textAlign: 'center', py: 8 }}>
@@ -866,20 +940,22 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 					</Grid>
 
 					<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 5, gap: 1.5 }}>
-						<Button
-							variant="contained"
-							onClick={() => setAskDialogOpen(true)}
-							sx={{ bgcolor: '#0c7c7c', textTransform: 'none', px: 4, py: 1.2, borderRadius: 2, fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}
-						>
-							Ask a Free Question
-						</Button>
+						{canAsk && (
+							<Button
+								variant="contained"
+								onClick={() => setAskDialogOpen(true)}
+								sx={{ bgcolor: '#0c7c7c', textTransform: 'none', px: 4, py: 1.2, borderRadius: 2, fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}
+							>
+								Ask a Free Question
+							</Button>
+						)}
 						<Typography variant="caption" color="text.secondary" align="center" sx={{ maxWidth: '600px', px: 2 }}>
 							Medical advice disclaimer: Information on this site is not a substitute for professional medical care. Consult a physician for specific health problems.
 						</Typography>
 					</Box>
 				</>
 			)}
-			{askQuestionDialog}
+			{canAsk && askQuestionDialog}
 		</Box>
 	)
 }
