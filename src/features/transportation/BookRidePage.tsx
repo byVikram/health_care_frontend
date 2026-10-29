@@ -9,6 +9,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { useGoBack } from '../../hooks/useGoBack'
 import {
   Box,
   Container,
@@ -64,6 +65,7 @@ export default function BookRidePage() {
   const { appointmentId, bookingId: radiologyBookingId } = useParams<{ appointmentId?: string; bookingId?: string }>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const goBack = useGoBack()
 
   const resolvedBookingId = appointmentId ?? radiologyBookingId ?? ''
   const bookingSource = (searchParams.get('source') ?? (appointmentId ? 'doctor' : 'radiology')) as 'doctor' | 'radiology'
@@ -218,7 +220,7 @@ export default function BookRidePage() {
     return (
       <Box sx={{ p: 4, textAlign: 'center' }}>
         <Typography color="error">{apptError ?? 'Appointment not found'}</Typography>
-        <AppButton label="Go Back" onClick={() => navigate(-1)} sx={{ mt: 2 }} />
+        <AppButton label="Go Back" onClick={() => goBack()} sx={{ mt: 2 }} />
       </Box>
     )
   }
@@ -242,7 +244,7 @@ export default function BookRidePage() {
         
         {/* Context Top Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-          <IconButton onClick={() => navigate(-1)} sx={{ color: 'text.secondary', bgcolor: 'background.paper', border: '1px solid #E2E8F0', '&:focus': { outline: 'none' } }}>
+          <IconButton onClick={() => goBack()} sx={{ color: 'text.secondary', bgcolor: 'background.paper', border: '1px solid #E2E8F0', '&:focus': { outline: 'none' } }}>
             <ArrowBackIcon />
           </IconButton>
           <Box>

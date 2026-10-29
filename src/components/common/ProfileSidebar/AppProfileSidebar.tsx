@@ -5,7 +5,7 @@ import CameraAltOutlinedIcon from '@mui/icons-material/CameraAltOutlined'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import LogoutIcon from '@mui/icons-material/Logout'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
-import { useNavigate } from 'react-router-dom'
+import { useGoBack } from '../../../hooks/useGoBack'
 
 export interface SidebarNavItem {
 	id: string
@@ -46,7 +46,7 @@ export default function AppProfileSidebar({
 	onLogout,
 }: AppProfileSidebarProps) {
 	const fileInputRef = useRef<HTMLInputElement>(null)
-	const navigate = useNavigate()
+	const goBack = useGoBack()
 
 	return (
 		<Box
@@ -62,7 +62,7 @@ export default function AppProfileSidebar({
 		>
 			{/* Back nav */}
 			<Box
-				onClick={() => navigate(-1)}
+				onClick={() => goBack()}
 				sx={{
 					display: 'flex',
 					alignItems: 'center',

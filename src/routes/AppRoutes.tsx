@@ -1,11 +1,12 @@
 // src/routes/AppRoutes.tsx
-import { Routes, Route, Outlet } from 'react-router-dom'
+import { Routes, Route, Outlet, Navigate } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
 import NotFoundPage from '../components/common/NotFoundPage'
 import MainLayout from '../components/layout/MainLayout'
 import SidebarLayout from '../components/layout/SidebarLayout'
 import NavbarLayout from '../components/layout/NavbarLayout'
 import { ROUTES } from '../constants/routes'
+import { ADMIN_ROLES, USER_ROLES } from '../constants/constants'
 
 import { useAuth } from '../hooks/useAuth'
 import NotificationPermissionPopup from '../components/common/NotificationPermissionPopup'
@@ -79,6 +80,18 @@ import HealthQuestionsPage from '../features/portal/HealthQuestionsPage'
 import DoctorEventListPage from '../features/doctor/events/DoctorEventListPage'
 import DoctorEventFormPage from '../features/doctor/events/DoctorEventFormPage'
 
+// '/' is the public / patient landing page. A signed-in doctor (or pharmacy / radiology user) has their own
+// dashboard in the portal, so reaching '/' (a stale history entry, a typed address) sends them there instead.
+function HomeRoute() {
+	const { accessToken, role } = useAuth()
+	const hasOwnDashboard = !!accessToken && !!role && role !== USER_ROLES.PATIENT && !ADMIN_ROLES.includes(role)
+
+	if (hasOwnDashboard) {
+		return <Navigate to={ROUTES.PORTAL.HOME} replace />
+	}
+	return <DashboardPage />
+}
+
 function PublicOrAuthenticatedLayout() {
 	const { accessToken } = useAuth()
 
@@ -141,7 +154,7 @@ export default function AppRoutes() {
 
 				<Route path={ROUTES.PUBLIC.WELCOME_DOCTOR} element={<WelcomePage role="doctor" />} />
 				<Route element={<PublicOrAuthenticatedLayout />}>
-					<Route path={ROUTES.ROOT} element={<DashboardPage />} />
+					<Route path={ROUTES.ROOT} element={<HomeRoute />} />
 					<Route path={ROUTES.PUBLIC.HEALTH_QUESTIONS} element={<HealthQuestionsPage />} />
 				</Route>
 
