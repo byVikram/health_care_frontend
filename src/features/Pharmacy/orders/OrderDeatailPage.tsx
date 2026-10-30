@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useGoBack } from '../../../hooks/useGoBack'
 import {
     Alert,
     Avatar,
@@ -187,7 +186,6 @@ const normalizeMedicines = (medicines?: Partial<MedicineRow>[]): MedicineRow[] =
 export default function PharmacyPrescriptionDashboard() {
     const { orderId } = useParams<{ orderId: string }>()
     const navigate = useNavigate()
-    const goBack = useGoBack()
     const { role } = useAuth()
     const isPharmacyStaff = role === USER_ROLES.PHARMACY
 
@@ -515,7 +513,7 @@ export default function PharmacyPrescriptionDashboard() {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <IconButton
-                        onClick={() => goBack()}
+                        onClick={() => navigate(-1)}
                         sx={{ bgcolor: 'white', border: '1px solid #E2E8F0' }}
                     >
                         <ArrowBack />
