@@ -8,6 +8,7 @@ import paytmImg from '../../assets/payment/paytm.png'
 import creditCardImg from '../../assets/payment/credit-card.png'
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useGoBack } from '../../hooks/useGoBack'
 import {
 	Box,
 	Container,
@@ -107,6 +108,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
 export default function PaymentPage() {
 	const location = useLocation()
 	const navigate = useNavigate()
+	const goBack = useGoBack()
 	const state = (location.state as PaymentState) ?? ({} as PaymentState)
 
 	const {
@@ -253,7 +255,7 @@ export default function PaymentPage() {
 			>
 				<IconButton
 					size="small"
-					onClick={() => navigate(-1)}
+					onClick={() => goBack()}
 					sx={{ color: '#fff', '&:focus': { outline: 'none' } }}
 				>
 					<ArrowBack fontSize="small" />

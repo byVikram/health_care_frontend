@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { useGoBack } from '../../hooks/useGoBack'
 import { Box, Typography, Container, CircularProgress, Stack, Chip, Divider, Paper } from '@mui/material'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
@@ -15,7 +16,7 @@ const DEFAULT_COVER_IMAGE = 'https://images.unsplash.com/photo-1576091160550-217
 
 export default function EventDetailsPage() {
 	const { id } = useParams<{ id: string }>()
-	const navigate = useNavigate()
+	const goBack = useGoBack()
 	const [event, setEvent] = useState<any>(null)
 	const [loading, setLoading] = useState(true)
 
@@ -76,7 +77,7 @@ export default function EventDetailsPage() {
 				<Typography variant="h5" color="text.secondary">
 					Event not found
 				</Typography>
-				<AppButton label="Back to Events" sx={{ mt: 2 }} onClick={() => navigate(-1)} />
+				<AppButton label="Back to Events" sx={{ mt: 2 }} onClick={() => goBack()} />
 			</Box>
 		)
 	}
@@ -92,7 +93,7 @@ export default function EventDetailsPage() {
 					variant="text"
 					label="Back"
 					icon={<ArrowBackIcon fontSize="small" />}
-					onClick={() => navigate(-1)}
+					onClick={() => goBack()}
 					sx={{ color: 'text.secondary', '&:hover': { bgcolor: 'transparent', color: 'primary.main' } }}
 				/>
 			</Box>

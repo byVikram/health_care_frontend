@@ -4,6 +4,7 @@ import SearchIcon from '@mui/icons-material/Search'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
 import AppButton from '../../components/common/Button/AppButton'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useGoBack } from '../../hooks/useGoBack'
 import { useEffect, useState } from 'react'
 import ConsultCard from '../../components/common/Card/ConsultCard'
 import { getSpecialities } from '../doctor/doctorService'
@@ -175,6 +176,7 @@ const BATCH = 12
 
 export default function AllSpecialitiesPage() {
 	const navigate = useNavigate()
+	const goBack = useGoBack()
 	const [searchParams] = useSearchParams()
 	const consultationType = searchParams.get('consultation_type')
 
@@ -248,7 +250,7 @@ export default function AllSpecialitiesPage() {
 							variant="text"
 							label="Back"
 							startIcon={<ArrowBackIosNewIcon sx={{ fontSize: '14px !important' }} />}
-							onClick={() => navigate(-1)}
+							onClick={() => goBack()}
 							sx={{ color: 'text.secondary', minWidth: 'auto', px: 1 }}
 						/>
 						<Box sx={{ borderLeft: '3px solid', borderColor: 'primary.main', pl: 1.5, flex: 1 }}>

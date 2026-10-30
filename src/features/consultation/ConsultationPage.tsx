@@ -1,7 +1,8 @@
 // src/features/consultation/ConsultationPage.tsx
 import { useEffect, useState } from 'react'
 // import { customCardStyle } from '../../styles/commonStyles'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { useGoBack } from '../../hooks/useGoBack'
 import { Box, Container, Typography, Avatar, Tab, Tabs, IconButton, Card, Divider } from '@mui/material'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
 import PhoneIcon from '@mui/icons-material/Phone'
@@ -186,7 +187,7 @@ const getDrawerAppointmentType = (appointmentMode?: Appointment['appointment_mod
 export default function ConsultationPage() {
 	const [activeTab, setActiveTab] = useState(0)
 	const [timelineDrawerOpen, setTimelineDrawerOpen] = useState(false)
-	const navigate = useNavigate()
+	const goBack = useGoBack()
 	const { lookupData, role } = useAuth()
 
 	const { patientId, appointmentId } = useParams()
@@ -596,7 +597,7 @@ export default function ConsultationPage() {
 				<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
 					<IconButton
 						size="small"
-						onClick={() => navigate(-1)}
+						onClick={() => goBack()}
 						sx={{ color: 'text.secondary', '&:focus': { outline: 'none' } }}
 					>
 						<ArrowBackIosNewIcon sx={{ fontSize: 15 }} />

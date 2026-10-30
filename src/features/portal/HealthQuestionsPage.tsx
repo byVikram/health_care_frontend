@@ -2,20 +2,25 @@
 import PatientHealthQuestionsSection from '../patient/components/PatientHealthQuestionsSection'
 import { Container, Box, Button } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
-import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../hooks/useAuth'
+import { useGoBack } from '../../hooks/useGoBack'
+import { USER_ROLES } from '../../constants/constants'
 
 export default function HealthQuestionsPage() {
-	const navigate = useNavigate()
+	const goBack = useGoBack()
+	const { role } = useAuth()
+	// '/' is the public / patient landing page; everyone else signed in comes from their dashboard
+	const backLabel = role && role !== USER_ROLES.PATIENT ? 'Back to Dashboard' : 'Back to Home'
 
 	return (
 		<Box sx={{ py: 4, bgcolor: '#f8fafc', minHeight: '100vh' }}>
 			<Container maxWidth="lg">
 				<Button
 					startIcon={<ArrowBackIcon />}
-					onClick={() => navigate('/')}
+					onClick={goBack}
 					sx={{ mb: 2, textTransform: 'none', color: '#0f172a', fontWeight: 600 }}
 				>
-					Back to Home
+					{backLabel}
 				</Button>
 				<PatientHealthQuestionsSection isPortalPage={true} />
 			</Container>
