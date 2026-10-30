@@ -32,10 +32,17 @@ export function useQuestionAccess(): QuestionAccess {
 	useEffect(() => {
 		if (!isDoctor) return
 		let active = true
-		getDoctorStatus()
-			.then((status) => active && setVerified(status.is_verified))
-			.catch(() => active && setVerified(false))
-			.finally(() => active && setChecked(true))
+		const checkVerification = async () => {
+			try {
+				const status = await getDoctorStatus()
+				if (active) setVerified(status.is_verified)
+			} catch {
+				if (active) setVerified(false)
+			} finally {
+				if (active) setChecked(true)
+			}
+		}
+		void checkVerification()
 		return () => {
 			active = false
 		}
