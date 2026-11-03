@@ -29,7 +29,7 @@ const EXPERIENCE_OPTIONS = Array.from({ length: 30 }, (_, i) => ({
 	value: String(i + 1),
 	label: `${i + 1} ${i + 1 === 1 ? 'year' : 'years'}`,
 }))
-const LANGUAGE_OPTIONS = ['English', 'Hindi', 'Kannada', 'Tamil', 'Telugu', 'Malayalam', 'Marathi'].map((l) => ({
+const LANGUAGE_OPTIONS = ['English', 'Hindi', 'Kannada', 'Tamil', 'Telugu', 'Malayalam'].map((l) => ({
 	value: l.toLowerCase(),
 	label: l,
 }))
