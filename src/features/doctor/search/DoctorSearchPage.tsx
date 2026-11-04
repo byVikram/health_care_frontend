@@ -3,7 +3,6 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Box, Container, Typography, Grid, Chip, Card } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
-import TuneIcon from '@mui/icons-material/Tune'
 import DoctorSearchCard from './components/DoctorSearchCard'
 import AppSelect from '../../../components/common/Select/AppSelect'
 import SearchFilters, { FilterState } from './components/SearchFilters'
@@ -274,7 +273,6 @@ export default function DoctorSearchPage() {
 							</Box>
 
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-								<TuneIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
 								<AppSelect
 									value={sortBy}
 									onChange={(e) => resetAndFetch(() => setSortBy(e.target.value))}
