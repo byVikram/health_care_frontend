@@ -103,7 +103,9 @@ export default function DoctorSearchPage() {
 					consultation_type: filters.consultationType !== 'all' ? filters.consultationType : undefined,
 					min_rating:        filters.minRating > 0 ? filters.minRating : undefined,
 					max_price:         filters.maxPrice !== 1000 ? filters.maxPrice : undefined,
-					sort:              sortBy !== 'rating' ? sortBy : undefined,
+					// Every doctor is listed (as on the mobile app); the nearest clinics come first. The `nearby` filter is no
+					// longer sent: it dropped every doctor outside 10 km (or without map coordinates).
+					sort:              isNearby || sortBy === 'rating' ? 'nearest' : sortBy,
 				}
 
 				let res;
@@ -146,8 +148,7 @@ export default function DoctorSearchPage() {
 					{ 
 						...queryParams, 
 						latitude: lat, 
-						longitude: lon, 
-						...(isNearby ? { nearby: true } : {})
+						longitude: lon,
 					}, 
 					controller.signal
 				)
@@ -160,8 +161,11 @@ export default function DoctorSearchPage() {
 					pages: res.pages ?? Math.ceil((res.total ?? 0) / (res.limit ?? LIMIT)),
 				}
 				setDoctors((prev) => (page === 1 ? res.data : [...prev, ...res.data]))
-				setTotal(meta.total)
-				setHasMore(meta.page < meta.pages)
+				// A server that sends no totals (no `meta`, no `total`) would read as "0 pages" and stop after the first 12
+				// doctors. Then a full page means there may be more, and a short one is the last.
+				const serverSendsTotals = res.meta != null || res.total != null
+				setTotal(serverSendsTotals ? meta.total : 0)
+				setHasMore(serverSendsTotals ? meta.page < meta.pages : res.data.length >= LIMIT)
 				setError(null)
 			} catch (err: any) {
 				console.error(err)
@@ -252,7 +256,7 @@ export default function DoctorSearchPage() {
 						>
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
 								<Typography variant="h5" sx={{ fontWeight: 600 }}>
-									{isNearby ? `${visibleCount} Doctors Near You` : `${visibleCount} Doctors Found`}
+									{isNearby ? `${visibleCount} Doctors, nearest first` : `${visibleCount} Doctors Found`}
 								</Typography>
 								{filters.speciality && specialityLabel && (
 									<Chip

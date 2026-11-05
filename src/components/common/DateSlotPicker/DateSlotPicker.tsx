@@ -142,7 +142,10 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		}
 	}
 
-	const slotsToRender = availableSlots ?? []
+	// A disabled (past) date means the doctor cannot be booked that day: never list slots under it, even if a stale
+	// selection or an earlier response still holds some.
+	const dateDisabled = isPast(selectedDate)
+	const slotsToRender = dateDisabled ? [] : (availableSlots ?? [])
 	const isDoctorView = !!(onSelectAll && onUnselectAll)
 	const isCardSlotVariant = slotVariant === 'card'
 	const useCompactAppointmentToggle = compactAppointmentToggle || isDoctorView
@@ -497,9 +500,9 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 						</Box>
 
 						{/* No slots message */}
-						{availableSlots && availableSlots.length === 0 && (
+						{((availableSlots && availableSlots.length === 0) || dateDisabled) && (
 							<Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
-								No slots available for the selected day.
+								{dateDisabled ? 'The doctor is not available on this date. Pick another date.' : 'No slots available for the selected day.'}
 							</Typography>
 						)}
 
