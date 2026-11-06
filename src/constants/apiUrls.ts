@@ -92,6 +92,7 @@ export const API_ENDPOINTS = {
 		CREATE: '/api/appointments',
 		UPDATE: '/api/appointments/update-status',
 		GET_BY_ID: (id: string | number) => `/api/appointments/${id}`,
+		CHECK_IN: (id: string) => `/api/appointments/${id}/check-in`,
 		PRE_INTAKE: (id: string) => `/api/appointments/${id}/pre-intake`,
 		RESCHEDULE: '/api/appointments/reschedule',
 		ACTIVE_CONSENT: '/api/appointments/active/consent',
