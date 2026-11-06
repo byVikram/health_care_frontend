@@ -1,5 +1,5 @@
 // import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import {
 	Box,
 	Typography,
@@ -16,6 +16,9 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
+import HowToRegOutlinedIcon from '@mui/icons-material/HowToRegOutlined'
+import UndoOutlinedIcon from '@mui/icons-material/UndoOutlined'
+import MoreHorizOutlinedIcon from '@mui/icons-material/MoreHorizOutlined'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import HomeIcon from '@mui/icons-material/Home'
 import VideocamIcon from '@mui/icons-material/Videocam'
@@ -24,28 +27,39 @@ import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import ConfirmIcon from '../../assets/icons/confirm.svg'
 import RejectIcon from '../../assets/icons/reject.svg'
 import RescheduleIcon from '../../assets/icons/reschedule.svg'
-import ReferIcon from '../../assets/icons/refer.svg'
-import { updateAppointmentsStatus } from '../../services/appointmentService'
+import {
+	askPatientToReschedule,
+	getAppointmentStatusId,
+	setAppointmentCheckIn,
+	updateAppointmentsStatus,
+} from '../../services/appointmentService'
+import axios from 'axios'
 import { toast } from 'react-toastify'
-import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
-import DoctorFavouritesTab from './profile/components/DoctorFavouritesTab'
-import { getDoctorAvailability, getAvailabilityModeBlocks } from './doctorService'
 import ReferralBadge from '../referrals/ReferralBadge'
 import ReferralInfoCard from '../referrals/ReferralInfoCard'
-import ReferralNotesDialog from '../referrals/ReferralNotesDialog'
 import RejectAppointmentDialog from '../appointments/components/RejectAppointmentDialog'
-import type { DoctorRow } from './profile/components/DoctorFavouritesTab'
-import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { useNavigate } from 'react-router-dom'
-import { LookupHospital, useAuth } from '../../hooks/useAuth'
 import AppButton from '../../components/common/Button/AppButton'
 import AppInput from '../../components/common/Input/AppInput'
 import OtpForm from '../auth/components/OtpForm'
-import { customScrollbar } from '../../styles/commonStyles'
 import completeProfileImg from '../../assets/Banner/complete-profile.png'
 import { ROUTES } from '../../constants/routes'
+import AppointmentActionDialog, { type ActionMode } from './components/AppointmentActionDialog'
+import AppointmentActionMenu from './components/AppointmentActionMenu'
+import AskPatientRescheduleDialog from './components/AskPatientRescheduleDialog'
+import {
+	ACCEPTED_STATUSES,
+	NO_SHOW_SOURCE_STATUSES,
+	RESCHEDULE_ASK_STATUSES,
+	appointmentOpenAction,
+	clinicTodayIso,
+	dayLabel,
+	humanizeStatus,
+	noShowWindow,
+	statusTone,
+} from './appointmentRules'
 
 const formatTime12h = (t?: string | null) => {
 	if (!t) return '--'
@@ -61,12 +75,14 @@ const allActionButtons = [
 	{ icon: ConfirmIcon, label: 'Confirm', bg: '#e8f5e9', color: '#4caf50', action: 'confirm' },
 	{ icon: RejectIcon, label: 'Reject', bg: '#ffeeee', color: '#e53935', action: 'reject' },
 	{ icon: RescheduleIcon, label: 'Reschedule', bg: '#fff8e8', color: '#f59e0b', action: 'reschedule' },
-	{ icon: ReferIcon, label: 'Refer', bg: '#e8f4f8', color: '#0c7c7c', action: 'refer' },
 ]
 
 const tooltipTriggerSx = {
 	cursor: 'pointer',
 }
+
+// One quick action on an appointment card: an icon tile with its label under it.
+type ActionTile = { key: string; label: string; bg: string; node: ReactNode; onClick: (tile: HTMLElement) => void; disabled?: boolean }
 
 export function DoctorAppointments({
 	selectedDate,
@@ -90,7 +106,6 @@ export function DoctorAppointments({
 	setSearchQuery: (value: string) => void
 }) {
 	const navigate = useNavigate()
-	const { lookupData } = useAuth()
 
 	// ── New-registration profile-prompt overlay ──────────────────────────────
 	const [showProfilePrompt, setShowProfilePrompt] = useState(
@@ -105,19 +120,19 @@ export function DoctorAppointments({
 	// ────────────────────────────────────────────────────────────────────────
 
 	const [otpModalOpen, setOtpModalOpen] = useState(false)
-	const [referModalOpen, setReferModalOpen] = useState(false)
 	const [selectedAppointmentId, setSelectedAppointmentId] = useState('')
-	// Referral state
-	const [selectedReferAppointmentId, setSelectedReferAppointmentId] = useState('')
-	const [referNotesOpen, setReferNotesOpen] = useState(false)
-	const [selectedReferDoctor, setSelectedReferDoctor] = useState<DoctorRow | null>(null)
 	const [selectedPatientId, setSelectedPatientId] = useState('')
 	// Appointment action state
 	const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({})
-	const [localTimes, setLocalTimes] = useState<Record<string, { start_time: string; end_time: string | null }>>({})
-	// Tracks who initiated the most recent reschedule for each appointment (locally, before page refresh).
-	// 'doctor' means the doctor rescheduled → patient must confirm; Confirm button is hidden for doctor.
-	const [localRescheduledBy, setLocalRescheduledBy] = useState<Record<string, string>>({})
+
+	// The "more" dialog (reschedule / no-show / cancel) of an accepted appointment, and the check-in call in flight
+	const [actionAppt, setActionAppt] = useState<Appointment | null>(null)
+	const [actionBusy, setActionBusy] = useState(false)
+	// The menu hangs below the three dots (menuAnchor); each choice then opens its confirmation (dialogMode)
+	const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
+	const [dialogOpen, setDialogOpen] = useState(false)
+	const [dialogMode, setDialogMode] = useState<ActionMode>('cancel')
+	const [checkInBusyIds, setCheckInBusyIds] = useState<Set<string>>(new Set())
 
 	// Reject confirmation dialog state
 	const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
@@ -133,24 +148,17 @@ export function DoctorAppointments({
 		}
 	}, [])
 
-	// Reschedule drawer state
-	const [rescheduleOpen, setRescheduleOpen] = useState(false)
-	const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null)
-	const [rescheduleDate, setRescheduleDate] = useState(new Date())
-	const [rescheduleTime, setRescheduleTime] = useState('')
-	const [rescheduleSlots, setRescheduleSlots] = useState<SlotGroup[]>([])
-	const [rescheduleSlotsLoading, setRescheduleSlotsLoading] = useState(false)
-	const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false)
-	const [rescheduleHospitals, setRescheduleHospitals] = useState<LookupHospital[]>([])
-	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
-	const [appointmentType, setAppointmentType] = useState<'clinic' | 'video'>('clinic')
+	// The doctor's "ask the patient to reschedule" confirmation (the patient, not the doctor, picks the new time)
+	const [askTarget, setAskTarget] = useState<Appointment | null>(null)
+	const [askOpen, setAskOpen] = useState(false)
+	const [askBusy, setAskBusy] = useState(false)
 
 	// Helpers
 	const getStatusLabel = (apt: Appointment): string => {
 		// Local status override (set after an action is taken without a full page refresh)
 		const localStatus = localStatuses[apt.id]
 		const status = (localStatus ?? (typeof apt.status === 'string' ? apt.status : (apt.status?.label ?? 'pending'))).toLowerCase()
-		const rescheduledBy = (localRescheduledBy[apt.id] ?? apt.rescheduled_by ?? '').toLowerCase()
+		const rescheduledBy = (apt.rescheduled_by ?? '').toLowerCase()
 
 		if (rescheduledBy === 'doctor' && status === 'pending') {
 			return 'Waiting for Patient Confirmation'
@@ -164,98 +172,6 @@ export function DoctorAppointments({
 		}
 
 		return localStatus ?? (typeof apt.status === 'string' ? apt.status : (apt.status?.label ?? 'pending'))
-	}
-
-	// Fetch slots whenever the reschedule date changes
-	useEffect(() => {
-		if (!rescheduleOpen || !rescheduleAppt) return
-
-		const doctorId = rescheduleAppt.doctor?.id
-		const hospitalId = rescheduleHospitalId || rescheduleAppt.hospital?.id
-
-		if (!doctorId || !hospitalId) return
-
-		const dateStr = rescheduleDate.toISOString().split('T')[0]
-
-		const fetchSlots = async () => {
-			setRescheduleSlotsLoading(true)
-			setRescheduleSlots([])
-			setRescheduleTime('')
-			try {
-				const responseData = await getDoctorAvailability({
-					doctor_id: doctorId,
-					hospital_id: hospitalId,
-					date: dateStr,
-				})
-				console.log('Slots API Response:', responseData)
-				const selectedTypeMode = appointmentType === 'clinic' ? 'clinic_visit' : 'video_call'
-				const selectedModeData = getAvailabilityModeBlocks(responseData).find(
-					(item) => item.appointment_mode === selectedTypeMode
-				)
-
-				const processedData = selectedModeData?.sessions || []
-
-				setRescheduleSlots(processedData)
-			} catch {
-				toast.error('Could not load available slots.')
-			} finally {
-				setRescheduleSlotsLoading(false)
-			}
-		}
-
-		fetchSlots()
-	}, [rescheduleDate, rescheduleOpen, rescheduleAppt, rescheduleHospitalId, appointmentType])
-
-	// Submit reschedule
-	const handleRescheduleConfirm = async () => {
-		if (!rescheduleAppt || !rescheduleTime) {
-			toast.warning('Please select a time slot before confirming.')
-			return
-		}
-		setRescheduleSubmitting(true)
-		try {
-			const dateStr = rescheduleDate.toISOString().split('T')[0]
-			const res = await ApiService.post<{ success: boolean; message: string }>(
-				`${API_ENDPOINTS.APPOINTMENTS.RESCHEDULE}`,
-				{
-					appointment_id: rescheduleAppt.id,
-					appointment_date: dateStr,
-					start_time: rescheduleTime,
-					end_time: null,
-					hospital_id: rescheduleHospitalId || rescheduleAppt.hospital?.id,
-					reason: 'Doctor unavailable',
-				}
-			)
-			if (res.data?.success) {
-				toast.success(res.data.message || 'Appointment rescheduled!')
-				const currentStatus = getStatusLabel(rescheduleAppt)
-				const nextStatus = currentStatus === 'pending' ? 'pending' : 'rescheduled'
-				setLocalStatuses((prev) => ({ ...prev, [rescheduleAppt.id]: nextStatus }))
-				// Record that the DOCTOR was the initiator so the Confirm button is
-				// correctly hidden and the status label reads "Waiting for Patient Confirmation".
-				setLocalRescheduledBy((prev) => ({ ...prev, [rescheduleAppt.id]: 'doctor' }))
-				
-				const slot = rescheduleSlots
-					.flatMap((s) => s.slots)
-					.find((sl) => sl.start_time === rescheduleTime)
-				const slotEndTime = slot ? slot.end_time : null
-
-				setLocalTimes((prev) => ({
-					...prev,
-					[rescheduleAppt.id]: {
-						start_time: rescheduleTime,
-						end_time: slotEndTime,
-					},
-				}))
-				setRescheduleOpen(false)
-			} else {
-				toast.error(res.data?.message || 'Reschedule failed. Please try again.')
-			}
-		} catch {
-			toast.error('Something went wrong. Please try again.')
-		} finally {
-			setRescheduleSubmitting(false)
-		}
 	}
 
 	// Action button handler
@@ -273,19 +189,9 @@ export function DoctorAppointments({
 				setRejectDialogOpen(true)
 			}
 			if (action === 'reschedule') {
-				const apt = appointments.find((a) => a.id === appointmentId) ?? null
-				setRescheduleAppt(apt)
-				setRescheduleHospitalId(apt?.hospital?.id ?? '')
-				setRescheduleDate(new Date())
-				setRescheduleTime('')
-				setRescheduleSlots([])
-				setRescheduleHospitals(lookupData?.hospitals ?? [])
-				setRescheduleOpen(true)
-			}
-			if (action === 'refer') {
-				// Store the appointment being referred so the notes dialog can use it
-				setSelectedReferAppointmentId(appointmentId)
-				setReferModalOpen(true)
+				const target = appointments.find((a) => a.id === appointmentId) ?? null
+				setAskTarget(target)
+				setAskOpen(target !== null)
 			}
 		} catch {
 			toast.error('Something went wrong. Please try again.')
@@ -311,27 +217,128 @@ export function DoctorAppointments({
 		}
 	}
 
+	// A failed call has already shown the server's reason (the shared API client toasts it); anything else gets a generic message.
+	const reportFailure = (err: unknown) => {
+		if (!axios.isAxiosError(err)) toast.error('Something went wrong. Please try again.')
+	}
+	// An answer that is not an error but says it did not work: the doctor is told, never left looking at a button that did nothing.
+	const reportRefusal = (message?: string) => toast.error(message || 'That did not go through. Please try again.')
+
+	const handleCheckIn = async (apt: Appointment, checkedIn: boolean) => {
+		const markBusy = (busy: boolean) =>
+			setCheckInBusyIds((ids) => {
+				const next = new Set(ids)
+				if (busy) next.add(apt.id)
+				else next.delete(apt.id)
+				return next
+			})
+		markBusy(true)
+		try {
+			const res = await setAppointmentCheckIn(apt.id, checkedIn)
+			if (res.success) {
+				toast.success(res.message)
+				setLocalStatuses((prev) => ({ ...prev, [apt.id]: checkedIn ? 'checked_in' : 'not_arrived' }))
+			} else reportRefusal(res.message)
+		} catch (err) {
+			reportFailure(err)
+		} finally {
+			markBusy(false)
+		}
+	}
+
+	// Cancel or no-show from the "more" dialog: both are a status change; the cancel carries the doctor's reason.
+	const handleStatusFromDialog = async (label: 'cancelled' | 'no_show', reason?: string) => {
+		if (!actionAppt) return
+		const id = actionAppt.id
+		setActionBusy(true)
+		try {
+			const res = await updateAppointmentsStatus(id, await getAppointmentStatusId(label), reason)
+			if (res.success) {
+				toast.success(res.message)
+				setLocalStatuses((prev) => ({ ...prev, [id]: label }))
+				setDialogOpen(false)
+			} else reportRefusal(res.message)
+		} catch (err) {
+			reportFailure(err)
+		} finally {
+			setActionBusy(false)
+		}
+	}
+
+	// The doctor does not pick a slot: the patient is asked to choose a new time (status becomes reschedule_required and the patient
+	// is emailed); the doctor confirms the time they pick later, as for any patient reschedule.
+	const handleAskReschedule = async (reason: string) => {
+		if (!askTarget) return
+		const id = askTarget.id
+		setAskBusy(true)
+		try {
+			const res = await askPatientToReschedule(id, reason)
+			if (res.success) {
+				toast.success(res.message || 'The patient has been asked to choose a new time')
+				setLocalStatuses((prev) => ({ ...prev, [id]: 'reschedule_required' }))
+				setAskOpen(false)
+			} else reportRefusal(res.message)
+		} catch (err) {
+			reportFailure(err)
+		} finally {
+			setAskBusy(false)
+		}
+	}
+
+	const goToConsultation = (appointmentId: string, patientId: string) =>
+		navigate(`/consultation/${patientId}/${appointmentId}`)
+
 	const handleStartConsultation = async (appointmentId: string, patientId: string) => {
 		try {
-			const res = await ApiService.post<{ success: boolean }>(
+			const res = await ApiService.post<{ success: boolean; data?: { already_verified?: boolean } }>(
 				`${API_ENDPOINTS.APPOINTMENTS.GET_BY_ID(appointmentId)}/start-consultation`,
 				{}
 			)
 
-			if (res.data.success) {
-				setSelectedAppointmentId(appointmentId)
-				setSelectedPatientId(patientId)
-				setOtpModalOpen(true)
+			if (!res.data.success) return
+			if (res.data.data?.already_verified) {
+				// The patient already gave the code for this appointment: no second code, straight in.
+				goToConsultation(appointmentId, patientId)
+				return
 			}
+			setSelectedAppointmentId(appointmentId)
+			setSelectedPatientId(patientId)
+			setOtpModalOpen(true)
 		} catch {
 			toast.error('Failed to generate OTP')
 		}
+	}
+
+	// What a click on a card does is decided in one place (appointmentOpenAction): a finished or accepted appointment opens the
+	// consultation (starting it, which sends the patient the code, unless the code was already given), anything else says why not.
+	const openActionOf = (apt: Appointment) =>
+		appointmentOpenAction(getStatusLabel(apt), apt.access_verified === true, apt.appointment_date === clinicTodayIso())
+	const openAppointment = (apt: Appointment) => {
+		const patientId = apt.patient?.id
+		if (!patientId || !apt.id) return
+		const action = openActionOf(apt)
+		if (action.kind === 'consultation') goToConsultation(apt.id, patientId)
+		else if (action.kind === 'start') handleStartConsultation(apt.id, patientId)
+		else toast.warning(action.message)
 	}
 
 	const handleCancelReject = () => {
 		setRejectDialogOpen(false)
 		setPendingRejectId(null)
 	}
+
+	// What the "more" dialog is told: the slot, and whether a no-show can be marked now (and why not)
+	const actionStatus = actionAppt ? getStatusLabel(actionAppt).toLowerCase() : ''
+	const actionWindow = actionAppt ? noShowWindow(actionAppt) : { canMark: false, hint: '' }
+	const noShowStatusOk = NO_SHOW_SOURCE_STATUSES.includes(actionStatus)
+	const noShowAllowed = noShowStatusOk && actionWindow.canMark
+	const noShowHint = noShowStatusOk ? actionWindow.hint : 'A checked-in patient came, so this is not a no-show'
+	const slotLabelOf = (apt: Appointment | null) =>
+		apt
+			? `${dayLabel(apt.appointment_date)}, ${formatTime12h(apt.start_time)} · ${isVideoMode(apt.appointment_mode) ? 'Video call' : 'In-clinic'}`
+			: ''
+	const actionSlotLabel = slotLabelOf(actionAppt)
+	const askSlotLabel = slotLabelOf(askTarget)
 
 	// Render
 	return (
@@ -520,12 +527,14 @@ export function DoctorAppointments({
 							const statusLabel = getStatusLabel(apt)
 							const isCancelled = statusLabel === 'cancelled'
 							const isConfirmed = statusLabel === 'confirmed'
+							// What a click opens: see appointmentOpenAction
+							const canOpen = openActionOf(apt).kind !== 'blocked'
 							// True when the doctor is the reschedule initiator — Confirm must be hidden
 							// because the doctor should never confirm their own reschedule.
 							const rescheduledByDoctor =
 								statusLabel.toLowerCase().includes('waiting for patient') ||
 								(statusLabel === 'rescheduled' &&
-									(localRescheduledBy[apt.id] ?? apt.rescheduled_by ?? '').toLowerCase() === 'doctor')
+									(apt.rescheduled_by ?? '').toLowerCase() === 'doctor')
 							const patientName = apt.patient?.name ?? 'Unknown Patient'
 
 							const visibleActions = allActionButtons.filter(
@@ -533,18 +542,67 @@ export function DoctorAppointments({
 									// Hide Confirm when already confirmed
 									!(btn.action === 'confirm' && isConfirmed) &&
 									// Hide Confirm when doctor rescheduled — patient must confirm, not doctor
-									!(btn.action === 'confirm' && rescheduledByDoctor)
+									!(btn.action === 'confirm' && rescheduledByDoctor) &&
+									// The server refuses to ask the patient to reschedule once the patient has already asked for a new time
+									!(btn.action === 'reschedule' && !RESCHEDULE_ASK_STATUSES.includes(statusLabel.toLowerCase()))
 							)
+
+							const status = statusLabel.toLowerCase()
+							const isToday = apt.appointment_date === clinicTodayIso()
+							const checkInBusy = checkInBusyIds.has(apt.id)
+							const requestTiles: ActionTile[] = visibleActions.map((a) => ({
+								key: a.action,
+								label: a.label,
+								bg: a.bg,
+								node: <img src={a.icon} width={16} height={16} alt={a.label} />,
+								onClick: () => handleAction(a.action, apt.id),
+							}))
+							const checkInTile: ActionTile = {
+								key: 'check-in',
+								label: 'Check in',
+								bg: '#e8f5e9',
+								node: <HowToRegOutlinedIcon sx={{ fontSize: 17, color: '#4caf50' }} />,
+								onClick: () => handleCheckIn(apt, true),
+								disabled: checkInBusy,
+							}
+							const undoCheckInTile: ActionTile = {
+								key: 'undo-check-in',
+								label: 'Undo check-in',
+								bg: '#fff8e8',
+								node: <UndoOutlinedIcon sx={{ fontSize: 17, color: '#f59e0b' }} />,
+								onClick: () => handleCheckIn(apt, false),
+								disabled: checkInBusy,
+							}
+							const moreTile: ActionTile = {
+								key: 'more',
+								label: 'More',
+								bg: '#f1f5f6',
+								node: <MoreHorizOutlinedIcon sx={{ fontSize: 17, color: '#5a6e7a' }} />,
+								onClick: (anchor) => {
+									// The menu hangs from the whole tile (icon and label); a second click on it closes the menu.
+									setActionAppt(apt)
+									setMenuAnchor((open) => (open === anchor ? null : anchor))
+								},
+							}
+							// A finished visit, or one waiting for the patient to pick a new time, has nothing to do; a no-show the patient came late for (same day) can still be checked in; an accepted
+							// appointment is checked in on its day, with the rest (reschedule, no-show, cancel) under More; a request keeps its own actions.
+							let tiles: ActionTile[]
+							if (status === 'completed' || status === 'reschedule_required') tiles = []
+							else if (status === 'no_show') tiles = isToday ? [checkInTile] : []
+							else if (ACCEPTED_STATUSES.includes(status))
+								tiles = [...(status === 'checked_in' ? [undoCheckInTile] : isToday ? [checkInTile] : []), moreTile]
+							else tiles = requestTiles
 
 							return (
 								<Box
 									key={apt.id}
 									onClick={() => {
-										if (apt.patient?.id && apt.id) {
-											handleStartConsultation(apt.id, apt.patient.id)
-										}
+										// With the menu open, a click elsewhere on the card is the menu's click-away, not a request to open the consultation.
+										if (menuAnchor) return
+										openAppointment(apt)
 									}}
 									sx={{
+										cursor: canOpen ? 'pointer' : 'default',
 										p: 1.5,
 										borderRadius: '12px',
 										opacity: isCancelled ? 0.5 : 1,
@@ -627,25 +685,12 @@ export function DoctorAppointments({
 													</Tooltip>
 												)}
 												<Chip
-													label={statusLabel}
+													label={humanizeStatus(statusLabel)}
 													size="small"
 													sx={{
 														fontSize: '9px',
 														height: 16,
-														bgcolor: isCancelled
-															? '#ffeeee'
-															: isConfirmed
-																? '#e8f5e9'
-																: rescheduledByDoctor
-																	? '#fff3e0'
-																	: '#fff8e8',
-														color: isCancelled
-															? '#e53935'
-															: isConfirmed
-																? '#4caf50'
-																: rescheduledByDoctor
-																	? '#e65100'
-																	: '#f59e0b',
+														...statusTone(statusLabel, rescheduledByDoctor),
 														fontWeight: 600,
 													}}
 												/>
@@ -827,7 +872,7 @@ export function DoctorAppointments({
 											<Typography variant="body2">|</Typography>
 											<AccessTimeIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
 											<Typography variant="body2">
-												{formatTime12h(localTimes[apt.id]?.start_time ?? apt.start_time)} - {formatTime12h(localTimes[apt.id]?.end_time ?? apt.end_time)}
+												{formatTime12h(apt.start_time)} - {formatTime12h(apt.end_time)}
 											</Typography>
 										</Box>
 									</Box>
@@ -851,50 +896,60 @@ export function DoctorAppointments({
 										</Box>
 									) : (
 										<Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
-											{visibleActions.map((action, i) => (
-												<Box key={i}>
+											{tiles.map((tile) => {
+												const press = (target: HTMLElement) => {
+													// stopPropagation keeps the click from opening the consultation, but it also hides it from the open menu's click-away:
+													// close the menu here, unless this is the menu's own button.
+													if (tile.key !== 'more') setMenuAnchor(null)
+													tile.onClick(target)
+												}
+												return (
 													<Box
+														key={tile.key}
+														role="button"
+														tabIndex={tile.disabled ? -1 : 0}
+														aria-label={tile.label}
+														aria-disabled={tile.disabled || undefined}
+														aria-haspopup={tile.key === 'more' ? 'menu' : undefined}
+														aria-expanded={tile.key === 'more' ? menuAnchor !== null && actionAppt?.id === apt.id : undefined}
 														onClick={(e) => {
 															e.stopPropagation()
-															handleAction(
-																action.action,
-																apt.id,
-															)
+															if (!tile.disabled) press(e.currentTarget)
+														}}
+														onKeyDown={(e) => {
+															if (e.key !== 'Enter' && e.key !== ' ') return
+															e.preventDefault()
+															e.stopPropagation()
+															if (!tile.disabled) press(e.currentTarget)
 														}}
 														sx={{
-															display: 'flex',
-															flexDirection: 'column',
-															alignItems: 'center',
-															gap: 0.4,
-															cursor: 'pointer',
-															bgcolor: action.bg,
-															borderRadius: '8px',
-															px: 1,
-															py: 1,
-															minWidth: 28,
-															transition: 'opacity 0.2s',
-															'&:hover': { opacity: 0.75 },
+															opacity: tile.disabled ? 0.5 : 1,
+															cursor: tile.disabled ? 'default' : 'pointer',
+															'&:hover .tile-icon': { opacity: tile.disabled ? 1 : 0.75 },
+															'&:focus-visible': { outline: '2px solid #0c7c7c', outlineOffset: 2, borderRadius: '8px' },
 														}}
 													>
-														<img
-															src={action.icon}
-															width={16}
-															height={16}
-															alt={action.label}
-														/>
+														<Box
+															className="tile-icon"
+															sx={{
+																display: 'flex',
+																flexDirection: 'column',
+																alignItems: 'center',
+																gap: 0.4,
+																bgcolor: tile.bg,
+																borderRadius: '8px',
+																px: 1,
+																py: 1,
+																minWidth: 28,
+																transition: 'opacity 0.2s',
+															}}
+														>
+															{tile.node}
+														</Box>
+														<Typography sx={{ mt: 0.4, fontSize: '10px', fontWeight: 400, textAlign: 'center' }}>{tile.label}</Typography>
 													</Box>
-													<Typography
-														sx={{
-															mt: 0.4,
-															fontSize: '10px',
-															fontWeight: 400,
-															textAlign: 'center',
-														}}
-													>
-														{action.label}
-													</Typography>
-												</Box>
-											))}
+												)
+											})}
 										</Box>
 									)}
 
@@ -913,78 +968,52 @@ export function DoctorAppointments({
 				submitting={rejectSubmitting}
 			/>
 
-			{/* Reschedule drawer */}
-			<RescheduleDrawer
-				rescheduleOpen={rescheduleOpen}
-				setRescheduleOpen={setRescheduleOpen}
-				rescheduleAppt={rescheduleAppt}
-				rescheduleDate={rescheduleDate}
-				setRescheduleDate={setRescheduleDate}
-				rescheduleTime={rescheduleTime}
-				setRescheduleTime={setRescheduleTime}
-				rescheduleSlots={rescheduleSlots}
-				rescheduleSlotsLoading={rescheduleSlotsLoading}
-				rescheduleSubmitting={rescheduleSubmitting}
-				handleRescheduleConfirm={handleRescheduleConfirm}
-				rescheduleHospitals={rescheduleHospitals}
-				rescheduleHospitalId={rescheduleHospitalId}
-				setRescheduleHospitalId={setRescheduleHospitalId}
-				appointmentType={appointmentType}
-				setAppointmentType={setAppointmentType}
+			{/* Reschedule: ask the patient to choose a new time */}
+			<AskPatientRescheduleDialog
+				open={askOpen}
+				patientName={askTarget?.patient?.name ?? 'Unknown Patient'}
+				slotLabel={askSlotLabel}
+				busy={askBusy}
+				onClose={() => setAskOpen(false)}
+				onConfirm={handleAskReschedule}
 			/>
 
-			{/* Refer Modal – renders DoctorFavouritesTab inside a centered Dialog */}
-			<Dialog
-				open={referModalOpen}
-				onClose={() => setReferModalOpen(false)}
-				maxWidth="sm"
-				fullWidth
-				slotProps={{
-					paper: {
-						sx: {
-							borderRadius: '20px',
-							boxShadow: '0px 16px 56px rgba(0,0,0,0.18)',
-							overflow: 'hidden',
-							maxHeight: '80vh',
-						},
-					},
+			{/* More: the menu hangs below the three dots; each choice then opens its own confirmation */}
+			<AppointmentActionMenu
+				anchorEl={menuAnchor}
+				onClose={() => setMenuAnchor(null)}
+				rescheduleCanAsk={actionStatus !== 'checked_in'}
+				noShowCanMark={noShowAllowed}
+				noShowHint={noShowHint}
+				onReschedule={() => {
+					setMenuAnchor(null)
+					setAskTarget(actionAppt)
+					setAskOpen(actionAppt !== null)
 				}}
-			>
-				<DialogContent
-					sx={{
-						p: 0,
-						maxHeight: '70vh',
-						overflowY: 'auto',
-						...customScrollbar,
-					}}
-				>
-					<DoctorFavouritesTab
-						mode="refer"
-						title="Refer a doctor"
-						onShare={(doctor) => {
-							// Open step 2: referral notes dialog
-							setSelectedReferDoctor(doctor)
-							setReferNotesOpen(true)
-						}}
-					/>
-				</DialogContent>
-			</Dialog>
-			
-			<ReferralNotesDialog
-				open={referNotesOpen}
-				onClose={() => {
-					setReferNotesOpen(false)
-					setSelectedReferDoctor(null)
+				onNoShow={() => {
+					setMenuAnchor(null)
+					setDialogMode('no_show')
+					setDialogOpen(true)
 				}}
-				appointmentId={selectedReferAppointmentId}
-				doctor={selectedReferDoctor}
-				onSuccess={() => {
-					setReferNotesOpen(false)
-					setReferModalOpen(false)
-					setSelectedReferDoctor(null)
-					setSelectedReferAppointmentId('')
+				onCancel={() => {
+					setMenuAnchor(null)
+					setDialogMode('cancel')
+					setDialogOpen(true)
 				}}
 			/>
+			<AppointmentActionDialog
+				open={dialogOpen}
+				mode={dialogMode}
+				patientName={actionAppt?.patient?.name ?? 'Unknown Patient'}
+				slotLabel={actionSlotLabel}
+				noShowCanMark={noShowAllowed}
+				noShowHint={noShowHint}
+				busy={actionBusy}
+				onClose={() => setDialogOpen(false)}
+				onConfirmCancel={(reason) => handleStatusFromDialog('cancelled', reason)}
+				onConfirmNoShow={() => handleStatusFromDialog('no_show')}
+			/>
+
 
 			<Dialog open={otpModalOpen} onClose={() => setOtpModalOpen(false)} maxWidth="xs" fullWidth>
 				<DialogContent sx={{ pt: 3 }}>

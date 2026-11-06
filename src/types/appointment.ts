@@ -68,6 +68,8 @@ export interface Appointment {
 	} | null
 	history?: AppointmentHistoryEntry[]
 	rescheduled_by?: string | null
+	/** The patient has already given this doctor the consultation code for this appointment (no new code is asked for). */
+	access_verified?: boolean
 	// Reason selected by the doctor when rejecting (or otherwise changing the status of) the appointment.
 	reason?: string | null
 	referral?: {
