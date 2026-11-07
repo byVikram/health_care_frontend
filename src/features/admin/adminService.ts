@@ -915,6 +915,35 @@ export const getAdminBlog = async (blogId: string) => {
 	return res.data
 }
 
+export const CONTENT_IMAGE_MAX_BYTES = 5 * 1024 * 1024
+export const CONTENT_IMAGE_ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+export type ContentImageKind = 'blogs' | 'ads' | 'events'
+
+/** An error message when the file can't be uploaded as a picture, otherwise null. */
+export const validateContentImage = (file: File): string | null => {
+	if (!CONTENT_IMAGE_ACCEPTED_TYPES.includes(file.type)) return 'Please choose a JPEG, PNG or WebP image.'
+	if (file.size > CONTENT_IMAGE_MAX_BYTES) return 'The image must be 5 MB or smaller.'
+	return null
+}
+
+/**
+ * Upload a picture for a blog, an ad or an event. The server removes its metadata, shrinks it to at most 1600 px wide
+ * and stores it as WebP in the public bucket. Resolves with the `url` to show right away; saving that same url in the
+ * blog's / ad's / event's image field is what links it (the server turns it back into the stored key).
+ */
+export const uploadContentImage = async (file: File, kind: ContentImageKind): Promise<string> => {
+	const form = new FormData()
+	form.append('kind', kind)
+	form.append('file', file)
+	const res = await ApiService.post<AdminMutationResponse<{ key: string; url: string; size: number }>>(
+		API_ENDPOINTS.ADMIN.CONTENT_IMAGES,
+		form
+	)
+	const url = res.data?.data?.url || res.data?.data?.key
+	if (!url) throw new Error('The server did not return the uploaded image')
+	return url
+}
+
 export const createAdminBlog = async (payload: { title: string; content: string; category: string; status?: string; image_url?: string; is_featured?: boolean }) => {
 	const res = await ApiService.post<AdminMutationResponse>(
 		API_ENDPOINTS.ADMIN.BLOGS,

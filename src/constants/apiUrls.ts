@@ -179,6 +179,8 @@ export const API_ENDPOINTS = {
 		PENDING_COMMENTS: '/api/admin/comments/pending',
 		APPROVE_COMMENT: (commentId: string) => `/api/admin/comments/${commentId}/approve`,
 		MODERATE_COMMENT: (commentId: string) => `/api/admin/comments/${commentId}/moderate`,
+		/** POST (multipart `kind` + `file`): a picture for a blog, an ad or an event, stored in the public bucket. */
+		CONTENT_IMAGES: '/api/admin/content-images',
 		BLOGS: '/api/admin/blogs',
 		BLOG_DETAIL: (blogId: string) => `/api/admin/blogs/${blogId}`,
 		ADS: '/api/admin/ads',
