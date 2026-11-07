@@ -917,7 +917,7 @@ export const getAdminBlog = async (blogId: string) => {
 
 export const CONTENT_IMAGE_MAX_BYTES = 5 * 1024 * 1024
 export const CONTENT_IMAGE_ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-export type ContentImageKind = 'blogs' | 'ads' | 'events'
+export type ContentImageKind = 'blogs' | 'ads' | 'events' | 'services'
 
 /** An error message when the file can't be uploaded as a picture, otherwise null. */
 export const validateContentImage = (file: File): string | null => {
