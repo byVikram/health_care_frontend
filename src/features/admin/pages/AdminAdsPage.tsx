@@ -36,7 +36,7 @@ import AppButton from '../../../components/common/Button/AppButton'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppSelect from '../../../components/common/Select/AppSelect'
 import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
-
+import ContentImageField from '../../../components/admin/ContentImageField'
 
 import {
 	listAllAds,
@@ -83,6 +83,7 @@ export default function AdminAdsPage() {
 	const [startDate, setStartDate] = useState('')
 	const [endDate, setEndDate] = useState('')
 	const [adIsActive, setAdIsActive] = useState(true)
+	const [saving, setSaving] = useState(false)
 
 	// Placement Modal
 	const [placementOpen, setPlacementOpen] = useState(false)
@@ -122,14 +123,16 @@ export default function AdminAdsPage() {
 
 	const handleSaveCampaign = async () => {
 		if (!adTitle.trim() || !imageUrl.trim() || !targetUrl.trim()) {
-			toast.warning('Please complete Title, Image URL, and Target URL'); return
+			toast.warning('Please complete Title, Banner Image, and Target URL'); return
 		}
+		setSaving(true)
 		const payload = { title: adTitle, image_url: imageUrl, target_url: targetUrl, is_active: adIsActive, start_date: startDate ? new Date(startDate).toISOString() : undefined, end_date: endDate ? new Date(endDate).toISOString() : undefined }
 		try {
 			if (editingAd) { await updateAd(editingAd.id, payload); toast.success('Ad campaign updated successfully!') }
 			else { await createAd(payload); toast.success('Ad campaign created successfully!') }
 			setCampaignOpen(false); await fetchData()
 		} catch (err) { console.error('Error saving ad campaign:', err) }
+		finally { setSaving(false) }
 	}
 
 	const handleConfirmDeleteCampaign = async () => {
@@ -416,7 +419,7 @@ export default function AdminAdsPage() {
 				<DialogContent>
 					<Stack spacing={2.5} sx={{ pt: 1.5 }}>
 						<AppInput fullWidth label="Campaign Title" value={adTitle} onChange={(e) => setAdTitle(e.target.value)} placeholder="E.g., Elder Mobility Wheelchair Rentals" />
-						<AppInput fullWidth label="Creative Banner Image URL" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Enter image URL..." />
+						<ContentImageField label="Creative Banner Image" kind="ads" value={imageUrl} onChange={setImageUrl} disabled={saving} previewHeight={140} />
 						<AppInput fullWidth label="Click Redirect Destination URL" value={targetUrl} onChange={(e) => setTargetUrl(e.target.value)} placeholder="E.g., /pharmacies or https://example.com" />
 						<Grid container spacing={2}>
 							<Grid size={{ xs: 6 }}>

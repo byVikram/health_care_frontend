@@ -27,7 +27,7 @@ import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 // import SectionCard from '../../../components/common/Card/SectionCard'
 import { getAdminBlog, updateAdminBlog, AdminBlogItem } from '../adminService'
 import { ROUTES } from '../../../constants/routes'
-import AppInput from '../../../components/common/Input/AppInput'
+import ContentImageField from '../../../components/admin/ContentImageField'
 import AppButton from '../../../components/common/Button/AppButton'
 import AppSelect from '../../../components/common/Select/AppSelect'
 
@@ -89,7 +89,7 @@ export default function AdminBlogEditPage() {
 				title: trimmedTitle,
 				category,
 				status: finalStatus,
-				image_url: imageUrl.trim() || undefined,
+				image_url: imageUrl.trim(), // '' removes the picture; leaving it out would keep the old one
 				is_featured: isFeatured,
 			}
 			// Only update content if changed or provided
@@ -292,39 +292,14 @@ export default function AdminBlogEditPage() {
 
 									<Divider />
 
-									{/* Banner Image URL */}
-									<Stack spacing={1.5}>
-
-										<AppInput
-											label="Banner Image URL"
-											value={imageUrl}
-											onChange={(e) => setImageUrl(e.target.value)}
-											required
-											fullWidth
-										/>
-										{imageUrl.trim() && (
-											<Box>
-												<Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
-													Banner Preview
-												</Typography>
-												<Box
-													component="img"
-													src={imageUrl}
-													alt="Banner Preview"
-													onError={(e) => {
-														; (e.target as HTMLElement).style.display = 'none'
-													}}
-													sx={{
-														width: '100%',
-														height: 120,
-														objectFit: 'cover',
-														borderRadius: 2,
-														border: '1px solid #e2e8f0',
-													}}
-												/>
-											</Box>
-										)}
-									</Stack>
+									{/* Banner image (uploaded to S3) */}
+									<ContentImageField
+										label="Banner Image"
+										kind="blogs"
+										value={imageUrl}
+										onChange={setImageUrl}
+										disabled={submitting}
+									/>
 								</Stack>
 							</CardContent>
 						</Card>

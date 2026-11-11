@@ -1,157 +1,236 @@
 // src/features/admin/pages/AdminAncillaryCategoriesPage.tsx
-import React, { useCallback, useEffect, useState } from 'react'
+// The ancillary (home-care) catalogue: specialty -> category -> service. The catalogue is the page; adding a category
+// is a short dialog, and a service is edited one at a time in a side drawer (with its picture, uploaded to S3).
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-	Box,
-	Typography,
-	Stack,
-	Grid,
 	Alert,
-	CircularProgress,
-	Chip,
 	Avatar,
-	Button,
-	IconButton,
-	Divider,
-	Tooltip,
-	Paper,
+	Box,
+	Chip,
 	Collapse,
-	Table,
-	TableHead,
-	TableRow,
-	TableCell,
-	TableBody,
+	Grid,
+	IconButton,
+	InputAdornment,
+	Paper,
+	Skeleton,
+	Stack,
+	Tooltip,
+	Typography,
 } from '@mui/material'
-import AddCircleIcon from '@mui/icons-material/AddCircle'
-import AccountTreeIcon from '@mui/icons-material/AccountTree'
-import RefreshIcon from '@mui/icons-material/Refresh'
-import EditIcon from '@mui/icons-material/Edit'
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import AddIcon from '@mui/icons-material/Add'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import EditIcon from '@mui/icons-material/Edit'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import SearchIcon from '@mui/icons-material/Search'
+import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import { toast } from 'react-toastify'
 
-import SectionCard from '../../../components/common/Card/SectionCard'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppSelect from '../../../components/common/Select/AppSelect'
 import AppButton from '../../../components/common/Button/AppButton'
 import AppModal from '../../../components/common/Modal/AppModal'
+import AppDrawer from '../../../components/common/Drawer/AppDrawer'
 import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
-import AppSwitch from '../../../components/common/Switch/AppSwitch'
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
+import AdminEmptyState from '../../../components/admin/AdminEmptyState'
+import ContentImageField from '../../../components/admin/ContentImageField'
 import PaginationBar from '../../../pagination/Pagination'
 import {
 	AdminAncillaryCategoryItem,
-	AncillarySpecialtyOption,
+	AdminAncillaryProcedureItem,
 	AncillaryProcedureFormPayload,
-	listAncillarySpecialtyOptions,
-	createAdminAncillarySpecialty,
-	listAdminAncillaryCategories,
-	createAdminAncillaryCategory,
-	updateAdminAncillaryCategory,
-	deleteAdminAncillaryCategory,
+	AncillarySpecialtyOption,
 	addAdminAncillaryProcedure,
-	updateAdminAncillaryProcedure,
+	createAdminAncillaryCategory,
+	createAdminAncillarySpecialty,
+	deleteAdminAncillaryCategory,
 	deleteAdminAncillaryProcedure,
+	listAdminAncillaryCategories,
+	listAncillarySpecialtyOptions,
+	updateAdminAncillaryCategory,
+	updateAdminAncillaryProcedure,
 } from '../adminService'
 
-const getErrorMessage = (err: unknown, fallback: string) => {
-	if (err && typeof err === 'object' && 'response' in err) {
-		const resp = (err as { response?: { data?: { message?: string } } }).response
-		if (resp?.data?.message) return resp.data.message
-	}
-	return err instanceof Error ? err.message : fallback
+const NEW_SPECIALTY = '__new__'
+const TEAL = '#0d9488'
+
+const money = (n: number | null | undefined) => `₹${Number(n ?? 0).toLocaleString('en-IN')}`
+
+// ── a service's picture, with the first letter when it has none or it cannot be loaded ──
+function ServiceThumb({ src, label, size = 44 }: { src?: string | null; label: string; size?: number }) {
+	return (
+		<Avatar
+			variant="rounded"
+			src={src || undefined}
+			alt={label}
+			sx={{
+				width: size,
+				height: size,
+				bgcolor: 'rgba(13,148,136,0.1)',
+				color: TEAL,
+				fontWeight: 800,
+				fontSize: size * 0.4,
+				borderRadius: '10px',
+			}}
+		>
+			{(label || '?').substring(0, 1).toUpperCase()}
+		</Avatar>
+	)
 }
 
-interface ServiceFormRow {
-	id?: string
-	key: string
+// ── a price that is edited in place: click, type, Enter (or leave the box) to save, Esc to cancel ──
+function InlinePrice({
+	value,
+	onSave,
+	color = '#0f172a',
+	label,
+}: {
+	value: number
+	onSave: (next: number) => Promise<void>
+	color?: string
+	label: string
+}) {
+	const [editing, setEditing] = useState(false)
+	const [draft, setDraft] = useState('')
+	const [saving, setSaving] = useState(false)
+
+	const open = () => {
+		setDraft(String(value ?? 0))
+		setEditing(true)
+	}
+
+	const commit = async () => {
+		if (saving) return
+		const next = Number(draft)
+		if (draft.trim() === '' || Number.isNaN(next) || next < 0) {
+			toast.warning(`Enter a valid ${label.toLowerCase()}.`)
+			setEditing(false)
+			return
+		}
+		if (next === Number(value)) {
+			setEditing(false)
+			return
+		}
+		setSaving(true)
+		try {
+			await onSave(next)
+		} finally {
+			setSaving(false)
+			setEditing(false)
+		}
+	}
+
+	if (editing) {
+		return (
+			<AppInput
+				autoFocus
+				size="small"
+				type="number"
+				value={draft}
+				disabled={saving}
+				onChange={(e) => setDraft(e.target.value)}
+				onBlur={commit}
+				onKeyDown={(e: React.KeyboardEvent) => {
+					if (e.key === 'Enter') commit()
+					if (e.key === 'Escape') setEditing(false)
+				}}
+				sx={{ width: 110 }}
+				InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
+			/>
+		)
+	}
+	return (
+		<Tooltip title={`Click to change the ${label.toLowerCase()}`}>
+			<Box
+				onClick={open}
+				sx={{
+					display: 'inline-block',
+					px: 1,
+					py: 0.25,
+					borderRadius: 1,
+					cursor: 'pointer',
+					fontWeight: 700,
+					color,
+					'&:hover': { bgcolor: 'rgba(13,148,136,0.08)' },
+				}}
+			>
+				{money(value)}
+			</Box>
+		</Tooltip>
+	)
+}
+
+interface ServiceForm {
 	label: string
 	price: string
 	providerPrice: string
-	aboutService: string
-	whatsIncludedText: string
+	about: string
+	included: string
+	imageUrl: string
 }
 
-const makeEmptyServiceRow = (initial?: Partial<ServiceFormRow>): ServiceFormRow => ({
-	id: initial?.id,
-	key: initial?.key || `svc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-	label: initial?.label || '',
-	price: initial?.price || '',
-	providerPrice: initial?.providerPrice || '',
-	aboutService: initial?.aboutService || '',
-	whatsIncludedText: initial?.whatsIncludedText || '',
-})
+const EMPTY_SERVICE: ServiceForm = { label: '', price: '', providerPrice: '', about: '', included: '', imageUrl: '' }
 
-type AddMode = 'existing' | 'new'
-
+const splitIncluded = (text: string) =>
+	text
+		.split(/[\n,;]+/)
+		.map((t) => t.trim())
+		.filter(Boolean)
 
 export default function AdminAncillaryCategoriesPage() {
-	// ── Choice state: "What would you like to add?" ──────────────────────────
-	const [addMode, setAddMode] = useState<AddMode>('existing')
-
-	// ── Option 1: Existing Specialty & Category form state ───────────────────
-	const [specialtyId, setSpecialtyId] = useState('')
-	const [categoryId, setCategoryId] = useState('')
-
-	// ── Option 2: New Specialty & Category form state ────────────────────────
-	const [newSpecialtyName, setNewSpecialtyName] = useState('')
-	const [newCategoryName, setNewCategoryName] = useState('')
-
-	// ── Services / Procedures list (Collapsed/Empty initially) ───────────────
-	const [services, setServices] = useState<ServiceFormRow[]>([])
-	const [submitting, setSubmitting] = useState(false)
-	const [error, setError] = useState<string | null>(null)
-
-	// ── Specialty dropdown data ───────────────────────────────────────────────
-	const [specialtyOptions, setSpecialtyOptions] = useState<AncillarySpecialtyOption[]>([])
-
-	// ── Registered Categories list ────────────────────────────────────────────
 	const [categories, setCategories] = useState<AdminAncillaryCategoryItem[]>([])
+	const [specialties, setSpecialties] = useState<AncillarySpecialtyOption[]>([])
 	const [loading, setLoading] = useState(true)
 	const [listError, setListError] = useState<string | null>(null)
 
-	// ── Expanded rows tracking ────────────────────────────────────────────────
-	const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<string>>(new Set())
-
-	// ── Pagination state ──────────────────────────────────────────────────────
+	// filters + list
+	const [search, setSearch] = useState('')
+	const [specialtyFilter, setSpecialtyFilter] = useState('')
+	const [expanded, setExpanded] = useState<Set<string>>(new Set())
 	const [page, setPage] = useState(1)
 	const [pageSize, setPageSize] = useState(10)
 
-	// ── Edit modal state ──────────────────────────────────────────────────────
-	const [editCategory, setEditCategory] = useState<AdminAncillaryCategoryItem | null>(null)
-	const [editSpecialtyId, setEditSpecialtyId] = useState('')
-	const [editCategoryLabel, setEditCategoryLabel] = useState('')
-	const [editServices, setEditServices] = useState<ServiceFormRow[]>([])
-	const [deletedProcedureIds, setDeletedProcedureIds] = useState<string[]>([])
-	const [editSubmitting, setEditSubmitting] = useState(false)
-	const [editError, setEditError] = useState<string | null>(null)
+	// category dialog (add / rename / move)
+	const [catDialog, setCatDialog] = useState<{ category: AdminAncillaryCategoryItem | null } | null>(null)
+	const [catName, setCatName] = useState('')
+	const [catSpecialty, setCatSpecialty] = useState('')
+	const [catNewSpecialty, setCatNewSpecialty] = useState('')
+	const [catSaving, setCatSaving] = useState(false)
 
-	// ── Delete confirm state ──────────────────────────────────────────────────
-	const [deleteTarget, setDeleteTarget] = useState<AdminAncillaryCategoryItem | null>(null)
+	// service drawer (add / edit one service)
+	const [svcDrawer, setSvcDrawer] = useState<{
+		category: AdminAncillaryCategoryItem
+		procedure: AdminAncillaryProcedureItem | null
+	} | null>(null)
+	const [svc, setSvc] = useState<ServiceForm>(EMPTY_SERVICE)
+	const [svcSaving, setSvcSaving] = useState(false)
+
+	// deletes
+	const [deleteCategory, setDeleteCategory] = useState<AdminAncillaryCategoryItem | null>(null)
+	const [deleteService, setDeleteService] = useState<AdminAncillaryProcedureItem | null>(null)
 	const [deleting, setDeleting] = useState(false)
 
+	// ── data ──────────────────────────────────────────────────────────────────
 	const loadSpecialties = useCallback(async () => {
 		try {
 			const res = await listAncillarySpecialtyOptions()
-			if (res.success) {
-				setSpecialtyOptions(res.data || [])
-			}
+			if (res.success) setSpecialties(res.data || [])
 		} catch (err) {
 			console.warn('Failed to load ancillary specialties:', err)
 		}
 	}, [])
 
-	const loadCategories = useCallback(async () => {
-		setLoading(true)
+	const loadCategories = useCallback(async (silent = false) => {
+		if (!silent) setLoading(true)
 		setListError(null)
 		try {
 			const res = await listAdminAncillaryCategories()
-			if (res.success) {
-				setCategories(res.data || [])
-			}
-		} catch (err: unknown) {
-			setListError(getErrorMessage(err, 'Failed to load ancillary categories.'))
+			if (res.success) setCategories(res.data || [])
+		} catch (err) {
+			console.error('Failed to load ancillary categories:', err)
+			setListError('Could not load the catalogue. Try again.')
 		} finally {
 			setLoading(false)
 		}
@@ -162,1236 +241,668 @@ export default function AdminAncillaryCategoriesPage() {
 		loadCategories()
 	}, [loadSpecialties, loadCategories])
 
-	// Helper to match category specialty with selected specialty (handles specialtyId / id aliases)
-	const matchesSpecialty = useCallback(
-		(categorySpecialtyId: string | null | undefined, selectedSpecId: string) => {
-			if (!categorySpecialtyId || !selectedSpecId) return false
-			if (categorySpecialtyId === selectedSpecId) return true
-			const opt = specialtyOptions.find(
-				(s) => s.specialtyId === selectedSpecId || s.id === selectedSpecId
-			)
-			if (opt) {
-				return opt.specialtyId === categorySpecialtyId || opt.id === categorySpecialtyId
-			}
-			return false
+	const specialtyKey = (s: AncillarySpecialtyOption) => s.specialtyId || s.id
+	const sameSpecialty = useCallback(
+		(categorySpecialtyId: string | null | undefined, selected: string) => {
+			if (!categorySpecialtyId || !selected) return false
+			if (categorySpecialtyId === selected) return true
+			const opt = specialties.find((s) => s.specialtyId === selected || s.id === selected)
+			return !!opt && (opt.specialtyId === categorySpecialtyId || opt.id === categorySpecialtyId)
 		},
-		[specialtyOptions]
+		[specialties]
 	)
 
-	// When specialty changes or categories reload, clear invalid selected category in Add Service flow
-	useEffect(() => {
-		if (categoryId && !categories.some((c) => c.id === categoryId && matchesSpecialty(c.specialty_id, specialtyId))) {
-			setCategoryId('')
-		}
-	}, [categories, categoryId, specialtyId, matchesSpecialty])
+	// ── list: filter, search, page ──────────────────────────────────────────────
+	const filtered = useMemo(() => {
+		const q = search.trim().toLowerCase()
+		return categories.filter((c) => {
+			if (specialtyFilter && !sameSpecialty(c.specialty_id, specialtyFilter)) return false
+			if (!q) return true
+			return (
+				c.label.toLowerCase().includes(q) ||
+				(c.procedures || []).some((p) => p.label.toLowerCase().includes(q))
+			)
+		})
+	}, [categories, search, specialtyFilter, sameSpecialty])
 
-	// ── Expand/collapse toggle ───────────────────────────────────────────────
-	const toggleExpandCategory = (catId: string) => {
-		setExpandedCategoryIds((prev) => {
+	const totalPages = Math.max(1, Math.ceil(filtered.length / Math.max(1, pageSize)))
+	const safePage = Math.min(Math.max(1, page), totalPages)
+	const visible = filtered.slice((safePage - 1) * pageSize, safePage * pageSize)
+
+	const countFor = (specialtyId: string) => categories.filter((c) => sameSpecialty(c.specialty_id, specialtyId)).length
+
+	const toggle = (id: string) =>
+		setExpanded((prev) => {
 			const next = new Set(prev)
-			if (next.has(catId)) {
-				next.delete(catId)
-			} else {
-				next.add(catId)
-			}
+			if (next.has(id)) next.delete(id)
+			else next.add(id)
 			return next
 		})
+
+	// ── category dialog ──────────────────────────────────────────────────────────
+	const openAddCategory = () => {
+		setCatDialog({ category: null })
+		setCatName('')
+		setCatSpecialty(specialtyFilter || '')
+		setCatNewSpecialty('')
 	}
 
-	const expandAllCategories = () => {
-		setExpandedCategoryIds(new Set(categories.map((c) => c.id)))
+	const openEditCategory = (category: AdminAncillaryCategoryItem) => {
+		setCatDialog({ category })
+		setCatName(category.label)
+		const match = specialties.find((s) => s.specialtyId === category.specialty_id || s.id === category.specialty_id)
+		setCatSpecialty(match ? specialtyKey(match) : category.specialty_id || '')
+		setCatNewSpecialty('')
 	}
 
-	const collapseAllCategories = () => {
-		setExpandedCategoryIds(new Set())
-	}
-
-	const handleSpecialtyChange = (nextSpecialtyId: string) => {
-		setSpecialtyId(nextSpecialtyId)
-		if (categoryId) {
-			const currentCat = categories.find((c) => c.id === categoryId)
-			if (!currentCat || !matchesSpecialty(currentCat.specialty_id, nextSpecialtyId)) {
-				setCategoryId('')
-			}
-		}
-	}
-
-	const handleEditSpecialtyChange = (nextSpecialtyId: string) => {
-		setEditSpecialtyId(nextSpecialtyId)
-	}
-
-	// ── Add-service rows (create form) ───────────────────────────────────────
-	const addServiceRow = () => setServices((prev) => [...prev, makeEmptyServiceRow()])
-	const removeServiceRow = (key: string) => setServices((prev) => prev.filter((s) => s.key !== key))
-	const updateServiceRow = (key: string, field: keyof ServiceFormRow, value: string) =>
-		setServices((prev) => prev.map((s) => (s.key === key ? { ...s, [field]: value } : s)))
-
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault()
-
-		if (addMode === 'existing' && services.length === 0) {
-			setError('Please add at least one service by clicking "Add Service".')
+	const saveCategory = async () => {
+		if (!catDialog) return
+		const name = catName.trim()
+		if (!name) {
+			toast.warning('Enter a category name.')
 			return
 		}
-
-		// Validate services if any are provided
-		const procedures: AncillaryProcedureFormPayload[] = []
-		for (const row of services) {
-			if (!row.label.trim()) {
-				setError('All services must have a valid Service Name.')
-				return
-			}
-			const priceNum = Number(row.price)
-			if (row.price.trim() && (Number.isNaN(priceNum) || priceNum < 0)) {
-				setError(`"${row.label.trim()}" has an invalid Customer Price.`)
-				return
-			}
-			const providerPriceNum = Number(row.providerPrice)
-			if (row.providerPrice.trim() && (Number.isNaN(providerPriceNum) || providerPriceNum < 0)) {
-				setError(`"${row.label.trim()}" has an invalid Provider Price.`)
-				return
-			}
-			procedures.push({
-				label: row.label.trim(),
-				price: row.price.trim() ? priceNum : 0,
-				provider_price: row.providerPrice.trim() ? providerPriceNum : 0,
-				about_service: row.aboutService.trim() || undefined,
-				whats_included: row.whatsIncludedText
-					.split(/[\n,;]+/)
-					.map((t) => t.trim())
-					.filter(Boolean),
-			})
+		if (!catSpecialty) {
+			toast.warning('Choose a specialty.')
+			return
 		}
-
-		setSubmitting(true)
-		setError(null)
-
+		if (catSpecialty === NEW_SPECIALTY && !catNewSpecialty.trim()) {
+			toast.warning('Enter the new specialty name.')
+			return
+		}
+		setCatSaving(true)
 		try {
-			if (addMode === 'new') {
-				// Option 2: Add a new specialty & category with a new service
-				if (!newSpecialtyName.trim()) {
-					setError('Please enter a New Specialty Name.')
-					setSubmitting(false)
-					return
-				}
-				if (!newCategoryName.trim()) {
-					setError('Please enter a New Category Name.')
-					setSubmitting(false)
-					return
-				}
-
-				// 1. Create or resolve the specialty
-				const specRes = await createAdminAncillarySpecialty({
-					label: newSpecialtyName.trim(),
-				})
-				const createdSpec = specRes.data
-				const specPublicId = createdSpec?.specialtyId || createdSpec?.id || newSpecialtyName.trim()
-
-				// 2. Create the category under the newly resolved specialty with procedures
-				const catRes = await createAdminAncillaryCategory({
-					label: newCategoryName.trim(),
-					specialty_id: specPublicId,
-					procedures,
-				})
-				const createdCategory = catRes.data
-
-				toast.success(
-					procedures.length > 0
-						? `Specialty "${newSpecialtyName.trim()}" and Category "${newCategoryName.trim()}" created with ${procedures.length} service(s) successfully.`
-						: `Specialty "${newSpecialtyName.trim()}" and Category "${newCategoryName.trim()}" created successfully.`
-				)
-
-				setNewSpecialtyName('')
-				setNewCategoryName('')
-				setServices([])
+			let specialtyId = catSpecialty
+			if (catSpecialty === NEW_SPECIALTY) {
+				const created = await createAdminAncillarySpecialty({ label: catNewSpecialty.trim() })
+				specialtyId = created.data?.specialtyId || created.data?.id || ''
 				await loadSpecialties()
-				await loadCategories()
-				if (createdCategory?.id) {
-					setExpandedCategoryIds((prev) => new Set(prev).add(createdCategory.id))
-				}
-			} else {
-				// Option 1: Add service to an existing specialty & category
-				if (!specialtyId) {
-					setError('Please select a specialty.')
-					setSubmitting(false)
-					return
-				}
-				const selectedCategory = categories.find(
-					(c) => c.id === categoryId && matchesSpecialty(c.specialty_id, specialtyId)
-				)
-				if (!selectedCategory) {
-					setError('Please select a category belonging to the selected specialty.')
-					setSubmitting(false)
-					return
-				}
-
-				for (const procedure of procedures) {
-					await addAdminAncillaryProcedure(selectedCategory.id, procedure)
-				}
-
-				toast.success(
-					`${procedures.length} service(s) added to "${selectedCategory.label}" successfully.`
-				)
-
-				setServices([])
-				await loadCategories()
-				setExpandedCategoryIds((prev) => new Set(prev).add(selectedCategory.id))
 			}
-		} catch (err: unknown) {
-			setError(
-				getErrorMessage(
-					err,
-					addMode === 'new'
-						? 'Failed to create new specialty, category, or services.'
-						: 'Failed to add services to this category.'
-				)
-			)
+			const editing = catDialog.category
+			if (editing) {
+				await updateAdminAncillaryCategory(editing.id, { label: name, specialty_id: specialtyId })
+				toast.success('Category updated.')
+			} else {
+				const res = await createAdminAncillaryCategory({ label: name, specialty_id: specialtyId })
+				toast.success(`Category "${name}" added. Add its services next.`)
+				if (res.data?.id) setExpanded((prev) => new Set(prev).add(res.data.id))
+			}
+			setCatDialog(null)
+			await loadCategories(true)
+		} catch (err) {
+			console.error('Failed to save category:', err) // the API wrapper already showed the message
 		} finally {
-			setSubmitting(false)
+			setCatSaving(false)
 		}
 	}
 
-	// ── Edit modal handlers ───────────────────────────────────────────────────
-	const openEdit = (category: AdminAncillaryCategoryItem) => {
-		setEditCategory(category)
-		const matchedSpec = specialtyOptions.find(
-			(s) => s.specialtyId === category.specialty_id || s.id === category.specialty_id
-		)
-		setEditSpecialtyId(matchedSpec ? (matchedSpec.specialtyId || matchedSpec.id) : (category.specialty_id || ''))
-		setEditCategoryLabel(category.label || '')
-		setEditServices(
-			(category.procedures || []).map((p) =>
-				makeEmptyServiceRow({
-					id: p.id,
-					label: p.label,
-					price: String(p.price ?? 0),
-					providerPrice: String(p.provider_price ?? p.price ?? 0),
-					aboutService: p.about_service || '',
-					whatsIncludedText: (p.whats_included || []).join(', '),
-				})
-			)
-		)
-		setDeletedProcedureIds([])
-		setEditError(null)
+	// ── service drawer ──────────────────────────────────────────────────────────
+	const openAddService = (category: AdminAncillaryCategoryItem) => {
+		setSvcDrawer({ category, procedure: null })
+		setSvc(EMPTY_SERVICE)
+		setExpanded((prev) => new Set(prev).add(category.id))
 	}
 
-	const closeEdit = () => {
-		setEditCategory(null)
-		setEditCategoryLabel('')
-		setEditServices([])
-		setDeletedProcedureIds([])
-		setEditError(null)
-	}
-
-	const addEditServiceRow = () => {
-		setEditServices((prev) => [...prev, makeEmptyServiceRow()])
-	}
-
-	const removeEditServiceRow = (key: string) => {
-		setEditServices((prev) => {
-			const target = prev.find((s) => s.key === key)
-			if (target?.id) {
-				setDeletedProcedureIds((d) => [...d, target.id!])
-			}
-			return prev.filter((s) => s.key !== key)
+	const openEditService = (category: AdminAncillaryCategoryItem, procedure: AdminAncillaryProcedureItem) => {
+		setSvcDrawer({ category, procedure })
+		setSvc({
+			label: procedure.label,
+			price: String(procedure.price ?? 0),
+			providerPrice: String(procedure.provider_price ?? procedure.price ?? 0),
+			about: procedure.about_service || '',
+			included: (procedure.whats_included || []).join('\n'),
+			imageUrl: procedure.image_url || '',
 		})
 	}
 
-	const updateEditServiceRow = (key: string, field: keyof ServiceFormRow, value: string) => {
-		setEditServices((prev) => prev.map((s) => (s.key === key ? { ...s, [field]: value } : s)))
-	}
+	const setField = (field: keyof ServiceForm) => (value: string) => setSvc((prev) => ({ ...prev, [field]: value }))
 
-	const handleSaveEditCategory = async () => {
-		if (!editCategory) return
-		if (!editSpecialtyId) {
-			setEditError('Please select a specialty.')
+	const saveService = async () => {
+		if (!svcDrawer) return
+		const label = svc.label.trim()
+		if (!label) {
+			toast.warning('Enter the service name.')
 			return
 		}
-		const finalCategoryLabel = editCategoryLabel.trim()
-		if (!finalCategoryLabel) {
-			setEditError('Category Name cannot be empty.')
+		const price = Number(svc.price)
+		if (svc.price.trim() === '' || Number.isNaN(price) || price < 0) {
+			toast.warning('Enter a valid customer price.')
+			return
+		}
+		const providerPrice = Number(svc.providerPrice)
+		if (svc.providerPrice.trim() !== '' && (Number.isNaN(providerPrice) || providerPrice < 0)) {
+			toast.warning('Enter a valid provider price.')
 			return
 		}
 
-		// Validate all services
-		for (const row of editServices) {
-			if (!row.label.trim()) {
-				setEditError('All services must have a valid Service Name.')
-				return
-			}
-			const priceNum = Number(row.price)
-			if (row.price.trim() && (Number.isNaN(priceNum) || priceNum < 0)) {
-				setEditError(`"${row.label.trim()}" has an invalid Customer Price.`)
-				return
-			}
-			const providerPriceNum = Number(row.providerPrice)
-			if (row.providerPrice.trim() && (Number.isNaN(providerPriceNum) || providerPriceNum < 0)) {
-				setEditError(`"${row.label.trim()}" has an invalid Provider Price.`)
-				return
-			}
+		const { category, procedure } = svcDrawer
+		const payload: AncillaryProcedureFormPayload = {
+			label,
+			price,
+			about_service: svc.about.trim(),
+			whats_included: splitIncluded(svc.included),
 		}
+		if (svc.providerPrice.trim() !== '') payload.provider_price = providerPrice
+		// The picture is only sent when it changed ('' removes it): an older service may carry a value the
+		// server would not accept as new input, and an unchanged picture needs no write.
+		const original = procedure?.image_url || ''
+		if (svc.imageUrl !== original) payload.image_url = svc.imageUrl
 
-		setEditSubmitting(true)
-		setEditError(null)
-
+		setSvcSaving(true)
 		try {
-			// 1. Update category name and/or specialty if changed
-			if (finalCategoryLabel !== editCategory.label || editSpecialtyId !== editCategory.specialty_id) {
-				await updateAdminAncillaryCategory(editCategory.id, {
-					label: finalCategoryLabel,
-					specialty_id: editSpecialtyId,
-				})
+			if (procedure) {
+				await updateAdminAncillaryProcedure(procedure.id, payload)
+				toast.success(`"${label}" updated.`)
+			} else {
+				await addAdminAncillaryProcedure(category.id, payload)
+				toast.success(`"${label}" added to ${category.label}.`)
 			}
-
-			// 2. Delete removed procedures
-			for (const procId of deletedProcedureIds) {
-				try {
-					await deleteAdminAncillaryProcedure(procId)
-				} catch (delErr) {
-					console.warn(`Failed to delete procedure ${procId}:`, delErr)
-				}
-			}
-
-			// 3. Update existing procedures / Create new procedures
-			for (const row of editServices) {
-				const priceNum = Number(row.price) || 0
-				const providerPriceNum = Number(row.providerPrice) || 0
-				const payload: AncillaryProcedureFormPayload = {
-					label: row.label.trim(),
-					price: priceNum,
-					provider_price: providerPriceNum,
-					about_service: row.aboutService.trim() || undefined,
-					whats_included: row.whatsIncludedText
-						.split(/[\n,;]+/)
-						.map((t) => t.trim())
-						.filter(Boolean),
-				}
-
-				if (row.id) {
-					// Existing service -> Update
-					await updateAdminAncillaryProcedure(row.id, payload)
-				} else {
-					// New service -> Create under selected category ID
-					await addAdminAncillaryProcedure(editCategory.id, payload)
-				}
-			}
-
-			toast.success(`Category "${finalCategoryLabel}" and its services updated successfully.`)
-			await loadCategories()
-			closeEdit()
-		} catch (err: unknown) {
-			setEditError(getErrorMessage(err, 'Failed to save category changes.'))
+			setSvcDrawer(null)
+			await loadCategories(true)
+		} catch (err) {
+			console.error('Failed to save service:', err)
 		} finally {
-			setEditSubmitting(false)
+			setSvcSaving(false)
 		}
 	}
 
-	// ── Delete category handlers ─────────────────────────────────────────────
-	const handleConfirmDelete = async () => {
-		if (!deleteTarget) return
+	const savePrice = (procedure: AdminAncillaryProcedureItem, field: 'price' | 'provider_price') => async (next: number) => {
+		try {
+			await updateAdminAncillaryProcedure(procedure.id, { [field]: next })
+			toast.success(`${procedure.label}: ${field === 'price' ? 'customer' : 'provider'} price saved.`)
+			await loadCategories(true)
+		} catch (err) {
+			console.error('Failed to save price:', err)
+		}
+	}
+
+	// ── deletes ───────────────────────────────────────────────────────────────────
+	const confirmDelete = async () => {
 		setDeleting(true)
 		try {
-			await deleteAdminAncillaryCategory(deleteTarget.id)
-			toast.success(`Category "${deleteTarget.label}" deleted.`)
-			setDeleteTarget(null)
-			await loadCategories()
-		} catch (err: unknown) {
-			toast.error(getErrorMessage(err, 'Failed to delete category.'))
+			if (deleteCategory) {
+				await deleteAdminAncillaryCategory(deleteCategory.id)
+				toast.success(`Category "${deleteCategory.label}" deleted.`)
+				setDeleteCategory(null)
+			} else if (deleteService) {
+				await deleteAdminAncillaryProcedure(deleteService.id)
+				toast.success(`Service "${deleteService.label}" deleted.`)
+				setDeleteService(null)
+			}
+			await loadCategories(true)
+		} catch (err) {
+			console.error('Failed to delete:', err)
 		} finally {
 			setDeleting(false)
 		}
 	}
 
-	const specialtySelectOptions = specialtyOptions.map((s) => ({
-		value: s.specialtyId || s.id,
-		label: s.label,
-	}))
+	const specialtyOptions = specialties.map((s) => ({ value: specialtyKey(s), label: s.label }))
+	const dialogSpecialtyOptions = [...specialtyOptions, { value: NEW_SPECIALTY, label: '+ Add a new specialty…' }]
 
-	const categorySelectOptions = categories
-		.filter((c) => matchesSpecialty(c.specialty_id, specialtyId))
-		.map((c) => ({ value: c.id, label: c.label }))
-
-	// Sliced categories for pagination
-	const totalRows = categories.length
-	const totalPages = Math.max(1, Math.ceil(totalRows / Math.max(1, pageSize)))
-	const safePage = Math.min(Math.max(1, page), totalPages)
-	const startIndex = (safePage - 1) * pageSize
-	const paginatedCategories = categories.slice(startIndex, startIndex + pageSize)
-
+	// ── render ────────────────────────────────────────────────────────────────────
 	return (
 		<Box sx={{ pb: 6 }}>
 			<AdminPageHeader
 				title="Ancillary Categories"
-				subtitle="Manage the master categories used across ancillary service discovery, booking, and service configuration."
+				subtitle="The home-care catalogue: categories under each specialty, and the services (with prices and pictures) inside them."
 				count={categories.length}
 				countLabel="categories"
+				actions={
+					<AppButton
+						startIcon={<AddIcon />}
+						label="Add category"
+						onClick={openAddCategory}
+						sx={{ bgcolor: TEAL, fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}
+					/>
+				}
 			/>
 
-			<Grid container spacing={3} sx={{ mb: 4, alignItems: 'flex-start' }}>
-				<Grid size={{ xs: 12, md: 7 }}>
-					<SectionCard
-						title="Add Services"
-						subtitle="Add new services to an existing category, or register a new specialty and category."
-					>
-						<form onSubmit={handleSubmit}>
-							<Stack spacing={2.5}>
-								{error && (
-									<Alert severity="error" sx={{ borderRadius: 2 }}>
-										{error}
-									</Alert>
-								)}
-
-								{/* ── 1. Choice before Specialty: "What would you like to add?" ── */}
-								<Box>
-									<Typography variant="subtitle2" fontWeight={700} color="#0f172a" sx={{ mb: 1 }}>
-										What would you like to add?
-									</Typography>
-									<Stack direction="row" spacing={1.5} alignItems="center">
-										<Typography
-											variant="body2"
-											fontWeight={addMode === 'existing' ? 700 : 500}
-											color={addMode === 'existing' ? '#0f766e' : '#64748b'}
-										>
-											Existing
-										</Typography>
-										<AppSwitch
-											checked={addMode === 'new'}
-											onChange={(e) => {
-												setAddMode(e.target.checked ? 'new' : 'existing')
-												setError(null)
-											}}
-										/>
-										<Typography
-											variant="body2"
-											fontWeight={addMode === 'new' ? 700 : 500}
-											color={addMode === 'new' ? '#0f766e' : '#64748b'}
-										>
-											New
-										</Typography>
-									</Stack>
-								</Box>
-
-								<Divider sx={{ my: 0.5 }} />
-
-								{/* ── 2. Option 1: Existing Specialty & Category Dropdowns ── */}
-								{addMode === 'existing' ? (
-									<Stack spacing={2.5}>
-										{/* Specialty Dropdown */}
-										<AppSelect
-											label="Specialty"
-											placeholder="Select the ancillary specialty"
-											value={specialtyId}
-											onChange={(e) => handleSpecialtyChange(e.target.value as string)}
-											options={specialtySelectOptions}
-											fullWidth
-										/>
-
-										{/* Category Name Dropdown (shows only categories under selected specialty) */}
-										<Box>
-											<AppSelect
-												label="Category Name"
-												placeholder={
-													specialtyId
-												? categorySelectOptions.length > 0
-													? 'Select a category'
-													: 'No categories found for this specialty'
-												: 'Select a specialty first'
-												}
-												value={categoryId}
-												onChange={(e) => setCategoryId(e.target.value as string)}
-												options={categorySelectOptions}
-												disabled={!specialtyId}
-												required
-												fullWidth
-											/>
-											{specialtyId && categorySelectOptions.length === 0 && (
-												<Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, fontStyle: 'italic' }}>
-													No categories found under this specialty. You can use "New Specialty &amp; Category" above.
-												</Typography>
-											)}
-										</Box>
-									</Stack>
-								) : (
-									/* ── 3. Option 2: New Specialty & Category Text Inputs ── */
-									<Stack spacing={2.5}>
-										<AppInput
-											label="New Specialty Name"
-											placeholder="e.g. Critical Care Nursing, Physiotherapy, Elder Care"
-											value={newSpecialtyName}
-											onChange={(e) => setNewSpecialtyName(e.target.value)}
-											required
-											fullWidth
-										/>
-
-										<AppInput
-											label="New Category Name"
-											placeholder="e.g. ICU Care at Home, Post-Op Rehabilitation"
-											value={newCategoryName}
-											onChange={(e) => setNewCategoryName(e.target.value)}
-											required
-											fullWidth
-										/>
-									</Stack>
-								)}
-
-								<Divider sx={{ my: 0.5 }} />
-
-								{/* ── 4. Services / Procedures (Clean & Collapsed initially) ── */}
-								<Box>
-									<Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: services.length > 0 ? 1.5 : 0 }}>
-										<Box>
-											<Typography variant="subtitle2" fontWeight={700} color="#0f172a">
-												Services / Procedures
-											</Typography>
-											<Typography variant="caption" color="text.secondary">
-												Add the services offered under this category now, or manage them later.
-											</Typography>
-										</Box>
-										<Button
-											size="small"
-											startIcon={<AddIcon fontSize="small" />}
-											onClick={addServiceRow}
-											sx={{ textTransform: 'none', color: '#0d9488', fontWeight: 700 }}
-										>
-											Add Service
-										</Button>
-									</Stack>
-
-									{services.length > 0 && (
-										<Stack spacing={2} sx={{ mt: 1.5 }}>
-											{services.map((row, idx) => (
-												<Box
-													key={row.key}
-													sx={{ p: 2.25, borderRadius: 2.5, border: '1px solid #e2e8f0', bgcolor: '#f8fafc' }}
-												>
-													{/* Service Header with Delete Icon */}
-													<Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-														<Typography variant="caption" fontWeight={800} color="#0d9488" sx={{ letterSpacing: '0.04em' }}>
-															SERVICE {idx + 1}
-														</Typography>
-														<Tooltip title="Delete / Remove this service">
-															<IconButton
-																size="small"
-																onClick={() => removeServiceRow(row.key)}
-																sx={{ color: '#94a3b8', '&:hover': { color: '#ef4444' } }}
-															>
-																<DeleteOutlineIcon fontSize="small" />
-															</IconButton>
-														</Tooltip>
-													</Stack>
-
-													<Stack spacing={1.75}>
-														<Grid container spacing={2}>
-															<Grid size={{ xs: 12, md: 6 }}>
-																<AppInput
-																	label="Service Name"
-																	placeholder="e.g. ICU Care at Home"
-																	value={row.label}
-																	onChange={(e) => updateServiceRow(row.key, 'label', e.target.value)}
-																	fullWidth
-																/>
-															</Grid>
-															<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-																<AppInput
-																	label="Customer Price"
-																	placeholder="e.g. 1299"
-																	value={row.price}
-																	onChange={(e) => updateServiceRow(row.key, 'price', e.target.value)}
-																	type="number"
-																	fullWidth
-																	InputProps={{
-																		startAdornment: (
-																			<Box component="span" sx={{ mr: 0.5, color: 'text.secondary', fontWeight: 600 }}>
-																				₹
-																			</Box>
-																		),
-																	}}
-																	sx={{
-																		'& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
-																			WebkitAppearance: 'none',
-																			margin: 0,
-																		},
-																		'& input[type=number]': {
-																			MozAppearance: 'textfield',
-																		},
-																	}}
-																/>
-															</Grid>
-															<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-																<AppInput
-																	label="Provider Price"
-																	placeholder="e.g. 999"
-																	value={row.providerPrice}
-																	onChange={(e) => updateServiceRow(row.key, 'providerPrice', e.target.value)}
-																	type="number"
-																	fullWidth
-																	InputProps={{
-																		startAdornment: (
-																			<Box component="span" sx={{ mr: 0.5, color: 'text.secondary', fontWeight: 600 }}>
-																				₹
-																			</Box>
-																		),
-																	}}
-																	sx={{
-																		'& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
-																			WebkitAppearance: 'none',
-																			margin: 0,
-																		},
-																		'& input[type=number]': {
-																			MozAppearance: 'textfield',
-																		},
-																	}}
-																/>
-															</Grid>
-														</Grid>
-
-														<AppInput
-															label="About Service"
-															placeholder="Brief description of this service..."
-															value={row.aboutService}
-															onChange={(e) => updateServiceRow(row.key, 'aboutService', e.target.value)}
-															multiline
-															minRows={2}
-															maxRows={4}
-															fullWidth
-														/>
-
-														<AppInput
-															label="What's Included"
-															placeholder="e.g. Qualified physiotherapy professional, Functional assessment, Guided rehabilitation exercises, Progress monitoring"
-															value={row.whatsIncludedText}
-															onChange={(e) => updateServiceRow(row.key, 'whatsIncludedText', e.target.value)}
-															multiline
-															minRows={2}
-															maxRows={4}
-															fullWidth
-															sx={{
-																width: '100%',
-																'& .MuiOutlinedInput-root': {
-																	p: 1.25,
-																	alignItems: 'flex-start',
-																},
-																'& .MuiInputBase-inputMultiline': {
-																	lineHeight: 1.6,
-																	fontSize: '0.85rem',
-																	boxSizing: 'border-box',
-																},
-															}}
-														/>
-
-													</Stack>
-												</Box>
-											))}
-										</Stack>
-									)}
-								</Box>
-
-								<Box sx={{ pt: 0.5 }}>
-									<AppButton
-										label={
-											submitting
-												? addMode === 'new'
-													? 'Creating...'
-													: 'Adding Services...'
-												: addMode === 'new'
-													? services.length > 0
-														? 'Create Specialty, Category & Services'
-														: 'Create Category'
-													: 'Add Services'
-										}
-										type="submit"
-										disabled={submitting || (addMode === 'existing' && services.length === 0)}
-										startIcon={<AddCircleIcon />}
-										sx={{ bgcolor: '#0d9488', py: 1.2, px: 3, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: '#0f766e' } }}
-									/>
-								</Box>
-							</Stack>
-						</form>
-					</SectionCard>
-				</Grid>
-
-				{/* ── Fixed Natural-Height Right-Side Standard Panel (No Vertical Expansion) ── */}
-				<Grid size={{ xs: 12, md: 5 }} sx={{ alignSelf: 'flex-start' }}>
-					<Box
-						sx={{
-							p: 3,
-							borderRadius: '14px',
-							bgcolor: '#0f172a',
-							color: '#ffffff',
-							border: '1px solid #1e293b',
-							boxSizing: 'border-box',
+			{/* ── find what you need ── */}
+			<Stack spacing={1.5} sx={{ mb: 2.5 }}>
+				<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
+					<AppInput
+						size="small"
+						placeholder="Search a category or a service"
+						value={search}
+						onChange={(e) => {
+							setSearch(e.target.value)
+							setPage(1)
 						}}
-					>
-						<Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
-							<AccountTreeIcon sx={{ color: '#2dd4bf', fontSize: 28 }} />
-							<Typography variant="h6" fontWeight={800}>
-								Ancillary Category Standard
-							</Typography>
-						</Stack>
-						<Typography variant="body2" sx={{ color: '#94a3b8', lineHeight: 1.6 }}>
-							Ancillary categories registered in this master catalog are available across the system's ancillary service workflows:
-						</Typography>
-						<Box component="ul" sx={{ pl: 2, mt: 1.5, color: '#cbd5e1', fontSize: 13, lineHeight: 1.8 }}>
-							<li>Ancillary service discovery and filtering.</li>
-							<li>Service booking and appointment workflows.</li>
-							<li>Provider and service routing.</li>
-							<li>Service and pricing configuration (Customer & Provider pricing).</li>
-						</Box>
-					</Box>
-				</Grid>
-			</Grid>
-
-			{/* ── Registered Categories Section ── */}
-			<Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2.5 }}>
-				<Box>
-					<Typography variant="subtitle1" fontWeight={800} color="#0f172a">
-						Registered Ancillary Categories
-					</Typography>
-					<Typography variant="caption" color="text.secondary">
-						All active ancillary service categories and their associated procedures
-					</Typography>
-				</Box>
-				<Stack direction="row" spacing={1.5}>
-					<Button
+						sx={{ flex: 1, maxWidth: 420 }}
+						InputProps={{
+							startAdornment: (
+								<InputAdornment position="start">
+									<SearchIcon fontSize="small" />
+								</InputAdornment>
+							),
+						}}
+					/>
+					<Box sx={{ flex: 1 }} />
+					<AppButton
 						variant="text"
 						size="small"
-						onClick={expandedCategoryIds.size === categories.length ? collapseAllCategories : expandAllCategories}
-						sx={{ textTransform: 'none', color: '#0d9488', fontWeight: 600, fontSize: '0.8rem' }}
-					>
-						{expandedCategoryIds.size === categories.length ? 'Collapse All' : 'Expand All Services'}
-					</Button>
-					<Button
-						variant="outlined"
-						size="small"
-						startIcon={<RefreshIcon />}
-						onClick={loadCategories}
-						disabled={loading}
-						sx={{ textTransform: 'none', borderRadius: 2, borderColor: '#e2e8f0', color: '#64748b', '&:hover': { borderColor: '#0d9488', color: '#0d9488' } }}
-					>
-						Refresh Catalog
-					</Button>
+						onClick={() =>
+							setExpanded(expanded.size >= filtered.length ? new Set() : new Set(filtered.map((c) => c.id)))
+						}
+						label={expanded.size >= filtered.length && filtered.length > 0 ? 'Collapse all' : 'Expand all'}
+						sx={{ color: TEAL, fontWeight: 600 }}
+					/>
+					<Tooltip title="Refresh">
+						<span>
+							<IconButton size="small" disabled={loading} onClick={() => loadCategories()} sx={{ color: '#64748b' }}>
+								<RefreshIcon fontSize="small" />
+							</IconButton>
+						</span>
+					</Tooltip>
+				</Stack>
+				<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+					<Chip
+						clickable
+						label={`All (${categories.length})`}
+						onClick={() => {
+							setSpecialtyFilter('')
+							setPage(1)
+						}}
+						sx={{
+							fontWeight: 700,
+							bgcolor: specialtyFilter === '' ? TEAL : '#f1f5f9',
+							color: specialtyFilter === '' ? '#fff' : '#475569',
+							'&:hover': { bgcolor: specialtyFilter === '' ? '#0f766e' : '#e2e8f0' },
+						}}
+					/>
+					{specialties.map((s) => {
+						const key = specialtyKey(s)
+						const active = specialtyFilter === key
+						return (
+							<Chip
+								key={key}
+								clickable
+								label={`${s.label} (${countFor(key)})`}
+								onClick={() => {
+									setSpecialtyFilter(active ? '' : key)
+									setPage(1)
+								}}
+								sx={{
+									fontWeight: 600,
+									bgcolor: active ? TEAL : '#f1f5f9',
+									color: active ? '#fff' : '#475569',
+									'&:hover': { bgcolor: active ? '#0f766e' : '#e2e8f0' },
+								}}
+							/>
+						)
+					})}
 				</Stack>
 			</Stack>
 
 			{listError && (
-				<Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+				<Alert
+					severity="error"
+					sx={{ mb: 2, borderRadius: 2 }}
+					action={<AppButton variant="text" size="small" label="Retry" onClick={() => loadCategories()} />}
+				>
 					{listError}
 				</Alert>
 			)}
 
+			{/* ── the catalogue ── */}
 			{loading ? (
-				<Stack alignItems="center" justifyContent="center" sx={{ py: 6 }}>
-					<CircularProgress sx={{ color: '#0d9488' }} />
-					<Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-						Loading ancillary categories...
-					</Typography>
+				<Stack spacing={1.5}>
+					{[0, 1, 2].map((i) => (
+						<Skeleton key={i} variant="rounded" height={76} sx={{ borderRadius: '14px' }} />
+					))}
 				</Stack>
+			) : visible.length === 0 ? (
+				<Paper variant="outlined" sx={{ borderRadius: '14px', borderColor: 'divider' }}>
+					<AdminEmptyState
+						icon={<AccountTreeIcon sx={{ fontSize: 40, color: '#94a3b8' }} />}
+						title={categories.length === 0 ? 'No categories yet' : 'Nothing matches'}
+						description={
+							categories.length === 0
+								? 'Add your first category, then the services inside it.'
+								: 'Try another search or specialty.'
+						}
+						action={
+							categories.length === 0 ? (
+								<AppButton startIcon={<AddIcon />} label="Add category" onClick={openAddCategory} />
+							) : undefined
+						}
+					/>
+				</Paper>
 			) : (
-				<Paper
-					elevation={0}
-					sx={{
-						borderRadius: '14px',
-						border: '1px solid',
-						borderColor: 'divider',
-						overflow: 'hidden',
-						boxShadow: '0 4px 20px rgba(15,23,42,0.015)',
-					}}
-				>
-					<Table>
-						<TableHead>
-							<TableRow sx={{ bgcolor: '#f8fafc' }}>
-								<TableCell sx={{ width: 48, py: 1.5 }} />
-								<TableCell sx={{ fontWeight: 800, color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', py: 1.5 }}>
-									Category
-								</TableCell>
-								<TableCell sx={{ fontWeight: 800, color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', py: 1.5 }}>
-									Specialty
-								</TableCell>
-								<TableCell sx={{ fontWeight: 800, color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', py: 1.5 }}>
-									Services / Procedures
-								</TableCell>
-								<TableCell align="right" sx={{ fontWeight: 800, color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', py: 1.5 }}>
-									Actions
-								</TableCell>
-							</TableRow>
-						</TableHead>
-						<TableBody>
-							{paginatedCategories.length === 0 ? (
-								<TableRow>
-									<TableCell colSpan={5}>
-										<Box sx={{ py: 6, textAlign: 'center' }}>
-											<Typography variant="body2" sx={{ color: 'text.secondary' }}>
-												No ancillary categories found.
+				<Stack spacing={1.5}>
+					{visible.map((category) => {
+						const open = expanded.has(category.id)
+						const procs = category.procedures || []
+						const cover = procs.find((p) => p.image_url)?.image_url
+						return (
+							<Paper
+								key={category.id}
+								elevation={0}
+								sx={{
+									borderRadius: '14px',
+									border: '1px solid',
+									borderColor: open ? 'rgba(13,148,136,0.4)' : 'divider',
+									overflow: 'hidden',
+								}}
+							>
+								{/* category header */}
+								<Stack
+									direction="row"
+									alignItems="center"
+									spacing={1.5}
+									sx={{ px: 2, py: 1.5, cursor: 'pointer', '&:hover': { bgcolor: '#fafcfc' } }}
+									onClick={() => toggle(category.id)}
+								>
+									<ServiceThumb src={cover} label={category.label} size={48} />
+									<Box sx={{ minWidth: 0, flex: 1 }}>
+										<Typography variant="subtitle1" fontWeight={800} color="#0f172a" noWrap>
+											{category.label}
+										</Typography>
+										<Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.25 }}>
+											{category.specialty_label && (
+												<Chip
+													size="small"
+													label={category.specialty_label}
+													sx={{ height: 22, fontSize: '0.72rem', bgcolor: '#f1f5f9', color: '#475569' }}
+												/>
+											)}
+											<Typography variant="caption" color="text.secondary">
+												{procs.length} service{procs.length === 1 ? '' : 's'}
 											</Typography>
-										</Box>
-									</TableCell>
-								</TableRow>
-							) : (
-								paginatedCategories.map((category) => {
-									const isExpanded = expandedCategoryIds.has(category.id)
-									const procs = category.procedures || []
-									const count = procs.length
-
-									return (
-										<React.Fragment key={category.id}>
-											{/* Main Category Row */}
-											<TableRow
-												hover
-												sx={{
-													bgcolor: isExpanded ? 'rgba(13,148,136,0.02)' : 'inherit',
-													transition: 'background 0.15s ease',
-													cursor: 'pointer',
-												}}
-												onClick={() => toggleExpandCategory(category.id)}
+										</Stack>
+									</Box>
+									<Stack direction="row" spacing={0.5} alignItems="center" onClick={(e) => e.stopPropagation()}>
+										<Tooltip title="Add service">
+											<IconButton
+												size="small"
+												onClick={() => openAddService(category)}
+												sx={{ color: TEAL, '&:hover': { bgcolor: 'rgba(13,148,136,0.08)' } }}
 											>
-												<TableCell sx={{ py: 1.75, pr: 0 }}>
-													<IconButton
-														size="small"
-														onClick={(e) => {
-															e.stopPropagation()
-															toggleExpandCategory(category.id)
-														}}
-														sx={{ color: isExpanded ? '#0d9488' : '#94a3b8' }}
+												<AddIcon fontSize="small" />
+											</IconButton>
+										</Tooltip>
+										<Tooltip title="Rename or move to another specialty">
+											<IconButton size="small" onClick={() => openEditCategory(category)}>
+												<EditIcon fontSize="small" />
+											</IconButton>
+										</Tooltip>
+										<Tooltip title="Delete category">
+											<IconButton
+												size="small"
+												onClick={() => setDeleteCategory(category)}
+												sx={{ '&:hover': { color: '#ef4444' } }}
+											>
+												<DeleteOutlineIcon fontSize="small" />
+											</IconButton>
+										</Tooltip>
+										<IconButton size="small" onClick={() => toggle(category.id)}>
+											{open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+										</IconButton>
+									</Stack>
+								</Stack>
+
+								{/* its services */}
+								<Collapse in={open} timeout="auto" unmountOnExit>
+									<Box sx={{ borderTop: '1px solid', borderColor: 'divider', bgcolor: '#fcfdfd' }}>
+										{procs.length === 0 ? (
+											<Stack alignItems="center" spacing={1} sx={{ py: 3 }}>
+												<Typography variant="body2" color="text.secondary">
+													No services in this category yet.
+												</Typography>
+												<AppButton
+													size="small"
+													startIcon={<AddIcon fontSize="small" />}
+													label="Add the first service"
+													onClick={() => openAddService(category)}
+													sx={{ bgcolor: TEAL, '&:hover': { bgcolor: '#0f766e' } }}
+												/>
+											</Stack>
+										) : (
+											<>
+												<Grid
+													container
+													sx={{
+														px: 2,
+														py: 0.75,
+														color: '#64748b',
+														fontSize: '0.7rem',
+														fontWeight: 800,
+														letterSpacing: '0.06em',
+														textTransform: 'uppercase',
+														display: { xs: 'none', md: 'flex' },
+													}}
+												>
+													<Grid size={{ md: 6 }}>Service</Grid>
+													<Grid size={{ md: 2 }}>Customer price</Grid>
+													<Grid size={{ md: 2 }}>Provider price</Grid>
+													<Grid size={{ md: 2 }} sx={{ textAlign: 'right' }}>
+														Actions
+													</Grid>
+												</Grid>
+												{procs.map((p) => (
+													<Grid
+														container
+														key={p.id}
+														alignItems="center"
+														rowSpacing={1}
+														sx={{ px: 2, py: 1.25, borderTop: '1px solid #eef2f6' }}
 													>
-														{isExpanded ? <KeyboardArrowUpIcon fontSize="small" /> : <KeyboardArrowDownIcon fontSize="small" />}
-													</IconButton>
-												</TableCell>
-												<TableCell sx={{ py: 1.75 }}>
-													<Stack direction="row" spacing={1.5} alignItems="center">
-														<Avatar sx={{ bgcolor: 'rgba(13,148,136,0.12)', color: '#0d9488', width: 36, height: 36, fontSize: 13, fontWeight: 800 }}>
-															{(category.label || 'C').substring(0, 1).toUpperCase()}
-														</Avatar>
-														<Box sx={{ minWidth: 0 }}>
-															<Typography variant="subtitle2" fontWeight={700} color="#0f172a">
-																{category.label}
-															</Typography>
-															<Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: 11 }}>
-																{category.id}
-															</Typography>
-														</Box>
-													</Stack>
-												</TableCell>
-												<TableCell sx={{ py: 1.75 }}>
-													{category.specialty_label ? (
-														<Chip
-															label={category.specialty_label}
-															size="small"
-															sx={{ bgcolor: '#f8fafc', color: '#475569', fontSize: '0.72rem', borderRadius: '6px', height: 24, border: '1px solid #e2e8f0' }}
-														/>
-													) : (
-														<Typography variant="caption" color="text.secondary">
-															—
-														</Typography>
-													)}
-												</TableCell>
-												<TableCell sx={{ py: 1.75 }}>
-													<Stack direction="row" spacing={1} alignItems="center">
-														<Chip
-															label={`${count} service${count === 1 ? '' : 's'}`}
-															size="small"
-															sx={{
-																bgcolor: count > 0 ? 'rgba(13,148,136,0.1)' : '#f1f5f9',
-																color: count > 0 ? '#0d9488' : '#64748b',
-																fontWeight: 700,
-																fontSize: '0.72rem',
-																height: 24,
-																borderRadius: '6px',
-															}}
-														/>
-														<Button
-															size="small"
-															variant="text"
-															onClick={(e) => {
-																e.stopPropagation()
-																toggleExpandCategory(category.id)
-															}}
-															sx={{
-																textTransform: 'none',
-																fontSize: '0.75rem',
-																fontWeight: 600,
-																color: isExpanded ? '#0d9488' : '#64748b',
-																minWidth: 0,
-																p: 0,
-															}}
-														>
-															{isExpanded ? 'Hide services' : 'Show services'}
-														</Button>
-													</Stack>
-												</TableCell>
-												<TableCell align="right" sx={{ py: 1.75 }} onClick={(e) => e.stopPropagation()}>
-													<Stack direction="row" spacing={0.5} justifyContent="flex-end">
-														<Tooltip title="Edit category & services">
-															<IconButton size="small" onClick={() => openEdit(category)} sx={{ color: '#64748b', '&:hover': { color: '#0d9488' } }}>
-																<EditIcon fontSize="small" />
-															</IconButton>
-														</Tooltip>
-														<Tooltip title="Delete category">
-															<IconButton size="small" onClick={() => setDeleteTarget(category)} sx={{ color: '#64748b', '&:hover': { color: '#ef4444' } }}>
-																<DeleteOutlineIcon fontSize="small" />
-															</IconButton>
-														</Tooltip>
-													</Stack>
-												</TableCell>
-											</TableRow>
-
-											{/* Expandable Services Row */}
-											<TableRow sx={{ bgcolor: '#fcfdfd' }}>
-												<TableCell colSpan={5} sx={{ py: 0, px: 3, borderBottom: isExpanded ? '1px solid #e2e8f0' : 'none' }}>
-													<Collapse in={isExpanded} timeout="auto" unmountOnExit>
-														<Box sx={{ py: 2.5, px: 1 }}>
-															<Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-																<Typography variant="caption" fontWeight={800} color="#0f172a" sx={{ letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-																	SERVICES / PROCEDURES UNDER "{category.label}" ({count})
-																</Typography>
-																<Button
-																	size="small"
-																	startIcon={<AddIcon fontSize="small" />}
-																	onClick={() => openEdit(category)}
-																	sx={{ textTransform: 'none', color: '#0d9488', fontWeight: 700, fontSize: '0.75rem' }}
-																>
-																	Manage Services
-																</Button>
-															</Stack>
-
-															{procs.length === 0 ? (
-																<Box sx={{ p: 2, borderRadius: 2, bgcolor: '#f8fafc', border: '1px dashed #cbd5e1', textAlign: 'center' }}>
-																	<Typography variant="caption" color="text.secondary">
-																		No services registered under this category yet. Click "Manage Services" to add services.
+														<Grid size={{ xs: 12, md: 6 }}>
+															<Stack direction="row" spacing={1.5} alignItems="center">
+																<ServiceThumb src={p.image_url} label={p.label} />
+																<Box sx={{ minWidth: 0 }}>
+																	<Typography variant="body2" fontWeight={700} color="#0f172a">
+																		{p.label}
 																	</Typography>
-																</Box>
-															) : (
-																<Stack spacing={1}>
-																	{procs.map((proc) => (
-																		<Box
-																			key={proc.id}
+																	{p.about_service && (
+																		<Typography
+																			variant="caption"
+																			color="text.secondary"
 																			sx={{
-																				p: 1.75,
-																				borderRadius: '10px',
-																				bgcolor: '#ffffff',
-																				border: '1px solid #e2e8f0',
-																				display: 'flex',
-																				flexDirection: { xs: 'column', sm: 'row' },
-																				justifyContent: 'space-between',
-																				alignItems: { xs: 'flex-start', sm: 'center' },
-																				gap: 1.5,
+																				display: '-webkit-box',
+																				WebkitLineClamp: 1,
+																				WebkitBoxOrient: 'vertical',
+																				overflow: 'hidden',
 																			}}
 																		>
-																			<Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
-																				<Box sx={{ minWidth: 0, flex: 1 }}>
-																					<Typography variant="body2" fontWeight={700} color="#0f172a">
-																						{proc.label}
-																					</Typography>
-																					{proc.about_service && (
-																						<Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
-																							{proc.about_service}
-																						</Typography>
-																					)}
-																					{proc.whats_included && proc.whats_included.length > 0 && (
-																						<Stack direction="row" spacing={0.5} sx={{ mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
-																							{proc.whats_included.map((item, iIdx) => (
-																								<Chip
-																									key={iIdx}
-																									label={item}
-																									size="small"
-																									sx={{ fontSize: '0.65rem', height: 18, bgcolor: '#f1f5f9', color: '#475569' }}
-																								/>
-																							))}
-																						</Stack>
-																					)}
-																				</Box>
-																			</Stack>
+																			{p.about_service}
+																		</Typography>
+																	)}
+																</Box>
+															</Stack>
+														</Grid>
+														<Grid size={{ xs: 6, md: 2 }}>
+															<InlinePrice
+																label="Customer price"
+																value={p.price}
+																color={TEAL}
+																onSave={savePrice(p, 'price')}
+															/>
+														</Grid>
+														<Grid size={{ xs: 6, md: 2 }}>
+															<InlinePrice
+																label="Provider price"
+																value={p.provider_price}
+																color="#475569"
+																onSave={savePrice(p, 'provider_price')}
+															/>
+														</Grid>
+														<Grid size={{ xs: 12, md: 2 }}>
+															<Stack direction="row" spacing={0.5} justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
+																<Tooltip title="Edit details and picture">
+																	<IconButton size="small" onClick={() => openEditService(category, p)}>
+																		<EditIcon fontSize="small" />
+																	</IconButton>
+																</Tooltip>
+																<Tooltip title="Delete service">
+																	<IconButton
+																		size="small"
+																		onClick={() => setDeleteService(p)}
+																		sx={{ '&:hover': { color: '#ef4444' } }}
+																	>
+																		<DeleteOutlineIcon fontSize="small" />
+																	</IconButton>
+																</Tooltip>
+															</Stack>
+														</Grid>
+													</Grid>
+												))}
+											</>
+										)}
+									</Box>
+								</Collapse>
+							</Paper>
+						)
+					})}
 
-																			<Stack direction="row" spacing={2} alignItems="center" sx={{ alignSelf: { xs: 'flex-end', sm: 'center' } }}>
-																				<Box sx={{ textAlign: 'right' }}>
-																					<Typography variant="body2" fontWeight={800} color="#0d9488">
-																						₹{proc.price}
-																					</Typography>
-																					<Typography variant="caption" color="text.secondary" sx={{ fontSize: 10, display: 'block' }}>
-																						Customer Price
-																					</Typography>
-																					{proc.provider_price !== undefined && proc.provider_price !== null && (
-																						<Typography variant="caption" color="#64748b" sx={{ fontSize: 10, display: 'block', fontWeight: 600 }}>
-																							Provider: ₹{proc.provider_price}
-																						</Typography>
-																					)}
-																				</Box>
-																				<Tooltip title="Edit / Remove in Manager">
-																					<IconButton size="small" onClick={() => openEdit(category)} sx={{ color: '#94a3b8', '&:hover': { color: '#0d9488' } }}>
-																						<EditIcon fontSize="small" />
-																					</IconButton>
-																				</Tooltip>
-																			</Stack>
-																		</Box>
-																	))}
-																</Stack>
-															)}
-														</Box>
-													</Collapse>
-												</TableCell>
-											</TableRow>
-										</React.Fragment>
-									)
-								})
-							)}
-						</TableBody>
-					</Table>
-
-					{/* ── Pagination at the Bottom ── */}
-					<Box sx={{ borderTop: '1px solid', borderColor: 'divider', px: 1 }}>
+					<Paper variant="outlined" sx={{ borderRadius: '14px', borderColor: 'divider' }}>
 						<PaginationBar
 							page={safePage}
 							pageSize={pageSize}
-							totalRows={totalRows}
+							totalRows={filtered.length}
 							pageSizeOptions={[5, 10, 20, 50]}
-							onPageChange={(p) => setPage(p)}
+							onPageChange={setPage}
 							onPageSizeChange={(s) => {
 								setPageSize(s)
 								setPage(1)
 							}}
 						/>
-					</Box>
-				</Paper>
+					</Paper>
+				</Stack>
 			)}
 
-			{/* ── Edit Category Modal ── */}
+			{/* ── add / rename a category ── */}
 			<AppModal
-				open={!!editCategory}
-				onClose={closeEdit}
-				title={editCategory ? `Edit "${editCategory.label}"` : 'Edit Category'}
-				maxWidth="md"
+				open={!!catDialog}
+				onClose={() => !catSaving && setCatDialog(null)}
+				title={catDialog?.category ? 'Edit category' : 'Add category'}
+				actions={
+					<>
+						<AppButton variant="text" label="Cancel" disabled={catSaving} onClick={() => setCatDialog(null)} sx={{ color: '#64748b' }} />
+						<AppButton
+							label={catDialog?.category ? 'Save changes' : 'Add category'}
+							loading={catSaving}
+							onClick={saveCategory}
+							sx={{ bgcolor: TEAL, fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}
+						/>
+					</>
+				}
 			>
-				{editCategory && (
-					<Stack spacing={3} sx={{ pb: 1, pt: 0.5 }}>
-						{editError && (
-							<Alert severity="error" sx={{ borderRadius: 2 }}>
-								{editError}
-							</Alert>
-						)}
-
-						{/* 1. Specialty (FIRST in Edit order) */}
-						<AppSelect
-							label="Specialty"
-							value={editSpecialtyId}
-							onChange={(e) => handleEditSpecialtyChange(e.target.value as string)}
-							options={specialtySelectOptions}
-							fullWidth
-						/>
-
-						{/* 2. Category Name (SECOND in Edit order) */}
+				<Stack spacing={2.5} sx={{ pt: 1 }}>
+					<AppSelect
+						label="Specialty"
+						placeholder="Choose a specialty"
+						value={catSpecialty}
+						onChange={(e) => setCatSpecialty(e.target.value as string)}
+						options={dialogSpecialtyOptions}
+						fullWidth
+					/>
+					{catSpecialty === NEW_SPECIALTY && (
 						<AppInput
-							label="Category Name"
-							placeholder="Enter category name"
-							value={editCategoryLabel}
-							onChange={(e) => setEditCategoryLabel(e.target.value)}
+							label="New specialty name"
+							placeholder="e.g. Elder Care"
+							value={catNewSpecialty}
+							onChange={(e) => setCatNewSpecialty(e.target.value)}
 							fullWidth
+							autoFocus
 						/>
-
-						<Divider />
-
-						{/* 3. Fully Editable Services / Procedures List */}
-						<Box>
-							<Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-								<Box>
-									<Typography variant="subtitle1" fontWeight={800} color="#0f172a">
-										Services / Procedures ({editServices.length})
-									</Typography>
-									<Typography variant="caption" color="text.secondary">
-										Modify existing services or add new services to this category.
-									</Typography>
-								</Box>
-								<Button
-									size="small"
-									startIcon={<AddIcon fontSize="small" />}
-									onClick={addEditServiceRow}
-									sx={{ textTransform: 'none', color: '#0d9488', fontWeight: 700 }}
-								>
-									Add Service
-								</Button>
-							</Stack>
-
-							<Stack spacing={2.5}>
-								{editServices.map((row, idx) => (
-									<Box
-										key={row.key}
-										sx={{
-											p: 2.25,
-											borderRadius: 2.5,
-											border: '1px solid #e2e8f0',
-											bgcolor: '#f8fafc',
-											boxShadow: '0 2px 8px rgba(15,23,42,0.02)',
-										}}
-									>
-										<Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-											<Stack direction="row" spacing={1} alignItems="center">
-												<Typography variant="caption" fontWeight={800} color="#0d9488" sx={{ letterSpacing: '0.04em' }}>
-													SERVICE {idx + 1}
-												</Typography>
-												<Chip
-													label={row.id ? 'Existing' : 'New'}
-													size="small"
-													sx={{
-														height: 20,
-														fontSize: '0.65rem',
-														fontWeight: 700,
-														bgcolor: row.id ? '#e0f2fe' : '#ecfdf5',
-														color: row.id ? '#0369a1' : '#047857',
-													}}
-												/>
-											</Stack>
-											<IconButton
-												size="small"
-												onClick={() => removeEditServiceRow(row.key)}
-												sx={{ color: '#94a3b8', '&:hover': { color: '#ef4444' } }}
-												title="Delete / Remove this service"
-											>
-												<DeleteOutlineIcon fontSize="small" />
-											</IconButton>
-										</Stack>
-
-										<Stack spacing={1.75}>
-											<Grid container spacing={2}>
-												<Grid size={{ xs: 12, md: 6 }}>
-													<AppInput
-														label="Service Name"
-														placeholder="e.g. ICU Care at Home"
-														value={row.label}
-														onChange={(e) => updateEditServiceRow(row.key, 'label', e.target.value)}
-														fullWidth
-													/>
-												</Grid>
-												<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-													<AppInput
-														label="Customer Price"
-														placeholder="e.g. 1299"
-														value={row.price}
-														onChange={(e) => updateEditServiceRow(row.key, 'price', e.target.value)}
-														type="number"
-														fullWidth
-														InputProps={{
-															startAdornment: (
-																<Box component="span" sx={{ mr: 0.5, color: 'text.secondary', fontWeight: 600 }}>
-																	₹
-																</Box>
-															),
-														}}
-														sx={{
-															'& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
-																WebkitAppearance: 'none',
-																margin: 0,
-															},
-															'& input[type=number]': {
-																MozAppearance: 'textfield',
-															},
-														}}
-													/>
-												</Grid>
-												<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-													<AppInput
-														label="Provider Price"
-														placeholder="e.g. 999"
-														value={row.providerPrice}
-														onChange={(e) => updateEditServiceRow(row.key, 'providerPrice', e.target.value)}
-														type="number"
-														fullWidth
-														InputProps={{
-															startAdornment: (
-																<Box component="span" sx={{ mr: 0.5, color: 'text.secondary', fontWeight: 600 }}>
-																	₹
-																</Box>
-															),
-														}}
-														sx={{
-															'& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
-																WebkitAppearance: 'none',
-																margin: 0,
-															},
-															'& input[type=number]': {
-																MozAppearance: 'textfield',
-															},
-														}}
-													/>
-												</Grid>
-											</Grid>
-
-											<AppInput
-												label="About Service"
-												placeholder="Brief description of this service..."
-												value={row.aboutService}
-												onChange={(e) => updateEditServiceRow(row.key, 'aboutService', e.target.value)}
-												multiline
-												minRows={2}
-												maxRows={4}
-												fullWidth
-											/>
-
-											<AppInput
-												label="What's Included"
-												placeholder="e.g. Qualified physiotherapy professional, Functional assessment, Guided rehabilitation exercises, Progress monitoring"
-												value={row.whatsIncludedText}
-												onChange={(e) => updateEditServiceRow(row.key, 'whatsIncludedText', e.target.value)}
-												multiline
-												minRows={2}
-												maxRows={4}
-												fullWidth
-												sx={{
-													width: '100%',
-													'& .MuiOutlinedInput-root': {
-														p: 1.25,
-														alignItems: 'flex-start',
-													},
-													'& .MuiInputBase-inputMultiline': {
-														lineHeight: 1.6,
-														fontSize: '0.85rem',
-														boxSizing: 'border-box',
-													},
-												}}
-											/>
-
-										</Stack>
-									</Box>
-								))}
-
-								{editServices.length === 0 && (
-									<Box sx={{ p: 3, borderRadius: 2, bgcolor: '#f8fafc', border: '1px dashed #cbd5e1', textAlign: 'center' }}>
-										<Typography variant="body2" color="text.secondary">
-											No services in this category yet. Click "+ Add Service" to add a service.
-										</Typography>
-									</Box>
-								)}
-							</Stack>
-						</Box>
-
-						<Divider />
-
-						{/* Modal Footer Actions */}
-						<Stack direction="row" spacing={1.5} justifyContent="flex-end" alignItems="center">
-							<Button
-								variant="outlined"
-								onClick={closeEdit}
-								disabled={editSubmitting}
-								sx={{ textTransform: 'none', borderRadius: 2, borderColor: '#cbd5e1', color: '#64748b' }}
-							>
-								Cancel
-							</Button>
-							<AppButton
-								label={editSubmitting ? 'Saving Changes...' : 'Save Category & Services'}
-								disabled={editSubmitting}
-								onClick={handleSaveEditCategory}
-								sx={{ bgcolor: '#0d9488', py: 1.1, px: 3, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: '#0f766e' } }}
-							/>
-						</Stack>
-					</Stack>
-				)}
+					)}
+					<AppInput
+						label="Category name"
+						placeholder="e.g. ICU Care at Home"
+						value={catName}
+						onChange={(e) => setCatName(e.target.value)}
+						fullWidth
+					/>
+				</Stack>
 			</AppModal>
 
-			{/* ── Delete Confirm Modal ── */}
+			{/* ── add / edit one service ── */}
+			<AppDrawer
+				open={!!svcDrawer}
+				onClose={() => !svcSaving && setSvcDrawer(null)}
+				title={svcDrawer?.procedure ? 'Edit service' : 'Add service'}
+				subtitle={svcDrawer ? `in ${svcDrawer.category.label}` : undefined}
+				confirmLabel={svcDrawer?.procedure ? 'Save changes' : 'Add service'}
+				confirmLoading={svcSaving}
+				onConfirm={saveService}
+				width={480}
+			>
+				<Stack spacing={2.5}>
+					<ContentImageField
+						label="Service picture"
+						kind="services"
+						value={svc.imageUrl}
+						onChange={setField('imageUrl')}
+						previewHeight={170}
+						disabled={svcSaving}
+						hint="Shown to patients when they browse home-care services. JPEG, PNG or WebP, up to 5 MB."
+					/>
+					<AppInput
+						label="Service name"
+						placeholder="e.g. ICU Care at Home"
+						value={svc.label}
+						onChange={(e) => setField('label')(e.target.value)}
+						fullWidth
+					/>
+					<Stack direction="row" spacing={2}>
+						<AppInput
+							label="Customer price"
+							type="number"
+							placeholder="1299"
+							value={svc.price}
+							onChange={(e) => setField('price')(e.target.value)}
+							fullWidth
+							InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
+						/>
+						<AppInput
+							label="Provider price"
+							type="number"
+							placeholder="Same as customer"
+							value={svc.providerPrice}
+							onChange={(e) => setField('providerPrice')(e.target.value)}
+							fullWidth
+							InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
+						/>
+					</Stack>
+					<AppInput
+						label="About this service"
+						placeholder="A short description patients will read"
+						value={svc.about}
+						onChange={(e) => setField('about')(e.target.value)}
+						multiline
+						minRows={3}
+						fullWidth
+					/>
+					<AppInput
+						label="What's included"
+						placeholder={'One item per line\nQualified professional\nProgress notes'}
+						value={svc.included}
+						onChange={(e) => setField('included')(e.target.value)}
+						multiline
+						minRows={4}
+						fullWidth
+						helperText="One item per line (commas also work)."
+					/>
+				</Stack>
+			</AppDrawer>
+
+			{/* ── delete a category or a service ── */}
 			<ConfirmModal
-				open={!!deleteTarget}
-				onClose={() => setDeleteTarget(null)}
-				onConfirm={handleConfirmDelete}
+				open={!!deleteCategory || !!deleteService}
+				onClose={() => {
+					setDeleteCategory(null)
+					setDeleteService(null)
+				}}
+				onConfirm={confirmDelete}
 				variant="delete"
-				title={`Delete "${deleteTarget?.label ?? ''}"?`}
-				description="This permanently removes the category from the master catalog. Categories with services still assigned to them cannot be deleted -- remove or reassign those services first."
+				title={deleteCategory ? `Delete "${deleteCategory.label}"?` : `Delete "${deleteService?.label ?? ''}"?`}
+				description={
+					deleteCategory
+						? 'This removes the category from the catalogue. A category that still has services cannot be deleted: remove or move those first.'
+						: 'This removes the service and its uploaded picture. A service that was already booked cannot be deleted.'
+				}
 				confirmLabel="Delete"
 				loading={deleting}
 			/>

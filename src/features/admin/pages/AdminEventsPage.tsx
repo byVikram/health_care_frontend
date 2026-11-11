@@ -33,6 +33,7 @@ import AppButton from '../../../components/common/Button/AppButton'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppSelect from '../../../components/common/Select/AppSelect'
 import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
+import ContentImageField from '../../../components/admin/ContentImageField'
 
 import {
 	listAdminEvents,
@@ -456,7 +457,7 @@ export default function AdminEventsPage() {
 						{locationType === 'online' && (
 							<AppInput fullWidth label="Registration / Meeting Link" placeholder="https://..." value={registrationLink} onChange={(e) => setRegistrationLink(e.target.value)} />
 						)}
-						<AppInput fullWidth label="Cover Image URL (Optional)" placeholder="https://..." value={coverImageUrl} onChange={(e) => setCoverImageUrl(e.target.value)} />
+						<ContentImageField label="Cover Image (Optional)" kind="events" value={coverImageUrl} onChange={setCoverImageUrl} previewHeight={140} />
 						<AppInput fullWidth multiline rows={4} label="Description" placeholder="Detailed event description..." value={description} onChange={(e) => setDescription(e.target.value)} />
 						
 						<FormControlLabel
