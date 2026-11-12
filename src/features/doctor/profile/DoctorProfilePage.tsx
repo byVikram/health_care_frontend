@@ -7,7 +7,6 @@ import PersonOutlineIcon from '@mui/icons-material/PersonOutline'
 import WorkOutlineIcon from '@mui/icons-material/WorkOutline'
 import LocalHospitalOutlinedIcon from '@mui/icons-material/LocalHospitalOutlined'
 import EventAvailableOutlinedIcon from '@mui/icons-material/EventAvailableOutlined'
-import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined'
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
 import MedicalServicesOutlinedIcon from '@mui/icons-material/MedicalServicesOutlined'
 import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined'
@@ -17,7 +16,6 @@ import DoctorPersonalTab from './components/DoctorPersonalTab'
 import DoctorProfessionalTab from './components/DoctorProfessionalTab'
 import DoctorHospitalsTab from './components/DoctorHospitalsTab'
 import DoctorAvailabilityTab from './components/DoctorAvailabilityTab'
-import DoctorBankDetailsTab from './components/DoctorBankDetailsTab'
 import DoctorSettingTab from './components/DoctorSettingTab'
 import DoctorFavouritesTab from './components/DoctorFavouritesTab'
 import DoctorAdditionalDetailTab from './components/DoctorAdditionalDetailTab'
@@ -39,7 +37,6 @@ const DOCTOR_NAV_ITEMS = [
 	{ id: 'professional', label: 'Professional details', icon: <WorkOutlineIcon fontSize="small" /> },
 	{ id: 'hospitals', label: 'My hospitals', icon: <LocalHospitalOutlinedIcon fontSize="small" /> },
 	{ id: 'availability', label: 'Availability', icon: <EventAvailableOutlinedIcon fontSize="small" /> },
-	{ id: 'bank-details', label: 'Bank Details', icon: <AccountBalanceOutlinedIcon fontSize="small" /> },
 	{ id: 'additional', label: 'Additional Details', icon: <MedicalServicesOutlinedIcon fontSize="small" /> },
 	{ id: 'achievements', label: 'Achievements', icon: <EmojiEventsOutlinedIcon fontSize="small" /> },
 	{ id: 'favourites', label: 'Favourite doctors', icon: <FavoriteBorderIcon fontSize="small" /> },
@@ -198,8 +195,6 @@ export default function DoctorProfilePage() {
 						onChange={handleAvailabilityChange}
 					/>
 				)
-			case 'bank-details':
-				return <DoctorBankDetailsTab />
 			case 'additional':
 				return (
 					<DoctorAdditionalDetailTab

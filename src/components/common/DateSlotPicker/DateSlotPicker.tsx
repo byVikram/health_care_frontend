@@ -66,6 +66,9 @@ type CommonProps = {
 	timeSlotVariant?: 'default' | 'availability'
 	availableSlots?: SlotGroup[]
 	loading?: boolean
+	// Opt-in: shows AppSkeleton in place of the time slots ONLY (the date strip and the appointment-type toggle stay
+	// visible), e.g. while the toggle switches between clinic and video. `loading` still replaces the whole picker.
+	slotsLoading?: boolean
 	disableBookedSlots?: boolean
 	onSelectAll?: () => void
 	onUnselectAll?: () => void
@@ -96,6 +99,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		timeSlotColumns = 4,
 		availableSlots,
 		loading = false,
+		slotsLoading = false,
 		disableBookedSlots,
 		onSelectAll,
 		onUnselectAll,
@@ -496,6 +500,23 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 							{timeLegend}
 						</Box>
 
+						{slotsLoading ? (
+							<Box sx={{ mb: 1.25 }}>
+								<AppSkeleton width={90} height={16} sx={{ mb: 0.75 }} />
+								<Box
+									sx={{
+										display: 'grid',
+										gridTemplateColumns: `repeat(${timeSlotColumns}, 1fr)`,
+										gap: 1,
+									}}
+								>
+									{Array.from({ length: timeSlotColumns * 2 }, (_, n) => (
+										<AppSkeleton key={n} height={44} />
+									))}
+								</Box>
+							</Box>
+						) : (
+							<>
 						{/* No slots message */}
 						{availableSlots && availableSlots.length === 0 && (
 							<Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
@@ -642,6 +663,8 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 								</Box>
 							</Box>
 						))}
+							</>
+						)}
 					</>
 				</>
 			)}

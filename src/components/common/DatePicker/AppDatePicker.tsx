@@ -2,11 +2,16 @@
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
-import { SxProps, Theme } from '@mui/material'
+import { Box, SxProps, Theme, Typography } from '@mui/material'
 import dayjs, { Dayjs } from 'dayjs'
 
 interface AppDatePickerProps {
 	label?: string
+	/**
+	 * 'floating' (default): the label sits in the outline's notch.
+	 * 'top': the label is drawn above the box, exactly like AppInput / AppSelect, so it lines up in a form row.
+	 */
+	labelPosition?: 'floating' | 'top'
 	value?: string | null
 	onChange?: (value: string | null) => void
 	placeholder?: string
@@ -25,6 +30,7 @@ interface AppDatePickerProps {
 
 export default function AppDatePicker({
 	label,
+	labelPosition = 'floating',
 	value,
 	onChange,
 	placeholder,
@@ -46,10 +52,12 @@ export default function AppDatePicker({
 		onChange?.(newValue ? newValue.format(format) : null)
 	}
 
-	return (
+	const showTopLabel = labelPosition === 'top' && Boolean(label)
+
+	const picker = (
 		<LocalizationProvider dateAdapter={AdapterDayjs}>
 			<DatePicker
-				label={label}
+				label={showTopLabel ? undefined : label}
 				value={dayjsValue}
 				onChange={handleChange}
 				disabled={disabled}
@@ -133,5 +141,26 @@ export default function AppDatePicker({
 				}}
 			/>
 		</LocalizationProvider>
+	)
+
+	if (!showTopLabel) return picker
+
+	return (
+		<Box sx={{ width: fullWidth ? '100%' : 'auto', display: 'flex', flexDirection: 'column' }}>
+			<Typography
+				variant="caption"
+				sx={{
+					display: 'block',
+					fontWeight: 400,
+					fontSize: '0.8rem',
+					color: disabled ? 'text.disabled' : '#0f172a',
+					mb: 0.75,
+					letterSpacing: '0.01em',
+				}}
+			>
+				{label}
+			</Typography>
+			{picker}
+		</Box>
 	)
 }

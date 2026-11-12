@@ -33,6 +33,11 @@ const COLLEGE_OPTIONS = [
 	{ value: 'other', label: 'Other' },
 ]
 
+const EXPERIENCE_OPTIONS = Array.from({ length: 30 }, (_, i) => ({
+	value: String(i + 1),
+	label: `${i + 1} ${i + 1 === 1 ? 'year' : 'years'}`,
+}))
+
 type SpecialityId = {
 	id: string
 	label: string
@@ -215,7 +220,7 @@ export default function DoctorProfessionalTab({ data, onChange, onSaveSuccess }:
 
 		try {
 			const payload: Record<string, unknown> = {
-				// experience_years: data.experience || undefined,
+				experience_years: data.experience ? Number(data.experience) : undefined,
 				registration_number: data.registrationNumber,
 				about: data.about,
 				// (a proof is never sent as text: a picked file goes in the same request, see below)
@@ -278,6 +283,20 @@ export default function DoctorProfessionalTab({ data, onChange, onSaveSuccess }:
 								specialization_label: selected?.label || '',
 							})
 						}}
+					/>
+				</Box>
+
+				<Divider />
+
+				{/* Experience */}
+				<Box>
+					<SectionTitle>Years of experience</SectionTitle>
+					<AppSelect
+						label=""
+						value={data.experience || ''}
+						options={EXPERIENCE_OPTIONS}
+						placeholder="Select years of experience"
+						onChange={(e) => onChange({ experience: e.target.value as string })}
 					/>
 				</Box>
 

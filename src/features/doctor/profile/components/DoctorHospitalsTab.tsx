@@ -17,31 +17,14 @@ import {
 	LocationOnOutlined as LocationOnOutlinedIcon,
 	PhoneOutlined as PhoneOutlinedIcon,
 	Check as CheckIcon,
-	ArrowForward as ArrowForwardIcon,
-	DeleteOutline as DeleteOutlineIcon,
-	WbSunnyOutlined as MorningIcon,
-	LightModeOutlined as AfternoonIcon,
-	NightsStayOutlined as EveningIcon,
-	VideocamOutlined as VideocamOutlinedIcon,
-	CalendarMonthOutlined as CalendarIcon,
-	// AccessTimeOutlined as TimeIcon,
-	PaymentOutlined as PaymentIcon,
-	GavelOutlined as RuleIcon,
 } from '@mui/icons-material'
 import { toast } from 'react-toastify'
 import AppButton from '../../../../components/common/Button/AppButton'
 import AppInput from '../../../../components/common/Input/AppInput'
-import AppSwitch from '../../../../components/common/Switch/AppSwitch'
 import AppSelect from '../../../../components/common/Select/AppSelect'
 import { customCardStyle } from '../../../../styles/commonStyles'
-import type {
-	DoctorHospital,
-	AppointmentType,
-	TimeSlot,
-	SectionSlots,
-	WorkingHoursState,
-} from '../../../../types/doctor-profile'
-import { createHospital, updateHospital, updateWeeklyAvailability } from '../../doctorService'
+import type { DoctorHospital } from '../../../../types/doctor-profile'
+import { createHospital, updateHospital } from '../../doctorService'
 
 interface DoctorHospitalsTabProps {
 	hospitals: DoctorHospital[]
@@ -55,6 +38,9 @@ const EMPTY_FORM = {
 	video_consultation_fee: '',
 	offline_consultation_fee: '',
 }
+
+// Pay Later is on for every hospital for now (its toggle was removed), so every save sends it as true.
+const DEFAULT_ALLOW_PAY_LATER = true
 
 const getSuccessMessage = (response: unknown) => {
 	if (
@@ -77,132 +63,6 @@ const getHospitalAddressText = (hospital: DoctorHospital) => {
 	return fullAddress || location
 }
 
-const makeTimeOptions = (startHour: number, endHour: number, stepMins: number = 30) => {
-	const options: { value: string; label: string }[] = []
-	const totalStartMins = startHour * 60
-	const totalEndMins = endHour * 60
-	for (let mins = totalStartMins; mins < totalEndMins; mins += stepMins) {
-		const h = Math.floor(mins / 60)
-		const m = mins % 60
-		const value = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0')
-		const period = h < 12 ? 'AM' : 'PM'
-		const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h
-		const label = h12 + ':' + String(m).padStart(2, '0') + ' ' + period
-		options.push({ value, label })
-	}
-	return options
-}
-
-const snapToStep = (time: string, stepMins: number): string => {
-	const [h, m] = time.split(':').map(Number)
-	const totalMins = h * 60 + m
-	const snapped = Math.round(totalMins / stepMins) * stepMins
-	const sh = Math.floor(snapped / 60)
-	const sm = snapped % 60
-	return String(sh).padStart(2, '0') + ':' + String(sm).padStart(2, '0')
-}
-
-const durationOptions = [10, 15, 20, 25, 30]
-
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-
-const getWeekDates = (start: Date) => {
-	return Array.from({ length: 7 }, (_, i) => {
-		const d = new Date(start)
-		d.setDate(start.getDate() + i)
-		return d
-	})
-}
-
-const SECTION_META = [
-	{
-		key: 'morning' as const,
-		label: 'Morning',
-		icon: <MorningIcon sx={{ fontSize: 16, color: '#FFB020' }} />,
-		startHour: 8,
-		endHour: 12,
-		defaultStart: '08:00',
-		defaultEnd: '10:00',
-	},
-	{
-		key: 'afternoon' as const,
-		label: 'Afternoon',
-		icon: <AfternoonIcon sx={{ fontSize: 16, color: '#10B981' }} />,
-		startHour: 12,
-		endHour: 17,
-		defaultStart: '12:00',
-		defaultEnd: '14:00',
-	},
-	{
-		key: 'evening' as const,
-		label: 'Evening',
-		icon: <EveningIcon sx={{ fontSize: 16, color: '#6366F1' }} />,
-		startHour: 17,
-		endHour: 21,
-		defaultStart: '17:00',
-		defaultEnd: '19:00',
-	},
-]
-
-const makeDefaultWorkingHours = (): Record<AppointmentType, WorkingHoursState> => ({
-	clinic: {
-		sections: {
-			morning: [{ start: '08:00', end: '10:00' }],
-			afternoon: [{ start: '12:00', end: '14:00' }],
-			evening: [{ start: '17:00', end: '19:00' }],
-		},
-		slotDuration: 15,
-	},
-	video: {
-		sections: {
-			morning: [{ start: '08:00', end: '10:00' }],
-			afternoon: [{ start: '12:00', end: '14:00' }],
-			evening: [{ start: '17:00', end: '19:00' }],
-		},
-		slotDuration: 15,
-	},
-})
-
-const getInitialWeeklyAvailability = (
-	h?: DoctorHospital
-): Record<number, Record<AppointmentType, WorkingHoursState>> => {
-	const initial: Record<number, Record<AppointmentType, WorkingHoursState>> = {}
-	for (let day = 0; day < 7; day++) {
-		initial[day] = {
-			clinic: {
-				sections: {
-					morning: h?.availability?.[day]?.clinic?.sections?.morning?.length
-						? h.availability[day].clinic.sections.morning.map((s) => ({ ...s }))
-						: [{ start: '08:00', end: '10:00' }],
-					afternoon: h?.availability?.[day]?.clinic?.sections?.afternoon?.length
-						? h.availability[day].clinic.sections.afternoon.map((s) => ({ ...s }))
-						: [{ start: '12:00', end: '14:00' }],
-					evening: h?.availability?.[day]?.clinic?.sections?.evening?.length
-						? h.availability[day].clinic.sections.evening.map((s) => ({ ...s }))
-						: [{ start: '17:00', end: '19:00' }],
-				},
-				slotDuration: h?.availability?.[day]?.clinic?.slotDuration ?? 15,
-			},
-			video: {
-				sections: {
-					morning: h?.availability?.[day]?.video?.sections?.morning?.length
-						? h.availability[day].video.sections.morning.map((s) => ({ ...s }))
-						: [{ start: '08:00', end: '10:00' }],
-					afternoon: h?.availability?.[day]?.video?.sections?.afternoon?.length
-						? h.availability[day].video.sections.afternoon.map((s) => ({ ...s }))
-						: [{ start: '12:00', end: '14:00' }],
-					evening: h?.availability?.[day]?.video?.sections?.evening?.length
-						? h.availability[day].video.sections.evening.map((s) => ({ ...s }))
-						: [{ start: '17:00', end: '19:00' }],
-				},
-				slotDuration: h?.availability?.[day]?.video?.slotDuration ?? 15,
-			},
-		}
-	}
-	return initial
-}
-
 export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospitalsTabProps) {
 	const [showForm, setShowForm] = useState(false)
 	const [form, setForm] = useState(EMPTY_FORM)
@@ -223,74 +83,14 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		setMenuHospitalId(null)
 	}
 
-	const [weeklyAvailability, setWeeklyAvailability] =
-		useState<Record<number, Record<AppointmentType, WorkingHoursState>>>(getInitialWeeklyAvailability())
-
-	const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-	const [weekStart] = useState(() => {
-		const today = new Date()
-		const d = new Date(today)
-		d.setDate(today.getDate() - today.getDay())
-		return d
-	})
-
-	const weekDates = getWeekDates(weekStart)
-
-	const isSameDay = (a: Date, b: Date) =>
-		a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()
-
-	const [selectedAppointmentType, setSelectedAppointmentType] = useState<AppointmentType>('clinic')
 	const [followUpDays, setFollowUpDays] = useState(7)
 	const [rescheduleCutoff, setRescheduleCutoff] = useState(2)
-	const [allowPayLater, setAllowPayLater] = useState(false)
-
-	const selectedDay = selectedDate.getDay()
-	const selectedWorkingHours =
-		weeklyAvailability[selectedDay]?.[selectedAppointmentType] || makeDefaultWorkingHours()[selectedAppointmentType]
-
-	const handleApplyAvailability = (mode: 'weekdays' | 'all') => {
-		const day = selectedDate.getDay()
-		const dayAvail = weeklyAvailability[day]
-		if (!dayAvail) return
-
-		const targetDays = mode === 'weekdays' ? [1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5, 6]
-
-		setWeeklyAvailability((prev) => {
-			const updated = { ...prev }
-			for (const d of targetDays) {
-				if (d === day) continue
-				updated[d] = {
-					clinic: {
-						sections: {
-							morning: dayAvail.clinic.sections.morning.map((s) => ({ ...s })),
-							afternoon: dayAvail.clinic.sections.afternoon.map((s) => ({ ...s })),
-							evening: dayAvail.clinic.sections.evening.map((s) => ({ ...s })),
-						},
-						slotDuration: dayAvail.clinic.slotDuration,
-					},
-					video: {
-						sections: {
-							morning: dayAvail.video.sections.morning.map((s) => ({ ...s })),
-							afternoon: dayAvail.video.sections.afternoon.map((s) => ({ ...s })),
-							evening: dayAvail.video.sections.evening.map((s) => ({ ...s })),
-						},
-						slotDuration: dayAvail.video.slotDuration,
-					},
-				}
-			}
-			return updated
-		})
-		toast.success(`Applied availability to ${mode === 'weekdays' ? 'all weekdays' : 'all days'}`)
-	}
 
 	const resetFormState = () => {
 		setForm(EMPTY_FORM)
 		setEditingHospitalId(null)
-		setSelectedAppointmentType('clinic')
 		setFollowUpDays(7)
 		setRescheduleCutoff(2)
-		setAllowPayLater(false)
-		setWeeklyAvailability(getInitialWeeklyAvailability())
 	}
 
 	const handleEdit = (hospitalId: string) => {
@@ -308,120 +108,9 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 
 		setFollowUpDays(h.free_followup_validity_days ?? 7)
 		setRescheduleCutoff(h.reschedule_allowed_until_hours ?? 2)
-		setAllowPayLater(h.allow_pay_later ?? false)
-
-		setWeeklyAvailability(getInitialWeeklyAvailability(h))
 
 		setEditingHospitalId(hospitalId)
 		setShowForm(true)
-	}
-
-	const addSlot = (sectionKey: keyof SectionSlots) => {
-		setWeeklyAvailability((prev) => {
-			const day = selectedDate.getDay()
-			const currentDayAvail = prev[day] || getInitialWeeklyAvailability()[day]
-			const current = currentDayAvail[selectedAppointmentType]
-			const slots = current.sections[sectionKey]
-			if (slots.length >= 3) return prev
-			const prevEnd = slots[slots.length - 1].end
-			const stepMins = current.slotDuration
-			const [eh, em] = prevEnd.split(':').map(Number)
-			const newEndMins = eh * 60 + em + stepMins
-			const meta = SECTION_META.find((me) => me.key === sectionKey)!
-			const sectionEndMins = meta.endHour * 60
-			const clampedMins = Math.min(newEndMins, sectionEndMins)
-			const newEnd =
-				String(Math.floor(clampedMins / 60)).padStart(2, '0') + ':' + String(clampedMins % 60).padStart(2, '0')
-			return {
-				...prev,
-				[day]: {
-					...currentDayAvail,
-					[selectedAppointmentType]: {
-						...current,
-						sections: {
-							...current.sections,
-							[sectionKey]: [...slots, { start: prevEnd, end: newEnd }],
-						},
-					},
-				},
-			}
-		})
-	}
-
-	const removeSlot = (sectionKey: keyof SectionSlots, slotIndex: number) => {
-		setWeeklyAvailability((prev) => {
-			const day = selectedDate.getDay()
-			const currentDayAvail = prev[day] || getInitialWeeklyAvailability()[day]
-			const current = currentDayAvail[selectedAppointmentType]
-			const slots = current.sections[sectionKey]
-			if (slotIndex === 0) return prev
-			return {
-				...prev,
-				[day]: {
-					...currentDayAvail,
-					[selectedAppointmentType]: {
-						...current,
-						sections: {
-							...current.sections,
-							[sectionKey]: slots.filter((_, i) => i !== slotIndex),
-						},
-					},
-				},
-			}
-		})
-	}
-
-	const updateSlotTime = (
-		sectionKey: keyof SectionSlots,
-		slotIndex: number,
-		field: 'start' | 'end',
-		value: string
-	) => {
-		setWeeklyAvailability((prev) => {
-			const day = selectedDate.getDay()
-			const currentDayAvail = prev[day] || getInitialWeeklyAvailability()[day]
-			const current = currentDayAvail[selectedAppointmentType]
-			const slots = current.sections[sectionKey].map((slot, i) =>
-				i === slotIndex ? { ...slot, [field]: value } : slot
-			)
-			return {
-				...prev,
-				[day]: {
-					...currentDayAvail,
-					[selectedAppointmentType]: {
-						...current,
-						sections: { ...current.sections, [sectionKey]: slots },
-					},
-				},
-			}
-		})
-	}
-
-	const updateSlotDuration = (value: number) => {
-		setWeeklyAvailability((prev) => {
-			const day = selectedDate.getDay()
-			const currentDayAvail = prev[day] || getInitialWeeklyAvailability()[day]
-			const current = currentDayAvail[selectedAppointmentType]
-			const snappedSections = Object.fromEntries(
-				Object.entries(current.sections).map(([sKey, slots]) => [
-					sKey,
-					(slots as TimeSlot[]).map((slot) => ({
-						start: snapToStep(slot.start, value),
-						end: snapToStep(slot.end, value),
-					})),
-				])
-			) as SectionSlots
-			return {
-				...prev,
-				[day]: {
-					...currentDayAvail,
-					[selectedAppointmentType]: {
-						sections: snappedSections,
-						slotDuration: value,
-					},
-				},
-			}
-		})
 	}
 
 	const handleSetPrimary = (id: string) => {
@@ -447,23 +136,17 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		setIsSaving(true)
 		try {
 			if (editingHospitalId) {
-				await Promise.all([
-					updateHospital({
-						hospital_id: editingHospitalId,
-						name: trimmedName,
-						full_address: trimmedAddress,
-						phone_number: form.phone_number.trim(),
-						video_consultation_fee: form.video_consultation_fee.trim(),
-						offline_consultation_fee: form.offline_consultation_fee.trim(),
-						free_followup_validity_days: followUpDays,
-						reschedule_allowed_until_hours: rescheduleCutoff,
-						allow_pay_later: allowPayLater,
-					}),
-					updateWeeklyAvailability({
-						hospital_id: editingHospitalId,
-						availability: weeklyAvailability,
-					}),
-				])
+				await updateHospital({
+					hospital_id: editingHospitalId,
+					name: trimmedName,
+					full_address: trimmedAddress,
+					phone_number: form.phone_number.trim(),
+					video_consultation_fee: form.video_consultation_fee.trim(),
+					offline_consultation_fee: form.offline_consultation_fee.trim(),
+					free_followup_validity_days: followUpDays,
+					reschedule_allowed_until_hours: rescheduleCutoff,
+					allow_pay_later: DEFAULT_ALLOW_PAY_LATER,
+				})
 				const updatedHospitals = hospitals.map((h) =>
 					h.id === editingHospitalId
 						? {
@@ -476,8 +159,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 							clinic_consultation_fee: Number(form.offline_consultation_fee.trim()) || 0,
 							free_followup_validity_days: followUpDays,
 							reschedule_allowed_until_hours: rescheduleCutoff,
-							allow_pay_later: allowPayLater,
-							availability: weeklyAvailability,
+							allow_pay_later: DEFAULT_ALLOW_PAY_LATER,
 						}
 						: h
 				)
@@ -491,12 +173,13 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 					is_primary: isPrimary,
 					video_consultation_fee: form.video_consultation_fee.trim(),
 					offline_consultation_fee: form.offline_consultation_fee.trim(),
+					appointment_rules: {
+						free_followup_validity_days: followUpDays,
+						reschedule_allowed_until_hours: rescheduleCutoff,
+						allow_pay_later: DEFAULT_ALLOW_PAY_LATER,
+					},
 				})
 				const hospitalId = response.data.public_id
-				await updateWeeklyAvailability({
-					hospital_id: hospitalId,
-					availability: weeklyAvailability,
-				})
 				const newHospital: DoctorHospital = {
 					id: hospitalId,
 					name: trimmedName,
@@ -508,8 +191,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 					clinic_consultation_fee: Number(form.offline_consultation_fee.trim()) || 0,
 					free_followup_validity_days: followUpDays,
 					reschedule_allowed_until_hours: rescheduleCutoff,
-					allow_pay_later: allowPayLater,
-					availability: weeklyAvailability,
+					allow_pay_later: DEFAULT_ALLOW_PAY_LATER,
 				}
 				onChange([...hospitals, newHospital])
 				toast.success(getSuccessMessage(response))
@@ -560,11 +242,11 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 						{editingHospitalId ? 'Edit Hospital Details' : 'Add new Hospital Details'}
 					</Typography>
 					<Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
-						Define location details, availability scheduling, consultation fees, and patient booking rules.
+						Define location details, consultation fees, and patient booking rules. Set working hours in the Availability tab.
 					</Typography>
 				</Box>
 
-				{/* 1. General Details Form Section */}
+				{/* Clinic details, fees and booking rules, all in one card */}
 				<Box sx={{ ...customCardStyle, borderRadius: '12px', border: '1px solid #E2E8F0', p: 2.5 }}>
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
 						<Box
@@ -582,7 +264,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 							<HomeOutlinedIcon sx={{ fontSize: 16 }} />
 						</Box>
 						<Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1A4345' }}>
-							Clinic Details & Contact
+							Clinic Details & Booking Preferences
 						</Typography>
 					</Box>
 
@@ -618,32 +300,6 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 								size="small"
 							/>
 						</Grid>
-					</Grid>
-				</Box>
-
-				{/* 2. Fees & Rules Section */}
-				<Box sx={{ ...customCardStyle, borderRadius: '12px', border: '1px solid #E2E8F0', p: 2.5 }}>
-					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-						<Box
-							sx={{
-								display: 'flex',
-								alignItems: 'center',
-								justifyContent: 'center',
-								width: 28,
-								height: 28,
-								borderRadius: '6px',
-								bgcolor: 'rgba(43, 111, 113, 0.08)',
-								color: '#2B6F71',
-							}}
-						>
-							<RuleIcon sx={{ fontSize: 16 }} />
-						</Box>
-						<Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1A4345' }}>
-							Pricing & Booking Preferences
-						</Typography>
-					</Box>
-
-					<Grid container spacing={2}>
 						{/* Row 3: Video Fee + Clinic Fee */}
 						<Grid size={{ xs: 12, sm: 6 }}>
 							<AppInput
@@ -709,432 +365,21 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 								]}
 							/>
 						</Grid>
-
-						{/* Pay Later Toggle Container */}
-						<Grid size={{ xs: 12 }}>
-							<Box
-								sx={{
-									display: 'flex',
-									alignItems: 'center',
-									justifyContent: 'space-between',
-									p: 1.5,
-									borderRadius: '10px',
-									border: '1px solid',
-									borderColor: allowPayLater ? 'rgba(43, 111, 113, 0.2)' : '#E2E8F0',
-									bgcolor: allowPayLater ? 'rgba(43, 111, 113, 0.02)' : 'transparent',
-									transition: 'all 0.2s',
-								}}
-							>
-								<Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
-									<PaymentIcon sx={{ color: allowPayLater ? '#2B6F71' : 'text.disabled', fontSize: 18, mt: 0.2 }} />
-									<Box>
-										<Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '13px' }}>
-											Allow Pay Later
-										</Typography>
-										<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '11px', display: 'block' }}>
-											Enable this to let patients book appointments without paying upfront online, collecting fees directly at the clinic.
-										</Typography>
-									</Box>
-								</Box>
-								<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-									<AppSwitch
-										checked={allowPayLater}
-										onChange={(e) => setAllowPayLater(e.target.checked)}
-									/>
-									<Typography
-										variant="caption"
-										sx={{
-											fontWeight: 700,
-											color: allowPayLater ? '#2B6F71' : '#64748B',
-											fontSize: '11px',
-											minWidth: 42
-										}}
-									>
-										{allowPayLater ? 'Enabled' : 'Disabled'}
-									</Typography>
-								</Box>
-							</Box>
-						</Grid>
 					</Grid>
 				</Box>
 
-				{/* 3. Availability Schedule Section */}
-				<Box sx={{ ...customCardStyle, borderRadius: '12px', border: '1px solid #E2E8F0', p: 2.5 }}>
-					<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
-						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-							<Box
-								sx={{
-									display: 'flex',
-									alignItems: 'center',
-									justifyContent: 'center',
-									width: 28,
-									height: 28,
-									borderRadius: '6px',
-									bgcolor: 'rgba(43, 111, 113, 0.08)',
-									color: '#2B6F71',
-								}}
-							>
-								<CalendarIcon sx={{ fontSize: 16 }} />
-							</Box>
-							<Box>
-								<Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1A4345' }}>
-									Working Hours Scheduler
-								</Typography>
-							</Box>
-						</Box>
+				{/* Cancel / Save the hospital's details. The weekly working hours are set in the Availability tab. */}
+				<Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
+					<AppButton
+						variant="outlined"
+						onClick={() => {
+							setShowForm(false)
+							resetFormState()
+						}}
+						label="Cancel"
+					/>
 
-						{/* Segmented Controller for Appointment Type */}
-						<Box
-							sx={{
-								display: 'inline-flex',
-								bgcolor: '#F1F5F9',
-								borderRadius: '8px',
-								p: '3px',
-								gap: '3px',
-								border: '1px solid #E2E8F0',
-							}}
-						>
-							<Box
-								onClick={() => setSelectedAppointmentType('clinic')}
-								sx={{
-									display: 'flex',
-									alignItems: 'center',
-									gap: 0.6,
-									px: 1.5,
-									py: 0.5,
-									borderRadius: '6px',
-									cursor: 'pointer',
-									bgcolor: selectedAppointmentType === 'clinic' ? '#fff' : 'transparent',
-									color: selectedAppointmentType === 'clinic' ? '#2B6F71' : '#64748B',
-									boxShadow: selectedAppointmentType === 'clinic' ? '0 1px 4px rgba(0,0,0,0.05)' : 'none',
-									transition: 'all 0.2s',
-									'&:hover': {
-										color: selectedAppointmentType === 'clinic' ? '#2B6F71' : '#1A4345',
-									}
-								}}
-							>
-								<HomeOutlinedIcon sx={{ fontSize: 14 }} />
-								<Typography sx={{ fontSize: '11px', fontWeight: 700 }}>
-									Clinic Visit
-								</Typography>
-							</Box>
-
-							<Box
-								onClick={() => setSelectedAppointmentType('video')}
-								sx={{
-									display: 'flex',
-									alignItems: 'center',
-									gap: 0.6,
-									px: 1.5,
-									py: 0.5,
-									borderRadius: '6px',
-									cursor: 'pointer',
-									bgcolor: selectedAppointmentType === 'video' ? '#fff' : 'transparent',
-									color: selectedAppointmentType === 'video' ? '#2B6F71' : '#64748B',
-									boxShadow: selectedAppointmentType === 'video' ? '0 1px 4px rgba(0,0,0,0.05)' : 'none',
-									transition: 'all 0.2s',
-									'&:hover': {
-										color: selectedAppointmentType === 'video' ? '#2B6F71' : '#1A4345',
-									}
-								}}
-							>
-								<VideocamOutlinedIcon sx={{ fontSize: 14 }} />
-								<Typography sx={{ fontSize: '11px', fontWeight: 700 }}>
-									Video Call
-								</Typography>
-							</Box>
-						</Box>
-					</Box>
-
-					{/* Date strip widget */}
-					<Box sx={{ mb: 2.5 }}>
-						<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, flexWrap: 'wrap', gap: 1 }}>
-							<Typography sx={{ fontSize: '12px', fontWeight: 600, color: 'text.secondary' }}>
-								Select Weekday to Edit Availability
-							</Typography>
-							<Box sx={{ display: 'flex', gap: 1.5 }}>
-								<AppButton
-									variant="text"
-									onClick={() => handleApplyAvailability('weekdays')}
-									label="Copy to Weekdays (Mon-Fri)"
-									size="small"
-									sx={{
-										textTransform: 'none',
-										p: 0,
-										minWidth: 0,
-										color: '#2B6F71',
-										fontWeight: 700,
-										fontSize: '11px',
-										'&:hover': { background: 'none', color: '#1D4D4F', textDecoration: 'underline' }
-									}}
-								/>
-								<AppButton
-									variant="text"
-									onClick={() => handleApplyAvailability('all')}
-									label="Copy to All Days"
-									size="small"
-									sx={{
-										textTransform: 'none',
-										p: 0,
-										minWidth: 0,
-										color: '#2B6F71',
-										fontWeight: 700,
-										fontSize: '11px',
-										'&:hover': { background: 'none', color: '#1D4D4F', textDecoration: 'underline' }
-									}}
-								/>
-							</Box>
-						</Box>
-						<Box
-							sx={{
-								display: 'flex',
-								justifyContent: 'space-between',
-								gap: 0.6,
-								width: '100%',
-							}}
-						>
-							{weekDates.map((date) => {
-								const isSelected = isSameDay(date, selectedDate)
-								const dayVal = date.getDay()
-
-								return (
-									<Box
-										key={date.toISOString()}
-										onClick={() => setSelectedDate(date)}
-										sx={{
-											flex: 1,
-											minWidth: 36,
-											maxWidth: 56,
-											py: 0.8,
-											borderRadius: '8px',
-											border: '1px solid',
-											borderColor: isSelected ? '#2B6F71' : '#E2E8F0',
-											bgcolor: isSelected ? '#2B6F71' : '#fff',
-											color: isSelected ? '#fff' : 'text.primary',
-											display: 'flex',
-											flexDirection: 'column',
-											alignItems: 'center',
-											justifyContent: 'center',
-											cursor: 'pointer',
-											transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-											transform: isSelected ? 'translateY(-1px)' : 'none',
-											'&:hover': {
-												borderColor: '#2B6F71',
-												bgcolor: isSelected ? '#2B6F71' : 'rgba(43, 111, 113, 0.04)',
-											},
-										}}
-									>
-										<Typography sx={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', opacity: isSelected ? 0.8 : 0.5, mb: 0.2 }}>
-											{DAYS[dayVal]}
-										</Typography>
-										<Typography sx={{ fontSize: '13px', fontWeight: 800 }}>
-											{DAY_LABELS[dayVal]}
-										</Typography>
-									</Box>
-								)
-							})}
-						</Box>
-					</Box>
-
-					{/* Time slots and configurator list */}
-					<Box key={selectedAppointmentType} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-						{SECTION_META.map((section) => {
-							const slots = selectedWorkingHours.sections[section.key]
-							const canAdd = slots.length < 3
-
-							return (
-								<Box key={section.key} sx={{ borderBottom: '1px solid #F1F5F9', pb: 1.5, '&:last-of-type': { border: 0, pb: 0 } }}>
-									<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-										{section.icon}
-										<Typography variant="caption" sx={{ fontWeight: 800, color: '#1A4345', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-											{section.label}
-										</Typography>
-										<Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '11px' }}>
-											({section.startHour}:00 AM - {section.endHour > 12 ? section.endHour - 12 : section.endHour}:00 {section.endHour >= 12 ? 'PM' : 'AM'})
-										</Typography>
-									</Box>
-
-									<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-										{slots.map((slot, slotIdx) => {
-											const stepMins = selectedWorkingHours.slotDuration
-											const allOptions = makeTimeOptions(section.startHour, section.endHour, stepMins)
-											const startOptions =
-												slotIdx === 0
-													? allOptions
-													: allOptions.filter((o) => o.value >= slots[slotIdx - 1].end)
-											const endOptions = allOptions.filter((o) => o.value > slot.start)
-
-											return (
-												<Box
-													key={slotIdx}
-													sx={{
-														display: 'inline-flex',
-														alignItems: 'center',
-														flexWrap: 'wrap',
-														gap: 1,
-													}}
-												>
-													{/* Time Capsule Container */}
-													<Box
-														sx={{
-															display: 'flex',
-															alignItems: 'center',
-															bgcolor: '#F8FAFC',
-															border: '1px solid #E2E8F0',
-															borderRadius: '8px',
-															p: '4px 10px',
-															gap: 1,
-															transition: 'all 0.15s',
-															'&:hover, &:focus-within': {
-																borderColor: '#2B6F71',
-																bgcolor: '#fff',
-															}
-														}}
-													>
-														{/* Start Select */}
-														<AppSelect
-															value={slot.start}
-															onChange={(e) =>
-																updateSlotTime(section.key, slotIdx, 'start', e.target.value)
-															}
-															size="small"
-															options={startOptions}
-															sx={{
-																width: 90,
-																'& .MuiOutlinedInput-root': { bgcolor: 'transparent', borderRadius: 0 },
-																'& .MuiOutlinedInput-root fieldset': { border: 0 },
-																'& .MuiOutlinedInput-root.Mui-focused fieldset': { border: 0 },
-																'& .MuiOutlinedInput-root:hover fieldset': { border: 0 },
-																'& .MuiSelect-select': { py: 0.2, px: 0, fontWeight: 600, fontSize: '12.5px' }
-															}}
-														/>
-
-														<ArrowForwardIcon sx={{ fontSize: 12, color: 'text.disabled' }} />
-
-														{/* End Select */}
-														<AppSelect
-															value={slot.end}
-															onChange={(e) =>
-																updateSlotTime(section.key, slotIdx, 'end', e.target.value)
-															}
-															size="small"
-															options={endOptions}
-															sx={{
-																width: 90,
-																'& .MuiOutlinedInput-root': { bgcolor: 'transparent', borderRadius: 0 },
-																'& .MuiOutlinedInput-root fieldset': { border: 0 },
-																'& .MuiOutlinedInput-root.Mui-focused fieldset': { border: 0 },
-																'& .MuiOutlinedInput-root:hover fieldset': { border: 0 },
-																'& .MuiSelect-select': { py: 0.2, px: 0, fontWeight: 600, fontSize: '12.5px' }
-															}}
-														/>
-													</Box>
-
-													{/* Delete action button */}
-													{slotIdx > 0 && (
-														<IconButton
-															size="small"
-															onClick={() => removeSlot(section.key, slotIdx)}
-															sx={{
-																color: 'text.secondary',
-																bgcolor: '#F1F5F9',
-																p: 0.6,
-																borderRadius: '6px',
-																transition: 'all 0.15s',
-																'&:hover': {
-																	color: 'error.main',
-																	bgcolor: '#FEE2E2',
-																},
-															}}
-														>
-															<DeleteOutlineIcon sx={{ fontSize: 16 }} />
-														</IconButton>
-													)}
-												</Box>
-											)
-										})}
-
-										{/* Add Slot Trigger */}
-										{canAdd && (
-											<Box
-												onClick={() => addSlot(section.key)}
-												sx={{
-													display: 'inline-flex',
-													alignItems: 'center',
-													justifyContent: 'center',
-													gap: 0.5,
-													border: '1px dashed #2B6F71',
-													borderRadius: '8px',
-													px: 1.5,
-													py: 0.5,
-													cursor: 'pointer',
-													color: '#2B6F71',
-													transition: 'all 0.15s',
-													alignSelf: 'flex-start',
-													'&:hover': {
-														bgcolor: 'rgba(43, 111, 113, 0.04)',
-													}
-												}}
-											>
-												<AddIcon sx={{ fontSize: 14 }} />
-												<Typography sx={{ fontSize: '11px', fontWeight: 700 }}>
-													Add Slot Block
-												</Typography>
-											</Box>
-										)}
-									</Box>
-								</Box>
-							)
-						})}
-
-						{/* Slot Session Duration */}
-						<Box>
-							<Typography sx={{ fontSize: '11px', fontWeight: 700, color: 'text.secondary', mb: 0.2 }}>
-								Slot Duration
-							</Typography>
-							<Box sx={{ flex: 1 }}>
-								<AppSelect
-									value={selectedWorkingHours.slotDuration}
-									onChange={(e) => updateSlotDuration(Number(e.target.value))}
-									size="small"
-									options={durationOptions.map((d) => ({ value: d, label: `${d} Minutes` }))}
-									sx={{
-										width: 120,
-										'& .MuiSelect-select': { py: 0.4 }
-									}}
-								/>
-							</Box>
-						</Box>
-
-						<Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
-							<AppButton
-								variant="outlined"
-								onClick={() => {
-									setShowForm(false)
-									resetFormState()
-								}}
-								label="Cancel"
-							// size="small"
-							// sx={{ color: 'text.secondary', fontWeight: 600, '&:hover': { color: 'text.primary' } }}
-							/>
-
-							<AppButton
-								variant="contained"
-								onClick={handleSave}
-								loading={isSaving}
-								label="Save"
-							// size="small"
-							// sx={{
-							// 	bgcolor: '#2B6F71',
-							// 	fontWeight: 700,
-							// 	px: 2,
-							// 	'&:hover': {
-							// 		bgcolor: '#1D4D4F',
-							// 	}
-							// }}
-							/>
-						</Box>
-					</Box>
+					<AppButton variant="contained" onClick={handleSave} loading={isSaving} label="Save" />
 				</Box>
 			</Box>
 		)
