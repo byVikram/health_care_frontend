@@ -114,6 +114,12 @@ export const API_ENDPOINTS = {
 	TREATMENTS: {
 		GET_BY_APPOINTMENT: (appointmentId: string) => `/api/treatments/appointment/${appointmentId}`,
 		PATIENT_HISTORY: (patientPublicId: string) => `/api/treatments/patient/${patientPublicId}/history`,
+		/** POST: creates the visit's treatment record (the follow-up date can be saved with it). PATCH on GET_BY_APPOINTMENT updates it. */
+		CREATE: '/api/treatments',
+		/** POST (multipart): the doctor's consultation notes (typed text and/or a scribbled image). Final once submitted (409 on any later edit). */
+		SUBMIT_NOTES: (appointmentId: string) => `/api/treatments/appointment/${appointmentId}/notes`,
+		/** GET: a fresh signed link (about 5 minutes) to the prescription image the server drew from the submitted notes; 404 until submitted. */
+		PRESCRIPTION: (appointmentId: string) => `/api/treatments/appointment/${appointmentId}/prescription`,
 	},
 	RADIOLOGY_PROFILE: {
 		DETAILS: '/api/radiology/profile',

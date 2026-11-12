@@ -222,7 +222,7 @@ export const updatePatientAddress = async (
 	return res.data
 }
 
-export type PastMedicalHistoryCategory = 'prescription' | 'laboratory' | 'radiology' | 'ancillary'
+export type PastMedicalHistoryCategory = 'prescription' | 'laboratory'
 
 export interface PastMedicalHistoryItem {
 	id: string
@@ -231,6 +231,11 @@ export interface PastMedicalHistoryItem {
 	fileUrl: string | null
 	notes: string | null
 	title?: string | null
+	/** A prescription: who wrote it, where, when the follow-up is, and the visit's id (a fresh link is asked for with it). */
+	doctorName?: string | null
+	hospitalName?: string | null
+	followUpDate?: string | null
+	appointmentId?: string | null
 }
 
 interface ApiListResponse<T> {
@@ -257,6 +262,11 @@ interface TreatmentHistoryRecord {
 	notes?: string | null
 	diagnosis?: string | null
 	follow_up_date?: string | null
+	/** The prescription image drawn from the notes the doctor submitted: a signed link that expires after about 5 minutes. */
+	notes_image_url?: string | null
+	notes_submitted_at?: string | null
+	doctor_name?: string | null
+	hospital_name?: string | null
 }
 
 interface LaboratoryReportRecord {
@@ -267,18 +277,6 @@ interface LaboratoryReportRecord {
 	report_pdf_s3_key: string
 	result_values?: Record<string, unknown> | null
 	report_images_s3_keys?: string[] | null
-	summary_findings?: string | null
-	uploaded_at: string
-}
-
-interface RadiologyReportRecord {
-	id: number
-	public_id: string
-	booking_id: number
-	patient_id: number
-	report_pdf_s3_key: string
-	dicom_images_s3_keys?: string[] | null
-	scan_images_s3_keys?: string[] | null
 	summary_findings?: string | null
 	uploaded_at: string
 }
@@ -300,6 +298,11 @@ function sortHistoryDesc(a: PastMedicalHistoryItem, b: PastMedicalHistoryItem): 
 	return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime)
 }
 
+/**
+ * The patient's past prescriptions: the visits of GET /api/treatments/patient/{id}/history whose doctor submitted notes (the
+ * signed `notes_image_url`), plus older visits that only have a stored `prescription_s3_key`. The signed links expire after about
+ * 5 minutes, so the section does not keep this list (see PastMedicalHistory).
+ */
 export const getPatientPrescriptionHistory = async (
 	patientPublicId: string
 ): Promise<PastMedicalHistoryItem[]> => {
@@ -308,21 +311,28 @@ export const getPatientPrescriptionHistory = async (
 	)
 
 	return getTreatmentHistoryList(res.data)
-		.filter((item) => !!item.prescription_s3_key)
-		.map<PastMedicalHistoryItem>((item) => ({
-			id: String(
-				item.public_id ??
-					item.id ??
-					item.appointment_public_id ??
-					item.appointment_id ??
-					item.prescription_s3_key
-			),
-			category: 'prescription',
-			date: item.appointment_date ?? item.created_at ?? item.updated_at ?? '',
-			fileUrl: buildS3Url(item.prescription_s3_key),
-			notes: item.notes ?? item.diagnosis ?? null,
-			title: item.follow_up_date ? `Follow-up: ${item.follow_up_date}` : null,
-		}))
+		.filter((item) => !!item.notes_image_url || !!item.prescription_s3_key)
+		.map<PastMedicalHistoryItem>((item) => {
+			const doctor = item.doctor_name?.trim()
+			return {
+				id: String(
+					item.public_id ??
+						item.id ??
+						item.appointment_public_id ??
+						item.appointment_id ??
+						item.notes_image_url ??
+						item.prescription_s3_key
+				),
+				category: 'prescription',
+				date: item.appointment_date ?? item.created_at ?? item.updated_at ?? '',
+				fileUrl: item.notes_image_url || buildS3Url(item.prescription_s3_key),
+				notes: item.notes ?? item.diagnosis ?? null,
+				doctorName: doctor ? (/^dr\.?\s/i.test(doctor) ? doctor : `Dr. ${doctor}`) : null,
+				hospitalName: item.hospital_name?.trim() || null,
+				followUpDate: item.follow_up_date ?? null,
+				appointmentId: item.appointment_public_id ?? null,
+			}
+		})
 		.sort(sortHistoryDesc)
 }
 
@@ -337,24 +347,6 @@ export const getPatientLaboratoryHistory = async (
 		.map<PastMedicalHistoryItem>((item) => ({
 			id: item.public_id,
 			category: 'laboratory',
-			date: item.uploaded_at,
-			fileUrl: buildS3Url(item.report_pdf_s3_key),
-			notes: item.summary_findings ?? null,
-		}))
-		.sort(sortHistoryDesc)
-}
-
-export const getPatientRadiologyHistory = async (
-	patientPublicId: string
-): Promise<PastMedicalHistoryItem[]> => {
-	const res = await ApiService.get<ApiListResponse<RadiologyReportRecord>>(
-		API_ENDPOINTS.PATIENT.RADIOLOGY_REPORTS(patientPublicId)
-	)
-
-	return (res.data.data ?? [])
-		.map<PastMedicalHistoryItem>((item) => ({
-			id: item.public_id,
-			category: 'radiology',
 			date: item.uploaded_at,
 			fileUrl: buildS3Url(item.report_pdf_s3_key),
 			notes: item.summary_findings ?? null,

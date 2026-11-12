@@ -11,7 +11,8 @@ type ChipOption = '1 Week' | '2 Weeks' | '1 Month' | 'Custom Date'
 interface FollowUpModalProps {
 	open: boolean
 	onClose: () => void
-	onSave: (dueDate: Date, note: string) => Promise<void> | void
+	/** Saves the follow-up date on the visit's treatment record (the treatment API has no note, as in the mobile app). */
+	onSave: (dueDate: Date) => Promise<void> | void
 	loading?: boolean
 	patientName?: string
 }
@@ -29,7 +30,6 @@ export default function FollowUpModal({
 		return d.toISOString().split('T')[0]
 	})
 	const [customDate, setCustomDate] = useState<string | null>(null)
-	const [note, setNote] = useState<string>('')
 	const [error, setError] = useState<string>('')
 
 	useEffect(() => {
@@ -38,7 +38,6 @@ export default function FollowUpModal({
 			const d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 			setDueDate(d.toISOString().split('T')[0])
 			setCustomDate(null)
-			setNote('')
 			setError('')
 		}
 	}, [open])
@@ -96,7 +95,7 @@ export default function FollowUpModal({
 			setError('Please select a valid future follow-up date.')
 			return
 		}
-		await onSave(selected, note.trim())
+		await onSave(selected)
 	}
 
 	const formatDateDisplay = (dateStr: string) => {
@@ -252,25 +251,6 @@ export default function FollowUpModal({
 						{error}
 					</Typography>
 				)}
-
-				{/* Doctor's Note */}
-				<Typography variant="subtitle2" sx={{ color: '#2b6f71', fontWeight: 600, mb: 1 }}>
-					Optional Doctor's Note
-				</Typography>
-				<TextField
-					multiline
-					rows={3}
-					fullWidth
-					placeholder="e.g., Please review blood pressure after taking medication..."
-					value={note}
-					onChange={(e) => setNote(e.target.value)}
-					sx={{
-						'& .MuiOutlinedInput-root': {
-							borderRadius: '12px',
-							bgcolor: '#f8fafc',
-						},
-					}}
-				/>
 			</DialogContent>
 
 			<Box

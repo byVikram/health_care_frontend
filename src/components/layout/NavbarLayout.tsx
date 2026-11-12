@@ -60,7 +60,7 @@ const PATIENT_PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
 ]
 
 const DOCTOR_PROFILE_MENU_ITEMS: readonly ProfileMenuItem[] = [
-	{ label: 'My Appointments', path: '#' },
+	{ label: 'My Appointments', path: `${ROUTES.APPOINTMENTS}?view=doctor` },
 	{ label: 'My Consultations', path: '#' },
 	{ label: 'My Patients', path: '#' },
 	{ divider: true },

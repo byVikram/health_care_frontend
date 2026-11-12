@@ -1251,7 +1251,8 @@ export default function AppointmentList() {
 					</Box>
 
 					<Box sx={{ display: 'flex', flex: 1 }}>
-						{notesDrawerDoctor && <ConsultationNotes doctor={notesDrawerDoctor} />}
+						{/* The notes editor is the doctor's: a patient looking at a past visit sees the prescription link above, never an editor. */}
+						{notesDrawerDoctor && role === 'doctor' && <ConsultationNotes doctor={notesDrawerDoctor} />}
 					</Box>
 				</Box>
 			</AppDrawer>

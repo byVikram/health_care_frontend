@@ -27,17 +27,25 @@ const BLOCKED_MESSAGES: Record<string, string> = {
 	cancelled: 'This appointment was cancelled.',
 }
 
+const NOT_CHECKED_IN_MESSAGE = 'Check the patient in before starting the consultation.'
+
 /**
- * The one rule for what an appointment card opens (the click and the pointer cursor both read it). The code the patient already
- * gave lets the doctor straight back in, but only for a finished or accepted appointment, and a no-show the patient came late for
- * (same day) goes through `start`, because starting the consultation is what lifts the no-show.
+ * The one rule for what an appointment card opens (the click and the pointer cursor both read it). A consultation can only be
+ * STARTED for a patient who has been checked in (a confirmed / not-arrived one, or a no-show the patient came late for, is
+ * checked in first: that also lifts the no-show). The code the patient already gave lets the doctor straight back in, and a
+ * finished appointment always opens.
  */
 export function appointmentOpenAction(status: string, accessVerified: boolean, isToday: boolean): OpenAction {
 	const s = status.toLowerCase()
 	if (s === 'completed') return { kind: 'consultation' }
-	if (ACCEPTED_STATUSES.includes(s)) return accessVerified ? { kind: 'consultation' } : { kind: 'start' }
+	if (ACCEPTED_STATUSES.includes(s)) {
+		if (accessVerified) return { kind: 'consultation' }
+		return s === 'checked_in' ? { kind: 'start' } : { kind: 'blocked', message: NOT_CHECKED_IN_MESSAGE }
+	}
 	if (s === 'no_show') {
-		return isToday ? { kind: 'start' } : { kind: 'blocked', message: 'This appointment was marked as a no-show.' }
+		return isToday
+			? { kind: 'blocked', message: NOT_CHECKED_IN_MESSAGE }
+			: { kind: 'blocked', message: 'This appointment was marked as a no-show.' }
 	}
 	return { kind: 'blocked', message: BLOCKED_MESSAGES[s] ?? 'This appointment cannot be started yet.' }
 }
