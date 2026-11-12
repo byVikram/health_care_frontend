@@ -905,24 +905,44 @@ export default function AppointmentList() {
 	])
 
 	useEffect(() => {
+		let cancelled = false
 		const fetchHospitals = async () => {
 			if (viewAs === 'patient') {
 				try {
-					const res = await ApiService.get<{ success: boolean; data: { hospital_id: number | string; hospital_name: string }[] }>(API_ENDPOINTS.PATIENT.APPOINTMENTS_HOSPITALS)
+					// The hospitals of whoever the page is showing ("Appointments for"): the account holder or a family member.
+					const res = await ApiService.getWithParams<{ success: boolean; data: { hospital_id: number | string; hospital_name: string }[] }>(
+						API_ENDPOINTS.PATIENT.APPOINTMENTS_HOSPITALS,
+						activePatientId ? { patient_id: activePatientId } : {}
+					)
+					if (cancelled) return
 					if (res.data?.success) {
 						const fetchedOptions = res.data.data.map((h) => ({
 							value: String(h.hospital_id),
 							label: h.hospital_name,
 						}))
 						setHospitalOptions([{ value: 'all', label: 'All' }, ...fetchedOptions])
+						// A hospital picked for the previous person may not be one of this person's: go back to All.
+						setFilterHospital((current) =>
+							current === 'all' || fetchedOptions.some((o) => o.value === current) ? current : 'all'
+						)
 					}
 				} catch (err) {
 					console.error('Failed to fetch hospitals', err)
 				}
+			} else {
+				// Doctor: the hospitals this doctor is linked to, the same list as the header's hospital switcher.
+				// Each id is the hospital's public id, which is what the appointments `hospital_id` filter expects.
+				const linked = (lookupData?.hospitals ?? [])
+					.filter((h, index, all) => all.findIndex((x) => x.id === h.id) === index)
+					.map((h) => ({ value: h.id, label: h.label }))
+				setHospitalOptions([{ value: 'all', label: 'All' }, ...linked])
 			}
 		}
 		fetchHospitals()
-	}, [viewAs])
+		return () => {
+			cancelled = true
+		}
+	}, [viewAs, lookupData, activePatientId])
 
 	const modeOptions = [
 		{ value: 'all', label: 'All' },
@@ -943,7 +963,8 @@ export default function AppointmentList() {
 		displayEmpty: true,
 		renderValue: (selected: unknown) => {
 			const selectedOption = options.find((option) => option.value === selected)
-			return selectedOption && selectedOption.value !== 'all' ? selectedOption.label : ''
+			// Show the selected option's label, including the default "All" (it used to be hidden, leaving the box blank)
+			return selectedOption?.label ?? ''
 		},
 		MenuProps: {
 			PaperProps: {
