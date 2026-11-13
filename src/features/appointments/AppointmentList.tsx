@@ -38,6 +38,7 @@ import AppDrawer from '../../components/common/Drawer/AppDrawer'
 import { ConsultationDoctor } from '../../types/consultation'
 import { ROUTES } from '../../constants/routes'
 import { buildS3Url } from '../../utils/s3'
+import StatusReasonNote from './components/StatusReasonNote'
 
 
 // Status IDs accepted by PATCH /api/appointments/update-status.
@@ -78,6 +79,8 @@ interface AppointmentRow extends Record<string, unknown> {
 	fees: number | null
 	prescriptionS3Key: string | null
 	reason: string | null
+	/** 'Cancelled by you' / 'Rescheduled by the patient' ...: the line for `reason`, worded for the person looking. */
+	statusReasonTitle: string | null
 }
 
 interface AppointmentMeta {
@@ -111,6 +114,9 @@ interface AppointmentsResponse {
 		end_time: string | null
 		status: string
 		reason?: string | null
+		/** Why it was cancelled / rescheduled, and the line that goes with it (see StatusReasonNote). */
+		status_reason?: string | null
+		status_reason_title?: string | null
 		rescheduled_by?: string | null
 		doctor?: { id: string; name: string; avatar_s3_key?: string | null } | null
 		patient?: { id: string; name: string; avatar_s3_key: string | null; gender: string | null; age: number | null } | null
@@ -186,6 +192,7 @@ export default function AppointmentList() {
 	const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false)
 	const [rescheduleHospitals, setRescheduleHospitals] = useState<LookupHospital[]>([])
 	const [rescheduleHospitalId, setRescheduleHospitalId] = useState('')
+	const [rescheduleReason, setRescheduleReason] = useState('')
 	const [appointmentType, setAppointmentType] = useState<'clinic' | 'video'>('clinic')
 
 	// â”€â”€ Appointment Details Drawer state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -257,7 +264,8 @@ export default function AppointmentList() {
 					endTime: appt.end_time,
 					appointmentMode: appt.appointment_mode,
 					status: appt.status,
-					reason: appt.reason ?? null,
+					reason: appt.status_reason ?? null,
+					statusReasonTitle: appt.status_reason_title ?? null,
 					rescheduledBy: appt.rescheduled_by ?? null,
 					doctorName: appt.doctor?.name ?? 'Doctor',
 					doctorAvatar: buildS3Url(appt.doctor?.avatar_s3_key),
@@ -430,6 +438,7 @@ export default function AppointmentList() {
 		setRescheduleTime('')
 		setRescheduleSlots([])
 		setRescheduleHospitals([])
+		setRescheduleReason('')
 		setRescheduleOpen(true)
 	}
 
@@ -449,7 +458,7 @@ export default function AppointmentList() {
 						start_time: rescheduleTime,
 						end_time: null,
 						hospital_id: rescheduleHospitalId || rescheduleAppt.hospital?.id,
-						reason: viewAs === 'patient' ? 'Patient requested reschedule' : 'Doctor unavailable',
+						reason: rescheduleReason.trim() || undefined,
 					}
 				)
 			if (res.data?.success) {
@@ -716,11 +725,7 @@ export default function AppointmentList() {
 					<Typography fontSize={13} fontWeight={600}>
 						{getStatusDisplayLabel(row)}
 					</Typography>
-					{row.status?.toLowerCase() === 'cancelled' && row.reason && (
-						<Typography fontSize={11} color="#e53935" lineHeight={1.3} mt={0.3} sx={{ maxWidth: 220 }}>
-							{row.reason}
-						</Typography>
-					)}
+					<StatusReasonNote status={row.status} title={row.statusReasonTitle} reason={row.reason} compact />
 				</Box>
 			),
 		},
@@ -1188,6 +1193,8 @@ export default function AppointmentList() {
 				setRescheduleHospitalId={setRescheduleHospitalId}
 				appointmentType={appointmentType}
 				setAppointmentType={setAppointmentType}
+				reason={rescheduleReason}
+				onReasonChange={setRescheduleReason}
 			/>
 
 			{/* Consultation Notes drawer (eye icon) — reuses the shared AppDrawer */}

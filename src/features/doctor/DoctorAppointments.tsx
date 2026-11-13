@@ -60,6 +60,7 @@ import {
 	noShowWindow,
 	statusTone,
 } from './appointmentRules'
+import StatusReasonNote from '../appointments/components/StatusReasonNote'
 
 const formatTime12h = (t?: string | null) => {
 	if (!t) return '--'
@@ -522,7 +523,9 @@ export function DoctorAppointments({
 						</Typography>
 					)}
 					{appointments
-						.filter((apt) => getStatusLabel(apt) !== 'cancelled')
+						// A cancelled appointment stays listed (muted, no actions) while it carries a reason, so the doctor sees why a slot freed up;
+						// one the doctor has just cancelled here (a local override) leaves the list at once, as before.
+						.filter((apt) => getStatusLabel(apt) !== 'cancelled' || (!!apt.status_reason && !localStatuses[apt.id]))
 						.map((apt) => {
 							const statusLabel = getStatusLabel(apt)
 							const isCancelled = statusLabel === 'cancelled'
@@ -605,7 +608,7 @@ export function DoctorAppointments({
 										cursor: canOpen ? 'pointer' : 'default',
 										p: 1.5,
 										borderRadius: '12px',
-										opacity: isCancelled ? 0.5 : 1,
+										opacity: isCancelled ? 0.75 : 1,
 										bgcolor: '#fff',
 										display: 'flex',
 										alignItems: 'center',
@@ -864,6 +867,16 @@ export function DoctorAppointments({
 													</Tooltip>
 												)
 											})()}
+
+											{/* Why it was cancelled / moved: on its own line UNDER the name, status chip and info icon */}
+											<Box sx={{ flexBasis: '100%' }}>
+												<StatusReasonNote
+													status={typeof apt.status === 'string' ? apt.status : (apt.status?.label ?? '')}
+													title={localStatuses[apt.id] ? null : apt.status_reason_title} // a local override: the API's reason is for the old state
+													reason={apt.status_reason}
+													compact
+												/>
+											</Box>
 										</Box>
 										<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
 											<Typography variant="body2">
@@ -891,7 +904,7 @@ export function DoctorAppointments({
 										>
 											<CancelOutlinedIcon sx={{ fontSize: 16, color: '#e53935' }} />
 											<Typography sx={{ fontSize: '10px', color: '#e53935', fontWeight: 600 }}>
-												Doctor rejected the appointment
+												Cancelled
 											</Typography>
 										</Box>
 									) : (
