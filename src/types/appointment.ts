@@ -72,6 +72,12 @@ export interface Appointment {
 	access_verified?: boolean
 	// Reason selected by the doctor when rejecting (or otherwise changing the status of) the appointment.
 	reason?: string | null
+	/** Why the appointment is cancelled / rescheduled / asked to be rescheduled, as the person who did it wrote it (null otherwise). */
+	status_reason?: string | null
+	/** Who gave that reason: 'doctor', 'patient', an admin role or 'system'. */
+	status_changed_by?: string | null
+	/** 'Cancelled by you' / 'Cancelled by the doctor' ...: the line for `status_reason`, worded for the person asking. */
+	status_reason_title?: string | null
 	referral?: {
 		id: string
 		referring_doctor: {

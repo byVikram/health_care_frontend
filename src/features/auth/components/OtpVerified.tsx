@@ -60,7 +60,7 @@ export default function OtpVerified({ role }: Props) {
 				/>
 
 				<Typography sx={{ color: "white", fontSize: "12px" }}>
-					© 2025 Whisper ai. All rights reserved.
+					© {new Date().getFullYear()} Whisper ai. All rights reserved.
 				</Typography>
 			</Box>
 

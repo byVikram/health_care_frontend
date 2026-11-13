@@ -48,6 +48,7 @@ import { ConsultationDoctor } from '../../types/consultation'
 import PrescriptionView from '../consultation/components/PrescriptionView'
 import { buildS3Url } from '../../utils/s3'
 import { customScrollbar } from '../../styles/commonStyles'
+import StatusReasonNote from '../appointments/components/StatusReasonNote'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -530,6 +531,8 @@ export default function PatientAppointmentDetailPage() {
                     />
                   }
                 />
+
+                <StatusReasonNote status={rawStatus} title={appt.status_reason_title} reason={appt.status_reason} />
 
                 {appt.fees != null && (
                   <InfoRow
