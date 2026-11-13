@@ -278,7 +278,7 @@ export default function OtpForm({ contactNumber, onVerify, mode = 'page', onCust
 					style={{ width: '70%', height: '60%', objectFit: 'contain', marginLeft: '40px', marginBottom: '30px' }}
 				/>
 				<Typography sx={{ color: 'white', fontSize: '12px' }}>
-					&copy; 2025 Whisper ai. All rights reserved.
+					&copy; {new Date().getFullYear()} Whisper ai. All rights reserved.
 				</Typography>
 			</Box>
 

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { Box, Button, Typography } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import { createUser } from '../authService'
+import { providerKindLabel } from '../roleDisplay'
 import axios from 'axios'
 
 interface RegisterFormProps {
@@ -12,13 +13,14 @@ interface RegisterFormProps {
 	mode?: 'page' | 'modal'
 	onSwitchToLogin?: () => void
 	roleId?: string   // UUID from api/auth/get-roles
+	specialty?: string // the kind of healthcare provider (Nurse, ...): only for that role
 
 	initialName?: string
 	initialEmail?: string
 	initialMobile?: string
 }
 
-export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin, roleId, initialName = '', initialEmail = '', initialMobile = '' }: RegisterFormProps) {
+export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin, roleId, specialty, initialName = '', initialEmail = '', initialMobile = '' }: RegisterFormProps) {
 	// Pre-select the role if roleId was passed in from the onboarding flow
 	// const registerAs = useState(roleId ?? '')
 	const navigate = useNavigate()
@@ -68,13 +70,11 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin,
 		}
 
 		// roleId comes from the onboarding flow (passed as prop, never changes)
-		const payload = { role_id: roleId ?? '', name, email, contact_number: mobile }
-		console.log('API Payload:', payload)
+		const payload = { role_id: roleId ?? '', name, email, contact_number: mobile, ...(specialty ? { specialty_id: specialty } : {}) }
 
 		try {
 			setLoading(true)
 			const res = await createUser(payload)
-			console.log('API Response:', res)
 			if (res.success) {
 				onSubmit(mobile, name, email)
 			} else {
@@ -101,6 +101,12 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin,
 			{mode === 'page' && (
 				<Typography variant="h4" sx={{ fontWeight: '600', marginBottom: '32px', fontSize: '32px' }}>
 					Register
+				</Typography>
+			)}
+
+			{mode === 'page' && providerKindLabel(specialty) && (
+				<Typography sx={{ color: '#0d9488', fontWeight: 600, marginTop: '-20px', marginBottom: '8px' }}>
+					Registering as {providerKindLabel(specialty)}
 				</Typography>
 			)}
 
@@ -223,7 +229,7 @@ export default function RegisterForm({ onSubmit, mode = 'page', onSwitchToLogin,
 					/>
 
 					<Typography sx={{ color: 'white', fontSize: '12px' }}>
-						&copy; 2025 Whisper ai. All rights reserved.
+						&copy; {new Date().getFullYear()} Whisper ai. All rights reserved.
 					</Typography>
 				</Box>
 			</Grid>
