@@ -25,10 +25,6 @@ const GENDER_OPTIONS = [
 	{ value: 'female', label: 'Female' },
 	{ value: 'other', label: 'Other' },
 ]
-const EXPERIENCE_OPTIONS = Array.from({ length: 30 }, (_, i) => ({
-	value: String(i + 1),
-	label: `${i + 1} ${i + 1 === 1 ? 'year' : 'years'}`,
-}))
 const LANGUAGE_OPTIONS = ['English', 'Hindi', 'Kannada', 'Tamil', 'Telugu', 'Malayalam', 'Marathi'].map((l) => ({
 	value: l.toLowerCase(),
 	label: l,
@@ -100,9 +96,9 @@ export default function DoctorPersonalTab({ data, onChange, onSaveSuccess }: Doc
 
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
-							label="Location*"
+							label="City*"
 							value={data.location}
-							placeholder="Enter your location"
+							placeholder="Enter your city"
 							onChange={(e) => onChange({ location: e.target.value })}
 						/>
 					</Grid>
@@ -145,6 +141,7 @@ export default function DoctorPersonalTab({ data, onChange, onSaveSuccess }: Doc
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppDatePicker
 							label="Date of Birth"
+							labelPosition="top"
 							value={data.dateOfBirth}
 							onChange={(val) => onChange({ dateOfBirth: val ?? '' })}
 							disableFuture
@@ -154,15 +151,6 @@ export default function DoctorPersonalTab({ data, onChange, onSaveSuccess }: Doc
 
 				<Grid container spacing={2}>
 					<Grid size={{ xs: 12, sm: 6 }}>
-						<AppSelect
-							label="Years of Experience*"
-							value={data.experience || ''}
-							options={EXPERIENCE_OPTIONS}
-							placeholder="Select experience"
-							onChange={(e) => onChange({ experience: e.target.value as string })}
-						/>
-					</Grid>
-					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppMultiSelect
 							label="Languages Known"
 							value={data.languages || []}
@@ -171,9 +159,6 @@ export default function DoctorPersonalTab({ data, onChange, onSaveSuccess }: Doc
 							onChange={(selected) => onChange({ languages: selected as string[] })}
 						/>
 					</Grid>
-				</Grid>
-
-				<Grid container spacing={2}>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
 							label="Instagram"
@@ -184,7 +169,9 @@ export default function DoctorPersonalTab({ data, onChange, onSaveSuccess }: Doc
 							onChange={(e) => onChange({ instagram: e.target.value })}
 						/>
 					</Grid>
+				</Grid>
 
+				<Grid container spacing={2}>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
 							label="Facebook"
@@ -195,9 +182,7 @@ export default function DoctorPersonalTab({ data, onChange, onSaveSuccess }: Doc
 							onChange={(e) => onChange({ facebook: e.target.value })}
 						/>
 					</Grid>
-				</Grid>
 
-				<Grid container spacing={2}>
 					<Grid size={{ xs: 12, sm: 6 }}>
 						<AppInput
 							label="Twitter"

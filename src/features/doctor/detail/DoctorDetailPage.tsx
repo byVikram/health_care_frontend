@@ -5,7 +5,7 @@ import { Box, Container, Typography, Divider, Grid, Card, Avatar, Chip, Radio } 
 import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined'
 // import ApartmentOutlinedIcon from '@mui/icons-material/ApartmentOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
-import PersonIcon from '@mui/icons-material/Person'
+// import PersonIcon from '@mui/icons-material/Person'
 import DoctorProfileCard from './components/DoctorProfileCard'
 import AppSelect from '../../../components/common/Select/AppSelect'
 // import AppointmentTypeSelector from './components/AppointmentTypeSelector'
