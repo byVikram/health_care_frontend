@@ -26,6 +26,7 @@ import { toast } from 'react-toastify'
 import { updateAppointmentsStatus } from '../../services/appointmentService'
 import { getDoctorAvailability, getAvailabilityModeBlocks, getDoctorById } from '../doctor/doctorService'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
+import { toLocalDateString } from '../../utils/Utils'
 import type { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 import type { Appointment } from '../../types/appointment'
 import AppButton from '../../components/common/Button/AppButton'
@@ -312,7 +313,7 @@ export default function AppointmentList() {
 
 		if (!doctorId || !hospitalId) return
 
-		const dateStr = rescheduleDate.toISOString().split('T')[0]
+		const dateStr = toLocalDateString(rescheduleDate)
 
 		const fetchSlots = async () => {
 			setRescheduleSlotsLoading(true)
@@ -449,7 +450,7 @@ export default function AppointmentList() {
 		}
 		setRescheduleSubmitting(true)
 		try {
-			const dateStr = rescheduleDate.toISOString().split('T')[0]
+			const dateStr = toLocalDateString(rescheduleDate)
 			const res = await ApiService.post<{ success: boolean; message: string }>(
 				`${API_ENDPOINTS.APPOINTMENTS.RESCHEDULE}`,
 					{

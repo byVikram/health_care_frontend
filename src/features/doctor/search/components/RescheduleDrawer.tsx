@@ -6,6 +6,7 @@ import { Box, Typography } from '@mui/material'
 import type { SxProps, Theme } from '@mui/material/styles'
 import { Appointment } from '../../../../types/appointment'
 import { LookupHospital } from '../../../../hooks/useAuth'
+import { BOOKING_WINDOW_DAYS } from '../../../../constants/constants'
 
 type Props = {
 	rescheduleOpen: boolean
@@ -101,6 +102,7 @@ export default function RescheduleDrawer({
 				availableSlots={rescheduleSlots}
 				loading={rescheduleSlotsLoading}
 				disableBookedSlots={true}
+				maxDaysAhead={BOOKING_WINDOW_DAYS}
 				selectedAppointmentType={appointmentType}
 				onAppointmentTypeChange={setAppointmentType}
 			/>

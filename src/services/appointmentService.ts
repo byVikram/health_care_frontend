@@ -68,6 +68,24 @@ export const setAppointmentCheckIn = async (
 	return res.data
 }
 
+export interface BookingRestriction {
+	restricted: boolean
+	/** YYYY-MM-DD */
+	until: string | null
+	message: string | null
+}
+
+/**
+ * Whether online booking is paused for the signed-in patient (repeated valid no-shows). Patients only (the server answers any other
+ * role with a 403). The error toast is off: a failed lookup must never get in the way of booking, the server enforces the pause anyway.
+ */
+export const getBookingRestriction = async (): Promise<BookingRestriction> => {
+	const res = await ApiService.get<{ data: BookingRestriction }>(API_ENDPOINTS.APPOINTMENTS.BOOKING_RESTRICTION, {
+		suppressErrorToast: true,
+	})
+	return res.data.data
+}
+
 export const RESCHEDULE_REASON_MAX_LENGTH = 500
 
 /**
