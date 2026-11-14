@@ -1,7 +1,7 @@
 // src/features/doctor/DoctorDetailPage.tsx
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { Box, Container, Typography, Divider, Grid, Card, Avatar, Chip, Radio } from '@mui/material'
+import { Alert, Box, Container, Typography, Divider, Grid, Card, Avatar, Chip, Radio } from '@mui/material'
 import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined'
 // import ApartmentOutlinedIcon from '@mui/icons-material/ApartmentOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -12,7 +12,6 @@ import AppSelect from '../../../components/common/Select/AppSelect'
 import AppButton from '../../../components/common/Button/AppButton'
 import DateSlotPicker, { SlotGroup, TimeSlot } from '../../../components/common/DateSlotPicker/DateSlotPicker'
 import AppModal from '../../../components/common/Modal/AppModal'
-import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
 import LoginForm from '../../../features/auth/components/LoginForm'
 import RegisterForm from '../../../features/auth/components/RegisterForm'
 import OtpForm from '../../../features/auth/components/OtpForm'
@@ -21,9 +20,11 @@ import { customCardStyle } from '../../../styles/commonStyles'
 import { AppointmentType } from '../../../types/doctor'
 import { DoctorDetailData } from '../../../types/doctor-detail'
 import { getDoctorById, getDoctorAvailability } from '../doctorService'
+import { getBookingRestriction, type BookingRestriction } from '../../../services/appointmentService'
 import AppSkeleton from '../../../components/common/Skeleton/AppSkeleton'
 import ConsentForm from '../../appointments/components/ConsentForm'
 import { useAuth } from '../../../hooks/useAuth'
+import { BOOKING_WINDOW_DAYS } from '../../../constants/constants'
 import { useFamilyMembers } from '../../../hooks/useFamilyMembers'
 import AchievementCard, { AchievementCardData } from '../../../components/common/Card/AchievementCard'
 import HorizontalCardCarousel from '../../../components/common/Carousel/HorizontalCardCarousel'
@@ -89,7 +90,6 @@ export default function DoctorDetailPage() {
 
 
 
-	const [bookingSuccessModal, setBookingSuccessModal] = useState(false)
 	const [consentOpen, setConsentOpen] = useState(false)
 	const [pendingBooking, setPendingBooking] = useState(false)
 
@@ -112,7 +112,30 @@ export default function DoctorDetailPage() {
 	const [authModalOpen, setAuthModalOpen] = useState(false)
 	const [authModalView, setAuthModalView] = useState<'login' | 'register' | 'otp'>('login')
 	const [authContactNumber, setAuthContactNumber] = useState('')
-	const { accessToken } = useAuth()
+	const { accessToken, role } = useAuth()
+
+	// Online booking can be paused for a patient (repeated missed appointments). Ask early, so they are told on this page and not after
+	// picking a slot, accepting the consent and paying. A failed lookup is ignored: the server enforces the pause when booking.
+	const [restriction, setRestriction] = useState<BookingRestriction | null>(null)
+	useEffect(() => {
+		if (!accessToken || role !== 'patient') {
+			setRestriction(null)
+			return
+		}
+		let active = true
+		const load = async () => {
+			try {
+				const result = await getBookingRestriction()
+				if (active) setRestriction(result)
+			} catch {
+				if (active) setRestriction(null)
+			}
+		}
+		void load()
+		return () => {
+			active = false
+		}
+	}, [accessToken, role])
 
 	const closeAuthModal = () => {
 		setAuthModalOpen(false)
@@ -297,10 +320,14 @@ export default function DoctorDetailPage() {
 				}
 
 				setAvailableSlotGroups(filteredSlots)
+				// A time chosen for another date, hospital or mode may not exist here: never book a slot the patient cannot see.
+				const offered = new Set(filteredSlots.flatMap((group) => group.slots.filter((s) => s.status === 'AVAILABLE').map((s) => s.start_time)))
+				setSelectedTime((current) => (current && offered.has(current) ? current : ''))
 			} catch (err) {
 				console.log(err)
 				if (!active) return
 				setAvailableSlotGroups([])
+				setSelectedTime('')
 			} finally {
 				if (active) {
 					setSlotsLoading(false)
@@ -328,6 +355,11 @@ export default function DoctorDetailPage() {
 	}
 
 	const resolvedSelectedTime = selectedTime
+
+	// Booking needs a slot: the date, the time and, for a clinic visit, the hospital. Nothing is booked while the slots load or while
+	// the patient's online booking is paused.
+	const bookingPaused = restriction?.restricted === true
+	const canBook = !!resolvedSelectedTime && !!selectedDate && !!selectedHospital && !slotsLoading && !bookingPaused
 
 	const aboutText = (() => {
 		const about = doctorDetail?.details?.about
@@ -666,16 +698,24 @@ export default function DoctorDetailPage() {
 								availableSlots={availableSlotGroups.length > 0 ? availableSlotGroups : undefined}
 								loading={slotsLoading || loading}
 								disableBookedSlots={true}
+								maxDaysAhead={BOOKING_WINDOW_DAYS}
 								selectedAppointmentType={selectedType}
 								onAppointmentTypeChange={setSelectedType}
 								clinicPrice={appointmentTypes[0]?.price}
 								videoPrice={appointmentTypes[1]?.price}
 							/>
 
+							{bookingPaused && (
+								<Alert severity="warning" sx={{ borderRadius: 2 }}>
+									{restriction?.message || 'Online booking is paused because of missed appointments.'}
+								</Alert>
+							)}
+
 							{!loading && (
 								<AppButton
 									label="Book Appointment"
 									fullWidth
+									disabled={!canBook}
 									loading={false}
 									onClick={() => {
 										if (!accessToken) {
@@ -745,17 +785,6 @@ export default function DoctorDetailPage() {
 						}
 					})
 				}}
-			/>
-
-			<ConfirmModal
-				open={bookingSuccessModal}
-				onClose={() => setBookingSuccessModal(false)}
-				onConfirm={() => setBookingSuccessModal(false)}
-				variant="success"
-				title="Appointment Confirmed!"
-
-				confirmLabel="Done"
-				hideCancelButton
 			/>
 
 			{/* Switch Patient Profile Modal */}

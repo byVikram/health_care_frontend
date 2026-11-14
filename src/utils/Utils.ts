@@ -29,3 +29,13 @@ export const fixDoubleDr = (text?: string | null): string => {
   if (!text) return '';
   return text.replace(/\bDr\.\s+(?:Dr\.\s*)+/gi, 'Dr. ');
 };
+
+/**
+ * A date as YYYY-MM-DD from its LOCAL parts. `toISOString().split('T')[0]` is the UTC date: for a date picked at local midnight in a
+ * zone ahead of UTC (India, +5:30) it is the day BEFORE, so a booking or a reschedule would go out for the wrong day.
+ */
+export const toLocalDateString = (date: Date): string => {
+	const month = String(date.getMonth() + 1).padStart(2, '0')
+	const day = String(date.getDate()).padStart(2, '0')
+	return `${date.getFullYear()}-${month}-${day}`
+}

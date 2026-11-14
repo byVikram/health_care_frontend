@@ -73,7 +73,10 @@ export const getAppointments = async (params?: AppointmentParams): Promise<Appoi
 }
 
 export const createAppointment = async (payload: CreateAppointmentPayload): Promise<CreateAppointmentResponse> => {
-	const res = await ApiService.post<CreateAppointmentResponse>(API_ENDPOINTS.APPOINTMENTS.CREATE, payload)
+	// suppressErrorToast: the payment page shows the server's reason itself, next to the button (a toast as well would say it twice).
+	const res = await ApiService.post<CreateAppointmentResponse>(API_ENDPOINTS.APPOINTMENTS.CREATE, payload, {
+		suppressErrorToast: true,
+	})
 	return res.data
 }
 

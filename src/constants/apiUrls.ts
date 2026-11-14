@@ -93,6 +93,8 @@ export const API_ENDPOINTS = {
 		PRE_INTAKE: (id: string) => `/api/appointments/${id}/pre-intake`,
 		RESCHEDULE: '/api/appointments/reschedule',
 		ACTIVE_CONSENT: '/api/appointments/active/consent',
+		/** GET: is online booking paused for the signed-in patient (repeated missed appointments), and until when. */
+		BOOKING_RESTRICTION: '/api/appointments/me/booking-restriction',
 		STATUSES: '/api/appointments/statuses',
 	},
 	PHARMACY: {

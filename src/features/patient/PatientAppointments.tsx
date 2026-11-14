@@ -11,6 +11,7 @@ import { getAppointments, getDoctorAvailability, getDoctorById, getAvailabilityM
 import { Appointment } from '../../types/appointment'
 // import drImage from '../../assets/Services/doctors-service.png'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
+import { toLocalDateString } from '../../utils/Utils'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 import { LookupHospital } from '../../hooks/useAuth'
 import ApiService from '../../services/apiService'
@@ -135,7 +136,7 @@ export function PatientAppointments() {
 
 		if (!doctorId || !hospitalId) return
 
-		const dateStr = rescheduleDate.toISOString().split('T')[0]
+		const dateStr = toLocalDateString(rescheduleDate)
 
 		const fetchSlots = async () => {
 			setRescheduleSlotsLoading(true)
@@ -188,7 +189,7 @@ export function PatientAppointments() {
 
 		setRescheduleSubmitting(true)
 		try {
-			const dateStr = rescheduleDate.toISOString().split('T')[0]
+			const dateStr = toLocalDateString(rescheduleDate)
 			const res = await ApiService.post<{ success: boolean; message: string }>(
 				`${API_ENDPOINTS.APPOINTMENTS.RESCHEDULE}`,
 				{

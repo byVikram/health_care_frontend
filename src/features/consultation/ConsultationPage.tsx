@@ -32,14 +32,10 @@ import { getPatientDetails, getMyPatientDetails } from '../../services/userServi
 import { Patient } from '../../types/patient'
 import { getAppointmentById } from '../../services/userService'
 import { Appointment } from '../../types/appointment'
-import { useAuth, LookupHospital } from '../../hooks/useAuth'
-import { getDoctorProfile, mapDoctorProfileApi, getDoctorAvailability, getAvailabilityModeBlocks } from '../doctor/doctorService'
+import { useAuth } from '../../hooks/useAuth'
+import { getDoctorProfile, mapDoctorProfileApi } from '../doctor/doctorService'
 import { DoctorProfile } from '../../types/doctor-profile'
-import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
 import FollowUpModal from './components/FollowUpModal'
-import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
-import ApiService from '../../services/apiService'
-import { API_ENDPOINTS } from '../../constants/apiUrls'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { updateAppointmentsStatus } from '../../services/appointmentService'
@@ -201,11 +197,6 @@ const mapDoctorProfileToConsultationDoctor = (
 	}
 }
 
-// const getDrawerAppointmentType = (appointmentMode?: Appointment['appointment_mode']) =>
-// 	appointmentMode === 'video_call' ? 'video' : 'clinic'
-const getDrawerAppointmentType = (appointmentMode?: Appointment['appointment_mode']) =>
-	appointmentMode === 'video call' ? 'video' : 'clinic'
-
 export default function ConsultationPage() {
 	const [activeTab, setActiveTab] = useState(0)
 	const [timelineDrawerOpen, setTimelineDrawerOpen] = useState(false)
@@ -221,14 +212,6 @@ export default function ConsultationPage() {
 	const [followUpOpen, setFollowUpOpen] = useState(false)
 	const [followUpLoading, setFollowUpLoading] = useState(false)
 
-	const [rescheduleOpen, setRescheduleOpen] = useState(false)
-	const [rescheduleDate, setRescheduleDate] = useState<Date>(new Date())
-	const [rescheduleTime, setRescheduleTime] = useState('')
-	const [rescheduleSlots, setRescheduleSlots] = useState<SlotGroup[]>([])
-	const [rescheduleSlotsLoading, setRescheduleSlotsLoading] = useState(false)
-	const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false)
-	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
-	const [appointmentType, setAppointmentType] = useState<'clinic' | 'video'>('clinic')
 	const [saveConsultationLoading, setSaveConsultationLoading] = useState(false)
 	// The doctor's notes: the text as typed or dictated, the treatment once the notes are submitted (final), and the confirmation
 	// asked before that.
@@ -310,9 +293,9 @@ export default function ConsultationPage() {
 		}
 	}, [appointmentId, role])
 
-	// Doctor profile is only used by the Info tab's ConsultationNotes header and the
-	// reschedule drawer's hospital list — fetch it in the background instead of
-	// blocking the loading screen for tabs (e.g. Vitals) that don't need it.
+	// Doctor profile is only used by the Info tab's ConsultationNotes header — fetch it in the
+	// background instead of blocking the loading screen for tabs (e.g. Vitals) that don't need it.
+	// (A doctor does not reschedule from here with a date: they ask the patient to choose, see DoctorAppointments.)
 	useEffect(() => {
 		if (!patientId || !appointmentId || role !== 'doctor') return
 
@@ -337,57 +320,6 @@ export default function ConsultationPage() {
 			cancelled = true
 		}
 	}, [patientId, appointmentId, role])
-
-	useEffect(() => {
-		if (!appointment) return
-
-		setAppointmentType(getDrawerAppointmentType(appointment.appointment_mode))
-		setRescheduleHospitalId(appointment.hospital?.id ?? '')
-	}, [appointment])
-
-	useEffect(() => {
-		if (!rescheduleOpen || !appointment) return
-
-		const doctorId = appointment.doctor?.id
-		const hospitalId = rescheduleHospitalId || appointment.hospital?.id || doctorProfile?.hospitals[0]?.id
-
-		if (!doctorId || !hospitalId) return
-
-		const dateStr = rescheduleDate.toISOString().split('T')[0]
-		let cancelled = false
-
-		const fetchSlots = async () => {
-			setRescheduleSlotsLoading(true)
-			setRescheduleSlots([])
-			setRescheduleTime('')
-
-			try {
-				const responseData = await getDoctorAvailability({
-					doctor_id: doctorId,
-					hospital_id: hospitalId,
-					date: dateStr,
-				})
-				if (cancelled) return
-
-				const selectedTypeMode = appointmentType === 'clinic' ? 'clinic_visit' : 'video_call'
-				const selectedModeData = getAvailabilityModeBlocks(responseData).find(
-					(item) => item.appointment_mode === selectedTypeMode
-				)
-
-				setRescheduleSlots(selectedModeData?.sessions || [])
-			} catch {
-				if (!cancelled) toast.error('Could not load available slots.')
-			} finally {
-				if (!cancelled) setRescheduleSlotsLoading(false)
-			}
-		}
-
-		fetchSlots()
-
-		return () => {
-			cancelled = true
-		}
-	}, [appointment, appointmentType, doctorProfile, rescheduleDate, rescheduleHospitalId, rescheduleOpen])
 
 	if (loading) {
 		return (
@@ -476,28 +408,6 @@ export default function ConsultationPage() {
 		doctorProfile != null
 			? mapDoctorProfileToConsultationDoctor(doctorProfile, activeHospital, appointment)
 			: mapAppointmentToConsultationDoctor(appointment)
-
-	const rescheduleHospitalsMapped: LookupHospital[] = Array.from(
-		new Map(
-			[
-				...(doctorProfile?.hospitals || []).map((hospital) => ({
-					id: hospital.id,
-					label: hospital.name,
-					address: hospital.fullAddress || hospital.location || '',
-				})),
-				...(lookupData?.hospitals || []),
-				...(appointment?.hospital
-					? [
-						{
-							id: appointment.hospital.id,
-							label: appointment.hospital.name,
-							address: appointment.hospital.address,
-						},
-					]
-					: []),
-			].map((hospital) => [hospital.id, hospital] as const)
-		).values()
-	)
 
 	const handleOpenReconnect = () => {
 		if (!appointment) {
@@ -588,57 +498,6 @@ export default function ConsultationPage() {
 			toast.error('Could not open the prescription. Please try again.')
 		} finally {
 			setOpeningPrescription(false)
-		}
-	}
-
-	const handleRescheduleConfirm = async () => {
-		if (!appointment || !rescheduleTime) {
-			toast.warning('Please select a time slot before confirming.')
-			return
-		}
-
-		setRescheduleSubmitting(true)
-		try {
-			const dateStr = rescheduleDate.toISOString().split('T')[0]
-			const res = await ApiService.post<{ success: boolean; message: string }>(API_ENDPOINTS.APPOINTMENTS.RESCHEDULE, {
-				appointment_id: appointment.id,
-				appointment_date: dateStr,
-				start_time: rescheduleTime,
-				end_time: null,
-				hospital_id: rescheduleHospitalId || appointment.hospital?.id,
-				reason: 'Doctor unavailable',
-			})
-
-			if (res.data?.success) {
-				const selectedHospital = rescheduleHospitalsMapped.find(
-					(hospital) => hospital.id === (rescheduleHospitalId || appointment.hospital?.id)
-				)
-
-				setAppointment((prev) =>
-					prev
-						? {
-							...prev,
-							appointment_date: dateStr,
-							start_time: rescheduleTime,
-							hospital: selectedHospital
-								? {
-									id: selectedHospital.id,
-									name: selectedHospital.label,
-									address: selectedHospital.address ?? '',
-								}
-								: prev.hospital,
-						}
-						: prev
-				)
-				toast.success(res.data.message || 'Appointment rescheduled!')
-				setRescheduleOpen(false)
-			} else {
-				toast.error(res.data?.message || 'Reschedule failed. Please try again.')
-			}
-		} catch {
-			toast.error('Something went wrong. Please try again.')
-		} finally {
-			setRescheduleSubmitting(false)
 		}
 	}
 
@@ -797,24 +656,6 @@ export default function ConsultationPage() {
 				open={timelineDrawerOpen}
 				onClose={() => setTimelineDrawerOpen(false)}
 				appointmentId={appointmentId ?? null}
-			/>
-			<RescheduleDrawer
-				rescheduleOpen={rescheduleOpen}
-				setRescheduleOpen={setRescheduleOpen}
-				rescheduleAppt={appointment}
-				rescheduleDate={rescheduleDate}
-				setRescheduleDate={setRescheduleDate}
-				rescheduleTime={rescheduleTime}
-				setRescheduleTime={setRescheduleTime}
-				rescheduleSlots={rescheduleSlots}
-				rescheduleSlotsLoading={rescheduleSlotsLoading}
-				rescheduleSubmitting={rescheduleSubmitting}
-				handleRescheduleConfirm={handleRescheduleConfirm}
-				rescheduleHospitals={rescheduleHospitalsMapped}
-				rescheduleHospitalId={rescheduleHospitalId}
-				setRescheduleHospitalId={setRescheduleHospitalId}
-				appointmentType={appointmentType}
-				setAppointmentType={setAppointmentType}
 			/>
 			<Dialog open={confirmNotesOpen} onClose={() => setConfirmNotesOpen(false)} maxWidth='xs' fullWidth>
 				<DialogTitle sx={{ fontWeight: 700 }}>Submit your notes?</DialogTitle>

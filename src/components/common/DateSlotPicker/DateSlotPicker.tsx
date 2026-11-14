@@ -61,6 +61,8 @@ type CommonProps = {
 	timeLabel?: string
 	hideNavigation?: boolean
 	disablePast?: boolean
+	/** How many days ahead (today included) can be chosen; unset = no limit. Later days are disabled and the strip cannot move past them. */
+	maxDaysAhead?: number
 	compactAppointmentToggle?: boolean
 	timeSlotColumns?: number
 	timeSlotVariant?: 'default' | 'availability'
@@ -95,6 +97,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		timeLabel = 'Select Time',
 		hideNavigation = false,
 		disablePast = true,
+		maxDaysAhead,
 		compactAppointmentToggle = false,
 		timeSlotColumns = 4,
 		availableSlots,
@@ -130,6 +133,19 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate())
 		return d0 < today0
 	}
+
+	// The last day that can be chosen (local midnight), or null without a limit.
+	const lastDay = maxDaysAhead
+		? new Date(today.getFullYear(), today.getMonth(), today.getDate() + maxDaysAhead - 1)
+		: null
+	const isBeyondWindow = (d: Date) => {
+		if (!lastDay) return false
+		return new Date(d.getFullYear(), d.getMonth(), d.getDate()) > lastDay
+	}
+	// Moving on a week must still show a day that can be chosen.
+	const nextWeekStart = new Date(weekStart)
+	nextWeekStart.setDate(nextWeekStart.getDate() + 7)
+	const nextWeekBlocked = isBeyondWindow(nextWeekStart)
 
 	const isSlotSelected = (slot: string): boolean => {
 		if (props.multiSelect) return (props.selectedTime as string[]).includes(slot)
@@ -288,6 +304,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 							{!hideNavigation && (
 								<IconButton
 									size="small"
+									disabled={nextWeekBlocked}
 									onClick={() => {
 										const d = new Date(weekStart)
 										d.setDate(d.getDate() + 7)
@@ -304,7 +321,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 						<Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 0.5 }}>
 							{weekDates.map((date) => {
 								const isSelected = isSameDay(date, selectedDate)
-								const past = isPast(date)
+								const past = isPast(date) || isBeyondWindow(date)
 								const isSat = date.getDay() === 6
 								return (
 									<Box
