@@ -13,6 +13,8 @@ import PharmacyServiceTab, { PharmacyProfileServices } from '../components/Servi
 import PharmacySettingTab from '../components/SettingsTab'
 import { customCardStyle } from '../../../styles/commonStyles'
 import { getMyPharmacyDetails, mapPharmacyDetailsApi } from '../pharmacyService'
+import { useAvatarChange } from '../../../hooks/useAvatarChange'
+import { useAuth, setAuth } from '../../../hooks/useAuth'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -147,10 +149,13 @@ export default function PharmacyProfilePage() {
 	const handleServicesChange = (updated: Partial<PharmacyProfileServices>) =>
 		setPharmacy((prev) => ({ ...prev, services: { ...prev.services, ...updated } }))
 
-	const handleAvatarChange = (file: File) => {
-		const localPreviewUrl = URL.createObjectURL(file)
-		setPharmacy((prev) => ({ ...prev, personal: { ...prev.personal, avatar: localPreviewUrl } }))
-	}
+	const { role, user, accessToken, refreshToken, lookupData } = useAuth()
+	// only patients may delete their photo (the server refuses it for every other role)
+	const { change: handleAvatarChange, busy: avatarBusy } = useAvatarChange({
+		current: pharmacy.personal.avatar,
+		onChanged: (avatar) => setPharmacy((prev) => ({ ...prev, personal: { ...prev.personal, avatar } })),
+		onSaved: (avatar) => setAuth(role!, { ...user!, avatar }, accessToken!, refreshToken!, lookupData),
+	})
 
 	if (loading) {
 		return (
@@ -210,6 +215,7 @@ export default function PharmacyProfilePage() {
 							activeTab={activeTab}
 							onTabChange={setActiveTab}
 							onAvatarChange={handleAvatarChange}
+							avatarBusy={avatarBusy}
 						/>
 					</Grid>
 					<Grid size={{ xs: 12, md: 9 }}>{renderTab()}</Grid>

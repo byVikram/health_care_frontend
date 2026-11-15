@@ -1,10 +1,12 @@
 import AppSelect from '../../../../components/common/Select/AppSelect'
 import AppDrawer from '../../../../components/common/Drawer/AppDrawer'
+import AppInput from '../../../../components/common/Input/AppInput'
 import DateSlotPicker, { SlotGroup } from '../../../../components/common/DateSlotPicker/DateSlotPicker'
 import { Box, Typography } from '@mui/material'
 import type { SxProps, Theme } from '@mui/material/styles'
 import { Appointment } from '../../../../types/appointment'
 import { LookupHospital } from '../../../../hooks/useAuth'
+import { BOOKING_WINDOW_DAYS } from '../../../../constants/constants'
 
 type Props = {
 	rescheduleOpen: boolean
@@ -30,6 +32,10 @@ type Props = {
 	appointmentType: 'clinic' | 'video'
 	setAppointmentType: (type: 'clinic' | 'video') => void
 
+	/** The reason for moving the appointment, in the person's own words (optional): the other side reads it. Shown only when given. */
+	reason?: string
+	onReasonChange?: (value: string) => void
+
 	/** Optional override for the drawer paper's sx (e.g. positioning it below a fixed navbar) */
 	sx?: SxProps<Theme>
 }
@@ -51,6 +57,8 @@ export default function RescheduleDrawer({
 	setRescheduleHospitalId,
 	appointmentType,
 	setAppointmentType,
+	reason,
+	onReasonChange,
 	sx,
 }: Props) {
 	return (
@@ -94,9 +102,24 @@ export default function RescheduleDrawer({
 				availableSlots={rescheduleSlots}
 				loading={rescheduleSlotsLoading}
 				disableBookedSlots={true}
+				maxDaysAhead={BOOKING_WINDOW_DAYS}
 				selectedAppointmentType={appointmentType}
 				onAppointmentTypeChange={setAppointmentType}
 			/>
+
+			{onReasonChange && (
+				<Box sx={{ mt: 3 }}>
+					<AppInput
+						label="Reason (optional)"
+						placeholder="Tell them why you need a different time"
+						value={reason ?? ''}
+						onChange={(e: React.ChangeEvent<HTMLInputElement>) => onReasonChange(e.target.value)}
+						multiline
+						rows={2}
+						inputProps={{ maxLength: 500 }}
+					/>
+				</Box>
+			)}
 		</AppDrawer>
 	)
 }

@@ -19,7 +19,6 @@ import { ROUTES } from '../../constants/routes'
 
 // MUI Icons - Common
 // import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined'
-import drImage from '../../assets/Services/doctors-service.png'
 
 import AppointmentIcon from '../../assets/icons/appointments.svg'
 import PharmacyIcon from '../../assets/icons/pharmacy.svg'
@@ -103,7 +102,7 @@ export default function SidebarLayout({ children, activeMenuId }: SidebarLayoutP
 
 	const sidebarUser = {
 		name: user?.name ?? (isDoctor ? 'Dr. Ashika Rao' : 'Nitin'),
-		avatar: user?.avatar ?? (isDoctor ? drImage : ''),
+		avatar: user?.avatar ?? '', // no stock photo for a missing one
 		profileCompletion: user?.profileCompletion ?? (isDoctor ? 65 : 22),
 		profilePath: user?.profilePath ?? (isDoctor ? '/profile' : '/profile'),
 		showQr: user?.showQr ?? !isDoctor,

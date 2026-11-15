@@ -2,6 +2,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Box, Container, Grid, Divider } from '@mui/material'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
+import AppSelect from '../../components/common/Select/AppSelect'
 import AppProfileSidebar from '../../components/common/ProfileSidebar/AppProfileSidebar'
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline'
 import MedicalServicesOutlinedIcon from '@mui/icons-material/MedicalServicesOutlined'
@@ -12,6 +13,9 @@ import LifeStyleTab from './components/LifeStyleTab'
 import { Patient, PatientPersonal, PatientMedical, PatientLifeStyle } from '../../types/patient'
 import { updatePatientProfile, getPatientDetails } from './patientService'
 import { toast } from 'react-toastify'
+import { useAvatarChange } from '../../hooks/useAvatarChange'
+import { useAuth, setAuth, accountHolderId } from '../../hooks/useAuth'
+import { useFamilyMembers } from '../../hooks/useFamilyMembers'
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
 import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
@@ -78,18 +82,36 @@ export default function PatientProfilePage() {
 	const [activeTab, setActiveTab] = useState<string>('personal')
 	const [patient, setPatient] = useState<Patient>(EMPTY_PATIENT)
 	const [loading, setLoading] = useState(false)
+	const { role, user, accessToken, refreshToken, lookupData } = useAuth()
+
+	// Whose details this page shows and saves: the signed-in patient (the account holder) or one of their family
+	// members, chosen in the selector below. Choosing one never changes who is signed in; the backend still checks the
+	// caller is that member's guardian on every request. `memberId` is set only for a family member (a photo change
+	// must go to that person).
+	const selfId = accountHolderId({ lookupData, user })
+	const { members } = useFamilyMembers()
+	const [selectedPatientId, setSelectedPatientId] = useState('') // '' = the account holder
+	const activePatientId = selectedPatientId || selfId
+	const memberId = selectedPatientId && selectedPatientId !== selfId ? selectedPatientId : undefined
+
+	const [dirtyPersonal, setDirtyPersonal] = useState<Partial<PatientPersonal>>({})
+	const [dirtyMedical, setDirtyMedical] = useState<Partial<PatientMedical>>({})
+	const [dirtyLifeStyle, setDirtyLifeStyle] = useState<Partial<PatientLifeStyle>>({})
 
 	useEffect(() => {
 		const fetchPatient = async () => {
 			try {
 				setLoading(true)
-				const patientId = localStorage.getItem('patient_id')
-				if (!patientId) {
-					console.error('Patient ID not found')
+				if (!activePatientId) {
+					toast.error('We could not find your patient profile. Please log in again.')
 					return
 				}
-				const data = await getPatientDetails(patientId)
+				const data = await getPatientDetails(activePatientId)
 				setPatient(data.data)
+				// unsaved edits belong to the person they were typed for
+				setDirtyPersonal({})
+				setDirtyMedical({})
+				setDirtyLifeStyle({})
 			} catch (err) {
 				console.error('Failed to load patient:', err)
 			} finally {
@@ -97,11 +119,7 @@ export default function PatientProfilePage() {
 			}
 		}
 		fetchPatient()
-	}, [])
-
-	const [dirtyPersonal, setDirtyPersonal] = useState<Partial<PatientPersonal>>({})
-	const [dirtyMedical, setDirtyMedical] = useState<Partial<PatientMedical>>({})
-	const [dirtyLifeStyle, setDirtyLifeStyle] = useState<Partial<PatientLifeStyle>>({})
+	}, [activePatientId])
 
 	const completionPercent = useMemo(() => calcCompletion(patient), [patient])
 
@@ -132,10 +150,26 @@ export default function PatientProfilePage() {
 		handleLifeStyleDirtyChange(updated)
 	}
 
-	const handleAvatarChange = (file: File) => {
-		const url = URL.createObjectURL(file)
-		setPatient((prev) => ({ ...prev, personal: { ...prev.personal, avatar: url } }))
-	}
+	const { change: handleAvatarChange, remove: handleAvatarRemove, busy: avatarBusy } = useAvatarChange({
+		current: patient.personal.avatar ?? '',
+		patientId: memberId,
+		onChanged: (avatar) => setPatient((prev) => ({ ...prev, personal: { ...prev.personal, avatar } })),
+		// keep the header's copies in step: the account list entry of the person whose photo changed and, only when it
+		// is the signed-in patient's own photo, the signed-in user's avatar
+		onSaved: (avatar) =>
+			setAuth(
+				role!,
+				memberId ? user! : { ...user!, avatar },
+				accessToken!,
+				refreshToken!,
+				lookupData && {
+					...lookupData,
+					patient_profiles: lookupData.patient_profiles.map((p) =>
+						p.id === (memberId ?? selfId) ? { ...p, avatar_s3_key: avatar } : p
+					),
+				}
+			),
+	})
 
 	const handlePersonalSave = async () => {
 		if (!Object.keys(dirtyPersonal).length) return
@@ -200,6 +234,17 @@ export default function PatientProfilePage() {
 	return (
 		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
 			<Container maxWidth="lg">
+				{members.length > 1 && (
+					<Box sx={{ mb: 3, maxWidth: 360 }}>
+						<AppSelect
+							label="Profile of"
+							value={activePatientId ?? ''}
+							onChange={(e) => setSelectedPatientId(e.target.value === selfId ? '' : e.target.value)}
+							options={members.map((m) => ({ value: m.id, label: `${m.name} (${m.relationship})` }))}
+							fullWidth
+						/>
+					</Box>
+				)}
 				<Grid container spacing={3}>
 					{loading ? (
 						<>
@@ -296,6 +341,8 @@ export default function PatientProfilePage() {
 									activeTab={activeTab}
 									onTabChange={setActiveTab}
 									onAvatarChange={handleAvatarChange}
+									onAvatarRemove={handleAvatarRemove}
+									avatarBusy={avatarBusy}
 								/>
 							</Grid>
 							<Grid size={{ xs: 12, md: 9 }}>{renderTab()}</Grid>

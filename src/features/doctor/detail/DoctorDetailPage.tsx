@@ -1,19 +1,17 @@
 // src/features/doctor/DoctorDetailPage.tsx
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { Box, Container, Typography, Divider, Grid, Card, Avatar, Chip, Button, Alert, Radio } from '@mui/material'
+import { Alert, Box, Container, Typography, Divider, Grid, Card, Avatar, Chip, Radio } from '@mui/material'
 import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined'
 // import ApartmentOutlinedIcon from '@mui/icons-material/ApartmentOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
-import PersonIcon from '@mui/icons-material/Person'
+// import PersonIcon from '@mui/icons-material/Person'
 import DoctorProfileCard from './components/DoctorProfileCard'
 import AppSelect from '../../../components/common/Select/AppSelect'
-import AppInput from '../../../components/common/Input/AppInput'
 // import AppointmentTypeSelector from './components/AppointmentTypeSelector'
 import AppButton from '../../../components/common/Button/AppButton'
 import DateSlotPicker, { SlotGroup, TimeSlot } from '../../../components/common/DateSlotPicker/DateSlotPicker'
 import AppModal from '../../../components/common/Modal/AppModal'
-import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
 import LoginForm from '../../../features/auth/components/LoginForm'
 import RegisterForm from '../../../features/auth/components/RegisterForm'
 import OtpForm from '../../../features/auth/components/OtpForm'
@@ -22,9 +20,12 @@ import { customCardStyle } from '../../../styles/commonStyles'
 import { AppointmentType } from '../../../types/doctor'
 import { DoctorDetailData } from '../../../types/doctor-detail'
 import { getDoctorById, getDoctorAvailability } from '../doctorService'
+import { getBookingRestriction, type BookingRestriction } from '../../../services/appointmentService'
 import AppSkeleton from '../../../components/common/Skeleton/AppSkeleton'
 import ConsentForm from '../../appointments/components/ConsentForm'
 import { useAuth } from '../../../hooks/useAuth'
+import { BOOKING_WINDOW_DAYS } from '../../../constants/constants'
+import { useFamilyMembers } from '../../../hooks/useFamilyMembers'
 import AchievementCard, { AchievementCardData } from '../../../components/common/Card/AchievementCard'
 import HorizontalCardCarousel from '../../../components/common/Carousel/HorizontalCardCarousel'
 import ProfessionalDetailsSection from './components/ProfessionalDetailsSection'
@@ -38,68 +39,9 @@ type ApiAvailabilityBlock = {
 	sessions?: SlotGroup[]
 }
 
-export interface PatientProfile {
-	id: string
-	name: string
-	age: string | number
-	gender: string
-	relationship: string
-	avatar?: string
-	bloodGroup?: string
-}
-
-const DEFAULT_PATIENT_PROFILES: PatientProfile[] = [
-	{
-		id: 'self-1',
-		name: 'John Doe',
-		age: '45',
-		gender: 'Male',
-		relationship: 'Self',
-		avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-		bloodGroup: 'O+',
-	},
-	{
-		id: 'spouse-2',
-		name: 'Jane Doe',
-		age: '42',
-		gender: 'Female',
-		relationship: 'Spouse',
-		avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
-		bloodGroup: 'O+',
-	},
-	{
-		id: 'child-3',
-		name: 'Tommy Doe',
-		age: '12',
-		gender: 'Male',
-		relationship: 'Child',
-		avatar: 'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?auto=format&fit=crop&w=200&q=80',
-		bloodGroup: 'O-',
-	},
-	{
-		id: 'parent-4',
-		name: 'Mary Doe',
-		age: '70',
-		gender: 'Female',
-		relationship: 'Parent',
-		avatar: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=200&q=80',
-		bloodGroup: 'B+',
-	},
-]
-
-const GENDER_OPTIONS = [
-	{ value: 'Male', label: 'Male' },
-	{ value: 'Female', label: 'Female' },
-	{ value: 'Other', label: 'Other' },
-]
-
-const RELATIONSHIP_OPTIONS = [
-	{ value: 'Self', label: 'Self' },
-	{ value: 'Parent', label: 'Parent' },
-	{ value: 'Spouse', label: 'Spouse' },
-	{ value: 'Child', label: 'Child' },
-	{ value: 'Other', label: 'Other' },
-]
+/** One line under a person's name: "45 Yrs • Male • Blood: O+" (parts that are not known are left out). */
+const personSummary = (p: { age: string | number; gender: string; bloodGroup?: string }, bloodLabel = 'Blood') =>
+	[p.age ? `${p.age} Yrs` : '', p.gender, p.bloodGroup ? `${bloodLabel}: ${p.bloodGroup}` : ''].filter(Boolean).join(' • ')
 
 const EMPTY_MODE_SLOTS: Record<AvailabilityMode, SlotGroup[]> = { clinic: [], video: [] }
 
@@ -138,21 +80,16 @@ export default function DoctorDetailPage() {
 	const [detailsModalOpen, setDetailsModalOpen] = useState(false)
 
 	// Patient selection / Booking For state
-	const [patientProfiles, setPatientProfiles] = useState<PatientProfile[]>(DEFAULT_PATIENT_PROFILES)
-	const [selectedPatientId, setSelectedPatientId] = useState<string>('self-1')
+	// The signed-in patient and their family members, from the backend (the account holder first). Choosing one only sets
+	// who this appointment is for; it never changes who is signed in.
+	const { members: patientProfiles } = useFamilyMembers()
+	const [selectedPatientId, setSelectedPatientId] = useState<string>('')
 
 	// Modals State
 	const [switchPatientModalOpen, setSwitchPatientModalOpen] = useState(false)
-	const [addMemberOpen, setAddMemberOpen] = useState(false)
-	const [newMemberName, setNewMemberName] = useState('')
-	const [newMemberAge, setNewMemberAge] = useState('')
-	const [newMemberGender, setNewMemberGender] = useState('Male')
-	const [newMemberRelation, setNewMemberRelation] = useState('Parent')
-	const [addMemberError, setAddMemberError] = useState<string | null>(null)
 
 
 
-	const [bookingSuccessModal, setBookingSuccessModal] = useState(false)
 	const [consentOpen, setConsentOpen] = useState(false)
 	const [pendingBooking, setPendingBooking] = useState(false)
 
@@ -175,7 +112,30 @@ export default function DoctorDetailPage() {
 	const [authModalOpen, setAuthModalOpen] = useState(false)
 	const [authModalView, setAuthModalView] = useState<'login' | 'register' | 'otp'>('login')
 	const [authContactNumber, setAuthContactNumber] = useState('')
-	const { accessToken } = useAuth()
+	const { accessToken, role } = useAuth()
+
+	// Online booking can be paused for a patient (repeated missed appointments). Ask early, so they are told on this page and not after
+	// picking a slot, accepting the consent and paying. A failed lookup is ignored: the server enforces the pause when booking.
+	const [restriction, setRestriction] = useState<BookingRestriction | null>(null)
+	useEffect(() => {
+		if (!accessToken || role !== 'patient') {
+			setRestriction(null)
+			return
+		}
+		let active = true
+		const load = async () => {
+			try {
+				const result = await getBookingRestriction()
+				if (active) setRestriction(result)
+			} catch {
+				if (active) setRestriction(null)
+			}
+		}
+		void load()
+		return () => {
+			active = false
+		}
+	}, [accessToken, role])
 
 	const closeAuthModal = () => {
 		setAuthModalOpen(false)
@@ -200,32 +160,6 @@ export default function DoctorDetailPage() {
 	}
 
 	const selectedPatient = patientProfiles.find((p) => p.id === selectedPatientId) || patientProfiles[0]
-
-	const handleSaveNewMember = () => {
-		if (!newMemberName.trim()) {
-			setAddMemberError('Please enter full name')
-			return
-		}
-		if (!newMemberAge.trim()) {
-			setAddMemberError('Please enter age')
-			return
-		}
-
-		const created: PatientProfile = {
-			id: `fam-${Date.now()}`,
-			name: newMemberName.trim(),
-			age: newMemberAge.trim(),
-			gender: newMemberGender,
-			relationship: newMemberRelation,
-		}
-
-		setPatientProfiles((prev) => [...prev, created])
-		setSelectedPatientId(created.id)
-		setAddMemberOpen(false)
-		setNewMemberName('')
-		setNewMemberAge('')
-		setAddMemberError(null)
-	}
 
 	const primaryHospital =
 		doctorDetail?.hospitals.find((h) => h.is_primary) ||
@@ -386,10 +320,14 @@ export default function DoctorDetailPage() {
 				}
 
 				setAvailableSlotGroups(filteredSlots)
+				// A time chosen for another date, hospital or mode may not exist here: never book a slot the patient cannot see.
+				const offered = new Set(filteredSlots.flatMap((group) => group.slots.filter((s) => s.status === 'AVAILABLE').map((s) => s.start_time)))
+				setSelectedTime((current) => (current && offered.has(current) ? current : ''))
 			} catch (err) {
 				console.log(err)
 				if (!active) return
 				setAvailableSlotGroups([])
+				setSelectedTime('')
 			} finally {
 				if (active) {
 					setSlotsLoading(false)
@@ -417,6 +355,11 @@ export default function DoctorDetailPage() {
 	}
 
 	const resolvedSelectedTime = selectedTime
+
+	// Booking needs a slot: the date, the time and, for a clinic visit, the hospital. Nothing is booked while the slots load or while
+	// the patient's online booking is paused.
+	const bookingPaused = restriction?.restricted === true
+	const canBook = !!resolvedSelectedTime && !!selectedDate && !!selectedHospital && !slotsLoading && !bookingPaused
 
 	const aboutText = (() => {
 		const about = doctorDetail?.details?.about
@@ -680,7 +623,7 @@ export default function DoctorDetailPage() {
 													/>
 												</Box>
 												<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '11.5px', display: 'block', mt: 0.25 }}>
-													{selectedPatient.age} Yrs • {selectedPatient.gender} {selectedPatient.bloodGroup ? `• Blood: ${selectedPatient.bloodGroup}` : ''}
+													{personSummary(selectedPatient)}
 												</Typography>
 											</Box>
 										</Box>
@@ -755,16 +698,24 @@ export default function DoctorDetailPage() {
 								availableSlots={availableSlotGroups.length > 0 ? availableSlotGroups : undefined}
 								loading={slotsLoading || loading}
 								disableBookedSlots={true}
+								maxDaysAhead={BOOKING_WINDOW_DAYS}
 								selectedAppointmentType={selectedType}
 								onAppointmentTypeChange={setSelectedType}
 								clinicPrice={appointmentTypes[0]?.price}
 								videoPrice={appointmentTypes[1]?.price}
 							/>
 
+							{bookingPaused && (
+								<Alert severity="warning" sx={{ borderRadius: 2 }}>
+									{restriction?.message || 'Online booking is paused because of missed appointments.'}
+								</Alert>
+							)}
+
 							{!loading && (
 								<AppButton
 									label="Book Appointment"
 									fullWidth
+									disabled={!canBook}
 									loading={false}
 									onClick={() => {
 										if (!accessToken) {
@@ -809,10 +760,11 @@ export default function DoctorDetailPage() {
 					navigate('/payment', {
 						state: {
 							patient: selectedPatient,
-							patientName: selectedPatient.name,
-							patientRelation: selectedPatient.relationship,
-							patientAge: selectedPatient.age,
-							patientGender: selectedPatient.gender,
+							patientId: selectedPatient?.id, // the appointment is saved against this person
+							patientName: selectedPatient?.name,
+							patientRelation: selectedPatient?.relationship,
+							patientAge: selectedPatient?.age,
+							patientGender: selectedPatient?.gender,
 							doctorName: doctorDetail?.name ?? '',
 							avatarUrl: buildS3Url(doctorDetail?.details?.avatar_s3_key),
 							specialty: doctorDetail?.specialities?.[0] ?? 'Doctor',
@@ -833,17 +785,6 @@ export default function DoctorDetailPage() {
 						}
 					})
 				}}
-			/>
-
-			<ConfirmModal
-				open={bookingSuccessModal}
-				onClose={() => setBookingSuccessModal(false)}
-				onConfirm={() => setBookingSuccessModal(false)}
-				variant="success"
-				title="Appointment Confirmed!"
-
-				confirmLabel="Done"
-				hideCancelButton
 			/>
 
 			{/* Switch Patient Profile Modal */}
@@ -919,7 +860,7 @@ export default function DoctorDetailPage() {
 												/>
 											</Box>
 											<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '11.5px' }}>
-												{profile.age} Yrs • {profile.gender} {profile.bloodGroup ? `• BG: ${profile.bloodGroup}` : ''}
+												{personSummary(profile, 'BG')}
 											</Typography>
 										</Box>
 									</Box>
@@ -936,102 +877,6 @@ export default function DoctorDetailPage() {
 								</Box>
 							)
 						})}
-					</Box>
-
-					<Button
-						fullWidth
-						variant="outlined"
-						onClick={() => {
-							setSwitchPatientModalOpen(false)
-							setNewMemberName('')
-							setNewMemberAge('')
-							setNewMemberGender('Male')
-							setNewMemberRelation('Parent')
-							setAddMemberError(null)
-							setAddMemberOpen(true)
-						}}
-						sx={{
-							mt: 1,
-							borderRadius: '10px',
-							textTransform: 'none',
-							fontWeight: 600,
-							borderColor: 'primary.main',
-							color: 'primary.main',
-							py: 1,
-						}}
-					>
-						+ Add New Family Member
-					</Button>
-				</Box>
-			</AppModal>
-
-			{/* Add Family Member / Relation Modal */}
-			<AppModal
-				open={addMemberOpen}
-				onClose={() => setAddMemberOpen(false)}
-				title="Add New Family Member"
-				maxWidth="xs"
-				fullWidth
-			>
-				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1, pb: 1 }}>
-					{addMemberError && (
-						<Alert severity="error" sx={{ borderRadius: '8px', py: 0.5, fontSize: '13px' }}>
-							{addMemberError}
-						</Alert>
-					)}
-
-					<AppInput
-						label="Full Name"
-						placeholder="Enter patient full name"
-						value={newMemberName}
-						onChange={(e) => setNewMemberName(e.target.value)}
-						fullWidth
-					/>
-
-					<Grid container spacing={2}>
-						<Grid size={{ xs: 6 }}>
-							<AppInput
-								label="Age"
-								type="number"
-								placeholder="Age"
-								value={newMemberAge}
-								onChange={(e) => setNewMemberAge(e.target.value)}
-								fullWidth
-							/>
-						</Grid>
-						<Grid size={{ xs: 6 }}>
-							<AppSelect
-								label="Gender"
-								value={newMemberGender}
-								onChange={(e) => setNewMemberGender(e.target.value as string)}
-								options={GENDER_OPTIONS}
-								fullWidth
-							/>
-						</Grid>
-					</Grid>
-
-					<AppSelect
-						label="Relationship"
-						value={newMemberRelation}
-						onChange={(e) => setNewMemberRelation(e.target.value as string)}
-						options={RELATIONSHIP_OPTIONS.filter((r) => r.value !== 'Self')}
-						fullWidth
-					/>
-
-					<Box sx={{ mt: 1, display: 'flex', gap: 1.5, justifyContent: 'flex-end' }}>
-						<AppButton
-							label="Cancel"
-							variant="outlined"
-							onClick={() => setAddMemberOpen(false)}
-							sx={{ borderRadius: '8px' }}
-						/>
-						<AppButton
-							label="Save & Select"
-							variant="contained"
-							color="primary"
-							onClick={handleSaveNewMember}
-							sx={{ borderRadius: '8px' }}
-						/>
 					</Box>
 				</Box>
 			</AppModal>

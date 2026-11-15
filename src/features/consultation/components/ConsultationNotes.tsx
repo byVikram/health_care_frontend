@@ -44,6 +44,12 @@ interface ISpeechRecognition extends EventTarget {
 
 interface ConsultationNotesProps {
 	doctor: ConsultationDoctor
+	/** Called with the notes text whenever it changes (typed or dictated), so the page can submit it. */
+	onTextChange?: (text: string) => void
+	/** The notes were already submitted: they are shown read-only and cannot be edited or dictated (the server refuses any change). */
+	locked?: boolean
+	/** The submitted notes' text, shown when the page loads a consultation whose notes are already submitted. */
+	submittedText?: string | null
 }
 
 const TOOLBAR_ACTIONS = [
@@ -55,7 +61,7 @@ const TOOLBAR_ACTIONS = [
 	{ icon: <MicNoneOutlinedIcon fontSize="small" />, label: 'Voice' },
 ]
 
-export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
+export default function ConsultationNotes({ doctor, onTextChange, locked = false, submittedText }: ConsultationNotesProps) {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null)
 	const contextRef = useRef<CanvasRenderingContext2D | null>(null)
 	const isDrawingRef = useRef(false)
@@ -65,6 +71,15 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 	const [isListening, setIsListening] = useState(false)
 
 	const [transcript, setTranscript] = useState('')
+
+	// The page reads the text through a callback (kept in a ref so a new function each render does not re-fire the effect).
+	const onTextChangeRef = useRef(onTextChange)
+	useEffect(() => {
+		onTextChangeRef.current = onTextChange
+	})
+	useEffect(() => {
+		onTextChangeRef.current?.(transcript)
+	}, [transcript])
 	const recognitionRef = useRef<ISpeechRecognition | null>(null)
 	const manualStopRef = useRef(false)
 
@@ -304,9 +319,8 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 				borderRadius: '16px',
 				overflow: 'hidden',
 				display: 'flex',
-				flexGrow: 1,
 				flexDirection: 'column',
-				minHeight: 420,
+				minHeight: 480,
 			}}
 		>
 			{/* Doctor + Clinic header */}
@@ -340,6 +354,12 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 
 			<Divider />
 
+			{locked && (
+				<Typography sx={{ px: 2.5, py: 0.75, fontSize: '12px', color: 'text.secondary', bgcolor: 'action.hover' }}>
+					Notes submitted: they can no longer be edited.
+				</Typography>
+			)}
+
 			{/* Toolbar */}
 			<Box
 				sx={{
@@ -354,8 +374,11 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 			>
 				{TOOLBAR_ACTIONS.map((action, i) => (
 					<Tooltip key={i} title={action.label} placement="top">
+						{/* a span, so the tooltip still works on a disabled button (submitted notes lock Undo / Redo / Voice) */}
+						<span>
 						<IconButton
 							size="small"
+							disabled={locked && ['Undo', 'Redo', 'Voice'].includes(action.label)}
 							onClick={
 								action.label === 'Undo'
 									? handleUndo
@@ -374,6 +397,7 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 						>
 							{action.icon}
 						</IconButton>
+						</span>
 					</Tooltip>
 				))}
 			</Box>
@@ -382,7 +406,7 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 			<Box
 				sx={{
 					flex: 1,
-					minHeight: 300,
+					minHeight: 320,
 					position: 'relative',
 					bgcolor: 'background.paper',
 					display: 'flex',
@@ -393,10 +417,11 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 				<TextField
 					multiline
 					fullWidth
-					value={transcript}
+					// Notes submitted earlier (the page loaded them) are shown as they were submitted.
+					value={locked && submittedText != null ? submittedText : transcript}
 					onChange={handleTranscriptChange}
-					InputProps={{ readOnly: isListening }}
-					placeholder="Start speaking or type notes here…"
+					InputProps={{ readOnly: isListening || locked }}
+					placeholder={locked ? '' : 'Start speaking or type notes here…'}
 					sx={{
 						position: 'absolute',
 						top: 0,
@@ -415,7 +440,7 @@ export default function ConsultationNotes({ doctor }: ConsultationNotesProps) {
 							padding: '16px',
 							height: '100% !important',
 							overflow: 'auto !important',
-							cursor: isListening ? 'default' : 'text',
+							cursor: isListening || locked ? 'default' : 'text',
 						},
 					}}
 				/>

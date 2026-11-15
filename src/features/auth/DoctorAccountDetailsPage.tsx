@@ -144,7 +144,7 @@ export default function DoctorAccountDetailsPage() {
 			</Box>
 
 			<Typography sx={{ textAlign: 'center', fontSize: '12px', color: '#aaa', pt: 3 }}>
-				© 2025 Whisper ai. All rights reserved.
+				© {new Date().getFullYear()} Whisper ai. All rights reserved.
 			</Typography>
 		</Box>
 	)

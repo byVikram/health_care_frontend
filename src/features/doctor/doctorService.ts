@@ -13,7 +13,13 @@ import {
 	DoctorProfileApiHospital,
 	DoctorProfileApiAvailability,
 } from '../../types/doctor-profile-api'
-import { DoctorProfile, DoctorAchievementItem, DoctorAchievementType } from '../../types/doctor-profile'
+import {
+	DoctorProfile,
+	DoctorAchievementItem,
+	DoctorAchievementType,
+	DoctorHospitalHours,
+	WeeklyAvailability,
+} from '../../types/doctor-profile'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 
 export interface AppointmentParams {
@@ -67,7 +73,10 @@ export const getAppointments = async (params?: AppointmentParams): Promise<Appoi
 }
 
 export const createAppointment = async (payload: CreateAppointmentPayload): Promise<CreateAppointmentResponse> => {
-	const res = await ApiService.post<CreateAppointmentResponse>(API_ENDPOINTS.APPOINTMENTS.CREATE, payload)
+	// suppressErrorToast: the payment page shows the server's reason itself, next to the button (a toast as well would say it twice).
+	const res = await ApiService.post<CreateAppointmentResponse>(API_ENDPOINTS.APPOINTMENTS.CREATE, payload, {
+		suppressErrorToast: true,
+	})
 	return res.data
 }
 
@@ -316,7 +325,6 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 				reschedule_allowed_until_hours:
 					h.appointment_rules?.reschedule_allowed_until_hours ?? h.reschedule_allowed_until_hours ?? 2,
 				allow_pay_later: h.appointment_rules?.allow_pay_later ?? h.allow_pay_later ?? false,
-				availability: h.availability,
 			}))
 		: []
 
@@ -339,12 +347,12 @@ export const mapDoctorProfileApi = (data: DoctorProfileApiData): DoctorProfile =
 			facebook: pd?.social_media_handles?.facebook ?? '',
 			twitter: pd?.social_media_handles?.twitter ?? '',
 			avatar: pd?.avatar_s3_key ?? '',
-			experience: String(prof?.experience_years ?? 0),
 			languages: pd?.languages ?? [],
 		},
 		professional: {
 			specialization_id: prof?.specialities?.[0]?.id ?? '',
 			specialization_label: prof?.specialities?.[0]?.label ?? '',
+			experience: prof?.experience_years != null ? String(prof.experience_years) : '',
 			degree: prof?.degree ?? '',
 			college: prof?.college ?? '',
 			yearOfPassing: prof?.year_of_passing ?? '',
@@ -443,6 +451,12 @@ export interface CreateHospitalPayload {
 	video_consultation_fee?: string
 	offline_consultation_fee?: string
 	is_primary?: boolean
+	/** Booking rules saved with the new hospital (the server defaults to 7 days, 2 hours, pay later off). */
+	appointment_rules?: {
+		free_followup_validity_days?: number
+		reschedule_allowed_until_hours?: number
+		allow_pay_later?: boolean
+	}
 }
 
 export interface CreateHospitalResponse {
@@ -505,6 +519,19 @@ export const updateAvailability = async (payload: UpdateAvailabilityPayload) => 
 
 export const updateWeeklyAvailability = async (payload: BulkAvailabilityPayload) => {
 	return ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.UPDATE_AVAILABILITY, payload)
+}
+
+/**
+ * The doctor's hospitals with the weekly working hours of each: GET /api/doctors/hospitals, the list both apps'
+ * Availability screens read. The hours of the OTHER hospitals are what a block is checked against for a clash.
+ */
+export const getDoctorHospitalHours = async (): Promise<DoctorHospitalHours[]> => {
+	const res = await ApiService.get<{
+		data: { hospital?: { id: string; name: string }; availability?: WeeklyAvailability }[]
+	}>(API_ENDPOINTS.DOCTOR_PROFILE.HOSPITALS)
+	return (res.data.data ?? [])
+		.filter((h) => h.hospital?.id)
+		.map((h) => ({ hospitalId: h.hospital!.id, name: h.hospital!.name, availability: h.availability ?? {} }))
 }
 
 // ----pre-intake --------------------------------------------------------------
@@ -586,70 +613,5 @@ export const updateAchievement = async (
 
 export const deleteAchievement = async (publicId: string) => {
 	const res = await ApiService.delete(API_ENDPOINTS.DOCTOR_PROFILE.ACHIEVEMENT_BY_ID(publicId))
-	return res.data
-}
-
-// -- Doctor bank details --------------------------------------------------------
-
-export type BankAccountType = 'savings' | 'current'
-
-export interface BankDetails {
-	account_holder_name: string
-	bank_name: string
-	branch_name: string | null
-	account_number: string
-	ifsc_code: string
-	account_type: BankAccountType
-	upi_id: string | null
-	pan_number: string | null
-	is_locked: boolean
-	updated_at: string
-}
-
-export interface BankDetailsPayload {
-	account_holder_name: string
-	bank_name: string
-	branch_name?: string | null
-	account_number: string
-	confirm_account_number: string
-	ifsc_code: string
-	account_type: BankAccountType
-	upi_id?: string | null
-	pan_number?: string | null
-}
-
-export interface BankDetailsResponse {
-	success: boolean
-	message: string
-	data: BankDetails | null
-}
-
-export const getBankDetails = async (): Promise<BankDetailsResponse> => {
-	const res = await ApiService.get<BankDetailsResponse>(API_ENDPOINTS.DOCTOR_PROFILE.BANK_DETAILS)
-	return res.data
-}
-
-export const createBankDetails = async (payload: BankDetailsPayload): Promise<BankDetailsResponse> => {
-	const res = await ApiService.post<BankDetailsResponse>(API_ENDPOINTS.DOCTOR_PROFILE.BANK_DETAILS, payload)
-	return res.data
-}
-
-export const updateBankDetails = async (payload: BankDetailsPayload): Promise<BankDetailsResponse> => {
-	const res = await ApiService.patch<BankDetailsResponse>(API_ENDPOINTS.DOCTOR_PROFILE.BANK_DETAILS, payload)
-	return res.data
-}
-
-export const requestBankDetailsEditOtp = async (): Promise<{ success: boolean; message: string }> => {
-	const res = await ApiService.post<{ success: boolean; message: string }>(
-		API_ENDPOINTS.DOCTOR_PROFILE.BANK_DETAILS_REQUEST_OTP,
-		{}
-	)
-	return res.data
-}
-
-export const verifyBankDetailsEditOtp = async (otp: string): Promise<BankDetailsResponse> => {
-	const res = await ApiService.post<BankDetailsResponse>(API_ENDPOINTS.DOCTOR_PROFILE.BANK_DETAILS_VERIFY_OTP, {
-		otp,
-	})
 	return res.data
 }

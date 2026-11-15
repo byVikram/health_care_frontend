@@ -8,10 +8,10 @@ import { ROUTES } from '../../../constants/routes'
 import { getSpecialities } from '../../doctor/doctorService'
 import { SpecialityItem } from '../../../types/speciality'
 
-import dentistImage from '../../../assets/specialties/dentist.png'
-import gynoCologistImage from '../../../assets/specialties/gynocologist.png'
-import nutritionImage from '../../../assets/specialties/nutrition.png'
-import physiotherapistImage from '../../../assets/specialties/physiotherapist.png'
+import dentistImage from '../../../assets/specialties/dentist.webp'
+import gynoCologistImage from '../../../assets/specialties/gynocologist.webp'
+import nutritionImage from '../../../assets/specialties/nutrition.webp'
+import physiotherapistImage from '../../../assets/specialties/physiotherapist.webp'
 
 // Each dashboard card maps to the real specialty by its DB label -- this is
 // only used to pick the right illustration/description; the id used for

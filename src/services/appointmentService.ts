@@ -38,3 +38,69 @@ export const updateAppointmentsStatus = async (
 	})
 	return res.data
 }
+
+let statusIdsByLabel: Map<string, string> | null = null
+
+/** The id of an appointment status by its label ('cancelled', 'no_show', ...): the update-status call takes ids, not labels. */
+export const getAppointmentStatusId = async (label: string): Promise<string> => {
+	if (!statusIdsByLabel) {
+		const res = await ApiService.get<{ success: boolean; data: { id: string; label: string }[] }>(
+			API_ENDPOINTS.APPOINTMENTS.STATUSES
+		)
+		const loaded = new Map((res.data?.data ?? []).map((s) => [s.label.toLowerCase(), s.id]))
+		// An empty answer is not kept: it would make every later cancel or no-show fail until the page is reloaded.
+		if (loaded.size === 0) throw new Error('Could not load the appointment statuses')
+		statusIdsByLabel = loaded
+	}
+	const id = statusIdsByLabel.get(label.toLowerCase())
+	if (!id) throw new Error(`Unknown appointment status: ${label}`)
+	return id
+}
+
+/** Doctor-only check-in toggle: `true` checks the patient in, `false` undoes a check-in tapped by mistake. */
+export const setAppointmentCheckIn = async (
+	appointmentId: string,
+	checkedIn: boolean
+): Promise<AppointmentStatusUpdateResponse> => {
+	const res = await ApiService.post<AppointmentStatusUpdateResponse>(API_ENDPOINTS.APPOINTMENTS.CHECK_IN(appointmentId), {
+		checked_in: checkedIn,
+	})
+	return res.data
+}
+
+export interface BookingRestriction {
+	restricted: boolean
+	/** YYYY-MM-DD */
+	until: string | null
+	message: string | null
+}
+
+/**
+ * Whether online booking is paused for the signed-in patient (repeated valid no-shows). Patients only (the server answers any other
+ * role with a 403). The error toast is off: a failed lookup must never get in the way of booking, the server enforces the pause anyway.
+ */
+export const getBookingRestriction = async (): Promise<BookingRestriction> => {
+	const res = await ApiService.get<{ data: BookingRestriction }>(API_ENDPOINTS.APPOINTMENTS.BOOKING_RESTRICTION, {
+		suppressErrorToast: true,
+	})
+	return res.data.data
+}
+
+export const RESCHEDULE_REASON_MAX_LENGTH = 500
+
+/**
+ * Doctor "reschedule": the doctor does not pick a slot, they ask the PATIENT to choose a new time. Same endpoint as a patient's
+ * reschedule, but only `appointment_id` (+ an optional reason) is sent: the backend answers a doctor's date, time or hospital with
+ * a 400. The appointment becomes `reschedule_required` and the patient is emailed; asking again is a harmless no-op.
+ */
+export const askPatientToReschedule = async (
+	appointmentId: string,
+	reason?: string
+): Promise<AppointmentStatusUpdateResponse> => {
+	const trimmed = reason?.trim().slice(0, RESCHEDULE_REASON_MAX_LENGTH)
+	const res = await ApiService.post<AppointmentStatusUpdateResponse>(API_ENDPOINTS.APPOINTMENTS.RESCHEDULE, {
+		appointment_id: appointmentId,
+		...(trimmed ? { reason: trimmed } : {}),
+	})
+	return res.data
+}

@@ -19,7 +19,7 @@ export default function LoginPage() {
 		toast.success('Logged in successfully.')
 		// const role = localStorage.getItem('role')
 		// if (role === 'doctor')
-		navigate(ROUTES.PORTAL.HOME)
+		navigate(ROUTES.PORTAL.HOME, { replace: true })
 		// else navigate('/patient')
 	}
 

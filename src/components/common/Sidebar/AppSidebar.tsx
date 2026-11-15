@@ -49,7 +49,7 @@ export default function AppSidebar({
 	menuItems,
 	activeId,
 	onLogout,
-	footerText = '\u00A9 2025 Whisper ai. All rights reserved.',
+	footerText = `© ${new Date().getFullYear()} Whisper ai. All rights reserved.`,
 	width = 280,
 	variant = 'fixed',
 	topOffset = 0,

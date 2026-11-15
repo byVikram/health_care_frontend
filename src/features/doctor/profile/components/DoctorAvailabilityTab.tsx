@@ -3,15 +3,19 @@ import { Box, Typography } from '@mui/material'
 import { toast } from 'react-toastify'
 import AppButton from '../../../../components/common/Button/AppButton'
 import AppSelect from '../../../../components/common/Select/AppSelect'
+import AppSkeleton from '../../../../components/common/Skeleton/AppSkeleton'
+import AppSegmentedToggle, { type SegmentedToggleOption } from '../../../../components/common/Switch/AppSegmentedToggle'
 import DateSlotPicker, { SlotGroup, TimeSlot } from '../../../../components/common/DateSlotPicker/DateSlotPicker'
-import { DoctorHospital, DoctorAvailability } from '../../../../types/doctor-profile'
+import { DoctorHospital, DoctorAvailability, DoctorHospitalHours } from '../../../../types/doctor-profile'
 import { customCardStyle } from '../../../../styles/commonStyles'
 import {
 	getDoctorAvailability,
+	getDoctorHospitalHours,
 	createSlotOverrideBatch,
 	SlotOverridePayload,
 	SlotOverrideBatchPayload,
 } from '../../../../features/doctor/doctorService'
+import WorkingHoursScheduler from './WorkingHoursScheduler'
 
 interface DoctorAvailabilityTabProps {
 	hospitals: DoctorHospital[]
@@ -28,6 +32,14 @@ type ApiAvailabilityBlock = {
 }
 
 const EMPTY_MODE_SLOTS: Record<AvailabilityMode, SlotGroup[]> = { clinic: [], video: [] }
+
+type AvailabilityView = 'hours' | 'dates'
+
+// The two views of this tab. 'hours' is where a doctor lands.
+const AVAILABILITY_VIEWS: SegmentedToggleOption<AvailabilityView>[] = [
+	{ value: 'hours', label: 'Working Hours' },
+	{ value: 'dates', label: 'Select Follow Up Date' },
+]
 
 const normalizeAvailabilityByMode = (payload: unknown): Record<AvailabilityMode, SlotGroup[]> => {
 	const data = Array.isArray(payload)
@@ -53,7 +65,11 @@ const normalizeAvailabilityByMode = (payload: unknown): Record<AvailabilityMode,
 	return mapped
 }
 
-export default function DoctorAvailabilityTab({ hospitals, availability, onChange }: DoctorAvailabilityTabProps) {
+export default function DoctorAvailabilityTab({
+	hospitals,
+	availability,
+	onChange,
+}: DoctorAvailabilityTabProps) {
 	const [selectedHospitalId, setSelectedHospitalId] = useState<string>(
 		hospitals.find((h) => h.isPrimary)?.id ?? hospitals[0]?.id ?? ''
 	)
@@ -66,6 +82,11 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 	const [pendingSaveToast, setPendingSaveToast] = useState<string | null>(null)
 	const [selectedAppointmentType, setSelectedAppointmentType] = useState<'clinic' | 'video'>('clinic')
 	const [toggleRefreshing, setToggleRefreshing] = useState(false)
+	const [activeView, setActiveView] = useState<AvailabilityView>('hours')
+	// First API of this tab: the doctor's hospitals with the weekly working hours of each (GET /api/doctors/hospitals)
+	const [hospitalHours, setHospitalHours] = useState<DoctorHospitalHours[] | null>(null)
+	const [hoursLoading, setHoursLoading] = useState(true)
+	const [hoursFailed, setHoursFailed] = useState(false)
 
 	const formatDateForApi = (date: Date) => {
 		const year = date.getFullYear()
@@ -148,6 +169,40 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 	// useEffect(() => {
 	// 	fetchAvailability()
 	// }, [selectedHospitalId, selectedDate, selectedAppointmentType])
+
+	const selectedHospital = hospitals.find((h) => h.id === selectedHospitalId)
+
+	// Loaded once for all hospitals: the hours of the OTHER hospitals are what a block is checked against for a clash.
+	// The second API of this tab is the per-date slots (`fetchAvailability` above).
+	const loadHours = useCallback(async (quiet = false) => {
+		if (!quiet) setHoursLoading(true)
+		setHoursFailed(false)
+		try {
+			setHospitalHours(await getDoctorHospitalHours())
+		} catch (err) {
+			// the shared API client already shows the server's reason; a failed quiet refresh keeps what is on screen
+			console.error('Failed to load working hours:', err)
+			if (!quiet) {
+				setHospitalHours(null)
+				setHoursFailed(true)
+			}
+		} finally {
+			setHoursLoading(false)
+		}
+	}, [])
+
+	useEffect(() => {
+		void loadHours()
+	}, [loadHours])
+
+	const selectedHours = hospitalHours?.find((h) => h.hospitalId === selectedHospitalId)
+	const otherHours = (hospitalHours ?? []).filter((h) => h.hospitalId !== selectedHospitalId)
+
+	// The weekly hours were saved: the day's slots depend on them, and the other hospitals' clash checks use them.
+	const handleWorkingHoursSaved = () => {
+		void fetchAvailability()
+		void loadHours(true)
+	}
 
 	const dayKey = getDayKey(selectedDate)
 	const selectedDateKey = formatDateForApi(selectedDate)
@@ -330,78 +385,118 @@ export default function DoctorAvailabilityTab({ hospitals, availability, onChang
 				</Box>
 			)}
 
-			<Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: -4 }}>
-				<AppButton
-					label="Today"
-					variant="outlined"
-					size="small"
-					onClick={() => setSelectedDate(new Date())}
-					sx={{
-						borderRadius: '10px',
-						border: '1px solid #0c7c7c',
-						color: '#0c7c7c',
-						textTransform: 'none',
-						fontWeight: 500,
-						px: 1.5,
-						py: 0.4,
-						minWidth: 'auto',
-						mt: 0.5,
-						'&:hover': {
-							borderColor: '#0c7c7c',
-							backgroundColor: '#e0f2f1',
-						},
-					}}
-				/>
-			</Box>
+			{/* Two views: the weekly working hours (landing view) and the follow-up date / slots. Both stay mounted and are
+			    only hidden, so unsaved edits in one survive a switch to the other. */}
+			{selectedHospital && (
+				<>
+					<Box sx={{ mb: 3, display: 'flex' }}>
+						<AppSegmentedToggle
+							value={activeView}
+							onChange={setActiveView}
+							options={AVAILABILITY_VIEWS}
+							fullWidth={false}
+							equalWidth
+						/>
+					</Box>
 
-			<DateSlotPicker
-				multiSelect
-				selectedDate={selectedDate}
-				onDateChange={setSelectedDate}
-				selectedTime={selectedSlots}
-				onTimeChange={handleTimeChange}
-				dateLabel="Select follow up date"
-				hideNavigation
-				timeSlotColumns={5}
-				timeSlotVariant="availability"
-				disableBookedSlots={false}
-				availableSlots={slotGroupsForPicker.length > 0 ? slotGroupsForPicker : undefined}
-				loading={slotsLoading || toggleRefreshing}
-				slotVariant="card"
-				onSelectAll={() => {
-					stageSlotSelection(allSelectableSlots)
-					setPendingSaveToast('Selected All Successfully')
-				}}
-				onUnselectAll={() => {
-					stageSlotSelection([])
-					setPendingSaveToast('Unselected All Successfully')
-				}}
-				selectedAppointmentType={selectedAppointmentType}
-				onAppointmentTypeChange={(type) => {
-					setToggleRefreshing(true)
-					setSelectedAppointmentType(type)
-					setTimeout(() => setToggleRefreshing(false), 300)
-				}}
-			/>
-			<Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
-				<AppButton
-					variant="outlined"
-					fullWidth
-					label="Cancel"
-					onClick={() => {
-						onChange({ ...availability, [dayKey]: [] })
-						setPendingOverrides([])
-						setPendingSaveToast(null)
-					}}
-				/>
-				<AppButton
-					variant="contained"
-					fullWidth
-					label="Save Availability"
-					loading={saveLoading}
-					onClick={handleSaveAvailability}
-				/>
-			</Box>
+					{/* Weekly working hours of the chosen hospital */}
+					<Box sx={{ display: activeView === 'hours' ? 'block' : 'none' }}>
+						{hoursLoading ? (
+							<AppSkeleton height={360} />
+						) : selectedHours ? (
+							<WorkingHoursScheduler
+								key={selectedHours.hospitalId}
+								hospital={selectedHours}
+								others={otherHours}
+								onSaved={handleWorkingHoursSaved}
+							/>
+						) : (
+							<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+								<Typography variant="body2" sx={{ color: 'text.secondary' }}>
+									{hoursFailed ? 'The working hours could not be loaded.' : 'No working hours were found for this hospital.'}
+								</Typography>
+								<AppButton variant="outlined" size="small" label="Try again" onClick={() => void loadHours()} />
+							</Box>
+						)}
+					</Box>
+
+					{/* Follow-up date and per-date slots */}
+					<Box sx={{ display: activeView === 'dates' ? 'block' : 'none' }}>
+						<Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: -4 }}>
+							<AppButton
+								label="Today"
+								variant="outlined"
+								size="small"
+								onClick={() => setSelectedDate(new Date())}
+								sx={{
+									borderRadius: '10px',
+									border: '1px solid #0c7c7c',
+									color: '#0c7c7c',
+									textTransform: 'none',
+									fontWeight: 500,
+									px: 1.5,
+									py: 0.4,
+									minWidth: 'auto',
+									mt: 0.5,
+									'&:hover': {
+										borderColor: '#0c7c7c',
+										backgroundColor: '#e0f2f1',
+									},
+								}}
+							/>
+						</Box>
+
+						<DateSlotPicker
+							multiSelect
+							selectedDate={selectedDate}
+							onDateChange={setSelectedDate}
+							selectedTime={selectedSlots}
+							onTimeChange={handleTimeChange}
+							dateLabel="Select follow up date"
+							hideNavigation
+							timeSlotColumns={5}
+							timeSlotVariant="availability"
+							disableBookedSlots={false}
+							availableSlots={slotGroupsForPicker.length > 0 ? slotGroupsForPicker : undefined}
+							slotsLoading={slotsLoading || toggleRefreshing}
+							slotVariant="card"
+							onSelectAll={() => {
+								stageSlotSelection(allSelectableSlots)
+								setPendingSaveToast('Selected All Successfully')
+							}}
+							onUnselectAll={() => {
+								stageSlotSelection([])
+								setPendingSaveToast('Unselected All Successfully')
+							}}
+							selectedAppointmentType={selectedAppointmentType}
+							onAppointmentTypeChange={(type) => {
+								setToggleRefreshing(true)
+								setSelectedAppointmentType(type)
+								setTimeout(() => setToggleRefreshing(false), 300)
+							}}
+						/>
+						<Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
+							<AppButton
+								variant="outlined"
+								fullWidth
+								label="Cancel"
+								onClick={() => {
+									onChange({ ...availability, [dayKey]: [] })
+									setPendingOverrides([])
+									setPendingSaveToast(null)
+								}}
+							/>
+							<AppButton
+								variant="contained"
+								fullWidth
+								label="Save Availability"
+								loading={saveLoading}
+								onClick={handleSaveAvailability}
+							/>
+						</Box>
+					</Box>
+				</>
+			)}
 		</Box>
 	)
 }

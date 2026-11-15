@@ -35,19 +35,16 @@ export const API_ENDPOINTS = {
 		DELETE_ACCOUNT: '/api/doctors/profile',
 		ACHIEVEMENTS: '/api/doctors/achievements',
 		ACHIEVEMENT_BY_ID: (publicId: string) => `/api/doctors/achievements/${publicId}`,
-		BANK_DETAILS: '/api/doctors/bank-details',
-		BANK_DETAILS_REQUEST_OTP: '/api/doctors/bank-details/request-otp',
-		BANK_DETAILS_VERIFY_OTP: '/api/doctors/bank-details/verify-otp',
 	},
 	SPECIALITIES: {
 		LIST: '/api/specialities',
 		SYMPTOMS: '/api/specialities/symptoms',
 	},
 	AREA_OF_EXPERTISE: {
-		LIST: '/api/area-of-expertise',
+		LIST: '/api/doctors/area-of-expertise',
 	},
 	TREATMENT_OFFERINGS: {
-		LIST: '/api/treatments-offering',
+		LIST: '/api/doctors/treatments-offering',
 	},
 	USERS: {
 		GET: '/api/users',
@@ -58,6 +55,9 @@ export const API_ENDPOINTS = {
 	PATIENT: {
 		ME: '/api/patients/me/details',
 		UPDATE: '/api/patients/me/details',
+		FAMILY_MEMBERS: '/api/patients/family-members',
+		FAMILY_MEMBER_BY_ID: (id: string) => `/api/patients/family-members/${id}`,
+		FAMILY_MEMBER_IDENTITY_DOCUMENT: (id: string) => `/api/patients/family-members/${id}/identity-document`,
 		GET_BY_ID: (id: string) => `/api/patients/${id}/details`,
 		ADDRESSES: '/api/patients/me/addresses',
 		ADDRESS_UPDATE: (id: string) => `/api/patients/me/addresses/${id}`,
@@ -89,9 +89,12 @@ export const API_ENDPOINTS = {
 		CREATE: '/api/appointments',
 		UPDATE: '/api/appointments/update-status',
 		GET_BY_ID: (id: string | number) => `/api/appointments/${id}`,
+		CHECK_IN: (id: string) => `/api/appointments/${id}/check-in`,
 		PRE_INTAKE: (id: string) => `/api/appointments/${id}/pre-intake`,
 		RESCHEDULE: '/api/appointments/reschedule',
 		ACTIVE_CONSENT: '/api/appointments/active/consent',
+		/** GET: is online booking paused for the signed-in patient (repeated missed appointments), and until when. */
+		BOOKING_RESTRICTION: '/api/appointments/me/booking-restriction',
 		STATUSES: '/api/appointments/statuses',
 	},
 	PHARMACY: {
@@ -110,6 +113,12 @@ export const API_ENDPOINTS = {
 	TREATMENTS: {
 		GET_BY_APPOINTMENT: (appointmentId: string) => `/api/treatments/appointment/${appointmentId}`,
 		PATIENT_HISTORY: (patientPublicId: string) => `/api/treatments/patient/${patientPublicId}/history`,
+		/** POST: creates the visit's treatment record (the follow-up date can be saved with it). PATCH on GET_BY_APPOINTMENT updates it. */
+		CREATE: '/api/treatments',
+		/** POST (multipart): the doctor's consultation notes (typed text and/or a scribbled image). Final once submitted (409 on any later edit). */
+		SUBMIT_NOTES: (appointmentId: string) => `/api/treatments/appointment/${appointmentId}/notes`,
+		/** GET: a fresh signed link (about 5 minutes) to the prescription image the server drew from the submitted notes; 404 until submitted. */
+		PRESCRIPTION: (appointmentId: string) => `/api/treatments/appointment/${appointmentId}/prescription`,
 	},
 	RADIOLOGY_PROFILE: {
 		DETAILS: '/api/radiology/profile',
@@ -175,6 +184,8 @@ export const API_ENDPOINTS = {
 		PENDING_COMMENTS: '/api/admin/comments/pending',
 		APPROVE_COMMENT: (commentId: string) => `/api/admin/comments/${commentId}/approve`,
 		MODERATE_COMMENT: (commentId: string) => `/api/admin/comments/${commentId}/moderate`,
+		/** POST (multipart `kind` + `file`): a picture for a blog, an ad or an event, stored in the public bucket. */
+		CONTENT_IMAGES: '/api/admin/content-images',
 		BLOGS: '/api/admin/blogs',
 		BLOG_DETAIL: (blogId: string) => `/api/admin/blogs/${blogId}`,
 		ADS: '/api/admin/ads',

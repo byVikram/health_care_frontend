@@ -25,7 +25,7 @@ import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 // import SectionCard from '../../../components/common/Card/SectionCard'
 import { createAdminBlog } from '../adminService'
 import { ROUTES } from '../../../constants/routes'
-import AppInput from '../../../components/common/Input/AppInput'
+import ContentImageField from '../../../components/admin/ContentImageField'
 import AppButton from '../../../components/common/Button/AppButton'
 import AppSelect from '../../../components/common/Select/AppSelect'
 
@@ -247,38 +247,14 @@ export default function AdminBlogCreatePage() {
 
 									<Divider />
 
-									{/* Banner Image URL */}
-									<Stack spacing={1.5}>
-										<AppInput
-											label="Banner Image URL"
-											placeholder="https://images.unsplash.com/..."
-											value={imageUrl}
-											onChange={(e) => setImageUrl(e.target.value)}
-											fullWidth
-										/>
-										{imageUrl.trim() && (
-											<Box>
-												<Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
-													Banner Preview
-												</Typography>
-												<Box
-													component="img"
-													src={imageUrl}
-													alt="Banner Preview"
-													onError={(e) => {
-														;(e.target as HTMLElement).style.display = 'none'
-													}}
-													sx={{
-														width: '100%',
-														height: 120,
-														objectFit: 'cover',
-														borderRadius: 2,
-														border: '1px solid #e2e8f0',
-													}}
-												/>
-											</Box>
-										)}
-									</Stack>
+									{/* Banner image (uploaded to S3) */}
+									<ContentImageField
+										label="Banner Image"
+										kind="blogs"
+										value={imageUrl}
+										onChange={setImageUrl}
+										disabled={submitting}
+									/>
 								</Stack>
 							</CardContent>
 						</Card>

@@ -61,6 +61,8 @@ export interface CreateUserRequest {
 	email: string
 	name: string
 	role_id?: string
+	/** Required for the ancillary role: the kind of provider (see roleDisplay.ts). */
+	specialty_id?: string
 	password?: string
 }
 

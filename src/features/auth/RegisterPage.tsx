@@ -7,6 +7,7 @@ import OtpVerified from './components/OtpVerified'
 import RoleSelectorPage from './onboarding/RoleSelectorPage'
 import OnBoardingPage from './onboarding/OnBoardingPage'
 import { UserRole, onboardingData } from '../../data/onboardingData'
+import { isProviderRole } from './roleDisplay'
 
 function labelToUserRole(label: string): UserRole {
 	const map: Record<string, UserRole> = {
@@ -24,6 +25,8 @@ export default function RegisterPage() {
 	const [step, setStep] = useState<Step>('roleSelect')
 	const [selectedRoleId, setSelectedRoleId] = useState<string>('')
 	const [selectedRoleLabel, setSelectedRoleLabel] = useState<string>('')
+	// The kind of healthcare provider (Nurse, ...): the backend needs it to register one.
+	const [selectedSpecialty, setSelectedSpecialty] = useState<string>('')
 	const [contactNumber, setContactNumber] = useState('')
 
 	// Lifted form state — persists when user clicks pencil icon to go back
@@ -31,11 +34,13 @@ export default function RegisterPage() {
 	const [savedEmail, setSavedEmail] = useState('')
 	const [savedMobile, setSavedMobile] = useState('')
 
-	const handleRoleSelect = (roleId: string, label: string) => {
+	const handleRoleSelect = (roleId: string, label: string, specialty?: string) => {
 		setSelectedRoleId(roleId)
 		setSelectedRoleLabel(label)
+		setSelectedSpecialty(specialty ?? '')
 		const userRole = labelToUserRole(label)
-		const hasSlides = onboardingData[userRole]?.screens?.length > 0
+		// There are no intro slides for a healthcare provider (labelToUserRole would show the patient's).
+		const hasSlides = !isProviderRole(label) && onboardingData[userRole]?.screens?.length > 0
 		setStep(hasSlides ? 'onboarding' : 'register')
 	}
 
@@ -72,6 +77,7 @@ export default function RegisterPage() {
 				<RegisterForm
 					onSubmit={handleRegisterSubmit}
 					roleId={selectedRoleId}
+					specialty={selectedSpecialty || undefined}
 					initialName={savedName}
 					initialEmail={savedEmail}
 					initialMobile={savedMobile}

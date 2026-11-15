@@ -17,3 +17,6 @@ export const ADMIN_ROLES = [
 	USER_ROLES.COMPLIANCE_ADMIN,
 	USER_ROLES.ADMIN,
 ]
+
+/** How many days ahead (today included) a patient can pick a doctor's slot: the same on the web and in the mobile app. */
+export const BOOKING_WINDOW_DAYS = 14

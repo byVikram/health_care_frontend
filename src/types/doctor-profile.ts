@@ -13,7 +13,6 @@ export interface DoctorProfilePersonal {
 	instagram: string
 	facebook: string
 	twitter: string
-	experience: string
 	languages: string[]
 }
 
@@ -32,6 +31,8 @@ export interface DoctorDegree {
 export interface DoctorProfileProfessional {
 	specialization_id: string
 	specialization_label: string
+	/** Years of experience as a string for the select ('' until the doctor sets it). */
+	experience: string
 	degree?: string
 	college?: string
 	yearOfPassing?: string
@@ -49,11 +50,8 @@ export type AppointmentType = 'clinic' | 'video'
 
 export type TimeSlot = { start: string; end: string }
 
-export type SectionSlots = {
-	morning: TimeSlot[]
-	afternoon: TimeSlot[]
-	evening: TimeSlot[]
-}
+/** One day's blocks of working hours, keyed by session ('morning' | 'afternoon' | 'evening': the keys the server sends). */
+export type SectionSlots = Record<string, TimeSlot[]>
 
 export type WorkingHoursState = {
 	sections: SectionSlots
@@ -72,8 +70,18 @@ export interface DoctorHospital {
 	free_followup_validity_days?: number
 	reschedule_allowed_until_hours?: number
 	allow_pay_later?: boolean
-	availability?: Record<number, Record<AppointmentType, WorkingHoursState>>
 }
+
+/** A hospital's weekly working hours: day 0 (Sunday) to 6 -> clinic | video -> the day's blocks and slot length. */
+export type WeeklyAvailability = Record<number, Record<AppointmentType, WorkingHoursState>>
+
+/** One of the doctor's hospitals with its weekly working hours (from GET /api/doctors/hospitals). */
+export interface DoctorHospitalHours {
+	hospitalId: string
+	name: string
+	availability: WeeklyAvailability
+}
+
 
 export interface DoctorAvailability {
 	monday: string[]

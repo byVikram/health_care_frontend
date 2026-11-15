@@ -11,6 +11,7 @@ import { getAppointments, getDoctorAvailability, getDoctorById, getAvailabilityM
 import { Appointment } from '../../types/appointment'
 // import drImage from '../../assets/Services/doctors-service.png'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
+import { toLocalDateString } from '../../utils/Utils'
 import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 import { LookupHospital } from '../../hooks/useAuth'
 import ApiService from '../../services/apiService'
@@ -22,6 +23,7 @@ import AppInput from '../../components/common/Input/AppInput'
 import { customScrollbar } from '../../styles/commonStyles'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import { buildS3Url } from '../../utils/s3'
+import StatusReasonNote from '../appointments/components/StatusReasonNote'
 
 
 const STATUS_STYLES: Record<string, { color: string; bgColor: string; text: string }> = {
@@ -69,6 +71,7 @@ export function PatientAppointments() {
 	const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false)
 	const [rescheduleHospitals, setRescheduleHospitals] = useState<LookupHospital[]>([])
 	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
+	const [rescheduleReason, setRescheduleReason] = useState('')
 
 	const [appointmentType, setAppointmentType] = useState<'clinic' | 'video'>('clinic')
 
@@ -133,7 +136,7 @@ export function PatientAppointments() {
 
 		if (!doctorId || !hospitalId) return
 
-		const dateStr = rescheduleDate.toISOString().split('T')[0]
+		const dateStr = toLocalDateString(rescheduleDate)
 
 		const fetchSlots = async () => {
 			setRescheduleSlotsLoading(true)
@@ -174,6 +177,7 @@ export function PatientAppointments() {
 		setRescheduleTime('')
 		setRescheduleSlots([])
 		setRescheduleHospitals([])
+		setRescheduleReason('')
 		setRescheduleOpen(true)
 	}
 
@@ -185,7 +189,7 @@ export function PatientAppointments() {
 
 		setRescheduleSubmitting(true)
 		try {
-			const dateStr = rescheduleDate.toISOString().split('T')[0]
+			const dateStr = toLocalDateString(rescheduleDate)
 			const res = await ApiService.post<{ success: boolean; message: string }>(
 				`${API_ENDPOINTS.APPOINTMENTS.RESCHEDULE}`,
 				{
@@ -194,7 +198,7 @@ export function PatientAppointments() {
 					start_time: rescheduleTime,
 					end_time: null,
 					hospital_id: rescheduleHospitalId || rescheduleAppt.hospital?.id,
-					reason: 'Patient requested reschedule',
+					reason: rescheduleReason.trim() || undefined,
 				}
 			)
 
@@ -428,6 +432,7 @@ export function PatientAppointments() {
 											</Box>
 										</Box>
 
+										<StatusReasonNote status={status} title={appt.status_reason_title} reason={appt.status_reason} compact />
 										<Box
 											sx={{
 												display: 'flex',
@@ -595,6 +600,8 @@ export function PatientAppointments() {
 				setRescheduleHospitalId={setRescheduleHospitalId}
 				appointmentType={appointmentType}
 				setAppointmentType={setAppointmentType}
+				reason={rescheduleReason}
+				onReasonChange={setRescheduleReason}
 			/>
 			<AppModal
 				open={cancelOpen}

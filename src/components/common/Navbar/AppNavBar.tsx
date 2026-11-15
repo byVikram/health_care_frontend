@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
 	AppBar,
 	Toolbar,
@@ -20,6 +20,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
 import AppButton from '../Button/AppButton'
+import LocationPickerModal from './LocationPickerModal'
 import { useAuth } from '../../../hooks/useAuth'
 import NotificationPanel from '../../../features/referrals/NotificationPanel'
 
@@ -30,14 +31,6 @@ const navItems = [
 	{ label: 'Community', href: '/communities' },
 	{ label: 'Blogs', href: '/blogs' },
 	{ label: 'Contact', href: '/#contact' },
-]
-
-const LOCATIONS = [
-	{ label: 'Bengaluru', address: 'KR Market' },
-	{ label: 'Bengaluru', address: 'Koramangala' },
-	{ label: 'Bengaluru', address: 'Whitefield' },
-	{ label: 'Bengaluru', address: 'Jayanagar' },
-	{ label: 'Bengaluru', address: 'Indiranagar' },
 ]
 
 const hashSectionIds = navItems.filter((item) => item.href.startsWith('/#')).map((item) => item.href.replace('/#', ''))
@@ -55,12 +48,10 @@ const AppNavBar: React.FC<AppNavBarProps> = ({ onProfileClick, avatarSrc }) => {
 
 	const [mobileOpen, setMobileOpen] = useState(false)
 	const [locationOpen, setLocationOpen] = useState(false)
-	const [selectedIdx, setSelectedIdx] = useState(0)
+	// "Area, City" once an area is confirmed, a bare city name or "Current location".
+	const [pickedLocation, setPickedLocation] = useState('Bengaluru')
 	// Only used while scrolling on the home page
 	const [scrollActiveHref, setScrollActiveHref] = useState<string>('/#home')
-	const locationRef = useRef<HTMLDivElement>(null)
-
-	const selectedLocation = LOCATIONS[selectedIdx]
 
 	const { accessToken } = useAuth()
 	const isAuthenticated = Boolean(accessToken)
@@ -84,17 +75,6 @@ const AppNavBar: React.FC<AppNavBarProps> = ({ onProfileClick, avatarSrc }) => {
 		// On home page with no hash, use scroll tracking result
 		return scrollActiveHref
 	}, [location.pathname, location.hash, scrollActiveHref])
-
-	// Close location dropdown when clicking outside
-	useEffect(() => {
-		const handleClickOutside = (e: MouseEvent) => {
-			if (locationRef.current && !locationRef.current.contains(e.target as Node)) {
-				setLocationOpen(false)
-			}
-		}
-		document.addEventListener('mousedown', handleClickOutside)
-		return () => document.removeEventListener('mousedown', handleClickOutside)
-	}, [])
 
 	// Scroll tracking — only runs on home page
 	useEffect(() => {
@@ -206,182 +186,104 @@ const AppNavBar: React.FC<AppNavBarProps> = ({ onProfileClick, avatarSrc }) => {
 					{/* Right */}
 					{isMdUp ? (
 						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-							{/* Location pill with custom dropdown */}
-							<Box ref={locationRef} sx={{ position: 'relative' }}>
+							{/* Location pill: opens the city picker */}
+							<Box
+								onClick={() => setLocationOpen(true)}
+								sx={{
+									display: 'flex',
+									alignItems: 'center',
+									gap: 0.5,
+									borderRadius: '10px',
+									px: 1.5,
+									py: 0.5,
+									cursor: 'pointer',
+									bgcolor: locationOpen ? 'rgba(255,255,255,0.1)' : 'transparent',
+									'&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
+									transition: 'background 0.15s',
+									userSelect: 'none',
+								}}
+							>
+								<LocationOnIcon sx={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', flexShrink: 0 }} />
+								<Typography
+									variant="body2"
+									sx={{
+										fontSize: '13px',
+										fontWeight: 500,
+										color: '#fff',
+										whiteSpace: 'nowrap',
+										maxWidth: 200,
+										overflow: 'hidden',
+										textOverflow: 'ellipsis',
+									}}
+								>
+									{pickedLocation}
+								</Typography>
+								<KeyboardArrowDownIcon sx={{ fontSize: 15, color: '#fff' }} />
+							</Box>
+
+							<LocationPickerModal
+								open={locationOpen}
+								selected={pickedLocation}
+								onClose={() => setLocationOpen(false)}
+								onSelect={setPickedLocation}
+							/>
+
+							{/* Notification bell for authenticated users */}
+							{accessToken && <NotificationPanel iconColor="#fff" />}
+
+							{/* Avatar for authenticated patient — triggers profile dropdown */}
+							{accessToken && onProfileClick && (
 								<Box
-									onClick={() => setLocationOpen((prev) => !prev)}
 									sx={{
 										display: 'flex',
 										alignItems: 'center',
 										gap: 0.5,
-										// border: '1px solid rgba(255,255,255,0.5)',
-										borderRadius: '10px',
-										px: 1.5,
-										py: 0.5,
 										cursor: 'pointer',
-										bgcolor: locationOpen ? 'rgba(255,255,255,0.1)' : 'transparent',
+										borderRadius: '20px',
+										px: 0.5,
+										py: 0.25,
 										'&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
 										transition: 'background 0.15s',
-										userSelect: 'none',
 									}}
+									onClick={onProfileClick}
 								>
-									<LocationOnIcon
-										sx={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', flexShrink: 0 }}
+									<Avatar
+										src={avatarSrc}
+										sx={{ width: 36, height: 36, border: '2px solid rgba(255,255,255,0.5)' }}
 									/>
-									<Typography
-										variant="body2"
-										sx={{ fontSize: '13px', fontWeight: 500, color: '#fff', whiteSpace: 'nowrap' }}
-									>
-										{selectedLocation.label}, {selectedLocation.address}
-									</Typography>
-									<KeyboardArrowDownIcon
-										sx={{
-											fontSize: 15,
-											color: '#fff',
-											transition: 'transform 0.2s',
-											transform: locationOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-										}}
-									/>
+									<KeyboardArrowDownIcon sx={{ color: 'rgba(255,255,255,0.85)', fontSize: 18 }} />
 								</Box>
+							)}
 
-								{/* Dropdown */}
-								{locationOpen && (
-									<Box
+							{!accessToken && (
+								<>
+									<Box sx={{ width: '1px', height: '22px', bgcolor: 'rgba(255,255,255,0.3)' }} />
+
+									<Button
+										onClick={() => navigate('/login')}
+										variant="text"
 										sx={{
-											position: 'absolute',
-											top: 'calc(100% + 8px)',
-											right: 0,
-											minWidth: 240,
-											bgcolor: '#fff',
-											borderRadius: '12px',
-											boxShadow: '0px 8px 32px rgba(0,0,0,0.15)',
-											zIndex: 9999,
-											overflow: 'hidden',
-											py: 0.75,
-											animation: 'dropFadeIn 0.15s ease',
-											'@keyframes dropFadeIn': {
-												from: { opacity: 0, transform: 'translateY(-6px)' },
-												to: { opacity: 1, transform: 'translateY(0)' },
-											},
+											color: 'rgba(255,255,255,0.88)',
+											textTransform: 'none',
+											fontWeight: 400,
+											fontSize: '14.5px',
+											'&:hover': { color: '#fff', bgcolor: 'transparent' },
+											'&:focus': { outline: 'none' },
 										}}
 									>
-										{LOCATIONS.map((loc, idx) => {
-											const isSelected = selectedIdx === idx
-											return (
-												<Box
-													key={idx}
-													onClick={() => {
-														setSelectedIdx(idx)
-														setLocationOpen(false)
-													}}
-													sx={{
-														display: 'flex',
-														alignItems: 'center',
-														justifyContent: 'space-between',
-														px: 2.5,
-														py: 1.1,
-														cursor: 'pointer',
-														'&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
-														transition: 'background 0.1s',
-													}}
-												>
-													<Box>
-														<Typography
-															sx={{
-																fontSize: '14px',
-																fontWeight: isSelected ? 600 : 400,
-																color: '#1a1a1a',
-																lineHeight: 1.35,
-															}}
-														>
-															{loc.label}
-														</Typography>
-														<Typography
-															sx={{
-																fontSize: '12px',
-																color: '#888',
-																lineHeight: 1.3,
-																mt: 0.15,
-															}}
-														>
-															{loc.address}
-														</Typography>
-													</Box>
-													{isSelected && (
-														<Box
-															sx={{
-																width: 10,
-																height: 10,
-																borderRadius: '50%',
-																bgcolor: '#13C0C5',
-																flexShrink: 0,
-																ml: 2,
-															}}
-														/>
-													)}
-												</Box>
-											)
-										})}
-									</Box>
-								)}
-							</Box>
+										Log In
+									</Button>
 
-					{/* Notification bell for authenticated users */}
-					{accessToken && <NotificationPanel iconColor="#fff" />}
+									<Box sx={{ width: '1px', height: '22px', bgcolor: 'rgba(255,255,255,0.3)' }} />
 
-					{/* Avatar for authenticated patient — triggers profile dropdown */}
-					{accessToken && onProfileClick && (
-						<Box
-							sx={{
-								display: 'flex',
-								alignItems: 'center',
-								gap: 0.5,
-								cursor: 'pointer',
-								borderRadius: '20px',
-								px: 0.5,
-								py: 0.25,
-								'&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-								transition: 'background 0.15s',
-							}}
-							onClick={onProfileClick}
-						>
-							<Avatar
-								src={avatarSrc}
-								sx={{ width: 36, height: 36, border: '2px solid rgba(255,255,255,0.5)' }}
-							/>
-							<KeyboardArrowDownIcon sx={{ color: 'rgba(255,255,255,0.85)', fontSize: 18 }} />
-						</Box>
-					)}
-
-					{!accessToken && (
-						<>
-								<Box sx={{ width: '1px', height: '22px', bgcolor: 'rgba(255,255,255,0.3)' }} />
-	
-								<Button
-									onClick={() => navigate('/login')}
-									variant="text"
-									sx={{
-										color: 'rgba(255,255,255,0.88)',
-										textTransform: 'none',
-										fontWeight: 400,
-										fontSize: '14.5px',
-										'&:hover': { color: '#fff', bgcolor: 'transparent' },
-										'&:focus': { outline: 'none' },
-									}}
-								>
-									Log In
-								</Button>
-	
-								<Box sx={{ width: '1px', height: '22px', bgcolor: 'rgba(255,255,255,0.3)' }} />
-	
-								<AppButton
-									variant="text"
-									label="Sign up"
-									onClick={() => navigate('/register')}
-									borderRadius="20px"
-								/>
-						</>
-					)}
+									<AppButton
+										variant="text"
+										label="Sign up"
+										onClick={() => navigate('/register')}
+										borderRadius="20px"
+									/>
+								</>
+							)}
 						</Box>
 					) : (
 						<IconButton onClick={handleDrawerToggle} sx={{ color: '#fff' }} aria-label="Open menu">
@@ -425,7 +327,7 @@ const AppNavBar: React.FC<AppNavBarProps> = ({ onProfileClick, avatarSrc }) => {
 						</ListItemButton>
 					))}
 				</List>
-			{!accessToken && (
+				{!accessToken && (
 					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, mb: 2 }}>
 						<Button
 							onClick={() => {
@@ -447,7 +349,7 @@ const AppNavBar: React.FC<AppNavBarProps> = ({ onProfileClick, avatarSrc }) => {
 							borderRadius="20px"
 						/>
 					</Box>
-			)}
+				)}
 			</Drawer>
 		</AppBar>
 	)

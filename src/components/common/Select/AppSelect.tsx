@@ -1,6 +1,7 @@
 // src/components/common/Select/AppSelect.tsx
 import React, { forwardRef, ReactNode } from 'react'
 import { TextField, MenuItem, InputAdornment, Typography, SxProps, Theme, TextFieldProps, Chip, Box, Checkbox } from '@mui/material'
+import { customScrollbar } from '../../../styles/commonStyles'
 
 interface SelectOption {
 	value: string | number
@@ -135,7 +136,7 @@ const AppSelect = forwardRef<HTMLDivElement, AppSelectProps>((props, ref) => {
 				},
 				MenuProps: {
 					PaperProps: {
-						sx: { mt: 1, boxShadow: '0 6px 20px rgba(0,0,0,0.12)' },
+						sx: { mt: 1, boxShadow: '0 6px 20px rgba(0,0,0,0.12)', ...customScrollbar },
 					},
 				},
 			}}

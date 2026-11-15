@@ -7,7 +7,6 @@ import PersonOutlineIcon from '@mui/icons-material/PersonOutline'
 import WorkOutlineIcon from '@mui/icons-material/WorkOutline'
 import LocalHospitalOutlinedIcon from '@mui/icons-material/LocalHospitalOutlined'
 import EventAvailableOutlinedIcon from '@mui/icons-material/EventAvailableOutlined'
-import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined'
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
 import MedicalServicesOutlinedIcon from '@mui/icons-material/MedicalServicesOutlined'
 import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined'
@@ -17,7 +16,6 @@ import DoctorPersonalTab from './components/DoctorPersonalTab'
 import DoctorProfessionalTab from './components/DoctorProfessionalTab'
 import DoctorHospitalsTab from './components/DoctorHospitalsTab'
 import DoctorAvailabilityTab from './components/DoctorAvailabilityTab'
-import DoctorBankDetailsTab from './components/DoctorBankDetailsTab'
 import DoctorSettingTab from './components/DoctorSettingTab'
 import DoctorFavouritesTab from './components/DoctorFavouritesTab'
 import DoctorAdditionalDetailTab from './components/DoctorAdditionalDetailTab'
@@ -32,15 +30,13 @@ import {
 import { customCardStyle } from '../../../styles/commonStyles'
 import { getDoctorProfile, mapDoctorProfileApi, updateAdditionalDetails } from '../doctorService'
 import { useAuth, setAuth } from '../../../hooks/useAuth'
-import ApiService from '../../../services/apiService'
-import { API_ENDPOINTS } from '../../../constants/apiUrls'
+import { useAvatarChange } from '../../../hooks/useAvatarChange'
 
 const DOCTOR_NAV_ITEMS = [
 	{ id: 'personal', label: 'Personal details', icon: <PersonOutlineIcon fontSize="small" /> },
 	{ id: 'professional', label: 'Professional details', icon: <WorkOutlineIcon fontSize="small" /> },
 	{ id: 'hospitals', label: 'My hospitals', icon: <LocalHospitalOutlinedIcon fontSize="small" /> },
 	{ id: 'availability', label: 'Availability', icon: <EventAvailableOutlinedIcon fontSize="small" /> },
-	{ id: 'bank-details', label: 'Bank Details', icon: <AccountBalanceOutlinedIcon fontSize="small" /> },
 	{ id: 'additional', label: 'Additional Details', icon: <MedicalServicesOutlinedIcon fontSize="small" /> },
 	{ id: 'achievements', label: 'Achievements', icon: <EmojiEventsOutlinedIcon fontSize="small" /> },
 	{ id: 'favourites', label: 'Favourite doctors', icon: <FavoriteBorderIcon fontSize="small" /> },
@@ -122,30 +118,12 @@ export default function DoctorProfilePage() {
 	const handleProfessionalChange = (updated: Partial<DoctorProfileProfessional>) =>
 		setDoctor((prev) => (prev ? { ...prev, professional: { ...prev.professional, ...updated } } : prev))
 
-	const handleAvatarChange = async (file: File) => {
-		const previousAvatar = doctor?.personal.avatar ?? ''
-		const localPreviewUrl = URL.createObjectURL(file)
-		setDoctor((prev) => (prev ? { ...prev, personal: { ...prev.personal, avatar: localPreviewUrl } } : prev))
-
-		try {
-			const formData = new FormData()
-			formData.append('file', file)
-			// The common photo API: the server stores the file and links it to this doctor's profile.
-			const res = await ApiService.put<{ data?: { avatar_url?: string | null; avatar_s3_key?: string | null } }>(
-				API_ENDPOINTS.UPLOADS.AVATAR,
-				formData
-			)
-			const newAvatarUrl = res.data.data?.avatar_url || res.data.data?.avatar_s3_key || ''
-
-			setDoctor((prev) => (prev ? { ...prev, personal: { ...prev.personal, avatar: newAvatarUrl } } : prev))
-
-			setAuth(role!, { ...user!, avatar: newAvatarUrl }, accessToken!, refreshToken!, lookupData)
-		} catch (err) {
-			console.error('Avatar upload failed', err)
-			// not saved: go back to the photo that is actually on the profile
-			setDoctor((prev) => (prev ? { ...prev, personal: { ...prev.personal, avatar: previousAvatar } } : prev))
-		}
-	}
+	// the photo is compulsory for doctors: it can be replaced but not removed, so no `remove` is wired
+	const { change: handleAvatarChange, busy: avatarBusy } = useAvatarChange({
+		current: doctor?.personal.avatar ?? '',
+		onChanged: (avatar) => setDoctor((prev) => (prev ? { ...prev, personal: { ...prev.personal, avatar } } : prev)),
+		onSaved: (avatar) => setAuth(role!, { ...user!, avatar }, accessToken!, refreshToken!, lookupData),
+	})
 
 	const handleHospitalsChange = (hospitals: DoctorProfile['hospitals']) =>
 		setDoctor((prev) => (prev ? { ...prev, hospitals } : prev))
@@ -217,8 +195,6 @@ export default function DoctorProfilePage() {
 						onChange={handleAvailabilityChange}
 					/>
 				)
-			case 'bank-details':
-				return <DoctorBankDetailsTab />
 			case 'additional':
 				return (
 					<DoctorAdditionalDetailTab
@@ -259,6 +235,8 @@ export default function DoctorProfilePage() {
 							activeTab={activeTab}
 							onTabChange={setActiveTab}
 							onAvatarChange={handleAvatarChange}
+							avatarBusy={avatarBusy}
+							avatarRequired
 						/>
 					</Grid>
 					<Grid size={{ xs: 12, md: 9 }}>{renderTab()}</Grid>

@@ -14,7 +14,8 @@
 // created during the consultation.
 
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { useGoBack } from '../../hooks/useGoBack'
 import {
   Box,
   Typography,
@@ -47,6 +48,7 @@ import { ConsultationDoctor } from '../../types/consultation'
 import PrescriptionView from '../consultation/components/PrescriptionView'
 import { buildS3Url } from '../../utils/s3'
 import { customScrollbar } from '../../styles/commonStyles'
+import StatusReasonNote from '../appointments/components/StatusReasonNote'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -199,7 +201,7 @@ function InfoRow({
 
 export default function PatientAppointmentDetailPage() {
   const { appointmentId } = useParams<{ appointmentId: string }>()
-  const navigate = useNavigate()
+  const goBack = useGoBack()
 
   const [appt, setAppt] = useState<Appointment | null>(null)
   const [treatment, setTreatment] = useState<Treatment | null>(null)
@@ -298,7 +300,7 @@ export default function PatientAppointmentDetailPage() {
           fontSize={13}
           color="primary.main"
           sx={{ cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
-          onClick={() => navigate(-1)}
+          onClick={() => goBack()}
         >
           ← Go Back
         </Typography>
@@ -335,7 +337,7 @@ export default function PatientAppointmentDetailPage() {
       >
         <IconButton
           size="small"
-          onClick={() => navigate(-1)}
+          onClick={() => goBack()}
           sx={{ color: 'text.secondary', '&:focus': { outline: 'none' } }}
         >
           <ArrowBackIosNewIcon sx={{ fontSize: 15 }} />
@@ -529,6 +531,8 @@ export default function PatientAppointmentDetailPage() {
                     />
                   }
                 />
+
+                <StatusReasonNote status={rawStatus} title={appt.status_reason_title} reason={appt.status_reason} />
 
                 {appt.fees != null && (
                   <InfoRow

@@ -8,6 +8,9 @@ import paytmImg from '../../assets/payment/paytm.png'
 import creditCardImg from '../../assets/payment/credit-card.png'
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { toast } from 'react-toastify'
+import { ROUTES } from '../../constants/routes'
+import { useGoBack } from '../../hooks/useGoBack'
 import {
 	Box,
 	Container,
@@ -60,6 +63,8 @@ interface PaymentState {
 	/** Present only when booking from a referral */
 	referralId?: string
 	consentVersionId: string
+	/** Public id of the person the appointment is for (the signed-in patient or one of their family members) */
+	patientId?: string
 }
 
 interface PaymentOption {
@@ -105,6 +110,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
 export default function PaymentPage() {
 	const location = useLocation()
 	const navigate = useNavigate()
+	const goBack = useGoBack()
 	const state = (location.state as PaymentState) ?? ({} as PaymentState)
 
 	const {
@@ -125,6 +131,7 @@ export default function PaymentPage() {
 		allowPayLater = true,
 		referralId,
 		consentVersionId,
+		patientId,
 	} = state
 
 	// Transportation option states (synced from widget plugin)
@@ -156,7 +163,32 @@ export default function PaymentPage() {
 	const [severity, setSeverity] = useState<'mild' | 'moderate' | 'severe' | ''>('')
 	const [appointmentId, setAppointmentId] = useState('')
 	const [errorMsg, setErrorMsg] = useState<string | null>(null)
-	const patientId = localStorage.getItem('patient_id')
+	// Why the booking cannot go on as it is: the chosen time was taken (or blocked) by the time the patient confirmed, or the booking
+	// terms were updated since they accepted them. Either way the way forward is the doctor page: a fresh list of slots, and the
+	// terms are fetched again when the patient presses Book.
+	const [restartReason, setRestartReason] = useState<'slot' | 'consent' | null>(null)
+	// the symptoms step has its own message: it is shown inside its dialog, which covers the one next to the button
+	const [preIntakeError, setPreIntakeError] = useState<string | null>(null)
+
+	// Everything to book travels in the route state from the doctor page (a refresh or a pasted link has none): without it there is
+	// nothing to book, so send the patient back to choose a slot instead of posting a booking with empty ids.
+	const missingBookingDetails = !doctorId || !appointmentDate || !startTime || !consentVersionId
+	useEffect(() => {
+		if (!missingBookingDetails) return
+		toast.warning('Your booking session has ended. Please choose a slot again.')
+		navigate(doctorId ? ROUTES.DOCTORS.DETAIL.replace(':id', doctorId) : ROUTES.DOCTORS.SEARCH, { replace: true })
+	}, [missingBookingDetails, doctorId, navigate])
+
+	/** Back to the doctor page, where the slots are fetched fresh (the referral, if any, is kept). */
+	const chooseAnotherSlot = () => {
+		const path = ROUTES.DOCTORS.DETAIL.replace(':id', doctorId)
+		navigate(referralId ? `${path}?referral_id=${encodeURIComponent(referralId)}` : path, { replace: true })
+	}
+
+	/** After booking the patient lands on the appointment they just made, not back on the doctor's page. */
+	const goToAppointment = () => {
+		navigate(appointmentId ? ROUTES.PORTAL.APPOINTMENT_DETAIL.replace(':appointmentId', appointmentId) : ROUTES.APPOINTMENTS)
+	}
 
 	const infoRows = [
 		{ icon: <CalendarToday sx={{ fontSize: 14, color: 'text.secondary' }} />, label: 'Date:', value: date },
@@ -170,8 +202,10 @@ export default function PaymentPage() {
 	]
 
 	const handleConfirm = async () => {
+		if (missingBookingDetails) return
 		setBooking(true)
 		setErrorMsg(null)
+		setRestartReason(null)
 		try {
 			const payload: Record<string, unknown> = {
 				doctor_id: doctorId,
@@ -219,8 +253,20 @@ export default function PaymentPage() {
 			}
 
 			setSuccessOpen(true)
-		} catch {
-			setErrorMsg('Failed to book appointment. Please try again.')
+		} catch (error) {
+			const data = (error as { response?: { data?: { message?: string; code?: string } } })?.response?.data
+			const reason = data?.message
+			if (data?.code === 'CONSENT_OUTDATED') {
+				setRestartReason('consent')
+			} else if (reason && /already booked|currently blocked|not available for the selected slot/i.test(reason)) {
+				// The server answers a taken or blocked slot with a 400 and a sentence about the slot (there is no code for it).
+				setRestartReason('slot')
+			}
+			setErrorMsg(
+				reason
+					? `Your appointment was not booked: ${reason}`
+					: 'Your appointment was not booked. Please check your connection and try again.'
+			)
 		} finally {
 			setBooking(false)
 		}
@@ -246,7 +292,7 @@ export default function PaymentPage() {
 			>
 				<IconButton
 					size="small"
-					onClick={() => navigate(-1)}
+					onClick={() => goBack()}
 					sx={{ color: '#fff', '&:focus': { outline: 'none' } }}
 				>
 					<ArrowBack fontSize="small" />
@@ -656,9 +702,19 @@ export default function PaymentPage() {
 						</Box>
 
 						{errorMsg && (
-							<Typography variant="caption" color="error.main" sx={{ flex: 1, mx: 2 }}>
-								{errorMsg}
-							</Typography>
+							<Box sx={{ flex: 1, mx: 2, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+								<Typography variant="caption" color="error.main">
+									{errorMsg}
+								</Typography>
+								{restartReason && (
+									<AppButton
+										variant="text"
+										size="small"
+										label={restartReason === 'consent' ? 'Review the new terms' : 'Choose another slot'}
+										onClick={chooseAnotherSlot}
+									/>
+								)}
+							</Box>
 						)}
 
 						<AppButton
@@ -695,7 +751,7 @@ export default function PaymentPage() {
 				open={symptomsOpen}
 				onClose={() => {
 					setSymptomsOpen(false)
-					navigate('/doctors/' + doctorId)
+					goToAppointment()
 				}}
 				maxWidth="sm"
 				fullWidth
@@ -844,6 +900,12 @@ export default function PaymentPage() {
 							</Box>
 						</Box> */}
 
+						{preIntakeError && (
+							<Typography variant="body2" color="error.main">
+								{preIntakeError}
+							</Typography>
+						)}
+
 						{/* Buttons */}
 						<Box sx={{ display: 'flex', gap: 1.5, pt: 0.5 }}>
 							<AppButton
@@ -852,7 +914,7 @@ export default function PaymentPage() {
 								fullWidth
 								onClick={() => {
 									setSymptomsOpen(false)
-									navigate('/doctors/' + doctorId)
+									goToAppointment()
 								}}
 							/>
 							<AppButton
@@ -860,6 +922,7 @@ export default function PaymentPage() {
 								fullWidth
 								disabled={!symptoms.trim() && !severity}
 								onClick={async () => {
+									setPreIntakeError(null)
 									try {
 										await updatePreIntake(appointmentId, {
 											symptoms,
@@ -868,10 +931,10 @@ export default function PaymentPage() {
 										})
 
 										setSymptomsOpen(false)
-										navigate('/doctors/' + doctorId)
+										goToAppointment()
 									} catch (error) {
 										console.error(error)
-										setErrorMsg('Failed to save symptoms')
+										setPreIntakeError('We could not save your symptoms. Please try again, or skip for now and add them later.')
 									}
 								}}
 							/>

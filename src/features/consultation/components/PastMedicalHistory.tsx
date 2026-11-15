@@ -2,48 +2,38 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Box, Typography, useTheme } from '@mui/material'
 import SentimentDissatisfiedOutlinedIcon from '@mui/icons-material/SentimentDissatisfiedOutlined'
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
-import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { customCardStyle, customScrollbar } from '../../../styles/commonStyles'
+import LabHistoryCard from './LabHistoryCard'
+import PrescriptionHistoryCard from './PrescriptionHistoryCard'
 
 import PrescriptionIcon from '../../../assets/icons/consultation/prescription.svg'
 import LabIcon from '../../../assets/icons/consultation/lab.svg'
-import RadiologyIcon from '../../../assets/icons/consultation/radiology.svg'
-import AncillaryIcon from '../../../assets/icons/consultation/ancillary.svg'
 import {
 	getPatientPrescriptionHistory,
 	getPatientLaboratoryHistory,
-	getPatientRadiologyHistory,
 	type PastMedicalHistoryCategory,
 	type PastMedicalHistoryItem,
 } from '../../patient/patientService'
 
-// Ancillary has no backing API yet, so it's intentionally absent here.
+// One API per tab: the visits' history (prescription) and the laboratory reports.
 const HISTORY_FETCHERS: Partial<Record<PastMedicalHistoryCategory, (patientPublicId: string) => Promise<PastMedicalHistoryItem[]>>> = {
 	prescription: getPatientPrescriptionHistory,
 	laboratory: getPatientLaboratoryHistory,
-	radiology: getPatientRadiologyHistory,
 }
 
 const TABS: { id: PastMedicalHistoryCategory; label: string }[] = [
 	{ id: 'prescription', label: 'Prescription' },
 	{ id: 'laboratory', label: 'Laboratory' },
-	{ id: 'radiology', label: 'Radiology' },
-	{ id: 'ancillary', label: 'Ancillary' },
 ]
 
 const EMPTY_MESSAGES: Record<PastMedicalHistoryCategory, string> = {
 	prescription: 'No past prescription history!',
 	laboratory: 'No past lab test history!',
-	radiology: 'No past radiology history!',
-	ancillary: 'No past ancillary history!',
 }
 
 const TAB_ICONS: Record<PastMedicalHistoryCategory, string> = {
 	prescription: PrescriptionIcon,
 	laboratory: LabIcon,
-	radiology: RadiologyIcon,
-	ancillary: AncillaryIcon,
 }
 
 const DATE_OPTIONS = [
@@ -55,82 +45,6 @@ const DATE_OPTIONS = [
 	{ value: '90days', label: '90 Days' },
 	{ value: 'custom', label: 'Custom' },
 ]
-
-/** Prescription attachments are usually scanned photos, not PDFs — preview them
- * inline as an image. If the object isn't image-renderable (e.g. a PDF was
- * uploaded instead), fall back to a plain same-tab link. */
-function PrescriptionAttachment({ fileUrl }: { fileUrl: string }) {
-	const [imageFailed, setImageFailed] = useState(false)
-
-	if (imageFailed) {
-		return (
-			<Box
-				sx={{
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'space-between',
-					gap: 1.5,
-					px: 1.5,
-					py: 1.25,
-					border: '1px solid',
-					borderColor: 'divider',
-					borderRadius: '10px',
-				}}
-			>
-				<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
-					<DescriptionOutlinedIcon sx={{ fontSize: 18, color: 'text.secondary', flexShrink: 0 }} />
-					<Typography
-						sx={{
-							fontSize: '12.5px',
-							fontWeight: 500,
-							color: 'text.primary',
-							overflow: 'hidden',
-							textOverflow: 'ellipsis',
-							whiteSpace: 'nowrap',
-						}}
-					>
-						Prescription attachment
-					</Typography>
-				</Box>
-				<Typography
-					component="a"
-					href={fileUrl}
-					sx={{
-						flexShrink: 0,
-						display: 'inline-flex',
-						alignItems: 'center',
-						gap: 0.4,
-						fontSize: '12.5px',
-						fontWeight: 600,
-						color: 'primary.main',
-						textDecoration: 'none',
-						'&:hover': { textDecoration: 'underline' },
-					}}
-				>
-					<OpenInNewIcon sx={{ fontSize: 14 }} />
-					View file
-				</Typography>
-			</Box>
-		)
-	}
-
-	return (
-		<Box
-			component="img"
-			src={fileUrl}
-			alt="Prescription attachment"
-			onError={() => setImageFailed(true)}
-			sx={{
-				width: '100%',
-				maxHeight: 300,
-				objectFit: 'contain',
-				border: '1px solid #e0e0e0',
-				borderRadius: '8px',
-				backgroundColor: '#fafafa',
-			}}
-		/>
-	)
-}
 
 interface Props {
 	patientPublicId?: string
@@ -198,7 +112,7 @@ function formatHistoryDate(dateValue: string): string {
 }
 
 export default function PastMedicalHistory({ patientPublicId }: Props) {
-	const [activeTab, setActiveTab] = useState<PastMedicalHistoryCategory>('laboratory')
+	const [activeTab, setActiveTab] = useState<PastMedicalHistoryCategory>('prescription')
 	const [selectedDate, setSelectedDate] = useState('all')
 	const [historyItems, setHistoryItems] = useState<PastMedicalHistoryItem[]>([])
 	const [loading, setLoading] = useState(false)
@@ -214,14 +128,14 @@ export default function PastMedicalHistory({ patientPublicId }: Props) {
 
 		const fetcher = HISTORY_FETCHERS[activeTab]
 		if (!fetcher) {
-			// Ancillary tab — no API to call.
 			setHistoryItems([])
 			setError(null)
 			setLoading(false)
 			return
 		}
 
-		const cached = historyCacheRef.current[activeTab]
+		// The prescription links are signed and expire after about 5 minutes: that tab is fetched again each time it is opened.
+		const cached = activeTab === 'prescription' ? undefined : historyCacheRef.current[activeTab]
 		if (cached) {
 			setHistoryItems(cached)
 			setError(null)
@@ -239,7 +153,7 @@ export default function PastMedicalHistory({ patientPublicId }: Props) {
 				const data = await fetcher(patientPublicId)
 				if (cancelled) return
 
-				historyCacheRef.current[activeTab] = data
+				if (activeTab !== 'prescription') historyCacheRef.current[activeTab] = data
 				setHistoryItems(data)
 			} catch (error) {
 				if (cancelled) return
@@ -427,75 +341,14 @@ export default function PastMedicalHistory({ patientPublicId }: Props) {
 						</Typography>
 					</Box>
 				) : (
-					filteredHistoryItems.map((item) => (
-						<Box
-							key={item.id}
-							sx={{
-								border: '1px solid',
-								borderColor: 'divider',
-								borderRadius: '12px',
-								p: 2,
-								display: 'flex',
-								flexDirection: 'column',
-								gap: 1.5,
-								backgroundColor: '#fff',
-							}}
-						>
-							{/* Date */}
-							<Typography
-								sx={{
-									fontSize: '13px',
-									color: 'text.secondary',
-									fontWeight: 600,
-								}}
-							>
-								{formatHistoryDate(item.date)}
-							</Typography>
-
-							{item.title && (
-								<Typography
-									sx={{
-										fontSize: '13px',
-										color: 'text.primary',
-										fontWeight: 600,
-									}}
-								>
-									{item.title}
-								</Typography>
-							)}
-
-							{/* Prescription attachments are usually scanned photos, not PDFs — preview
-								them inline instead of assuming a PDF viewer via iframe. */}
-							{item.fileUrl && item.category === 'prescription' ? (
-								<PrescriptionAttachment fileUrl={item.fileUrl} />
-							) : (
-								item.fileUrl && (
-									<iframe
-										src={`${item.fileUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-										title={item.category}
-										width="100%"
-										height="300px"
-										style={{
-											border: '1px solid #e0e0e0',
-											borderRadius: '8px',
-										}}
-									/>
-								)
-							)}
-
-							{/* Notes */}
-							{item.notes && (
-								<Typography
-									sx={{
-										fontSize: '14px',
-										lineHeight: 1.6,
-									}}
-								>
-									{item.notes}
-								</Typography>
-							)}
-						</Box>
-					))
+					filteredHistoryItems.map((item) =>
+						item.category === 'prescription' ? (
+							// Prescriptions and lab reports are the same card with a button that opens the file in a dialog, not inline.
+							<PrescriptionHistoryCard key={item.id} item={item} dateLabel={formatHistoryDate(item.date)} />
+						) : (
+							<LabHistoryCard key={item.id} item={item} dateLabel={formatHistoryDate(item.date)} />
+						)
+					)
 				)}
 			</Box>
 		</Box>

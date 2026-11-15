@@ -1,15 +1,30 @@
 // src/features/consultation/ConsultationPage.tsx
 import { useEffect, useState } from 'react'
 // import { customCardStyle } from '../../styles/commonStyles'
-import { useNavigate, useParams } from 'react-router-dom'
-import { Box, Container, Typography, Avatar, Tab, Tabs, IconButton, Card, Divider } from '@mui/material'
+import { useParams } from 'react-router-dom'
+import { useGoBack } from '../../hooks/useGoBack'
+import {
+	Box,
+	Container,
+	Typography,
+	Avatar,
+	Tab,
+	Tabs,
+	IconButton,
+	Card,
+	Divider,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogTitle,
+} from '@mui/material'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
 import PhoneIcon from '@mui/icons-material/Phone'
 import Grid from '@mui/material/Grid'
 import AppButton from '../../components/common/Button/AppButton'
 import PatientInfoCard from './components/PatientInfoCard'
 import PastMedicalHistory from './components/PastMedicalHistory'
-import ShareWith from './components/ShareWith'
+// import ShareWith from './components/ShareWith'
 import VitalsTab from './components/VitalsTab'
 import ConsultationNotes from './components/ConsultationNotes'
 import { ConsultationPatient, ConsultationDoctor } from '../../types/consultation'
@@ -17,16 +32,20 @@ import { getPatientDetails, getMyPatientDetails } from '../../services/userServi
 import { Patient } from '../../types/patient'
 import { getAppointmentById } from '../../services/userService'
 import { Appointment } from '../../types/appointment'
-import { useAuth, LookupHospital } from '../../hooks/useAuth'
-import { getDoctorProfile, mapDoctorProfileApi, getDoctorAvailability, getAvailabilityModeBlocks } from '../doctor/doctorService'
+import { useAuth } from '../../hooks/useAuth'
+import { getDoctorProfile, mapDoctorProfileApi } from '../doctor/doctorService'
 import { DoctorProfile } from '../../types/doctor-profile'
-import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
 import FollowUpModal from './components/FollowUpModal'
-import { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
-import ApiService from '../../services/apiService'
-import { API_ENDPOINTS } from '../../constants/apiUrls'
+import axios from 'axios'
 import { toast } from 'react-toastify'
 import { updateAppointmentsStatus } from '../../services/appointmentService'
+import {
+	getPrescriptionLink,
+	getTreatmentByAppointment,
+	saveFollowUpDate,
+	submitConsultationNotes,
+	type Treatment,
+} from '../../services/treatmentService'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import { customCardStyle } from '../../styles/commonStyles'
 import AppointmentDetailsDrawer from '../appointments/components/AppointmentDetailsDrawer'
@@ -178,15 +197,10 @@ const mapDoctorProfileToConsultationDoctor = (
 	}
 }
 
-// const getDrawerAppointmentType = (appointmentMode?: Appointment['appointment_mode']) =>
-// 	appointmentMode === 'video_call' ? 'video' : 'clinic'
-const getDrawerAppointmentType = (appointmentMode?: Appointment['appointment_mode']) =>
-	appointmentMode === 'video call' ? 'video' : 'clinic'
-
 export default function ConsultationPage() {
 	const [activeTab, setActiveTab] = useState(0)
 	const [timelineDrawerOpen, setTimelineDrawerOpen] = useState(false)
-	const navigate = useNavigate()
+	const goBack = useGoBack()
 	const { lookupData, role } = useAuth()
 
 	const { patientId, appointmentId } = useParams()
@@ -198,15 +212,13 @@ export default function ConsultationPage() {
 	const [followUpOpen, setFollowUpOpen] = useState(false)
 	const [followUpLoading, setFollowUpLoading] = useState(false)
 
-	const [rescheduleOpen, setRescheduleOpen] = useState(false)
-	const [rescheduleDate, setRescheduleDate] = useState<Date>(new Date())
-	const [rescheduleTime, setRescheduleTime] = useState('')
-	const [rescheduleSlots, setRescheduleSlots] = useState<SlotGroup[]>([])
-	const [rescheduleSlotsLoading, setRescheduleSlotsLoading] = useState(false)
-	const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false)
-	const [rescheduleHospitalId, setRescheduleHospitalId] = useState<string>('')
-	const [appointmentType, setAppointmentType] = useState<'clinic' | 'video'>('clinic')
 	const [saveConsultationLoading, setSaveConsultationLoading] = useState(false)
+	// The doctor's notes: the text as typed or dictated, the treatment once the notes are submitted (final), and the confirmation
+	// asked before that.
+	const [notesText, setNotesText] = useState('')
+	const [submittedTreatment, setSubmittedTreatment] = useState<Treatment | null>(null)
+	const [confirmNotesOpen, setConfirmNotesOpen] = useState(false)
+	const [openingPrescription, setOpeningPrescription] = useState(false)
 	// const [timelineDrawerOpen, setTimelineDrawerOpen] = useState(false)
 
 	// Patient + appointment gate the loading screen — both tabs (Info & Timeline,
@@ -232,7 +244,7 @@ export default function ConsultationPage() {
 				const [patientRes, appointmentRes] = await Promise.allSettled([
 					(role === 'doctor'
 						? getPatientDetails(patientId)
-						: getMyPatientDetails()) as Promise<PatientDetailsResponse>,
+						: getMyPatientDetails(patientId)) as Promise<PatientDetailsResponse>,
 					getAppointmentById(appointmentId) as Promise<AppointmentDetailsResponse>,
 				])
 
@@ -267,9 +279,23 @@ export default function ConsultationPage() {
 		}
 	}, [patientId, appointmentId, role])
 
-	// Doctor profile is only used by the Info tab's ConsultationNotes header and the
-	// reschedule drawer's hospital list — fetch it in the background instead of
-	// blocking the loading screen for tabs (e.g. Vitals) that don't need it.
+	// Notes the doctor already submitted for this appointment (a reopened consultation): shown read-only, as they were submitted.
+	useEffect(() => {
+		if (!appointmentId || role !== 'doctor') return
+		let cancelled = false
+		getTreatmentByAppointment(appointmentId)
+			.then((treatment) => {
+				if (!cancelled && treatment?.notes_submitted_at) setSubmittedTreatment(treatment)
+			})
+			.catch((error) => console.error('Error fetching the consultation notes', error))
+		return () => {
+			cancelled = true
+		}
+	}, [appointmentId, role])
+
+	// Doctor profile is only used by the Info tab's ConsultationNotes header — fetch it in the
+	// background instead of blocking the loading screen for tabs (e.g. Vitals) that don't need it.
+	// (A doctor does not reschedule from here with a date: they ask the patient to choose, see DoctorAppointments.)
 	useEffect(() => {
 		if (!patientId || !appointmentId || role !== 'doctor') return
 
@@ -294,57 +320,6 @@ export default function ConsultationPage() {
 			cancelled = true
 		}
 	}, [patientId, appointmentId, role])
-
-	useEffect(() => {
-		if (!appointment) return
-
-		setAppointmentType(getDrawerAppointmentType(appointment.appointment_mode))
-		setRescheduleHospitalId(appointment.hospital?.id ?? '')
-	}, [appointment])
-
-	useEffect(() => {
-		if (!rescheduleOpen || !appointment) return
-
-		const doctorId = appointment.doctor?.id
-		const hospitalId = rescheduleHospitalId || appointment.hospital?.id || doctorProfile?.hospitals[0]?.id
-
-		if (!doctorId || !hospitalId) return
-
-		const dateStr = rescheduleDate.toISOString().split('T')[0]
-		let cancelled = false
-
-		const fetchSlots = async () => {
-			setRescheduleSlotsLoading(true)
-			setRescheduleSlots([])
-			setRescheduleTime('')
-
-			try {
-				const responseData = await getDoctorAvailability({
-					doctor_id: doctorId,
-					hospital_id: hospitalId,
-					date: dateStr,
-				})
-				if (cancelled) return
-
-				const selectedTypeMode = appointmentType === 'clinic' ? 'clinic_visit' : 'video_call'
-				const selectedModeData = getAvailabilityModeBlocks(responseData).find(
-					(item) => item.appointment_mode === selectedTypeMode
-				)
-
-				setRescheduleSlots(selectedModeData?.sessions || [])
-			} catch {
-				if (!cancelled) toast.error('Could not load available slots.')
-			} finally {
-				if (!cancelled) setRescheduleSlotsLoading(false)
-			}
-		}
-
-		fetchSlots()
-
-		return () => {
-			cancelled = true
-		}
-	}, [appointment, appointmentType, doctorProfile, rescheduleDate, rescheduleHospitalId, rescheduleOpen])
 
 	if (loading) {
 		return (
@@ -434,28 +409,6 @@ export default function ConsultationPage() {
 			? mapDoctorProfileToConsultationDoctor(doctorProfile, activeHospital, appointment)
 			: mapAppointmentToConsultationDoctor(appointment)
 
-	const rescheduleHospitalsMapped: LookupHospital[] = Array.from(
-		new Map(
-			[
-				...(doctorProfile?.hospitals || []).map((hospital) => ({
-					id: hospital.id,
-					label: hospital.name,
-					address: hospital.fullAddress || hospital.location || '',
-				})),
-				...(lookupData?.hospitals || []),
-				...(appointment?.hospital
-					? [
-						{
-							id: appointment.hospital.id,
-							label: appointment.hospital.name,
-							address: appointment.hospital.address,
-						},
-					]
-					: []),
-			].map((hospital) => [hospital.id, hospital] as const)
-		).values()
-	)
-
 	const handleOpenReconnect = () => {
 		if (!appointment) {
 			toast.warning('Appointment details are not available yet.')
@@ -464,45 +417,37 @@ export default function ConsultationPage() {
 		setFollowUpOpen(true)
 	}
 
-	const handleSaveFollowUpRecommendation = async (dueDate: Date, note: string) => {
-		if (!appointmentId || !patient?.id) {
-			toast.error('Missing appointment or patient details.')
+	// The follow-up goes on the visit's treatment record (follow_up_date), the same call the mobile app makes.
+	const handleSaveFollowUpRecommendation = async (dueDate: Date) => {
+		if (!appointmentId) {
+			toast.error('Missing appointment details.')
 			return
 		}
 		setFollowUpLoading(true)
 		try {
-			const due_date_str = dueDate.toISOString().split('T')[0]
-			const payload = {
-				appointment_id: appointmentId,
-				patient_id: patient.id,
-				due_date: due_date_str,
-				doctor_note: note || undefined,
-			}
-			const res = await ApiService.post<{ success?: boolean; message?: string }>(API_ENDPOINTS.FOLLOW_UPS.CREATE, payload)
-			if (res.data?.success || res.status === 201 || res.status === 200) {
-				toast.success('Follow-up recommendation saved successfully.')
-				setFollowUpOpen(false)
-			} else {
-				toast.error(res.data?.message || 'Failed to save follow-up recommendation.')
-			}
-		} catch (err: any) {
-			console.error('Save follow-up error:', err)
-			toast.error(err?.response?.data?.message || 'Failed to save follow-up recommendation.')
+			await saveFollowUpDate(appointmentId, dueDate.toISOString().split('T')[0])
+			toast.success('Follow-up recommendation saved successfully.')
+			setFollowUpOpen(false)
+		} catch (err) {
+			// A refused request has already shown the server's reason (the shared API client toasts it).
+			if (!axios.isAxiosError(err)) toast.error('Failed to save follow-up recommendation.')
 		} finally {
 			setFollowUpLoading(false)
 		}
 	}
 
 
-	// Doctor-only: saves the consultation and marks the appointment Completed.
-	// NOTE: there is no dedicated 'save consultation notes' backend endpoint yet,
-	// so this only updates the appointment status; wiring the prescription/notes
-	// save is a follow-up once that endpoint exists.
-	const handleSaveConsultation = async () => {
+	// Doctor-only: ends the consultation. Notes that were typed or dictated are submitted first: that is FINAL (the server draws them
+	// onto the prescription image and locks them), so the doctor is asked once; then the appointment is marked Completed. With nothing
+	// written it only completes the appointment. A retry after a failed completion does not send the notes again (they are locked).
+	const hasNotesToSubmit = notesText.trim().length > 0 && !submittedTreatment
+
+	const saveConsultation = async () => {
 		if (!appointment) {
 			toast.warning('Appointment details are not available yet.')
 			return
 		}
+		// Found before the notes are sent, so notes are never locked and then a missing status stops the rest.
 		const completedStatusId = lookupData?.appointment_statuses.find((s) => s.label === 'completed')?.id
 		if (!completedStatusId) {
 			toast.error('Could not resolve the completed status. Please try again later.')
@@ -510,6 +455,10 @@ export default function ConsultationPage() {
 		}
 		setSaveConsultationLoading(true)
 		try {
+			if (hasNotesToSubmit) {
+				const treatment = await submitConsultationNotes(appointment.id, { notes: notesText })
+				setSubmittedTreatment(treatment)
+			}
 			const res = await updateAppointmentsStatus(appointment.id, completedStatusId)
 			if (res.success) {
 				toast.success(res.message || 'Consultation saved.')
@@ -517,60 +466,38 @@ export default function ConsultationPage() {
 			} else {
 				toast.error(res.message || 'Failed to save consultation.')
 			}
-		} catch {
-			toast.error('Something went wrong. Please try again.')
+		} catch (error) {
+			// A refused request has already shown the server's reason (the shared API client toasts it).
+			if (!axios.isAxiosError(error)) toast.error('Something went wrong. Please try again.')
 		} finally {
 			setSaveConsultationLoading(false)
 		}
 	}
-	const handleRescheduleConfirm = async () => {
-		if (!appointment || !rescheduleTime) {
-			toast.warning('Please select a time slot before confirming.')
+
+	const handleSaveConsultation = () => {
+		if (!appointment) {
+			toast.warning('Appointment details are not available yet.')
 			return
 		}
+		if (hasNotesToSubmit) {
+			setConfirmNotesOpen(true)
+			return
+		}
+		void saveConsultation()
+	}
 
-		setRescheduleSubmitting(true)
+	// The submitted prescription opens in a new tab through a fresh signed link (the links expire after about 5 minutes).
+	const handleViewPrescription = async () => {
+		if (!appointment) return
+		setOpeningPrescription(true)
 		try {
-			const dateStr = rescheduleDate.toISOString().split('T')[0]
-			const res = await ApiService.post<{ success: boolean; message: string }>(API_ENDPOINTS.APPOINTMENTS.RESCHEDULE, {
-				appointment_id: appointment.id,
-				appointment_date: dateStr,
-				start_time: rescheduleTime,
-				end_time: null,
-				hospital_id: rescheduleHospitalId || appointment.hospital?.id,
-				reason: 'Doctor unavailable',
-			})
-
-			if (res.data?.success) {
-				const selectedHospital = rescheduleHospitalsMapped.find(
-					(hospital) => hospital.id === (rescheduleHospitalId || appointment.hospital?.id)
-				)
-
-				setAppointment((prev) =>
-					prev
-						? {
-							...prev,
-							appointment_date: dateStr,
-							start_time: rescheduleTime,
-							hospital: selectedHospital
-								? {
-									id: selectedHospital.id,
-									name: selectedHospital.label,
-									address: selectedHospital.address ?? '',
-								}
-								: prev.hospital,
-						}
-						: prev
-				)
-				toast.success(res.data.message || 'Appointment rescheduled!')
-				setRescheduleOpen(false)
-			} else {
-				toast.error(res.data?.message || 'Reschedule failed. Please try again.')
-			}
+			const url = await getPrescriptionLink(appointment.id)
+			if (url) window.open(url, '_blank', 'noopener,noreferrer')
+			else toast.info('The prescription is not available yet.')
 		} catch {
-			toast.error('Something went wrong. Please try again.')
+			toast.error('Could not open the prescription. Please try again.')
 		} finally {
-			setRescheduleSubmitting(false)
+			setOpeningPrescription(false)
 		}
 	}
 
@@ -596,7 +523,7 @@ export default function ConsultationPage() {
 				<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
 					<IconButton
 						size="small"
-						onClick={() => navigate(-1)}
+						onClick={() => goBack()}
 						sx={{ color: 'text.secondary', '&:focus': { outline: 'none' } }}
 					>
 						<ArrowBackIosNewIcon sx={{ fontSize: 15 }} />
@@ -633,7 +560,7 @@ export default function ConsultationPage() {
 				<Box sx={{ display: 'flex', gap: 1.5 }}>
 					{role === 'doctor' && appointment && (() => {
 						// Clicking it again afterward is still allowed (idempotent), not disabled.
-						const isSaved = (appointment.status || '').toString().toLowerCase() === 'completed'
+						const isSaved = (appointment.status || '').toString().toLowerCase() === 'completed' && !hasNotesToSubmit
 						return (
 							<AppButton
 								variant='contained'
@@ -699,8 +626,27 @@ export default function ConsultationPage() {
 							<PastMedicalHistory patientPublicId={patientId} />
 						</Grid>
 						<Grid size={{ xs: 12, md: 6 }} display={'flex'} flexDirection={'column'}>
-							<ConsultationNotes doctor={consultationDoctor} />
-							<ShareWith appointmentId={appointmentId} />
+							{/* Writing the notes (and so the prescription) is the doctor's: a patient never gets the editor. */}
+							{role === 'doctor' && (
+								<ConsultationNotes
+									doctor={consultationDoctor}
+									onTextChange={setNotesText}
+									locked={!!submittedTreatment}
+									submittedText={submittedTreatment?.notes ?? null}
+								/>
+							)}
+							{submittedTreatment && (
+								<Box sx={{ mt: 1.5 }}>
+									<AppButton
+										variant='outlined'
+										label='View prescription'
+										borderRadius='20px'
+										loading={openingPrescription}
+										onClick={handleViewPrescription}
+									/>
+								</Box>
+							)}
+							{/* <ShareWith appointmentId={appointmentId} /> */}
 						</Grid>
 					</Grid>
 				)}
@@ -711,24 +657,27 @@ export default function ConsultationPage() {
 				onClose={() => setTimelineDrawerOpen(false)}
 				appointmentId={appointmentId ?? null}
 			/>
-			<RescheduleDrawer
-				rescheduleOpen={rescheduleOpen}
-				setRescheduleOpen={setRescheduleOpen}
-				rescheduleAppt={appointment}
-				rescheduleDate={rescheduleDate}
-				setRescheduleDate={setRescheduleDate}
-				rescheduleTime={rescheduleTime}
-				setRescheduleTime={setRescheduleTime}
-				rescheduleSlots={rescheduleSlots}
-				rescheduleSlotsLoading={rescheduleSlotsLoading}
-				rescheduleSubmitting={rescheduleSubmitting}
-				handleRescheduleConfirm={handleRescheduleConfirm}
-				rescheduleHospitals={rescheduleHospitalsMapped}
-				rescheduleHospitalId={rescheduleHospitalId}
-				setRescheduleHospitalId={setRescheduleHospitalId}
-				appointmentType={appointmentType}
-				setAppointmentType={setAppointmentType}
-			/>
+			<Dialog open={confirmNotesOpen} onClose={() => setConfirmNotesOpen(false)} maxWidth='xs' fullWidth>
+				<DialogTitle sx={{ fontWeight: 700 }}>Submit your notes?</DialogTitle>
+				<DialogContent>
+					<Typography variant='body2' sx={{ color: 'text.secondary' }}>
+						Once submitted, your notes can’t be edited. {patient?.personal?.name?.split(' ')[0] || 'The patient'} will be able to see
+						them as a prescription.
+					</Typography>
+				</DialogContent>
+				<DialogActions sx={{ px: 3, pb: 2 }}>
+					<AppButton variant='outlined' label='Keep editing' borderRadius='20px' onClick={() => setConfirmNotesOpen(false)} />
+					<AppButton
+						variant='contained'
+						label='Submit and save'
+						borderRadius='20px'
+						onClick={() => {
+							setConfirmNotesOpen(false)
+							void saveConsultation()
+						}}
+					/>
+				</DialogActions>
+			</Dialog>
 			<FollowUpModal
 				open={followUpOpen}
 				onClose={() => setFollowUpOpen(false)}

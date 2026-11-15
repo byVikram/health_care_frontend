@@ -14,8 +14,9 @@ import { customCardStyle } from '../../styles/commonStyles'
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../hooks/useAuth'
+import { useAuth, accountHolderId } from '../../hooks/useAuth'
 import type { LookupHospital } from '../../hooks/useAuth'
+import { useFamilyMembers } from '../../hooks/useFamilyMembers'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import AppSelect from '../../components/common/Select/AppSelect'
 import AppDatePicker from '../../components/common/DatePicker/AppDatePicker'
@@ -25,6 +26,7 @@ import { toast } from 'react-toastify'
 import { updateAppointmentsStatus } from '../../services/appointmentService'
 import { getDoctorAvailability, getAvailabilityModeBlocks, getDoctorById } from '../doctor/doctorService'
 import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
+import { toLocalDateString } from '../../utils/Utils'
 import type { SlotGroup } from '../../components/common/DateSlotPicker/DateSlotPicker'
 import type { Appointment } from '../../types/appointment'
 import AppButton from '../../components/common/Button/AppButton'
@@ -37,6 +39,7 @@ import AppDrawer from '../../components/common/Drawer/AppDrawer'
 import { ConsultationDoctor } from '../../types/consultation'
 import { ROUTES } from '../../constants/routes'
 import { buildS3Url } from '../../utils/s3'
+import StatusReasonNote from './components/StatusReasonNote'
 
 
 // Status IDs accepted by PATCH /api/appointments/update-status.
@@ -77,6 +80,8 @@ interface AppointmentRow extends Record<string, unknown> {
 	fees: number | null
 	prescriptionS3Key: string | null
 	reason: string | null
+	/** 'Cancelled by you' / 'Rescheduled by the patient' ...: the line for `reason`, worded for the person looking. */
+	statusReasonTitle: string | null
 }
 
 interface AppointmentMeta {
@@ -110,6 +115,9 @@ interface AppointmentsResponse {
 		end_time: string | null
 		status: string
 		reason?: string | null
+		/** Why it was cancelled / rescheduled, and the line that goes with it (see StatusReasonNote). */
+		status_reason?: string | null
+		status_reason_title?: string | null
 		rescheduled_by?: string | null
 		doctor?: { id: string; name: string; avatar_s3_key?: string | null } | null
 		patient?: { id: string; name: string; avatar_s3_key: string | null; gender: string | null; age: number | null } | null
@@ -142,12 +150,12 @@ export default function AppointmentList() {
 	const highlightedAppointmentId = searchParams.get('appointment_id') || searchParams.get('open_appointment_id')
 	const viewAs: 'doctor' | 'patient' =
 		queryView === 'doctor' || queryView === 'patient' ? queryView : role === 'patient' ? 'patient' : 'doctor'
-	const activePatientId =
-		localStorage.getItem('patient_id') ||
-		lookupData?.patient_profiles?.find((profile) => profile.is_self)?.id ||
-		lookupData?.patient_profiles?.[0]?.id ||
-		(role === 'patient' ? user?.id : '') ||
-		''
+	// whose appointments are listed: the signed-in patient (the account holder) or one of their family members, chosen in
+	// the selector in the header. A booking made for a family member is listed under that person, not under the account holder.
+	const holderPatientId = (role === 'patient' ? accountHolderId({ lookupData, user }) : '') || ''
+	const { members } = useFamilyMembers()
+	const [selectedPatientId, setSelectedPatientId] = useState('') // '' = the account holder
+	const activePatientId = selectedPatientId || holderPatientId
 
 	const [search, setSearch] = useState('')
 	const [page, setPage] = useState(1)
@@ -185,6 +193,7 @@ export default function AppointmentList() {
 	const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false)
 	const [rescheduleHospitals, setRescheduleHospitals] = useState<LookupHospital[]>([])
 	const [rescheduleHospitalId, setRescheduleHospitalId] = useState('')
+	const [rescheduleReason, setRescheduleReason] = useState('')
 	const [appointmentType, setAppointmentType] = useState<'clinic' | 'video'>('clinic')
 
 	// â”€â”€ Appointment Details Drawer state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -256,7 +265,8 @@ export default function AppointmentList() {
 					endTime: appt.end_time,
 					appointmentMode: appt.appointment_mode,
 					status: appt.status,
-					reason: appt.reason ?? null,
+					reason: appt.status_reason ?? null,
+					statusReasonTitle: appt.status_reason_title ?? null,
 					rescheduledBy: appt.rescheduled_by ?? null,
 					doctorName: appt.doctor?.name ?? 'Doctor',
 					doctorAvatar: buildS3Url(appt.doctor?.avatar_s3_key),
@@ -303,7 +313,7 @@ export default function AppointmentList() {
 
 		if (!doctorId || !hospitalId) return
 
-		const dateStr = rescheduleDate.toISOString().split('T')[0]
+		const dateStr = toLocalDateString(rescheduleDate)
 
 		const fetchSlots = async () => {
 			setRescheduleSlotsLoading(true)
@@ -429,6 +439,7 @@ export default function AppointmentList() {
 		setRescheduleTime('')
 		setRescheduleSlots([])
 		setRescheduleHospitals([])
+		setRescheduleReason('')
 		setRescheduleOpen(true)
 	}
 
@@ -439,7 +450,7 @@ export default function AppointmentList() {
 		}
 		setRescheduleSubmitting(true)
 		try {
-			const dateStr = rescheduleDate.toISOString().split('T')[0]
+			const dateStr = toLocalDateString(rescheduleDate)
 			const res = await ApiService.post<{ success: boolean; message: string }>(
 				`${API_ENDPOINTS.APPOINTMENTS.RESCHEDULE}`,
 					{
@@ -448,7 +459,7 @@ export default function AppointmentList() {
 						start_time: rescheduleTime,
 						end_time: null,
 						hospital_id: rescheduleHospitalId || rescheduleAppt.hospital?.id,
-						reason: viewAs === 'patient' ? 'Patient requested reschedule' : 'Doctor unavailable',
+						reason: rescheduleReason.trim() || undefined,
 					}
 				)
 			if (res.data?.success) {
@@ -715,11 +726,7 @@ export default function AppointmentList() {
 					<Typography fontSize={13} fontWeight={600}>
 						{getStatusDisplayLabel(row)}
 					</Typography>
-					{row.status?.toLowerCase() === 'cancelled' && row.reason && (
-						<Typography fontSize={11} color="#e53935" lineHeight={1.3} mt={0.3} sx={{ maxWidth: 220 }}>
-							{row.reason}
-						</Typography>
-					)}
+					<StatusReasonNote status={row.status} title={row.statusReasonTitle} reason={row.reason} compact />
 				</Box>
 			),
 		},
@@ -904,24 +911,44 @@ export default function AppointmentList() {
 	])
 
 	useEffect(() => {
+		let cancelled = false
 		const fetchHospitals = async () => {
 			if (viewAs === 'patient') {
 				try {
-					const res = await ApiService.get<{ success: boolean; data: { hospital_id: number | string; hospital_name: string }[] }>(API_ENDPOINTS.PATIENT.APPOINTMENTS_HOSPITALS)
+					// The hospitals of whoever the page is showing ("Appointments for"): the account holder or a family member.
+					const res = await ApiService.getWithParams<{ success: boolean; data: { hospital_id: number | string; hospital_name: string }[] }>(
+						API_ENDPOINTS.PATIENT.APPOINTMENTS_HOSPITALS,
+						activePatientId ? { patient_id: activePatientId } : {}
+					)
+					if (cancelled) return
 					if (res.data?.success) {
 						const fetchedOptions = res.data.data.map((h) => ({
 							value: String(h.hospital_id),
 							label: h.hospital_name,
 						}))
 						setHospitalOptions([{ value: 'all', label: 'All' }, ...fetchedOptions])
+						// A hospital picked for the previous person may not be one of this person's: go back to All.
+						setFilterHospital((current) =>
+							current === 'all' || fetchedOptions.some((o) => o.value === current) ? current : 'all'
+						)
 					}
 				} catch (err) {
 					console.error('Failed to fetch hospitals', err)
 				}
+			} else {
+				// Doctor: the hospitals this doctor is linked to, the same list as the header's hospital switcher.
+				// Each id is the hospital's public id, which is what the appointments `hospital_id` filter expects.
+				const linked = (lookupData?.hospitals ?? [])
+					.filter((h, index, all) => all.findIndex((x) => x.id === h.id) === index)
+					.map((h) => ({ value: h.id, label: h.label }))
+				setHospitalOptions([{ value: 'all', label: 'All' }, ...linked])
 			}
 		}
 		fetchHospitals()
-	}, [viewAs])
+		return () => {
+			cancelled = true
+		}
+	}, [viewAs, lookupData, activePatientId])
 
 	const modeOptions = [
 		{ value: 'all', label: 'All' },
@@ -942,7 +969,8 @@ export default function AppointmentList() {
 		displayEmpty: true,
 		renderValue: (selected: unknown) => {
 			const selectedOption = options.find((option) => option.value === selected)
-			return selectedOption && selectedOption.value !== 'all' ? selectedOption.label : ''
+			// Show the selected option's label, including the default "All" (it used to be hidden, leaving the box blank)
+			return selectedOption?.label ?? ''
 		},
 		MenuProps: {
 			PaperProps: {
@@ -966,6 +994,8 @@ export default function AppointmentList() {
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'space-between',
+					flexWrap: 'wrap',
+					gap: 2,
 					mb: 2.5,
 				}}
 			>
@@ -979,7 +1009,20 @@ export default function AppointmentList() {
 							: 'Manage your patient consultations'}
 					</Typography>
 				</Box>
-				{/* no header CTA */}
+				{viewAs === 'patient' && members.length > 1 && (
+					<Box sx={{ width: { xs: '100%', sm: 280 } }}>
+						<AppSelect
+							label="Appointments for"
+							value={activePatientId}
+							onChange={(e) => {
+								setSelectedPatientId(e.target.value === holderPatientId ? '' : e.target.value)
+								setPage(1)
+							}}
+							options={members.map((m) => ({ value: m.id, label: `${m.name} (${m.relationship})` }))}
+							fullWidth
+						/>
+					</Box>
+				)}
 			</Box>
 			{/* Filter bar */}
 			{loading ? (
@@ -1005,7 +1048,7 @@ export default function AppointmentList() {
 					</Grid>
 				</Grid>
 			) : (
-				<Grid container spacing={2} sx={{ mb: 2.5, alignItems: 'center' }}>
+				<Grid container spacing={2} sx={{ mb: 2.5, alignItems: 'flex-end' }}>
 					<Grid size={{ xs: 12, lg: 8 }}>
 						<Grid container spacing={2}>
 							<Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -1039,8 +1082,14 @@ export default function AppointmentList() {
 							</Grid>
 
 							<Grid size={{ xs: 12, sm: 6, md: 3 }}>
+								{/* caption above the box, like the Hospital / Mode / Status filters, so the boxes sit level */}
+								<Typography
+									variant="caption"
+									sx={{ display: 'block', fontWeight: 400, fontSize: '0.8rem', color: '#0f172a', mb: 0.75, letterSpacing: '0.01em' }}
+								>
+									Date
+								</Typography>
 								<AppDatePicker
-									label="Date"
 									value={filterDate}
 									onChange={(value) => {
 										setFilterDate(value)
@@ -1166,6 +1215,8 @@ export default function AppointmentList() {
 				setRescheduleHospitalId={setRescheduleHospitalId}
 				appointmentType={appointmentType}
 				setAppointmentType={setAppointmentType}
+				reason={rescheduleReason}
+				onReasonChange={setRescheduleReason}
 			/>
 
 			{/* Consultation Notes drawer (eye icon) — reuses the shared AppDrawer */}
@@ -1229,7 +1280,8 @@ export default function AppointmentList() {
 					</Box>
 
 					<Box sx={{ display: 'flex', flex: 1 }}>
-						{notesDrawerDoctor && <ConsultationNotes doctor={notesDrawerDoctor} />}
+						{/* The notes editor is the doctor's: a patient looking at a past visit sees the prescription link above, never an editor. */}
+						{notesDrawerDoctor && role === 'doctor' && <ConsultationNotes doctor={notesDrawerDoctor} />}
 					</Box>
 				</Box>
 			</AppDrawer>

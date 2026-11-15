@@ -175,7 +175,7 @@ export default function LoginForm({ onSubmit, mode = 'page', onSwitchToRegister 
 				<img src="/src/assets/Banner/banner.png" alt="Doctor" style={{ width: '70%', objectFit: 'contain' }} />
 
 				<Typography sx={{ color: 'white', fontSize: '12px' }}>
-					&copy; 2025 Whisper ai. All rights reserved.
+					&copy; {new Date().getFullYear()} Whisper ai. All rights reserved.
 				</Typography>
 			</Grid>
 
