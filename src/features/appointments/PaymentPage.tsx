@@ -199,7 +199,7 @@ export default function PaymentPage() {
 	 */
 	const goToConfirmation = () => {
 		if (!appointmentId) {
-			navigate(ROUTES.APPOINTMENTS)
+			navigate(ROUTES.BOOKINGS)
 			return
 		}
 		navigate(ROUTES.PORTAL.HOME, { replace: true })

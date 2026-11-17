@@ -91,9 +91,9 @@ export default function AppointmentConfirmedPage() {
 	const [loading, setLoading] = useState(Boolean(appointmentId))
 	const [error, setError] = useState(false)
 
-	// A refresh keeps the router state, but a pasted link has none: there is nothing to show, so go to the patient's appointments.
+	// A refresh keeps the router state, but a pasted link has none: there is nothing to show, so go to the patient's bookings.
 	useEffect(() => {
-		if (!appointmentId) navigate(`${ROUTES.APPOINTMENTS}?view=patient`, { replace: true })
+		if (!appointmentId) navigate(ROUTES.BOOKINGS, { replace: true })
 	}, [appointmentId, navigate])
 
 	useEffect(() => {

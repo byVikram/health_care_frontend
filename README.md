@@ -1,241 +1,97 @@
-# Whisper AI � Healthcare Portal
+# Whisper AI — Healthcare Web Portal
 
-A modern, responsive healthcare web application built with React 19, TypeScript, Vite, and Material UI v7.
+The web app of the Karolahealth platform: one React app with portals for **patients** (find a doctor, book and manage appointments, pharmacy and radiology orders, family members, medical profile), **doctors** (schedule, booking requests, consultations, profile and availability) and **admins** (verification, users, content, appointments). It talks to the FastAPI backend in `../health_care_backend` and shares that backend with the mobile app in `../health_care_mobile`.
 
----
-
-## Tech Stack
+## Tech stack
 
 | Layer | Technology |
 |---|---|
 | Framework | React 19 |
-| Language | TypeScript 5.9 |
+| Language | TypeScript 6 (strict) |
 | Bundler | Vite 7 |
-| UI Library | Material UI v7 |
-| Routing | React Router DOM v7 |
-| HTTP Client | Axios |
-| Linting | ESLint 9 + TypeScript ESLint |
+| UI | Material UI v7 + Emotion |
+| Routing | React Router v7 |
+| HTTP | Axios (one wrapped instance) |
+| Notifications | Firebase Cloud Messaging, react-toastify |
+| Lint / format | ESLint 9 + typescript-eslint, Prettier |
 
----
+## Getting started
 
-## Getting Started
-
-### Prerequisites
-- Node.js >= 18
-- npm >= 9
-
-### Installation
+Prerequisites: Node.js 20.19 or newer and npm.
 
 ```bash
-# Clone the repository
-git clone <repo-url>
-cd health-care
-
-# Install dependencies
 npm install
 ```
 
-### Environment Variables
-
-Create a `.env` file in the root directory:
+Create a `.env` file in this folder (it is gitignored):
 
 ```env
-VITE_API_ENDPOINT=http://localhost:5000
+# Backend base URL (a local backend, or the hosted dev one)
+VITE_API_ENDPOINT=http://127.0.0.1:8000
+
+# Optional: base URL for image keys the backend returns without a full URL
+# VITE_S3_BASE_URL=
+
+# Firebase web push (all optional; push is off without them)
+# VITE_FIREBASE_API_KEY=
+# VITE_FIREBASE_AUTH_DOMAIN=
+# VITE_FIREBASE_PROJECT_ID=
+# VITE_FIREBASE_STORAGE_BUCKET=
+# VITE_FIREBASE_MESSAGING_SENDER_ID=
+# VITE_FIREBASE_APP_ID=
+# VITE_FIREBASE_VAPID_KEY=
 ```
 
-### Running the App
+Ask a teammate for the real values. Pointing `VITE_API_ENDPOINT` at the hosted dev backend means real data.
+
+## Scripts
 
 ```bash
-# Development server
-npm run dev
-
-# Production build
-npm run build
-
-# Preview production build
-npm run preview
-
-# Lint
-npm run lint
+npm run dev        # dev server on all interfaces (vite --host 0.0.0.0)
+npm run build      # tsc -b && vite build
+npm run preview    # serve the production build
+npm run lint       # eslint .
 ```
 
----
+Known issue: `npm run build` currently stops at the TypeScript step because older files carry about 363 type errors (mostly type-only imports and unused variables). To check your own change use `npx tsc -p tsconfig.app.json --noEmit` and look only at the files you touched, and `npx vite build` to confirm the app still bundles. There is no automated test suite.
 
-## Project Structure
+## Project layout
 
 ```
 src/
-├── assets/                  # Static images and illustrations
-│   ├── Banner/              # Hero banner image
-│   └── Services/            # Service section images
-│
 ├── components/
-│   ├── common/              # Reusable UI components
-│   │   ├── Button/          # AppButton
-│   │   ├── Card/            # AppCard, ServiceCard, SpecialityCard
-│   │   ├── Input/           # AppInput
-│   │   ├── Loader/          # AppLoader
-│   │   ├── Modal/           # AppModal, ConfirmModal
-│   │   ├── Navbar/          # AppNavBar
-│   │   ├── Select/          # AppSelect
-│   │   ├── Sidebar/         # AppSidebar
-│   │   ├── Table/           # AppTable
-│   │   └── NotFoundPage.tsx
-│   │
-│   └── layout/              # Layout components
-│       ├── MainLayout.tsx   # App shell (Navbar + children + Footer)
-│       └── AppFooter.tsx    # Site footer
-│
-├── config/
-│   └── theme.ts             # MUI theme configuration
-│
-├── constants/
-│   └── apiUrls.ts           # Centralised API endpoint constants
-│
-├── features/                # Page-level feature modules
-│   ├── auth/
-│   │   ├── LoginPage.tsx
-│   │   └── RegisterPage.tsx
-│   │
-│   └── dashboard/
-│       ├── DashboardPage.tsx
-│       └── SpecialitySection.tsx
-│
-├── routes/
-│   ├── AppRoutes.tsx        # Route definitions
-│   └── ProtectedRoute.tsx   # Auth guard
-│
-├── services/
-│   ├── apiService.ts        # Axios wrapper (get, post, put, patch, delete)
-│   └── userService.ts       # User CRUD operations
-│
-├── types/
-│   └── images.d.ts          # Image module type declarations
-│
-├── App.tsx
-├── main.tsx
-└── index.css
+│   ├── common/      # shared widgets, one folder each (Button, Modal, Table, Select, Tabs, AccountMenu ...)
+│   ├── layout/      # NavbarLayout, SidebarLayout, AdminLayout, MainLayout, AppFooter
+│   ├── admin/ staff/ ChatBot/
+├── features/        # pages by domain: auth, dashboard, doctor, patient, appointments,
+│                    # bookings, schedule, account, consultation, radiology, Pharmacy,
+│                    # profile, portal, referrals, admin
+├── hooks/           # useAuth, useFamilyMembers, ...
+├── services/        # apiService.ts (axios wrapper) and one service per domain
+├── constants/       # apiUrls.ts (every endpoint path), routes.ts, constants.ts
+├── routes/          # AppRoutes.tsx (the route table), ProtectedRoute, AdminProtectedRoute
+├── styles/          # commonStyles.ts, deskTokens.ts (colours of the desktop designs)
+├── config/          # theme.ts (MUI theme), firebase.ts
+├── types/  utils/  data/  pagination/
+public/              # firebase-messaging-sw.js (web push service worker)
 ```
 
----
+## Routes
 
-## Reusable Components
+All routes live in `src/routes/AppRoutes.tsx`, with the paths in `src/constants/routes.ts`. Groups: public pages (login, register, welcome, health questions), the admin area (`/admin/*`, admin sign-in required), and the signed-in patient and doctor pages. Two desktop pages are role specific: patients get **My bookings** at `/bookings`, doctors get **Schedule** at `/schedule` (each redirects the other role). The account menu under the avatar shows the rows the backend sends for the user's role.
 
-### AppButton
-MUI Button wrapper with built-in loading state, size variants, icon support, and custom border radius.
+## How it talks to the backend
 
-```tsx
-<AppButton label="Save" loading={isLoading} startIcon={<SaveIcon />} />
-<AppButton variant="outlined" color="error" label="Delete" />
-```
+Every request goes through `src/services/apiService.ts`: it adds the bearer token, clears the session and redirects to login on a 401, and shows the server's error message as a toast. Tokens and the signed-in user are kept in `localStorage` and read with `useAuth()`. Endpoint paths are only defined in `src/constants/apiUrls.ts`. The API itself is described by the backend's Swagger page (`/docs` on a non-production backend).
 
-### AppInput
-MUI TextField wrapper with start/end icon adornments and forwarded ref support.
+## Push notifications
 
-```tsx
-<AppInput label="Search" placeholder="e.g. Cardiology" startIcon={<SearchIcon />} />
-```
+The browser registers with Firebase Cloud Messaging (`src/config/firebase.ts`, service worker `public/firebase-messaging-sw.js`) after the user allows notifications. Push needs the `VITE_FIREBASE_*` values above.
 
-### AppSelect
-MUI Select wrapper accepting an `options` array with value/label pairs.
+## Contributing
 
-```tsx
-<AppSelect label="Role" options={[{ value: "doctor", label: "Doctor" }]} />
-```
-
-### AppModal
-Dialog component with title, close button, content slot, and customisable action buttons.
-
-```tsx
-<AppModal open={open} onClose={handleClose} title="Edit Patient"
-  actions={<AppButton label="Save" onClick={handleSave} />}>
-  <AppInput label="Name" />
-</AppModal>
-```
-
-### ConfirmModal
-Pre-styled confirmation dialog with 5 variants: `confirm`, `delete`, `warning`, `success`, `info`.
-
-```tsx
-<ConfirmModal open={open} onClose={handleClose} onConfirm={handleDelete}
-  variant="delete" title="Delete Record"
-  description="This action cannot be undone." />
-```
-
-### AppTable
-Generic typed table with skeleton loading rows and empty state message.
-
-```tsx
-<AppTable columns={columns} rows={data} loading={isLoading} />
-```
-
-### AppCard
-Stat/info card with icon, accent colour, value, and subtitle.
-
-```tsx
-<AppCard title="Total Patients" value={1240} icon={<PeopleIcon />} accent="#2B6F71" />
-```
-
-### SpecialityCard
-Specialty category card with an illustration, title, and "Consult Now" link.
-
-```tsx
-<SpecialityCard image={imgSrc} title="Cold, cough or fever" onConsult={handleConsult} />
-```
-
-### AppLoader
-Dual-ring circular loader. Supports inline and fullscreen overlay modes.
-
-```tsx
-<AppLoader fullScreen message="Please wait..." />
-```
-
----
-
-## Theme
-
-The app uses a custom MUI theme defined in `src/config/theme.ts`.
-
-| Token | Value |
-|---|---|
-| Primary | `#2B6F71` (teal) |
-| Secondary | `#df6fa7` (pink) |
-| Neutral | `#13C0C5` (cyan) |
-| Background | `#f4f6f9` |
-| Font | Inter |
-
----
-
-## Routing
-
-| Path | Component | Access |
-|---|---|---|
-| `/` | Redirects to `/dashboard` | Public |
-| `/login` | LoginPage | Public |
-| `/register` | RegisterPage | Public |
-| `/dashboard` | DashboardPage | Protected |
-| `*` | NotFoundPage | Public |
-
-Protected routes require `isAuthenticated` to be `true`. Auth integration is pending.
-
----
-
-## API Services
-
-All HTTP calls go through `ApiService` (`src/services/apiService.ts`), a thin Axios wrapper:
-
-```ts
-ApiService.get<T>(url)
-ApiService.post<T>(url, body)
-ApiService.put<T>(url, body)
-ApiService.patch<T>(url, body)
-ApiService.delete<T>(url)
-```
-
-API endpoint constants are centralised in `src/constants/apiUrls.ts` and driven by the `VITE_API_ENDPOINT` environment variable.
-
----
+Conventions, the shared component kit and the working agreements are in [CLAUDE.md](CLAUDE.md). In short: Prettier (tabs, no semicolons, single quotes), `async/await` instead of `.then()`, reuse `components/common`, and keep API paths in `constants/apiUrls.ts`.
 
 ## License
 
-Private  all rights reserved.
+Private — all rights reserved.

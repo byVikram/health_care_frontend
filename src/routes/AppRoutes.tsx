@@ -1,5 +1,5 @@
 // src/routes/AppRoutes.tsx
-import { Routes, Route, Outlet, Navigate } from 'react-router-dom'
+import { Routes, Route, Outlet, Navigate, useLocation } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
 import NotFoundPage from '../components/common/NotFoundPage'
 import MainLayout from '../components/layout/MainLayout'
@@ -24,7 +24,6 @@ import ProfilePage from '../features/profile/ProfilePage'
 import ConsultationPage from '../features/consultation/ConsultationPage'
 import DoctorAccountDetailsPage from '../features/auth/DoctorAccountDetailsPage'
 import PortalPage from '../features/portal/PortalPage'
-import DoctorAppointmentList from '../features/appointments/AppointmentList'
 import MyBookingsPage from '../features/bookings/MyBookingsPage'
 import SchedulePage from '../features/schedule/SchedulePage'
 import PatientAppointmentDetailPage from '../features/patient/PatientAppointmentDetailPage'
@@ -108,6 +107,13 @@ function PublicOrAuthenticatedLayout() {
 			<Outlet />
 		</MainLayout>
 	)
+}
+
+/** The old appointments address (bookmarks, old emails and notifications): on to the page that replaced it, keeping the query (?appointment_id=). */
+function AppointmentsRedirect() {
+	const { role } = useAuth()
+	const { search } = useLocation()
+	return <Navigate to={`${role === USER_ROLES.DOCTOR ? ROUTES.SCHEDULE : ROUTES.BOOKINGS}${search}`} replace />
 }
 
 function AuthenticatedNavbarLayout() {
@@ -207,7 +213,7 @@ export default function AppRoutes() {
 
 					<Route element={<LoggedInNavbarLayout />}>
 						<Route path={ROUTES.PORTAL.HOME} element={<PortalPage />} />
-						<Route path={ROUTES.APPOINTMENTS} element={<DoctorAppointmentList />} />
+						<Route path={ROUTES.APPOINTMENTS} element={<AppointmentsRedirect />} />
 						<Route path={ROUTES.BOOKINGS} element={<MyBookingsPage />} />
 						<Route path={ROUTES.SCHEDULE} element={<SchedulePage />} />
 						<Route path={ROUTES.PORTAL.APPOINTMENT_DETAIL} element={<PatientAppointmentDetailPage />} />
