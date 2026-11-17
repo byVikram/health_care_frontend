@@ -42,9 +42,9 @@ const NAVBAR_HEIGHT = 64
 const DOCTOR_MENU_ITEMS = [
 	{
 		id: 'appointments',
-		label: 'My Appointments',
+		label: 'Schedule',
 		icon: AppointmentIcon,
-		path: `${ROUTES.APPOINTMENTS}?view=doctor`,
+		path: ROUTES.SCHEDULE,
 	},
 	{ id: 'pharmacy', label: 'Pharmacy', icon: PharmacyIcon },
 	{ id: 'radiology', label: 'Radiology', icon: RadiologyIcon },
@@ -62,9 +62,9 @@ const DOCTOR_MENU_ITEMS = [
 const PATIENT_MENU_ITEMS = [
 	{
 		id: 'appointments',
-		label: 'My Appointments',
+		label: 'My Bookings',
 		icon: AppointmentIcon,
-		path: `${ROUTES.APPOINTMENTS}?view=patient`,
+		path: ROUTES.BOOKINGS,
 	},
 	{ id: 'pharmacy', label: 'Pharmacy', icon: PharmacyIcon },
 	{ id: 'radiology', label: 'Radiology', icon: RadiologyIcon },

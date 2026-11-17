@@ -15,6 +15,8 @@ export const API_ENDPOINTS = {
 		DETAIL: (id: string) => `/api/doctors/${id}`,
 		AVAILABILITY: '/api/doctors/availability',
 		OVERRIDES: '/api/doctors/availability/overrides',
+		/** GET: the signed-in doctor's clinics (primary first) with today's workload. */
+		CLINICS: '/api/doctors/clinics',
 	},
 	PHARMACIES: {
 		LIST: '/api/pharmacies',
@@ -71,6 +73,10 @@ export const API_ENDPOINTS = {
 		LABORATORY_REPORTS: (id: string) => `/api/patients/${id}/laboratory-reports`,
 		RADIOLOGY_REPORTS: (id: string) => `/api/patients/${id}/radiology-reports`,
 		APPOINTMENTS_HOSPITALS: '/api/patients/appointments/hospitals',
+		/** GET: the signed-in patient's header data: name, display id (KH-...), photo, profile completion %, family count. */
+		SUMMARY: '/api/patients/me/summary',
+		/** GET ?when=upcoming|past&category=all|doctor|ancillary|lab|pharmacy&page&limit: the combined bookings list (the app's Bookings tab). */
+		BOOKINGS: '/api/patients/me/bookings',
 	},
 	REVIEWS: {
 		CREATE: '/api/reviews',
@@ -79,6 +85,8 @@ export const API_ENDPOINTS = {
 	},
 	LOOKUP: {
 		GET: '/api/lookup',
+		/** GET: the signed-in user's sidebar rows (stable keys, label, icon key, group), chosen by role; the same list the mobile app's drawer shows. */
+		NAVIGATION: '/api/lookup/navigation',
 	},
 	DOCTORS_FAVOURITES: {
 		GET: '/api/doctors/favourites',
@@ -96,6 +104,8 @@ export const API_ENDPOINTS = {
 		/** GET: is online booking paused for the signed-in patient (repeated missed appointments), and until when. */
 		BOOKING_RESTRICTION: '/api/appointments/me/booking-restriction',
 		STATUSES: '/api/appointments/statuses',
+		/** Doctor only: the "Auto-confirm bookings" switch (GET reads it, PUT {enabled} sets it). */
+		AUTO_CONFIRM: '/api/appointments/me/auto-confirm',
 	},
 	PHARMACY: {
 		LIST: '/api/pharmacies',

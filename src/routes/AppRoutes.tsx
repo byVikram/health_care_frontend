@@ -25,6 +25,8 @@ import ConsultationPage from '../features/consultation/ConsultationPage'
 import DoctorAccountDetailsPage from '../features/auth/DoctorAccountDetailsPage'
 import PortalPage from '../features/portal/PortalPage'
 import DoctorAppointmentList from '../features/appointments/AppointmentList'
+import MyBookingsPage from '../features/bookings/MyBookingsPage'
+import SchedulePage from '../features/schedule/SchedulePage'
 import PatientAppointmentDetailPage from '../features/patient/PatientAppointmentDetailPage'
 import OrderList from '../features/Pharmacy/orders/OrderList'
 import OrderDetailPage from '../features/Pharmacy/orders/OrderDeatailPage'
@@ -206,6 +208,8 @@ export default function AppRoutes() {
 					<Route element={<LoggedInNavbarLayout />}>
 						<Route path={ROUTES.PORTAL.HOME} element={<PortalPage />} />
 						<Route path={ROUTES.APPOINTMENTS} element={<DoctorAppointmentList />} />
+						<Route path={ROUTES.BOOKINGS} element={<MyBookingsPage />} />
+						<Route path={ROUTES.SCHEDULE} element={<SchedulePage />} />
 						<Route path={ROUTES.PORTAL.APPOINTMENT_DETAIL} element={<PatientAppointmentDetailPage />} />
 						<Route path={ROUTES.PORTAL.PROFILE} element={<ProfilePage />} />
 						<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />

@@ -77,6 +77,11 @@ export const ROUTES = {
 
 	APPOINTMENTS: '/portal/appointments',
 
+	/** The patient's My bookings page (doctor visits, home care, lab and pharmacy in one list). */
+	BOOKINGS: '/bookings',
+	/** The doctor's Schedule page (calendar, clinics, the day's list and booking requests). */
+	SCHEDULE: '/schedule',
+
 	PORTAL: {
 		HOME: '/portal',
 		PROFILE: '/profile',

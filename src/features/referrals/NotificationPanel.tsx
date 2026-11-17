@@ -21,6 +21,8 @@ import { AppNotification } from '../../types/referral'
 import { customScrollbar } from '../../styles/commonStyles'
 import { useNavigate } from 'react-router-dom'
 import { fixDoubleDr } from '../../utils/Utils'
+import { useAuth } from '../../hooks/useAuth'
+import { ROUTES } from '../../constants/routes'
 
 // ── Time helpers ──────────────────────────────────────────────────────────────
 
@@ -119,6 +121,7 @@ export default function NotificationPanel({ iconColor = 'inherit' }: Props) {
 	const [loading, setLoading] = useState(false)
 	const anchorRef = useRef<HTMLButtonElement>(null)
 	const navigate = useNavigate()
+	const { role } = useAuth()
 
 	const unreadCount = notifications.filter((n) => !n.is_read).length
 
@@ -182,7 +185,8 @@ export default function NotificationPanel({ iconColor = 'inherit' }: Props) {
 			(notification.redirect_id || notification.reference_id)
 		) {
 			const appointmentId = notification.redirect_id || notification.reference_id
-			navigate(`/portal/appointments?appointment_id=${appointmentId}`)
+			// A doctor's appointment news opens their Schedule, a patient's opens My bookings (both pick the appointment out).
+			navigate(`${role === 'doctor' ? ROUTES.SCHEDULE : ROUTES.BOOKINGS}?appointment_id=${appointmentId}`)
 		}
 	}
 

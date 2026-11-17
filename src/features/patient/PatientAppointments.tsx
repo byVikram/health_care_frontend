@@ -316,7 +316,7 @@ export function PatientAppointments() {
 								height: '24px',
 							}}
 						/>
-						<Typography sx={{ fontSize: '12px', color: '#0c7c7c', fontWeight: 500, cursor: 'pointer' }} onClick={() => navigate(ROUTES.APPOINTMENTS + '?view=patient')}>See All</Typography>
+						<Typography sx={{ fontSize: '12px', color: '#0c7c7c', fontWeight: 500, cursor: 'pointer' }} onClick={() => navigate(ROUTES.BOOKINGS)}>See All</Typography>
 					</Box>
 				</Box>
 				<Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '11px' }}>

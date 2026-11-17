@@ -256,7 +256,7 @@ export default function PortalPage() {
 
 	const handleServiceIconClick = (title: string) => {
 		if (title === 'Appointment') {
-			navigate(ROUTES.APPOINTMENTS)
+			navigate(role === 'doctor' ? ROUTES.SCHEDULE : ROUTES.BOOKINGS)
 		} else if (title === 'Bookings') {
 			navigate(ROUTES.RADIOLOGY.BOOKINGS)
 		} else if (title === 'Orders') {

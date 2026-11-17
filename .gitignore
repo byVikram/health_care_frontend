@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 /.env
 /.vscode
+# Design reference exports (HTML mockups), kept locally; not part of the app
+/design
