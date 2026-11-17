@@ -27,13 +27,14 @@ export default function LoginPage() {
 		<Box>
 			{step === 'login' && (
 				<LoginForm
+					initialContactNumber={contactNumber}
 					onSubmit={(number) => {
 						setContactNumber(number)
 						setStep('otp')
 					}}
 				/>
 			)}
-			{step === 'otp' && <OtpForm contactNumber={contactNumber} onVerify={handleVerified} />}
+			{step === 'otp' && <OtpForm contactNumber={contactNumber} onVerify={handleVerified} onBack={() => setStep('login')} />}
 			{/* {step === 'verified' && <OtpVerified />} */}
 		</Box>
 	)

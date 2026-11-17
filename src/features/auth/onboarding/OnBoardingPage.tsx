@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Box, Typography } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight'
-import { onboardingData, UserRole } from '../../../data/onboardingData'
+import { onboardingData, type UserRole } from '../../../data/onboardingData'
 import AppButton from '../../../components/common/Button/AppButton'
 
 interface Props {
@@ -11,9 +11,12 @@ interface Props {
 	roleId: string
 	onFinish: (roleId: string) => void
 	onBack?: () => void
+	// The flow stops at the last slide for now: Skip jumps to the last slide instead of finishing (the caller decides what
+	// the last button does).
+	holdAtLastSlide?: boolean
 }
 
-export default function OnBoardingPage({ role, roleId, onFinish, onBack }: Props) {
+export default function OnBoardingPage({ role, roleId, onFinish, onBack, holdAtLastSlide = false }: Props) {
 	const slides = onboardingData[role].screens
 	const [currentIndex, setCurrentIndex] = useState(0)
 
@@ -26,6 +29,11 @@ export default function OnBoardingPage({ role, roleId, onFinish, onBack }: Props
 		else setCurrentIndex((prev) => prev + 1)
 	}
 
+	const handleSkip = () => {
+		if (holdAtLastSlide) setCurrentIndex(slides.length - 1)
+		else onFinish(roleId)
+	}
+
 	const handleBack = () => {
 		if (!isFirst) setCurrentIndex((prev) => prev - 1)
 		else if (onBack) onBack()
@@ -34,29 +42,29 @@ export default function OnBoardingPage({ role, roleId, onFinish, onBack }: Props
 	return (
 		<Box
 			sx={{
-				width: '100vw',
+				width: '100%',
 				minHeight: '100vh',
+				boxSizing: 'border-box',
 				background: 'linear-gradient(160deg, #2d7d7d 0%, #1a4f4f 60%, #0f3333 100%)',
 				display: 'flex',
 				alignItems: 'center',
 				justifyContent: 'center',
 				px: 2,
-				py: 4,
+				py: 2,
 			}}
 		>
 			<Box
 				sx={{
 					width: '100%',
 					maxWidth: 600,
-					minHeight: 580,
 					bgcolor: 'transparent',
 					display: 'flex',
 					flexDirection: 'column',
 					alignItems: 'center',
 					px: 6,
-					pt: 3,
-					pb: 5,
-					gap: 4,
+					pt: 1,
+					pb: 2,
+					gap: 2.5,
 				}}
 			>
 				{/* Top bar */}
@@ -73,7 +81,7 @@ export default function OnBoardingPage({ role, roleId, onFinish, onBack }: Props
 						}}
 					/>
 					<AppButton
-						onClick={() => onFinish(roleId)}
+						onClick={handleSkip}
 						label="Skip"
 						endIcon={<KeyboardDoubleArrowRightIcon sx={{ fontSize: '1.2rem !important' }} />}
 						disableRipple
@@ -104,19 +112,37 @@ export default function OnBoardingPage({ role, roleId, onFinish, onBack }: Props
 					}}
 				/>
 
-				{/* Title */}
-				<Typography
-					align="center"
-					sx={{
-						color: '#fff',
-						fontSize: { xs: '1.2rem', sm: '1.4rem' },
-						fontWeight: 500,
-						lineHeight: 1.6,
-						px: 2,
-					}}
-				>
-					{currentSlide.title}
-				</Typography>
+				{/* Bold heading + title */}
+				<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+					{currentSlide.heading && (
+						<Typography
+							align="center"
+							sx={{
+								color: '#fff',
+								fontSize: { xs: '1.05rem', sm: '1.2rem' },
+								fontWeight: 700,
+								lineHeight: 1.6,
+								letterSpacing: '0.04em',
+								textTransform: 'uppercase',
+								px: 2,
+							}}
+						>
+							{currentSlide.heading}
+						</Typography>
+					)}
+					<Typography
+						align="center"
+						sx={{
+							color: '#fff',
+							fontSize: { xs: '1.05rem', sm: '1.2rem' },
+							fontWeight: 500,
+							lineHeight: 1.6,
+							px: 2,
+						}}
+					>
+						{currentSlide.title}
+					</Typography>
+				</Box>
 
 				{/* Dot indicators */}
 				<Box sx={{ display: 'flex', gap: 1 }}>

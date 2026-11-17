@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react'
 import { SpecialitiesResponse } from '../types/speciality'
 import { AppointmentStatus } from '../types/appointment'
-import { UserRole as OnboardingUserRole } from '../data/onboardingData'
 
 export type UserRole =
 	| 'doctor'
@@ -162,59 +161,3 @@ export function setNotificationPromptShown(value: boolean): void {
 	localStorage.setItem('notification_prompt_shown', String(value))
 	window.dispatchEvent(new Event('auth-changed'))
 }
-
-
-export const ROLE_ID_MAP: Record<OnboardingUserRole, number> = {
-	PATIENT:    1,
-	DOCTOR:     2,
-	PHARMACY: 4,
-	RADIOLOGY:  5,
-}
-
-export interface OnboardingFlow {
-	selectedRole:           OnboardingUserRole | null
-	selectedRoleId:         number | null
-	onboardingStep:         'roleSelect' | 'onboarding' | 'register'
-	handleRoleSelect:       (role: OnboardingUserRole) => void
-	handleOnboardingFinish: (roleId: number) => void
-	goToRegister:           () => void
-}
-
-
-export function useOnboardingFlow(): OnboardingFlow {
-	
-	const [selectedRole, setSelectedRole] = useState<OnboardingUserRole | null>(null)
-
-	
-	const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)
-
-	
-	const [onboardingStep, setOnboardingStep] = useState<'roleSelect' | 'onboarding' | 'register'>('roleSelect')
-
-	
-	const handleRoleSelect = (role: OnboardingUserRole) => {
-		const roleId = ROLE_ID_MAP[role]
-		setSelectedRole(role)
-		setSelectedRoleId(roleId)
-		setOnboardingStep('onboarding')
-	}
-
-	
-	const handleOnboardingFinish = (roleId: number) => {
-		setSelectedRoleId(roleId)
-		setOnboardingStep('register')
-	}
-
-	
-	const goToRegister = () => setOnboardingStep('register')
-
-	return {
-		selectedRole,
-		selectedRoleId,
-		onboardingStep,
-		handleRoleSelect,
-		handleOnboardingFinish,
-		goToRegister,
-	}
-}
-

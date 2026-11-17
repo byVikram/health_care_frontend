@@ -37,9 +37,7 @@ import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
 import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee'
 import SickIcon from '@mui/icons-material/Sick'
 import MedicalInformationIcon from '@mui/icons-material/MedicalInformation'
-import DirectionsCarIcon from '@mui/icons-material/DirectionsCar'
 import AppButton from '../../components/common/Button/AppButton'
-import CareTransitCard from '../careTransit/components/CareTransitCard'
 
 import { getAppointmentById } from '../../services/appointmentService'
 import { getTreatmentByAppointment, Treatment } from '../../services/treatmentService'
@@ -366,16 +364,6 @@ export default function PatientAppointmentDetailPage() {
         <Grid container spacing={3} alignItems="stretch">
           {/* ── LEFT COLUMN: Doctor Info + Consultation Details ───────────── */}
           <Grid size={{ xs: 12, md: 5 }}>
-            {/* Shared CareTransit Card */}
-            {appt?.id && (
-              <CareTransitCard
-                bookingId={appt.id}
-                bookingType="doctor"
-                bookingUrl={`/portal/appointments/${appt.id}/book-ride`}
-                isClinicVisit={appt.appointment_mode === 'clinic visit' || appt.appointment_mode === 'clinic_visit'}
-              />
-            )}
-
             {/* Doctor Information Card */}
             <Box
               sx={{

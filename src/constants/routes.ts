@@ -28,7 +28,6 @@ export const ROUTES = {
 		BOOKINGS: '/radiology/bookings',
 		BOOKING_DETAIL: '/radiology/bookings/:bookingId',
 		SEARCH: '/radiology/search',
-		BOOK_RIDE: '/radiology/bookings/:bookingId/book-ride',
 	},
 
 	ANCILLARY: {
@@ -74,6 +73,7 @@ export const ROUTES = {
 	},
 
 	PAYMENT: '/payment',
+	APPOINTMENT_CONFIRMED: '/appointment-confirmed',
 
 	APPOINTMENTS: '/portal/appointments',
 
@@ -83,9 +83,6 @@ export const ROUTES = {
 		FAVOURITES: '/portal/favourites',
 		CONSULTATION: '/consultation/:patientId/:appointmentId',
 		APPOINTMENT_DETAIL: '/portal/appointments/:appointmentId',
-		BOOK_RIDE: '/portal/appointments/:appointmentId/book-ride',
-		TRANSPORTATION: '/portal/transportation',
-		TRACK_RIDE: '/portal/transit/track/:bookingType/:bookingId',
 	},
 
 	ADMIN: {

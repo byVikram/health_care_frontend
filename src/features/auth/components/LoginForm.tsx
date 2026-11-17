@@ -11,9 +11,11 @@ interface LoginFormProps {
 	onSubmit: (contactNumber: string) => void
 	mode?: 'page' | 'modal'
 	onSwitchToRegister?: () => void
+	// Pre-fills the number field, e.g. when the user comes back from the OTP step to change it.
+	initialContactNumber?: string
 }
 
-export default function LoginForm({ onSubmit, mode = 'page', onSwitchToRegister }: LoginFormProps) {
+export default function LoginForm({ onSubmit, mode = 'page', onSwitchToRegister, initialContactNumber = '' }: LoginFormProps) {
 	const navigate = useNavigate()
 	// const isMobile = useMediaQuery('(max-width: 600px)') // ← true on phone, false on desktop
 
@@ -25,7 +27,7 @@ export default function LoginForm({ onSubmit, mode = 'page', onSwitchToRegister 
 		navigate('/register')
 	}
 
-	const [contactNumber, setContactNumber] = useState('')
+	const [contactNumber, setContactNumber] = useState(initialContactNumber)
 	const [error, setError] = useState('')
 	const [apiError, setApiError] = useState('')
 	const [loading, setLoading] = useState(false)

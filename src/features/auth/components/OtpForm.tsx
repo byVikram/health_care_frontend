@@ -1,5 +1,6 @@
 // features/auth/components/OtpForm.tsx
-import { Box, Button, Typography, CircularProgress } from '@mui/material'
+import { Box, Button, Typography, CircularProgress, IconButton } from '@mui/material'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { useState, useEffect, useRef } from 'react'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { verifyOtp, sendOtp } from '../authService'
@@ -14,13 +15,24 @@ interface OtpFormProps {
 	// Receives the 6-digit OTP string. Return true = success, false = failure.
 	onCustomVerify?: (otp: string) => Promise<boolean>
 	onEdit?: () => void
+	// Optional: shows a back arrow next to the page heading (page mode) so the user can return to the
+	// previous step, e.g. to change the number they entered.
+	onBack?: () => void
 	// Optional visual variant. 'light' (default) keeps the original look used across
 	// booking/consultation OTP modals. 'dark' is used on surfaces with a dark
 	// background (e.g. the Admin Login OTP screen) so text/inputs stay legible.
 	variant?: 'light' | 'dark'
 }
 
-export default function OtpForm({ contactNumber, onVerify, mode = 'page', onCustomVerify, onEdit, variant = 'light' }: OtpFormProps) {
+export default function OtpForm({
+	contactNumber,
+	onVerify,
+	mode = 'page',
+	onCustomVerify,
+	onEdit,
+	onBack,
+	variant = 'light',
+}: OtpFormProps) {
 	const [otp, setOtp] = useState<string[]>(Array(6).fill(''))
 	const [error, setError] = useState('')
 	const [apiError, setApiError] = useState('')
@@ -285,9 +297,16 @@ export default function OtpForm({ contactNumber, onVerify, mode = 'page', onCust
 			{/* Right Side */}
 			<Box sx={{ width: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
 				<Box sx={{ width: '380px' }}>
-					<Typography variant="h4" sx={{ fontWeight: '600', marginBottom: '8px', fontSize: '32px' }}>
-						OTP Verification
-					</Typography>
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, marginBottom: '8px' }}>
+						{onBack && (
+							<IconButton onClick={onBack} aria-label="Go back and change number" edge="start" sx={{ color: '#2B6F71' }}>
+								<ArrowBackIcon />
+							</IconButton>
+						)}
+						<Typography variant="h4" sx={{ fontWeight: '600', fontSize: '32px' }}>
+							OTP Verification
+						</Typography>
+					</Box>
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 3 }}>
 						<Typography sx={{ fontSize: '14px', color: '#666' }}>
 							Enter the OTP received on{' '}
