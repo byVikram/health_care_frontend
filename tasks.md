@@ -48,24 +48,7 @@ This document tracks all remaining development tasks required to make the Whispe
 
 ---
 
-## 2. Transportation & Patient Cab Booking Integration
-
-### Backend Development Tasks (FastAPI & DB)
-- [ ] **Ride Booking DB Models**:
-  - Implement `RideBooking` database model (columns: `id`, `appointment_id`, `pickup_address`, `dropoff_address`, `ride_provider`, `vehicle_type`, `estimated_fare`, `is_return_ride`, `status` [scheduled/dispatched/completed/cancelled], `wheelchair_access`, `assistance_required`, `companions_count`, `payment_method`).
-  - Configure relationships to `Appointment` (allowing auto-dispatch and ride synchronization).
-- [ ] **API Endpoints**:
-  - Implement `POST /api/transportation/book` endpoint to create a ride reservation.
-  - Implement `GET /api/transportation/ride/{appointment_id}` to retrieve active ride tracking state.
-  - Implement webhook receivers for mock Uber/Ola provider status update events.
-
-### Frontend Refactoring
-- [ ] Replace `localStorage` mock logic in `BookRidePage.tsx` and `TransportationWidget.tsx` with axios backend API calls (`createPharmacyOrder`-style handlers).
-- [ ] Integrate actual backend polling/websockets for driver location update events on `RideMapTracker.tsx`.
-
----
-
-## 3. Ancillary, Allied, and Therapeutic Search Pages
+## 2. Ancillary, Allied, and Therapeutic Search Pages
 
 ### Frontend Pages Implementation
 - [ ] **Ancillary Search Page**:
@@ -83,18 +66,18 @@ This document tracks all remaining development tasks required to make the Whispe
 
 ---
 
-## 4. Admin Billing Portal
+## 3. Admin Billing Portal
 
 ### Admin Console & Backend Billing
 - [ ] **Admin Billing Screen**:
   - Implement `AdminBillingPage` component at `/admin/billing` (currently registered route with no UI view).
   - Add tables for medical co-pay logs, hospital invoices, and NEMT reimbursement requests.
 - [ ] **Consolidated Checkout**:
-  - Implement dynamic checkout invoices bundling consultation fees, pharmacy orders, and transportation costs.
+  - Implement dynamic checkout invoices bundling consultation fees and pharmacy orders.
 
 ---
 
-## 5. Caregiver Notifications & Real-Time Alerts
+## 4. Caregiver Notifications & Real-Time Alerts
 
 ### SMS & Push Notification Engine
 - [ ] Integrate a backend notification service (e.g., Twilio / WhatsApp) to trigger automated SMS status updates to registered caregiver contact numbers (e.g., dispatch notices, arrival updates, emergency SOS locations).

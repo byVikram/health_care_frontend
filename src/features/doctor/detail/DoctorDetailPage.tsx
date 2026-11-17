@@ -768,6 +768,8 @@ export default function DoctorDetailPage() {
 							doctorName: doctorDetail?.name ?? '',
 							avatarUrl: buildS3Url(doctorDetail?.details?.avatar_s3_key),
 							specialty: doctorDetail?.specialities?.[0] ?? 'Doctor',
+							experienceYears: doctorDetail?.details?.experience_years,
+							distance: selectedHospitalEntry?.hospital?.distance,
 							date: selectedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
 							time: resolvedSelectedTime,
 							appointmentType: selectedType === 'clinic' ? 'Clinic Visit' : 'Video Call',

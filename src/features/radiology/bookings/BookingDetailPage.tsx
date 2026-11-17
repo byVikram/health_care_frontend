@@ -53,7 +53,6 @@ import {
 import { formatINR } from '../../../utils/Utils'
 import { useAuth } from '../../../hooks/useAuth'
 import { USER_ROLES } from '../../../constants/constants'
-import CareTransitCard from '../../careTransit/components/CareTransitCard'
 
 
 interface QuoteFormItem {
@@ -505,15 +504,6 @@ export default function BookingDetailPage() {
 				{/* Left column */}
 				<Grid size={{ xs: 12, md: 8 }}>
 					<Stack spacing={3}>
-						{/* Transportation — patient view only */}
-						{!isRadiologyViewer && bookingId && (
-							<CareTransitCard
-								bookingId={bookingId}
-								bookingType="radiology"
-								bookingUrl={`/radiology/bookings/${bookingId}/book-ride`}
-								isClinicVisit={true}
-							/>
-						)}
 						<SectionCard title="Patient Details">
 							<Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-start' }}>
 								{/* Avatar */}

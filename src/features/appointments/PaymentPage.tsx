@@ -3,10 +3,9 @@ import { formatINR } from '../../utils/Utils'
 import phonePeImg from '../../assets/payment/phone-pay.png'
 import googlePayImg from '../../assets/payment/google-pay.png'
 import amazonPayImg from '../../assets/payment/amazone-pay.png'
-import whatsappImg from '../../assets/payment/whatsapp.png'
 import paytmImg from '../../assets/payment/paytm.png'
 import creditCardImg from '../../assets/payment/credit-card.png'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { ROUTES } from '../../constants/routes'
@@ -23,7 +22,6 @@ import {
 	Collapse,
 	IconButton,
 	Avatar,
-	Checkbox,
 	Dialog,
 	DialogContent,
 	// TextField,
@@ -31,16 +29,12 @@ import {
 } from '@mui/material'
 import {
 	ArrowBack,
-	CalendarToday,
-	AccessTime,
-	MedicalServices,
-	LocationOn,
+	LockOutlined,
 	// UploadFile,
 } from '@mui/icons-material'
 import AppButton from '../../components/common/Button/AppButton'
-import ConfirmModal from '../../components/common/Modal/ConfirmModal'
+import SectionCard from '../../components/common/Card/SectionCard'
 import { createAppointment, updatePreIntake } from '../doctor/doctorService'
-import TransportationWidget from '../transportation/components/TransportationWidget'
 import AppInput from '../../components/common/Input/AppInput'
 
 /* ─── types ─────────────────────────────────────────────────── */
@@ -65,6 +59,14 @@ interface PaymentState {
 	consentVersionId: string
 	/** Public id of the person the appointment is for (the signed-in patient or one of their family members) */
 	patientId?: string
+	/** Who the appointment is for (shown on this page, as in the mobile app) */
+	patientName?: string
+	patientRelation?: string
+	patientAge?: number | string
+	patientGender?: string
+	/** Shown beside the doctor's specialty, and the clinic's distance */
+	experienceYears?: number | null
+	distance?: string | number | null
 }
 
 interface PaymentOption {
@@ -132,36 +134,42 @@ export default function PaymentPage() {
 		referralId,
 		consentVersionId,
 		patientId,
+		patientName,
+		patientRelation,
+		patientAge,
+		patientGender,
+		experienceYears,
+		distance,
 	} = state
 
-	// Transportation option states (synced from widget plugin)
-	const [needRide, setNeedRide] = useState(false)
-	const [selectedRideOption, setSelectedRideOption] = useState<string | null>(null)
-	const [isReturnRideRequested, setIsReturnRideRequested] = useState(false)
-	const [selectedRideDetails, setSelectedRideDetails] = useState<{
-		label: string
-		price: number
-		address: string
-		wheelchair?: boolean
-		assistance?: boolean
-		companion?: boolean
-		paymentMethod?: 'pay_now' | 'hospital_bill' | 'insurance'
-	} | null>(null)
-
-	const ridePrice = needRide && selectedRideDetails ? selectedRideDetails.price : 0
-	const returnRidePrice = needRide && isReturnRideRequested && selectedRideDetails ? selectedRideDetails.price : 0
-	const total = consultationFee + serviceFee + ridePrice + returnRidePrice
+	const total = consultationFee + serviceFee
 
 	const [paymentChoice, setPaymentChoice] = useState<'now' | 'later'>(allowPayLater ? 'later' : 'now')
+	// Opening the online options makes the bill card taller; the appointment card keeps the height it had (they matched before).
+	const billCardRef = useRef<HTMLDivElement | null>(null)
+	const [appointmentCardHeight, setAppointmentCardHeight] = useState<number | null>(null)
+	const choosePayment = (choice: 'now' | 'later') => {
+		// Hold the appointment card at the height it has now; do not overwrite a hold that is still in place (a quick switch back and forth).
+		if (choice === 'now' && allowPayLater && !appointmentCardHeight && billCardRef.current) {
+			setAppointmentCardHeight(billCardRef.current.offsetHeight)
+		}
+		// Going back to pay at clinic does NOT release the hold yet: the bill card is still folding up, and the appointment card
+		// must not follow it down. The hold is released when the folding has finished (the Collapse's onExited below).
+		setPaymentChoice(choice)
+	}
 	const [selectedPayment, setSelectedPayment] = useState('phonepe')
-	const [whatsapp, setWhatsapp] = useState(false)
 	const [booking, setBooking] = useState(false)
-	const [successOpen, setSuccessOpen] = useState(false)
 	const [symptomsOpen, setSymptomsOpen] = useState(false)
 	const [symptoms, setSymptoms] = useState('')
 	const [duration, setDuration] = useState('')
 	const [severity, setSeverity] = useState<'mild' | 'moderate' | 'severe' | ''>('')
 	const [appointmentId, setAppointmentId] = useState('')
+	// Refs, not state, so they hold at once: state only changes at the next render, so clicks inside the same event cycle would
+	// all pass a state check. (Mirrors bookingInFlightRef / bookedRef of the mobile payment screen.)
+	// - bookingInFlightRef: a booking request is on its way; taken just before the request, released in `finally`.
+	// - bookedAppointmentIdRef: the appointment exists; from then on this booking flow never sends another request.
+	const bookingInFlightRef = useRef(false)
+	const bookedAppointmentIdRef = useRef('')
 	const [errorMsg, setErrorMsg] = useState<string | null>(null)
 	// Why the booking cannot go on as it is: the chosen time was taken (or blocked) by the time the patient confirmed, or the booking
 	// terms were updated since they accepted them. Either way the way forward is the doctor page: a fresh list of slots, and the
@@ -185,24 +193,40 @@ export default function PaymentPage() {
 		navigate(referralId ? `${path}?referral_id=${encodeURIComponent(referralId)}` : path, { replace: true })
 	}
 
-	/** After booking the patient lands on the appointment they just made, not back on the doctor's page. */
-	const goToAppointment = () => {
-		navigate(appointmentId ? ROUTES.PORTAL.APPOINTMENT_DETAIL.replace(':appointmentId', appointmentId) : ROUTES.APPOINTMENTS)
+	/**
+	 * After booking (and the symptoms card) the patient sees the Appointment Confirmed page. /payment is replaced by Home first,
+	 * so the history reads [... doctor page, Home, confirmation]: Back from the confirmation goes Home and never to the payment page.
+	 */
+	const goToConfirmation = () => {
+		if (!appointmentId) {
+			navigate(ROUTES.APPOINTMENTS)
+			return
+		}
+		navigate(ROUTES.PORTAL.HOME, { replace: true })
+		// Only the id and the payment choice (what the patient picked; the server keeps no payment method) travel: the confirmation page reads the appointment itself from the server.
+		navigate(ROUTES.APPOINTMENT_CONFIRMED, {
+			state: {
+				appointmentId,
+				paymentChoice,
+				paymentMethodLabel:
+					paymentChoice === 'later'
+						? 'Pay at clinic'
+						: PAYMENT_OPTIONS.find((o) => o.id === selectedPayment)?.label,
+			},
+		})
 	}
-
-	const infoRows = [
-		{ icon: <CalendarToday sx={{ fontSize: 14, color: 'text.secondary' }} />, label: 'Date:', value: date },
-		{ icon: <AccessTime sx={{ fontSize: 14, color: 'text.secondary' }} />, label: 'Time:', value: time },
-		{
-			icon: <MedicalServices sx={{ fontSize: 14, color: 'text.secondary' }} />,
-			label: 'Type:',
-			value: appointmentType,
-		},
-		{ icon: <LocationOn sx={{ fontSize: 14, color: 'text.secondary' }} />, label: 'Location:', value: clinic },
-	]
 
 	const handleConfirm = async () => {
 		if (missingBookingDetails) return
+		// The appointment already exists: never send another request from this booking, only bring back the step the patient was on.
+		if (bookedAppointmentIdRef.current) {
+			setSymptomsOpen(true)
+			return
+		}
+		// A request is already on its way (a repeated click): wait for it.
+		if (bookingInFlightRef.current) return
+		// Taken after the checks above that return early, and always released in the `finally` below.
+		bookingInFlightRef.current = true
 		setBooking(true)
 		setErrorMsg(null)
 		setRestartReason(null)
@@ -221,39 +245,16 @@ export default function PaymentPage() {
 			const response = await createAppointment(payload as unknown as Parameters<typeof createAppointment>[0])
 
 			const apptId = (response.data as { id: string }).id
+			bookedAppointmentIdRef.current = apptId
 			setAppointmentId(apptId)
 
-			if (needRide && selectedRideDetails) {
-				const mockRide = {
-					appointment_id: apptId,
-					pickup_address: selectedRideDetails.address,
-					dropoff_address: clinic,
-					ride_provider: 'Uber',
-					vehicle_type: selectedRideDetails.label,
-					estimated_fare: selectedRideDetails.price,
-					is_return_ride: false,
-					status: 'scheduled',
-					wheelchair: selectedRideDetails.wheelchair,
-					assistance: selectedRideDetails.assistance,
-					companion: selectedRideDetails.companion,
-					payment_method: selectedRideDetails.paymentMethod,
-				}
-				localStorage.setItem(`ride_${apptId}`, JSON.stringify(mockRide))
-
-				if (isReturnRideRequested) {
-					const mockReturnRide = {
-						...mockRide,
-						pickup_address: clinic,
-						dropoff_address: selectedRideDetails.address,
-						is_return_ride: true,
-						estimated_fare: selectedRideDetails.price,
-					}
-					localStorage.setItem(`ride_return_${apptId}`, JSON.stringify(mockReturnRide))
-				}
-			}
-
-			setSuccessOpen(true)
+			setSymptomsOpen(true)
 		} catch (error) {
+			// The appointment was created and something after that failed: it is booked, so never say it was not.
+			if (bookedAppointmentIdRef.current) {
+				setSymptomsOpen(true)
+				return
+			}
 			const data = (error as { response?: { data?: { message?: string; code?: string } } })?.response?.data
 			const reason = data?.message
 			if (data?.code === 'CONSENT_OUTDATED') {
@@ -268,13 +269,13 @@ export default function PaymentPage() {
 					: 'Your appointment was not booked. Please check your connection and try again.'
 			)
 		} finally {
+			bookingInFlightRef.current = false
 			setBooking(false)
 		}
 	}
 
-
 	return (
-		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
+		<Box sx={{ bgcolor: 'background.default' }}>
 			{/* ── Top bar ── */}
 			<Box
 				sx={{
@@ -302,456 +303,412 @@ export default function PaymentPage() {
 				</Typography>
 			</Box>
 
-			<Container maxWidth="sm" sx={{ py: 3, px: { xs: 2, sm: 3 } }}>
-				{/* ── Single card — everything inside ── */}
+			<Container maxWidth="lg" sx={{ py: 1.5, px: { xs: 2, sm: 3 } }}>
+				{/* Two columns on a laptop: who and when on the left, the bill and payment on the right */}
 				<Box
 					sx={{
-						bgcolor: 'background.paper',
-						borderRadius: '16px',
-						border: '1px solid',
-						borderColor: 'divider',
-						overflow: 'hidden',
+						display: 'grid',
+						gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.15fr) minmax(0, 1fr)' },
+						gap: 3,
+						alignItems: 'stretch',
 					}}
 				>
-					{/* Referral banner — shown only when booking from a referral */}
-					{referralId && (
-						<Box
-							sx={{
-								bgcolor: '#e8f4f8',
-								borderBottom: '1px solid rgba(12,124,124,0.2)',
-								px: 2.5,
-								py: 1,
-								display: 'flex',
-								alignItems: 'center',
-								gap: 0.8,
-							}}
-						>
+					{/* ── Appointment ── */}
+					<SectionCard
+						title="Appointment"
+						noPadding
+						action={<AppButton variant="text" label="Change" onClick={() => goBack()} />}
+						sx={{
+							...(appointmentCardHeight ? { height: appointmentCardHeight, alignSelf: 'start' } : {}),
+							overflow: 'hidden',
+						}}
+					>
+						<Divider />
+						{/* Referral banner: shown only when booking from a referral */}
+						{referralId && (
 							<Box
 								sx={{
-									width: 6,
-									height: 6,
-									borderRadius: '50%',
-									bgcolor: '#0c7c7c',
-									flexShrink: 0,
+									bgcolor: '#e8f4f8',
+									borderBottom: '1px solid rgba(12,124,124,0.2)',
+									px: 2.5,
+									py: 1,
+									display: 'flex',
+									alignItems: 'center',
+									gap: 0.8,
 								}}
-							/>
-							<Typography fontSize={12} fontWeight={600} color="#0c7c7c">
-								Booking via referral
-							</Typography>
-						</Box>
-					)}
-
-					{/* Doctor header */}
-					<Box sx={{ px: 2.5, py: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-						<Avatar
-							src={avatarUrl}
-							alt={doctorName}
-							sx={{ width: 46, height: 46, bgcolor: 'primary.main', fontSize: 18, fontWeight: 700 }}
-						>
-							{doctorName.charAt(0)}
-						</Avatar>
-						<Box>
-							<Typography fontWeight={700} fontSize={15} color="text.primary">
-								{doctorName}
-							</Typography>
-							<Typography variant="body2" fontSize={12} color="text.secondary">
-								{specialty}
-							</Typography>
-						</Box>
-					</Box>
-
-					<Divider />
-
-					{/* Appointment info rows */}
-					<Box sx={{ px: 2.5, py: 2, display: 'flex', flexDirection: 'column', gap: 1.1 }}>
-						{infoRows.map((row) => (
-							<Box key={row.label} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-								{row.icon}
-								<Typography variant="body2" color="text.secondary" sx={{ width: 72, flexShrink: 0 }}>
-									{row.label}
-								</Typography>
-								<Typography
-									variant="body2"
-									fontWeight={500}
-									color="text.primary"
-									sx={{ ml: 'auto', textAlign: 'right' }}
-								>
-									{row.value || '—'}
-								</Typography>
-							</Box>
-						))}
-					</Box>
-
-					<Divider />
-
-					{/* Bill details */}
-					<Box sx={{ px: 2.5, py: 2 }}>
-						<Typography fontWeight={700} fontSize={14} mb={1.5} color="text.primary">
-							Bill Details
-						</Typography>
-
-						<Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.8 }}>
-							<Typography variant="body2" color="text.secondary">
-								Consultation fee:
-							</Typography>
-							<Typography variant="body2" fontWeight={500} color="text.primary">
-								{formatINR(consultationFee)}
-							</Typography>
-						</Box>
-
-						<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-							<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-								<Typography variant="body2" color="text.secondary">
-									Service Fee & Tax
-								</Typography>
-							</Box>
-							<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-								{serviceFee > 0 && (
-									<Typography
-										variant="body2"
-										color="text.secondary"
-										sx={{ textDecoration: 'line-through' }}
-									>
-										{formatINR(serviceFee)}
-									</Typography>
-								)}
-								<Typography variant="body2" fontWeight={700} color="success.main">
-									FREE
-								</Typography>
-							</Box>
-						</Box>
-
-						{needRide && selectedRideDetails && (
-							<Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.8 }}>
-								<Typography variant="body2" color="text.secondary">
-									Onward Ride ({selectedRideDetails.label}):
-								</Typography>
-								<Typography variant="body2" fontWeight={500} color="text.primary">
-									{formatINR(selectedRideDetails.price)}
-								</Typography>
-							</Box>
-						)}
-
-						{needRide && isReturnRideRequested && selectedRideDetails && (
-							<Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.8 }}>
-								<Typography variant="body2" color="text.secondary">
-									Return Ride ({selectedRideDetails.label}):
-								</Typography>
-								<Typography variant="body2" fontWeight={500} color="text.primary">
-									{formatINR(selectedRideDetails.price)}
-								</Typography>
-							</Box>
-						)}
-
-						<Divider sx={{ my: 1.5 }} />
-
-						<Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-							<Typography fontWeight={700} fontSize={14} color="text.primary">
-								Total Payable
-							</Typography>
-							<Typography fontWeight={700} fontSize={14} color="text.primary">
-								{formatINR(total)}
-							</Typography>
-						</Box>
-					</Box>
-
-					{/* Transportation Option (Only for Clinic Visit) */}
-					{appointmentMode === 'clinic_visit' && (
-						<>
-							<Divider />
-							<TransportationWidget
-								clinicAddress={clinic}
-								needRide={needRide}
-								setNeedRide={setNeedRide}
-								selectedRideOption={selectedRideOption}
-								setSelectedRideOption={setSelectedRideOption}
-								isReturnRideRequested={isReturnRideRequested}
-								setIsReturnRideRequested={setIsReturnRideRequested}
-								appointmentTime={startTime}
-								onRideSelect={(ride) => {
-									if (ride) {
-										setSelectedRideDetails(ride)
-									} else {
-										setSelectedRideDetails(null)
-									}
-								}}
-							/>
-						</>
-					)}
-
-					<Divider />
-
-					{/* Pay Now / Pay Later */}
-					<Box sx={{ px: 2.5, py: 2 }}>
-						<Typography fontWeight={700} fontSize={14} mb={1.25} color="text.primary">
-							Payment Method
-						</Typography>
-
-						<FormControl component="fieldset" fullWidth>
-							<RadioGroup
-								value={paymentChoice}
-								onChange={(e) => setPaymentChoice(e.target.value as 'now' | 'later')}
 							>
-								<FormControlLabel
-									value="later"
-									disabled={!allowPayLater}
-									sx={{
-										mx: 0,
-										px: 1.5,
-										width: '100%',
-										display: 'flex',
-										justifyContent: 'space-between',
-										opacity: !allowPayLater ? 0.5 : 1,
-									}}
-									control={
-										<Radio
-											size="small"
-											sx={{
-												order: 2,
-												ml: 'auto',
-												color: 'primary.main',
-												'&.Mui-checked': { color: 'primary.main' },
-												'&:focus': { outline: 'none' },
-											}}
-										/>
-									}
-									label={
-										<Typography
-											variant="body2"
-											fontWeight={500}
-											color="text.primary"
-											sx={{ order: 1, flex: 1 }}
-										>
-											Pay Later
-										</Typography>
-									}
+								<Box
+									sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#0c7c7c', flexShrink: 0 }}
 								/>
-								<FormControlLabel
-									value="now"
-									sx={{
-										mx: 0,
-										px: 1.5,
-										width: '100%',
-										display: 'flex',
-										justifyContent: 'space-between',
-									}}
-									control={
-										<Radio
-											size="small"
-											sx={{
-												order: 2,
-												ml: 'auto',
-												color: 'primary.main',
-												'&.Mui-checked': { color: 'primary.main' },
-												'&:focus': { outline: 'none' },
-											}}
-										/>
-									}
-									label={
-										<Typography
-											variant="body2"
-											fontWeight={500}
-											color="text.primary"
-											sx={{ order: 1, flex: 1 }}
-										>
-											Pay Now
-										</Typography>
-									}
-								/>
-							</RadioGroup>
-						</FormControl>
-					</Box>
-
-					{/* Payment options — only when Pay Now */}
-					<Collapse in={paymentChoice === 'now'} timeout={250} unmountOnExit>
-						<Box sx={{ px: 2.5, pb: 2 }}>
-							<FormControl component="fieldset" fullWidth>
-								<RadioGroup
-									value={selectedPayment}
-									onChange={(e) => setSelectedPayment(e.target.value)}
-									sx={{ gap: 0.5 }}
-								>
-									{PAYMENT_OPTIONS.map((opt) => (
-										<FormControlLabel
-											key={opt.id}
-											value={opt.id}
-											sx={{
-												mx: 0,
-												px: 1.5,
-												py: 0.6,
-												borderRadius: '8px',
-												border: '1px solid',
-												borderColor: 'divider',
-												'&:hover': { bgcolor: 'rgba(43,111,113,0.04)' },
-											}}
-											control={
-												<Radio
-													size="small"
-													sx={{
-														order: 2,
-														ml: 'auto',
-														color: 'primary.main',
-														'&.Mui-checked': { color: 'primary.main' },
-														'&:focus': { outline: 'none' },
-													}}
-												/>
-											}
-											label={
-												<Box
-													sx={{
-														display: 'flex',
-														alignItems: 'center',
-														gap: 1.25,
-														order: 1,
-														flex: 1,
-													}}
-												>
-													<Box
-														sx={{
-															width: 28,
-															height: 28,
-															display: 'flex',
-															alignItems: 'center',
-															justifyContent: 'center',
-														}}
-													>
-														{opt.icon}
-													</Box>
-													<Typography variant="body2" fontWeight={500} color="text.primary">
-														{opt.label}
-													</Typography>
-												</Box>
-											}
-										/>
-									))}
-								</RadioGroup>
-							</FormControl>
-						</Box>
-					</Collapse>
-
-					<Divider />
-
-					{/* WhatsApp notification */}
-					<Box sx={{ px: 2.5, py: 1.75, display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-						<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1 }}>
-							<Box
-								component="img"
-								src={whatsappImg}
-								sx={{ width: 22, height: 22, objectFit: 'contain', flexShrink: 0 }}
-							/>
-							<Box>
-								<Typography variant="body2" fontWeight={600} color="text.primary">
-									Get notifications on whatsapp
+								<Typography fontSize={12} fontWeight={600} color="#0c7c7c">
+									Booking via referral
 								</Typography>
+							</Box>
+						)}
+
+						{/* Doctor */}
+						<Box sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+							<Avatar
+								src={avatarUrl}
+								alt={doctorName}
+								sx={{ width: 56, height: 56, bgcolor: 'primary.main', fontSize: 20, fontWeight: 700 }}
+							>
+								{doctorName.charAt(0)}
+							</Avatar>
+							<Box sx={{ flex: 1, minWidth: 0 }}>
+								<Typography fontWeight={700} fontSize={17} color="text.primary">
+									{doctorName}
+								</Typography>
+								<Typography variant="body2" color="text.secondary">
+									{[specialty, experienceYears != null ? `${experienceYears} yrs` : '']
+										.filter(Boolean)
+										.join(' · ')}
+								</Typography>
+							</Box>
+						</Box>
+
+						<Divider />
+
+						{/* When / Where */}
+						<Box
+							sx={{
+								px: 3,
+								py: 2,
+								display: 'grid',
+								gridTemplateColumns: { xs: '1fr', sm: 'minmax(0, 1fr) minmax(0, 1.4fr)' },
+								gap: { xs: 2, sm: 3 },
+							}}
+						>
+							<Box>
 								<Typography
 									variant="caption"
 									color="text.secondary"
-									sx={{ display: 'block', lineHeight: 1.5, mt: 0.25 }}
+									sx={{ fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}
 								>
-									Updates will be sent to +91XXXXXXXXXX
+									When
+								</Typography>
+								<Typography fontWeight={700} fontSize={16} color="text.primary">
+									{time || '—'}
+								</Typography>
+								<Typography variant="body2" color="text.secondary">
+									{date}
+								</Typography>
+							</Box>
+							<Box sx={{ minWidth: 0 }}>
+								<Typography
+									variant="caption"
+									color="text.secondary"
+									sx={{ fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}
+								>
+									Where
+								</Typography>
+								<Typography
+									fontWeight={600}
+									fontSize={15}
+									color="text.primary"
+									sx={{ wordBreak: 'break-word' }}
+								>
+									{appointmentMode === 'video_call' ? 'Video consultation' : clinic || '—'}
+								</Typography>
+								<Typography variant="body2" color="text.secondary">
+									{appointmentMode === 'video_call'
+										? 'Video call'
+										: [
+												'In-clinic',
+												distance != null && distance !== ''
+													? /km/i.test(String(distance))
+														? distance
+														: `${distance} km`
+													: '',
+											]
+												.filter(Boolean)
+												.join(' · ')}
 								</Typography>
 							</Box>
 						</Box>
-						<Checkbox
-							size="small"
-							checked={whatsapp}
-							onChange={(e) => setWhatsapp(e.target.checked)}
-							sx={{
-								color: 'divider',
-								'&.Mui-checked': { color: 'primary.main' },
-								p: 0.5,
-								mt: 0.25,
-								'&:focus': { outline: 'none' },
-							}}
-						/>
-					</Box>
 
-					{/* Terms note */}
-					<Box sx={{ px: 2.5, pb: 2 }}>
-						<Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6, display: 'block' }}>
-							• Updates will be sent to +91XXXXXXXXXX
-						</Typography>
-						<Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6, display: 'block' }}>
-							• By booking the appointment, you agree to Factory's Terms & Conditions.
-						</Typography>
-						<Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6, display: 'block' }}>
-							• You can also Pre-pay for this appointment by selecting Pay Online option. You can read our
-							payment FAQs.
-						</Typography>
-					</Box>
+						<Divider />
 
-					<Divider />
-
-					{/* Bottom CTA */}
-					<Box
-						sx={{
-							px: 2.5,
-							py: 2,
-							display: 'flex',
-							alignItems: 'center',
-							justifyContent: 'space-between',
-						}}
-					>
-						<Box>
-							<Typography fontWeight={700} fontSize={20} color="text.primary">
-								{formatINR(total)}
+						{/* For whom the appointment is booked */}
+						<Box sx={{ px: 3, py: 1.75, display: 'flex', alignItems: 'center', gap: 2 }}>
+							<Typography
+								variant="caption"
+								color="text.secondary"
+								sx={{
+									fontWeight: 700,
+									letterSpacing: '0.06em',
+									textTransform: 'uppercase',
+									width: 56,
+									flexShrink: 0,
+								}}
+							>
+								For
 							</Typography>
-							<Typography variant="caption" color="text.secondary">
-								{paymentChoice === 'now' ? 'Pay Now' : 'Pay Now'}
-							</Typography>
-						</Box>
-
-						{errorMsg && (
-							<Box sx={{ flex: 1, mx: 2, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-								<Typography variant="caption" color="error.main">
-									{errorMsg}
+							<Box sx={{ minWidth: 0 }}>
+								<Typography fontWeight={600} fontSize={15} color="text.primary">
+									{patientName || 'You'}
+									{patientRelation ? ` (${patientRelation})` : ''}
 								</Typography>
-								{restartReason && (
-									<AppButton
-										variant="text"
-										size="small"
-										label={restartReason === 'consent' ? 'Review the new terms' : 'Choose another slot'}
-										onClick={chooseAnotherSlot}
-									/>
+								{(patientAge || patientGender) && (
+									<Typography variant="body2" color="text.secondary">
+										{[patientAge ? `${patientAge} yrs` : '', patientGender]
+											.filter(Boolean)
+											.join(' · ')}
+									</Typography>
 								)}
 							</Box>
-						)}
+						</Box>
+					</SectionCard>
 
-						<AppButton
-							label={paymentChoice === 'now' ? 'Confirm & Pay' : `Confirm ${appointmentType}`}
-							loading={booking}
-							onClick={handleConfirm}
-							borderRadius="10px"
-							sx={{ px: 7, fontWeight: 700 }}
-						/>
+					{/* ── Bill and payment ── */}
+					<Box ref={billCardRef} sx={{ display: 'flex' }}>
+						<SectionCard title="Bill details" noPadding sx={{ flex: 1, overflow: 'hidden' }}>
+							<Divider />
+							{/* Bill details */}
+							<Box sx={{ px: 3, py: 2 }}>
+								<Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.8 }}>
+									<Typography variant="body2" color="text.secondary">
+										Consultation fee
+									</Typography>
+									<Typography variant="body2" fontWeight={500} color="text.primary">
+										{formatINR(consultationFee)}
+									</Typography>
+								</Box>
+
+								<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+									<Typography variant="body2" color="text.secondary">
+										Booking fee
+									</Typography>
+									<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+										{serviceFee > 0 && (
+											<Typography
+												variant="body2"
+												color="text.secondary"
+												sx={{ textDecoration: 'line-through' }}
+											>
+												{formatINR(serviceFee)}
+											</Typography>
+										)}
+										<Typography variant="body2" fontWeight={700} color="success.main">
+											Free
+										</Typography>
+									</Box>
+								</Box>
+
+								<Divider sx={{ my: 1.5 }} />
+
+								<Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+									<Typography fontWeight={700} fontSize={15} color="text.primary">
+										To pay
+									</Typography>
+									<Typography fontWeight={700} fontSize={15} color="text.primary">
+										{formatINR(total)}
+									</Typography>
+								</Box>
+							</Box>
+
+							<Divider />
+
+							{/* Pay with */}
+							<Box sx={{ px: 3, py: 2 }}>
+								<Typography fontWeight={700} fontSize={15} mb={1} color="text.primary">
+									Pay with
+								</Typography>
+
+								<FormControl component="fieldset" fullWidth>
+									<RadioGroup
+										value={paymentChoice}
+										onChange={(e) => choosePayment(e.target.value as 'now' | 'later')}
+									>
+										{(
+											[
+												{ value: 'later', label: 'Pay at clinic', disabled: !allowPayLater },
+												{ value: 'now', label: 'Pay online', disabled: false },
+											] as const
+										).map((choice) => (
+											<FormControlLabel
+												key={choice.value}
+												value={choice.value}
+												disabled={choice.disabled}
+												sx={{
+													mx: 0,
+													px: 1.5,
+													width: '100%',
+													display: 'flex',
+													justifyContent: 'space-between',
+													opacity: choice.disabled ? 0.5 : 1,
+												}}
+												control={
+													<Radio
+														size="small"
+														sx={{
+															order: 2,
+															ml: 'auto',
+															color: 'primary.main',
+															'&.Mui-checked': { color: 'primary.main' },
+															'&:focus': { outline: 'none' },
+														}}
+													/>
+												}
+												label={
+													<Typography
+														variant="body2"
+														fontWeight={500}
+														color="text.primary"
+														sx={{ order: 1, flex: 1 }}
+													>
+														{choice.label}
+													</Typography>
+												}
+											/>
+										))}
+									</RadioGroup>
+								</FormControl>
+
+								{/* Online payment options: only when paying online, two to a row to keep the page short */}
+								<Collapse
+									in={paymentChoice === 'now'}
+									timeout={250}
+									unmountOnExit
+									onExited={() => setAppointmentCardHeight(null)}
+								>
+									<RadioGroup
+										value={selectedPayment}
+										onChange={(e) => setSelectedPayment(e.target.value)}
+										sx={{
+											mt: 1,
+											display: 'grid',
+											gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+											gap: 1,
+										}}
+									>
+										{PAYMENT_OPTIONS.map((opt) => (
+											<FormControlLabel
+												key={opt.id}
+												value={opt.id}
+												sx={{
+													mx: 0,
+													px: 1.25,
+													py: 0.4,
+													borderRadius: '8px',
+													border: '1px solid',
+													borderColor: 'divider',
+													'&:hover': { bgcolor: 'rgba(43,111,113,0.04)' },
+												}}
+												control={
+													<Radio
+														size="small"
+														sx={{
+															order: 2,
+															ml: 'auto',
+															color: 'primary.main',
+															'&.Mui-checked': { color: 'primary.main' },
+															'&:focus': { outline: 'none' },
+														}}
+													/>
+												}
+												label={
+													<Box
+														sx={{
+															display: 'flex',
+															alignItems: 'center',
+															gap: 1,
+															order: 1,
+															flex: 1,
+														}}
+													>
+														<Box
+															sx={{
+																width: 28,
+																height: 28,
+																display: 'flex',
+																alignItems: 'center',
+																justifyContent: 'center',
+															}}
+														>
+															{opt.icon}
+														</Box>
+														<Typography
+															variant="body2"
+															fontWeight={500}
+															color="text.primary"
+														>
+															{opt.label}
+														</Typography>
+													</Box>
+												}
+											/>
+										))}
+									</RadioGroup>
+								</Collapse>
+
+								<Box
+									sx={{
+										display: 'flex',
+										alignItems: 'center',
+										gap: 0.75,
+										mt: 1.5,
+										color: 'text.secondary',
+									}}
+								>
+									<LockOutlined sx={{ fontSize: 15 }} />
+									<Typography variant="caption">Payments are secure and encrypted</Typography>
+								</Box>
+							</Box>
+						</SectionCard>
 					</Box>
 				</Box>
-			</Container>
 
-			{/* ── Success modal ── */}
-			<ConfirmModal
-				open={successOpen}
-				onClose={() => {
-					setSuccessOpen(false)
-					setSymptomsOpen(true)
-				}}
-				onConfirm={() => {
-					setSuccessOpen(false)
-					setSymptomsOpen(true)
-				}}
-				variant="success"
-				title="Your appointment is successfully booked"
-				description="The update will appear in your profile."
-				confirmLabel="Done"
-				hideCancelButton
-			/>
+				{/* Confirm: under the cards, in the middle */}
+				<Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+					{errorMsg && (
+						<Box
+							sx={{
+								mb: 1.5,
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'center',
+								gap: 1,
+								flexWrap: 'wrap',
+							}}
+						>
+							<Typography variant="caption" color="error.main">
+								{errorMsg}
+							</Typography>
+							{restartReason && (
+								<AppButton
+									variant="text"
+									size="small"
+									label={restartReason === 'consent' ? 'Review the new terms' : 'Choose another slot'}
+									onClick={chooseAnotherSlot}
+								/>
+							)}
+						</Box>
+					)}
+					<AppButton
+						label={paymentChoice === 'now' ? `Pay ${formatINR(total)}` : `Confirm ${appointmentType}`}
+						loading={booking}
+						disabled={Boolean(appointmentId)}
+						onClick={handleConfirm}
+						borderRadius="10px"
+						sx={{ py: 1.25, px: 8, minWidth: 280, fontWeight: 700 }}
+					/>
+					<Typography
+						variant="caption"
+						color="text.secondary"
+						sx={{ display: 'block', textAlign: 'center', mt: 1 }}
+					>
+						By continuing you agree to the booking terms
+					</Typography>
+				</Box>
+			</Container>
 
 			{/* ── Symptoms popup ── */}
 			<Dialog
 				open={symptomsOpen}
 				onClose={() => {
 					setSymptomsOpen(false)
-					goToAppointment()
+					goToConfirmation()
 				}}
 				maxWidth="sm"
 				fullWidth
@@ -914,7 +871,7 @@ export default function PaymentPage() {
 								fullWidth
 								onClick={() => {
 									setSymptomsOpen(false)
-									goToAppointment()
+									goToConfirmation()
 								}}
 							/>
 							<AppButton
@@ -931,10 +888,12 @@ export default function PaymentPage() {
 										})
 
 										setSymptomsOpen(false)
-										goToAppointment()
+										goToConfirmation()
 									} catch (error) {
 										console.error(error)
-										setPreIntakeError('We could not save your symptoms. Please try again, or skip for now and add them later.')
+										setPreIntakeError(
+											'We could not save your symptoms. Please try again, or skip for now and add them later.'
+										)
 									}
 								}}
 							/>

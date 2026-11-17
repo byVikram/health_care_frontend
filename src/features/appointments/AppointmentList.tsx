@@ -7,7 +7,6 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
-import LocalTaxiIcon from '@mui/icons-material/LocalTaxi'
 import AppTable from '../../components/common/Table/AppTable'
 import { customCardStyle } from '../../styles/commonStyles'
 // import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined'
@@ -839,23 +838,6 @@ export default function AppointmentList() {
 							}}
 						>
 							<img src={RescheduleIcon} width={16} height={16} alt="Reschedule" />
-						</IconButton>
-					</Tooltip>
-					<Tooltip title="Book Cab">
-						<IconButton
-							size="small"
-							onClick={(e) => {
-								e.stopPropagation()
-								navigate(`/portal/appointments/${row.id}/book-ride?type=onward`)
-							}}
-							sx={{
-								bgcolor: '#e0f2f1',
-								borderRadius: '8px',
-								p: 0.9,
-								'&:hover': { bgcolor: '#b2dfdb' },
-							}}
-						>
-							<LocalTaxiIcon sx={{ fontSize: 16, color: '#00796b' }} />
 						</IconButton>
 					</Tooltip>
 				</Box>

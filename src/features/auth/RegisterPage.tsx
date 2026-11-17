@@ -6,17 +6,16 @@ import OtpForm from './components/OtpForm'
 import OtpVerified from './components/OtpVerified'
 import RoleSelectorPage from './onboarding/RoleSelectorPage'
 import OnBoardingPage from './onboarding/OnBoardingPage'
-import { UserRole, onboardingData } from '../../data/onboardingData'
-import { isProviderRole } from './roleDisplay'
+import { type UserRole, onboardingData } from '../../data/onboardingData'
 
-function labelToUserRole(label: string): UserRole {
+// The roles that register through the app. A role not listed here has no intro slides (it goes straight to the form).
+function labelToUserRole(label: string): UserRole | undefined {
 	const map: Record<string, UserRole> = {
 		patient:    'PATIENT',
 		doctor:     'DOCTOR',
-		pharmacy:   'PHARMACY',
-		radiology:  'RADIOLOGY',
+		ancillary:  'ANCILLARY', // the healthcare provider; the kind of provider goes separately as `specialty_id`
 	}
-	return map[label.toLowerCase()] ?? 'PATIENT'
+	return map[label.trim().toLowerCase()]
 }
 
 type Step = 'roleSelect' | 'onboarding' | 'register' | 'otp' | 'success'
@@ -39,12 +38,16 @@ export default function RegisterPage() {
 		setSelectedRoleLabel(label)
 		setSelectedSpecialty(specialty ?? '')
 		const userRole = labelToUserRole(label)
-		// There are no intro slides for a healthcare provider (labelToUserRole would show the patient's).
-		const hasSlides = !isProviderRole(label) && onboardingData[userRole]?.screens?.length > 0
+		const hasSlides = !!userRole && onboardingData[userRole].screens.length > 0
 		setStep(hasSlides ? 'onboarding' : 'register')
 	}
 
-	const handleOnboardingFinish = () => setStep('register')
+	// Healthcare provider (ancillary) sign-up stops at the last intro slide for now: its screens are not designed yet, so
+	// "Get Started" does nothing. The backend flow (role_id + specialty_id) is unchanged.
+	const handleOnboardingFinish = () => {
+		if (labelToUserRole(selectedRoleLabel) === 'ANCILLARY') return
+		setStep('register')
+	}
 	const handleOnboardingBack = () => setStep('roleSelect')
 	const handleOtpEdit = () => setStep('register')
 
@@ -60,13 +63,15 @@ export default function RegisterPage() {
 		return <RoleSelectorPage onSelectRole={handleRoleSelect} />
 	}
 
-	if (step === 'onboarding') {
+	const onboardingRole = labelToUserRole(selectedRoleLabel)
+	if (step === 'onboarding' && onboardingRole) {
 		return (
 			<OnBoardingPage
-				role={labelToUserRole(selectedRoleLabel)}
+				role={onboardingRole}
 				roleId={selectedRoleId}
 				onFinish={handleOnboardingFinish}
 				onBack={handleOnboardingBack}
+				holdAtLastSlide={onboardingRole === 'ANCILLARY'}
 			/>
 		)
 	}

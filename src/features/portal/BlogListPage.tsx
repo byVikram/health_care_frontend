@@ -295,39 +295,6 @@ export default function BlogListPage() {
 										</CardContent>
 									</Card>
 								))}
-
-								{/* Static Healthcare Widget */}
-								<Box
-									sx={{
-										p: 3,
-										borderRadius: 2,
-										background: 'linear-gradient(135deg, #115e59 0%, #0f172a 100%)',
-										color: 'white',
-										boxShadow: '0 4px 25px rgba(13, 148, 136, 0.15)',
-									}}
-								>
-									<Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
-										Need Immediate Assistance?
-									</Typography>
-									<Typography variant="body2" sx={{ opacity: 0.85, mb: 3 }}>
-										Book standard non-emergency rides or certified caregiver transport directly inside your appointment portal.
-									</Typography>
-									<Button
-										variant="contained"
-										fullWidth
-										onClick={() => navigate('/portal/transportation')}
-										sx={{
-											bgcolor: 'white',
-											color: '#115e59',
-											fontWeight: 700,
-											textTransform: 'none',
-											borderRadius: 2.5,
-											'&:hover': { bgcolor: '#f1f5f9' },
-										}}
-									>
-										Book Portal Ride
-									</Button>
-								</Box>
 							</Box>
 						</Grid>
 					</Grid>
