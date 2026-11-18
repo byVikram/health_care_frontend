@@ -28,7 +28,7 @@ export const isVideoMode = (mode?: string | null): boolean => mode === 'video_ca
 
 /**
  * The status to show (and to offer Check in on) for a confirmed appointment on its own day: "not_arrived", even when the row still says
- * "confirmed" (the daily not-arrived job may not have run yet). The server's check-in accepts a same-day confirmed appointment.
+ * "confirmed" (the server has no job that flips it; a row only becomes not_arrived when a check-in is undone). The server's check-in accepts a same-day confirmed appointment.
  */
 export const effectiveStatusLabel = (apt: Appointment): string => {
 	const label = labelOf(apt)
