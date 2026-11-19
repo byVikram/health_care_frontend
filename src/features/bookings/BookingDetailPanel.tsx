@@ -2,7 +2,7 @@
 //
 // The sticky panel on the right of My bookings: the chosen booking's photo / tile, kind, title, subtitle and status, a grey box of facts
 // (When, Where / Delivery, For, Booking ID), a note (the server's preparation hint or why it was cancelled), the buttons and the
-// booking's id. A booking with no web page (home care, lab) has no buttons, only a line saying it is managed in the app.
+// booking's id. A booking with no web page (home care) has no buttons, only a line saying it is managed in the app.
 import { Box } from '@mui/material'
 import AvatarTile from '../../components/common/Avatar/AvatarTile'
 import DeskButton from '../../components/common/Button/DeskButton'

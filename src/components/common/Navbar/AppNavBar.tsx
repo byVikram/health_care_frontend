@@ -28,6 +28,7 @@ const navItems = [
 	{ label: 'Home', href: '/#home' },
 	{ label: 'Services', href: '/#services' },
 	{ label: 'Find doctors', href: '/doctors/search' },
+	{ label: 'Lab tests', href: '/lab-tests' },
 	{ label: 'Community', href: '/communities' },
 	{ label: 'Blogs', href: '/blogs' },
 	{ label: 'Contact', href: '/#contact' },
@@ -69,6 +70,8 @@ const AppNavBar: React.FC<AppNavBarProps> = ({ onProfileClick, avatarSrc }) => {
 			if (!location.hash) return '/#home'
 			return `/${location.hash}`
 		}
+		// every page of the lab flow (cart, review, order ...) keeps the Lab tests link lit
+		if (location.pathname.startsWith('/lab-tests')) return '/lab-tests'
 		const current = `${location.pathname}${location.hash || ''}`
 		if (location.pathname !== '/') return current
 		if (location.hash) return `/${location.hash}`
