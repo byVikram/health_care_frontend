@@ -34,6 +34,7 @@ import RadiologyProfilePage from '../features/radiology/profile/RadiologyProfile
 import BookingsList from '../features/radiology/bookings/BookingsList'
 import BookingDetailPage from '../features/radiology/bookings/BookingDetailPage'
 import AllSpecialitiesPage from '../features/dashboard/AllSpecialitiesPage'
+import AllSymptomsPage from '../features/dashboard/AllSymptomsPage'
 import RadiologySearchPage from '../features/radiology/search/RadiologySearchPage'
 import FavouriteDoctorsPage from '../features/doctor/favourites/FavouriteDoctorsPage'
 
@@ -205,6 +206,7 @@ export default function AppRoutes() {
 						<Route path={ROUTES.APPOINTMENT_CONFIRMED} element={<AppointmentConfirmedPage />} />
 						<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
 						<Route path={ROUTES.SPECIALITIES} element={<AllSpecialitiesPage />} />
+						<Route path={ROUTES.SYMPTOMS} element={<AllSymptomsPage />} />
 						<Route path={ROUTES.RADIOLOGY.SEARCH} element={<RadiologySearchPage />} />
 						
 					</Route>

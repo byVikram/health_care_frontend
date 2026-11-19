@@ -2,12 +2,18 @@
 import { Box, Typography } from '@mui/material'
 
 interface SpecialityCardProps {
-	image: string
+	/** An illustration (url). Give this OR `iconPath`. */
+	image?: string
+	/** A 24x24 stroke icon path (drawn in `iconColor`) shown instead of `image`, on `iconBg`. */
+	iconPath?: string
+	iconColor?: string
+	/** Background of the 120px tile when `iconPath` is used; the illustrations bring their own look on the default tint. */
+	iconBg?: string
 	title: string
 	onConsult?: () => void
 }
 
-export default function SpecialityCard({ image, title, onConsult }: SpecialityCardProps) {
+export default function SpecialityCard({ image, iconPath, iconColor, iconBg, title, onConsult }: SpecialityCardProps) {
 	return (
 		<Box
 			sx={{
@@ -30,7 +36,7 @@ export default function SpecialityCard({ image, title, onConsult }: SpecialityCa
 					width: 120,
 					height: 120,
 					borderRadius: '16px',
-					bgcolor: '#f0f4f8',
+					bgcolor: iconPath ? (iconBg ?? '#f0f4f8') : '#f0f4f8',
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
@@ -38,12 +44,28 @@ export default function SpecialityCard({ image, title, onConsult }: SpecialityCa
 					transition: 'transform 0.2s ease, box-shadow 0.2s ease',
 				}}
 			>
-				<Box
-					component="img"
-					src={image}
-					alt={title}
-					// sx={{ width: '96%', height: '96%', objectFit: 'contain' }}
-				/>
+				{iconPath ? (
+					<svg
+						width={56}
+						height={56}
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke={iconColor ?? 'currentColor'}
+						strokeWidth={1.8}
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						aria-hidden="true"
+					>
+						<path d={iconPath} />
+					</svg>
+				) : (
+					<Box
+						component="img"
+						src={image}
+						alt={title}
+						// sx={{ width: '96%', height: '96%', objectFit: 'contain' }}
+					/>
+				)}
 			</Box>
 
 			{/* Title */}
