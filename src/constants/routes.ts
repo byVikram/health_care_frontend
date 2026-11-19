@@ -80,6 +80,15 @@ export const ROUTES = {
 
 	/** The patient's My bookings page (doctor visits, home care, lab and pharmacy in one list). */
 	BOOKINGS: '/bookings',
+	/** The patient's lab tests: browse, cart and slot, review, booked, one order and its report. */
+	LAB: {
+		HOME: '/lab-tests',
+		CART: '/lab-tests/cart',
+		REVIEW: '/lab-tests/review',
+		BOOKED: '/lab-tests/booked',
+		ORDER: '/lab-tests/orders/:orderId',
+		REPORT: '/lab-tests/orders/:orderId/report',
+	},
 	/** The doctor's Schedule page (calendar, clinics, the day's list and booking requests). */
 	SCHEDULE: '/schedule',
 

@@ -78,6 +78,16 @@ export const API_ENDPOINTS = {
 		/** GET ?when=upcoming|past&category=all|doctor|ancillary|lab|pharmacy&page&limit: the combined bookings list (the app's Bookings tab). */
 		BOOKINGS: '/api/patients/me/bookings',
 	},
+	/** Lab tests (LabStack through our backend): the catalogue, live availability / slots / quote and the patient's orders. */
+	LABS: {
+		CATALOGUE: '/api/laboratory/catalogue',
+		TAGS: '/api/laboratory/catalogue/tags',
+		ITEM: (kind: string, id: string) => `/api/laboratory/catalogue/${kind}/${id}`,
+		AVAILABILITY: '/api/laboratory/availability',
+		SLOTS: '/api/laboratory/slots',
+		QUOTE: '/api/laboratory/quote',
+		ORDERS: '/api/laboratory/orders',
+	},
 	REVIEWS: {
 		CREATE: '/api/reviews',
 		BY_DOCTOR: (doctorId: string | number) => `/api/reviews/doctor/${doctorId}`,

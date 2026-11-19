@@ -26,6 +26,12 @@ import DoctorAccountDetailsPage from '../features/auth/DoctorAccountDetailsPage'
 import PortalPage from '../features/portal/PortalPage'
 import MyBookingsPage from '../features/bookings/MyBookingsPage'
 import SchedulePage from '../features/schedule/SchedulePage'
+import LabBrowsePage from '../features/lab/LabBrowsePage'
+import LabCartPage from '../features/lab/LabCartPage'
+import LabReviewPage from '../features/lab/LabReviewPage'
+import LabBookedPage from '../features/lab/LabBookedPage'
+import LabOrderPage from '../features/lab/LabOrderPage'
+import LabReportPage from '../features/lab/LabReportPage'
 import PatientAppointmentDetailPage from '../features/patient/PatientAppointmentDetailPage'
 import OrderList from '../features/Pharmacy/orders/OrderList'
 import OrderDetailPage from '../features/Pharmacy/orders/OrderDeatailPage'
@@ -217,6 +223,12 @@ export default function AppRoutes() {
 						<Route path={ROUTES.PORTAL.HOME} element={<PortalPage />} />
 						<Route path={ROUTES.APPOINTMENTS} element={<AppointmentsRedirect />} />
 						<Route path={ROUTES.BOOKINGS} element={<MyBookingsPage />} />
+						<Route path={ROUTES.LAB.HOME} element={<LabBrowsePage />} />
+						<Route path={ROUTES.LAB.CART} element={<LabCartPage />} />
+						<Route path={ROUTES.LAB.REVIEW} element={<LabReviewPage />} />
+						<Route path={ROUTES.LAB.BOOKED} element={<LabBookedPage />} />
+						<Route path={ROUTES.LAB.ORDER} element={<LabOrderPage />} />
+						<Route path={ROUTES.LAB.REPORT} element={<LabReportPage />} />
 						<Route path={ROUTES.SCHEDULE} element={<SchedulePage />} />
 						<Route path={ROUTES.PORTAL.APPOINTMENT_DETAIL} element={<PatientAppointmentDetailPage />} />
 						<Route path={ROUTES.PORTAL.PROFILE} element={<ProfilePage />} />

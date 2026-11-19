@@ -37,6 +37,27 @@ export const DESK = {
 	shadowMenu: '0 16px 40px #12373E33',
 	shadowDialog: '0 24px 64px #12373E59',
 	scrim: '#12373E66',
+	/** The Lab tests pages: card border, the dark hero and its glow, the light teal on it, the discount badge, a disabled teal button. */
+	cardLine: '#E3EAEB',
+	hero: '#12373E',
+	heroGlow: '#1F5E7A',
+	mint: '#9FD3D1',
+	mintText: '#CFE3E3',
+	discountBadge: '#E4572E',
+	primaryDisabled: '#9DB9BA',
+	chip: '#F0F3F3',
+	sand: '#B4532A',
+} as const
+
+/** Gradient panels behind a lab test / package icon on the browse cards: [light, deeper, icon ink]. */
+export const DESK_MEDIA = {
+	teal: ['#D8EEEE', '#9FD3D1', '#2B6F71'],
+	lilac: ['#ECE6FA', '#C9B8F2', '#6A4BB5'],
+	blue: ['#DDEBFA', '#A9C9EE', '#2463A8'],
+	red: ['#FDECEA', '#F5B8B0', '#B42318'],
+	peach: ['#FDE8DC', '#F3BE9F', '#B4532A'],
+	sand: ['#FBEFD5', '#F0D28F', '#8A5300'],
+	pink: ['#FCE7F3', '#F2B5D6', '#A0306B'],
 } as const
 
 /** The status chips: ok (green), wait (amber), move (blue), done (grey), bad (red), lilac (referred), quiet (not arrived yet). */
@@ -88,4 +109,18 @@ export const DESK_ICONS = {
 		'M11 14h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 16M7 20l1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9M2 15l6 6M19.5 8.5c.7-.7 1.5-1.6 1.5-2.7A2.73 2.73 0 0 0 16 4a2.78 2.78 0 0 0-5 1.8c0 1.2.8 2 1.5 2.8L16 12z',
 	lab: 'M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3M7.5 15h9',
 	pill: 'M10.5 20.5a4.95 4.95 0 0 1-7-7l6-6a4.95 4.95 0 0 1 7 7zM8.5 8.5l7 7',
+	// Lab tests (the Lab Tests Ordering design)
+	package:
+		'M5 4h14v17H5zM9 4V3h6v1M12 17s-3.5-2-3.5-4.3A1.8 1.8 0 0 1 12 11.6a1.8 1.8 0 0 1 3.5 1.1C15.5 15 12 17 12 17z',
+	home: 'M4 11l8-7 8 7M6 10v10h12V10',
+	pin: 'M12 21s7-6 7-11a7 7 0 0 0-14 0c0 5 7 11 7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
+	gps: 'M12 19a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 2v3M12 19v3M2 12h3M19 12h3',
+	shield: 'M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6zM8.5 12l2.5 2.5 4.5-4.5',
+	lock: 'M8 11V8a4 4 0 0 1 8 0v3M6 11h12v9H6z',
+	cart: 'M3 4h2l2.4 11.2a1 1 0 0 0 .8.8h9.2a1 1 0 0 0 1-.8L20 8H6.2M9 20.5a.5.5 0 1 0 0 .01M18 20.5a.5.5 0 1 0 0 .01',
+	info: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 8v5M12 16h.01',
+	download: 'M12 4v11M7 10l5 5 5-5M5 20h14',
+	share: 'M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4',
+	qr: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2',
+	plus: 'M12 5v14M5 12h14',
 } as const
