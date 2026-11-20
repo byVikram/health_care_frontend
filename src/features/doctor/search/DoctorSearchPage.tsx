@@ -173,7 +173,10 @@ export default function DoctorSearchPage() {
 				)
 
 				if (!active) return
-				const meta = res.meta ?? {
+				// The search endpoint's response model drops `meta` today, so the totals can be missing. Then a full page means
+					// "there may be more" (what the mobile app does) and the next, short or empty, page ends the list.
+					const hasTotals = res.meta !== undefined || res.pages !== undefined
+					const meta = res.meta ?? {
 					total: res.total ?? 0,
 					page:  res.page  ?? page,
 					limit: res.limit ?? LIMIT,
@@ -186,7 +189,7 @@ export default function DoctorSearchPage() {
 					return [...prev, ...res.data.filter((d) => !seen.has(d.id))]
 				})
 				setTotal(meta.total)
-				setHasMore(meta.page < meta.pages)
+				setHasMore(hasTotals ? meta.page < meta.pages : res.data.length >= LIMIT)
 				setError(null)
 			} catch (err) {
 				console.error(err)

@@ -59,6 +59,7 @@ export const ROUTES = {
 	},
 
 	SPECIALITIES: '/specialities',
+	SYMPTOMS: '/symptoms',
 
 	ROLE_SELECT: '/role-select',
 	ONBOARDING_ROLE: '/onboarding/:roleId',

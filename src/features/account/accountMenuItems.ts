@@ -7,7 +7,7 @@ import { ROUTES } from '../../constants/routes'
 import { USER_ROLES } from '../../constants/constants'
 import type { NavigationRow } from './accountMenuService'
 
-/** The path of the profile page (the doctor's has tabs: ?tab=availability, ?tab=settings). */
+/** The path of the profile page (both profiles have tabs: ?tab=settings, and for the doctor ?tab=availability). */
 const PROFILE = ROUTES.PORTAL.PROFILE
 
 /** The page a row opens for this role, or null when the web has none (the row is then left out). `#help-line` scrolls to the help line. */
@@ -31,7 +31,7 @@ export function targetOf(key: string, role: string): string | null {
 		case 'doctor_availability':
 			return doctor ? `${PROFILE}?tab=availability` : null
 		case 'settings':
-			return doctor ? `${PROFILE}?tab=settings` : PROFILE
+			return `${PROFILE}?tab=settings`
 		case 'help':
 			return '#help-line'
 		default:

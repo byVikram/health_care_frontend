@@ -1,5 +1,6 @@
 // src/features/patient/PatientProfilePage.tsx
 import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Box, Container, Grid, Divider } from '@mui/material'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import AppSelect from '../../components/common/Select/AppSelect'
@@ -79,7 +80,13 @@ function calcCompletion(patient: Patient): number {
 }
 
 export default function PatientProfilePage() {
-	const [activeTab, setActiveTab] = useState<string>('personal')
+	// The account menu opens a tab through the link (?tab=settings); it is followed again when the link changes while this
+	// page is already open (Settings picked from the menu while on the profile).
+	const tabFromUrl = useSearchParams()[0].get('tab')
+	const [activeTab, setActiveTab] = useState<string>(tabFromUrl || 'personal')
+	useEffect(() => {
+		if (tabFromUrl) setActiveTab(tabFromUrl)
+	}, [tabFromUrl])
 	const [patient, setPatient] = useState<Patient>(EMPTY_PATIENT)
 	const [loading, setLoading] = useState(false)
 	const { role, user, accessToken, refreshToken, lookupData } = useAuth()

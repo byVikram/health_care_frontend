@@ -2,29 +2,13 @@
 import { useEffect, useState } from 'react'
 import { Box, Typography, Grid, Skeleton } from '@mui/material'
 import AppButton from '../../../components/common/Button/AppButton'
-import SpecialityCard from '../../../components/common/Card/SpecialityCard'
 import DashboardEmptyState from '../components/DashboardEmptyState'
 import { getSymptoms } from '../../doctor/doctorService'
-import { SymptomItem } from '../../../types/speciality'
-
-import PregnancyIcon from '../../../assets/specialties/pregnancy.svg'
-import AcneIcon from '../../../assets/specialties/acne.svg'
-import PerformanceIcon from '../../../assets/specialties/performance.svg'
-import ColdIcon from '../../../assets/specialties/cough.svg'
-import ChildIcon from '../../../assets/specialties/child.svg'
-import DepressionIcon from '../../../assets/specialties/depression.svg'
+import type { SymptomItem } from '../../../types/speciality'
+import { ROUTES } from '../../../constants/routes'
+import SpecialityCard from '../../../components/common/Card/SpecialityCard'
+import { isDashboardSymptom, symptomCardProps } from '../symptomCardData'
 import { useNavigate } from 'react-router-dom'
-
-// icon_key (from the symptoms API) -> local illustration. Falls back to the
-// pregnancy icon only if the backend ever returns a key we don't recognise.
-const ICON_MAP: Record<string, string> = {
-	pregnancy: PregnancyIcon,
-	acne: AcneIcon,
-	performance: PerformanceIcon,
-	cough: ColdIcon,
-	child: ChildIcon,
-	depression: DepressionIcon,
-}
 
 export default function SpecialitySection() {
 	const navigate = useNavigate()
@@ -38,7 +22,10 @@ export default function SpecialitySection() {
 			try {
 				const res = await getSymptoms()
 				if (!active) return
-				setSymptoms(res.data)
+				// The dashboard keeps its own cards (the order the API gave them); every symptom, new ones included, is on the
+				// All Symptoms page (View All). With none of its own cards in the list it shows the first six.
+				const own = res.data.filter(isDashboardSymptom)
+				setSymptoms(own.length > 0 ? own : res.data.slice(0, 6))
 			} catch (err) {
 				// ApiService's shared axios interceptor already shows a global
 				// error toast on failure -- just log for developers here.
@@ -101,6 +88,7 @@ export default function SpecialitySection() {
 						label="View All"
 						borderRadius="30px"
 						sx={{ mt: { xs: 2, md: 0 } }}
+						onClick={() => navigate(ROUTES.SYMPTOMS)}
 					/>
 				</Grid>
 			</Grid>
@@ -124,11 +112,7 @@ export default function SpecialitySection() {
 					{symptoms.map((s) => (
 						<Grid size={{ xs: 6, sm: 4, md: 2 }} key={s.id}>
 							<Box sx={{ display: 'flex', justifyContent: 'center' }}>
-								<SpecialityCard
-									image={(s.icon_key && ICON_MAP[s.icon_key]) || PregnancyIcon}
-									title={s.label}
-									onConsult={() => handleConsult(s)}
-								/>
+								<SpecialityCard {...symptomCardProps(s)} onConsult={() => handleConsult(s)} />
 							</Box>
 						</Grid>
 					))}
