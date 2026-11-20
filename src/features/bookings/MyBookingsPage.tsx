@@ -11,6 +11,7 @@ import { toast } from 'react-toastify'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import DeskButton from '../../components/common/Button/DeskButton'
 import DeskIcon from '../../components/common/Icon/DeskIcon'
+import PersonFilter, { ALL_PEOPLE } from '../../components/common/PersonFilter/PersonFilter'
 import RailItem from '../../components/common/Rail/RailItem'
 import ReasonDialog from '../../components/common/Modal/ReasonDialog'
 import SearchField from '../../components/common/SearchField/SearchField'
@@ -20,6 +21,7 @@ import RescheduleDrawer from '../doctor/search/components/RescheduleDrawer'
 import { USER_ROLES } from '../../constants/constants'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../hooks/useAuth'
+import { useFamilyMembers } from '../../hooks/useFamilyMembers'
 import { DESK, DESK_ICONS } from '../../styles/deskTokens'
 import BookingDetailPanel from './BookingDetailPanel'
 import BookingListItem from './BookingListItem'
@@ -60,9 +62,13 @@ function PatientBookings() {
 	const [when, setWhen] = useState<BookingsWhen>(linkedWhen ?? 'upcoming')
 	const [category, setCategory] = useState<BookingsCategoryFilter>(linkedCategory ?? 'all')
 	const [query, setQuery] = useState('')
+	const { members } = useFamilyMembers()
+	const [personId, setPersonId] = useState(ALL_PEOPLE)
+	// "For Everyone": one person of the account narrows the list on the server (a person who is no longer on the account means everyone).
+	const person = members.find((member) => member.id === personId) ?? null
+	const patientId = person?.id
 	const [items, setItems] = useState<BookingItem[]>([])
 	const [counts, setCounts] = useState<Partial<BookingsPage['counts']>>({})
-	const [summary, setSummary] = useState({ upcoming: 0, today: 0 })
 	const [page, setPage] = useState(1)
 	const [pages, setPages] = useState(1)
 	const [loading, setLoading] = useState(true)
@@ -93,11 +99,10 @@ function PatientBookings() {
 				setLoadingMore(true)
 			}
 			try {
-				const res = await getMyBookings({ when, category, page: pageNo, limit: PAGE_SIZE })
+				const res = await getMyBookings({ when, category, page: pageNo, limit: PAGE_SIZE, patientId })
 				if (request !== requestRef.current) return
 				setItems((prev) => (pageNo === 1 ? res.items : [...prev, ...res.items]))
 				setCounts(res.counts ?? {})
-				setSummary(res.summary ?? { upcoming: 0, today: 0 })
 				setPage(res.page)
 				setPages(res.pages)
 			} catch {
@@ -111,7 +116,7 @@ function PatientBookings() {
 				}
 			}
 		},
-		[when, category]
+		[when, category, patientId]
 	)
 
 	useEffect(() => {
@@ -140,7 +145,11 @@ function PatientBookings() {
 	// The chosen booking, else the first one (a refresh keeps the choice while the booking is still in the list).
 	const selected = visible.find((item) => bookingKey(item) === selectedKey) ?? visible[0] ?? null
 
-	const emptyTitle = q ? `No bookings match “${query.trim()}”` : `No ${when} bookings here`
+	const emptyTitle = q
+		? `No bookings match “${query.trim()}”`
+		: person
+			? `No ${when} bookings for ${person.name.split(' ')[0]}`
+			: `No ${when} bookings here`
 	const emptySub = q
 		? 'Try a doctor’s name, test or booking ID.'
 		: 'Book a doctor, lab test or home visit to see it here.'
@@ -181,10 +190,15 @@ function PatientBookings() {
 						>
 							My bookings
 						</Box>
-						<Box component="p" sx={{ m: '4px 0 0', fontSize: 14, color: DESK.muted }}>
-							{summary.upcoming} upcoming · {summary.today} today
-						</Box>
 					</Box>
+					<PersonFilter
+						people={members}
+						value={person ? person.id : ALL_PEOPLE}
+						onChange={(next) => {
+							setPersonId(next)
+							setSelectedKey(null)
+						}}
+					/>
 					<SearchField
 						value={query}
 						onChange={setQuery}
