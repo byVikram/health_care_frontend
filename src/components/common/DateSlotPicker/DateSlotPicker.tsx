@@ -5,6 +5,7 @@ import { Box, Typography, IconButton } from '@mui/material'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import AppSkeleton from '../Skeleton/AppSkeleton'
+import PillToggle from '../PillToggle/PillToggle'
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -391,111 +392,16 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 							>
 								Type of Appointment
 							</Typography>
-							<Box
-								sx={{
-									display: 'flex',
-									justifyContent: 'flex-start',
-									width: useCompactAppointmentToggle ? 'auto' : '100%',
-								}}
-							>
-								<Box
-									sx={{
-										display: 'flex',
-										bgcolor: 'primary.main',
-										borderRadius: '50px',
-										p: '3px',
-										gap: '3px',
-										width: useCompactAppointmentToggle ? 'auto' : '100%',
-									}}
-								>
-									<Box
-										onClick={() => onAppointmentTypeChange('clinic')}
-										sx={{
-											display: 'flex',
-											alignItems: 'center',
-											flexDirection: 'column',
-											justifyContent: 'center',
-											flex: useCompactAppointmentToggle ? '0 0 auto' : 1,
-											px: 3,
-											py: 0.85,
-											borderRadius: '50px',
-											cursor: 'pointer',
-											bgcolor: selectedAppointmentType === 'clinic' ? '#fff' : 'transparent',
-											transition: 'all 0.2s',
-											userSelect: 'none',
-										}}
-									>
-										<Typography
-											sx={{
-												fontSize: '12px',
-												fontWeight: 600,
-												color: selectedAppointmentType === 'clinic' ? 'text.primary' : '#fff',
-												lineHeight: 1.3,
-											}}
-										>
-											Clinic Visit
-										</Typography>
-										{clinicPrice !== undefined && (
-											<Typography
-												sx={{
-													fontSize: '10px',
-													fontWeight: 500,
-													color:
-														selectedAppointmentType === 'clinic'
-															? 'text.secondary'
-															: 'rgba(255,255,255,0.8)',
-													lineHeight: 1.2,
-												}}
-											>
-												{formatINR(clinicPrice)}
-											</Typography>
-										)}
-									</Box>
-									<Box
-										onClick={() => onAppointmentTypeChange('video')}
-										sx={{
-											display: 'flex',
-											alignItems: 'center',
-											flexDirection: 'column',
-											justifyContent: 'center',
-											flex: useCompactAppointmentToggle ? '0 0 auto' : 1,
-											px: 3,
-											py: 0.85,
-											borderRadius: '50px',
-											cursor: 'pointer',
-											bgcolor: selectedAppointmentType === 'video' ? '#fff' : 'transparent',
-											transition: 'all 0.2s',
-											userSelect: 'none',
-										}}
-									>
-										<Typography
-											sx={{
-												fontSize: '12px',
-												fontWeight: 600,
-												color: selectedAppointmentType === 'video' ? 'text.primary' : '#fff',
-												lineHeight: 1.3,
-											}}
-										>
-											Video Call
-										</Typography>
-										{videoPrice !== undefined && (
-											<Typography
-												sx={{
-													fontSize: '10px',
-													fontWeight: 500,
-													color:
-														selectedAppointmentType === 'video'
-															? 'text.secondary'
-															: 'rgba(255,255,255,0.8)',
-													lineHeight: 1.2,
-												}}
-											>
-												{formatINR(videoPrice)}
-											</Typography>
-										)}
-									</Box>
-								</Box>
-							</Box>
+							<PillToggle
+								value={selectedAppointmentType}
+								options={[
+									{ value: 'clinic', label: 'Clinic Visit', sub: clinicPrice !== undefined ? formatINR(clinicPrice) : undefined },
+									{ value: 'video', label: 'Video Call', sub: videoPrice !== undefined ? formatINR(videoPrice) : undefined },
+								]}
+								onChange={onAppointmentTypeChange}
+								ariaLabel="Type of appointment"
+								compact={useCompactAppointmentToggle}
+							/>
 						</Box>
 					)}
 

@@ -5,9 +5,9 @@
 import { Box, CircularProgress } from '@mui/material'
 import type { ReactNode } from 'react'
 import DeskIcon from '../../../components/common/Icon/DeskIcon'
+import PillToggle, { type PillToggleOption } from '../../../components/common/PillToggle/PillToggle'
 import { DESK, DESK_ICONS } from '../../../styles/deskTokens'
 import type { LabWhere } from '../labBookingStore'
-import { LAB_ICONS } from '../labConstants'
 import { addressLineOf, type LabAddress } from '../useLabAddresses'
 import { choiceSx } from '../labStyles'
 import LabCartSection, { LabRadioDot } from './LabCartSection'
@@ -21,9 +21,9 @@ export type LabAvailabilityStatus = {
 	onRetry?: () => void
 }
 
-const OPTIONS: { value: LabWhere; label: string; sub: string; icon: string }[] = [
-	{ value: 'home', label: 'Home visit', sub: 'A phlebotomist collects at your door · Free', icon: LAB_ICONS.home },
-	{ value: 'lab', label: 'Visit a lab', sub: 'Walk in at a lab near you', icon: LAB_ICONS.clinic },
+const OPTIONS: PillToggleOption<LabWhere>[] = [
+	{ value: 'home', label: 'Home visit', sub: 'At your door · Free' },
+	{ value: 'lab', label: 'Visit a lab', sub: 'Walk in near you' },
 ]
 
 interface LabWhereSectionProps {
@@ -74,49 +74,18 @@ export default function LabWhereSection({
 	const isHome = where === 'home'
 	const bad = status?.kind === 'warn' || status?.kind === 'error'
 	return (
-		<LabCartSection step={2} title="Where should we collect the sample?" sub="Home collection is free. Or walk in at a lab near you.">
-			<Box role="radiogroup" aria-label="Where" sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-				{OPTIONS.map((o) => {
-					const on = where === o.value
-					return (
-						<Box
-							key={o.value}
-							component="button"
-							type="button"
-							role="radio"
-							aria-checked={on}
-							onClick={() => onWhere(o.value)}
-							sx={{ ...choiceSx(on), p: '16px', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}
-						>
-							<Box
-								component="span"
-								sx={{
-									width: 44,
-									height: 44,
-									flexShrink: 0,
-									borderRadius: '12px',
-									bgcolor: on ? DESK.raised : DESK.primaryTint,
-									color: DESK.primary,
-									display: 'flex',
-									alignItems: 'center',
-									justifyContent: 'center',
-								}}
-							>
-								<DeskIcon d={o.icon} size={22} />
-							</Box>
-							<Box component="span" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-								<Box component="b" sx={{ fontSize: 16 }}>
-									{o.label}
-								</Box>
-								<Box component="span" sx={{ fontSize: 13, color: DESK.muted }}>
-									{o.sub}
-								</Box>
-							</Box>
-							<LabRadioDot on={on} />
-						</Box>
-					)
-				})}
-			</Box>
+		<LabCartSection
+			step={2}
+			title="Where should we collect the sample?"
+			sub="Home collection is free. Or walk in at a lab near you."
+		>
+			<PillToggle
+				value={where}
+				options={OPTIONS}
+				onChange={onWhere}
+				ariaLabel="Where should we collect the sample"
+				size="lg"
+			/>
 
 			<Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
 				<Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -143,7 +112,11 @@ export default function LabWhereSection({
 					</Box>
 				</Box>
 				{addresses.length > 0 ? (
-					<Box role="radiogroup" aria-label="Address" sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px' }}>
+					<Box
+						role="radiogroup"
+						aria-label="Address"
+						sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px' }}
+					>
 						{addresses.map((a) => {
 							const on = a.id === addressId
 							return (
@@ -154,12 +127,22 @@ export default function LabWhereSection({
 									role="radio"
 									aria-checked={on}
 									onClick={() => onAddress(a)}
-									sx={{ ...choiceSx(on), p: '14px', borderRadius: '12px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}
+									sx={{
+										...choiceSx(on),
+										p: '14px',
+										borderRadius: '12px',
+										display: 'flex',
+										alignItems: 'flex-start',
+										gap: '10px',
+									}}
 								>
 									<Box component="span" sx={{ display: 'flex', color: DESK.primary, mt: '1px' }}>
 										<DeskIcon d={/work/i.test(a.label) ? WORK : DESK_ICONS.home} size={18} />
 									</Box>
-									<Box component="span" sx={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+									<Box
+										component="span"
+										sx={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}
+									>
 										<Box component="b" sx={{ fontSize: 14 }}>
 											{a.label}
 										</Box>
@@ -177,7 +160,16 @@ export default function LabWhereSection({
 						Loading your addresses…
 					</Box>
 				) : (
-					<Box component="span" sx={{ p: '14px', borderRadius: '12px', border: `1.5px dashed ${DESK.field}`, fontSize: 14, color: DESK.muted }}>
+					<Box
+						component="span"
+						sx={{
+							p: '14px',
+							borderRadius: '12px',
+							border: `1.5px dashed ${DESK.field}`,
+							fontSize: 14,
+							color: DESK.muted,
+						}}
+					>
 						You have no saved address yet. Add one to see what is available near you.
 					</Box>
 				)}
@@ -200,7 +192,9 @@ export default function LabWhereSection({
 						gap: '8px',
 					}}
 				>
-					{status.kind === 'loading' ? <CircularProgress size={14} thickness={5} sx={{ color: 'inherit' }} /> : null}
+					{status.kind === 'loading' ? (
+						<CircularProgress size={14} thickness={5} sx={{ color: 'inherit' }} />
+					) : null}
 					<Box component="span" sx={{ flexGrow: 1 }}>
 						{status.text}
 					</Box>
@@ -209,7 +203,17 @@ export default function LabWhereSection({
 							component="button"
 							type="button"
 							onClick={status.onRetry}
-							sx={{ border: 0, p: 0, bgcolor: 'transparent', color: 'inherit', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, textDecoration: 'underline', cursor: 'pointer' }}
+							sx={{
+								border: 0,
+								p: 0,
+								bgcolor: 'transparent',
+								color: 'inherit',
+								fontFamily: 'inherit',
+								fontSize: 13,
+								fontWeight: 800,
+								textDecoration: 'underline',
+								cursor: 'pointer',
+							}}
 						>
 							Retry
 						</Box>
