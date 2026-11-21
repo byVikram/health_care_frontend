@@ -241,8 +241,8 @@ export default function AdminVerificationReviewPage() {
 	const [auditEvents, setAuditEvents] = useState<AuditTimelineEvent[]>([])
 
 	const isDoctor = type === 'doctor'
-	const isPharmacyOrDiagnostic = type === 'pharmacy' || type === 'radiology'
-	const isAncillary = !isDoctor && !isPharmacyOrDiagnostic
+	const isDiagnostic = type === 'radiology'
+	const isAncillary = !isDoctor && !isDiagnostic
 
 	const fetchData = useCallback(async () => {
 		if (!id) return
@@ -326,7 +326,7 @@ export default function AdminVerificationReviewPage() {
 				let backendDocs: DoctorVerificationDocument[] = []
 
 				try {
-					const detailRes = await getProviderAdminDetail(isAncillary ? 'ancillary' : type || 'pharmacy', id)
+					const detailRes = await getProviderAdminDetail(isAncillary ? 'ancillary' : type || 'radiology', id)
 					if (detailRes.success && detailRes.data) {
 						const d = detailRes.data
 						if (d.documents && Array.isArray(d.documents) && d.documents.length > 0) {
@@ -394,7 +394,7 @@ export default function AdminVerificationReviewPage() {
 							const queue = res.data as unknown as
 								| ProviderVerificationItem[]
 								| ({ items?: ProviderVerificationItem[] } & Partial<
-										Record<'ancillary' | 'pharmacies' | 'radiology', ProviderVerificationItem[]>
+										Record<'ancillary' | 'radiology', ProviderVerificationItem[]>
 								  >)
 							const items: ProviderVerificationItem[] = Array.isArray(queue)
 								? queue
@@ -402,7 +402,6 @@ export default function AdminVerificationReviewPage() {
 								? queue.items
 								: [
 										...(queue.ancillary || []),
-										...(queue.pharmacies || []),
 										...(queue.radiology || []),
 								  ]
 							const matched = items.find((p: ProviderVerificationItem) => p.id === id || p.public_id === id)
@@ -583,7 +582,7 @@ export default function AdminVerificationReviewPage() {
 					navigate(ROUTES.ADMIN.VERIFICATIONS)
 				}
 			} else {
-				const pType = isAncillary ? 'ancillary' : providerItem?.provider_type || type || 'pharmacy'
+				const pType = isAncillary ? 'ancillary' : providerItem?.provider_type || type || 'radiology'
 				const res = await verifyProvider(pType, id, {
 					is_verified: isApproved,
 					rejection_reason: !isApproved ? notesPayload.trim() || undefined : undefined,

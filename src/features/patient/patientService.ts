@@ -2,7 +2,7 @@ import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { Patient, PatientLifeStyle, PatientMedical, PatientPersonal } from '../../types/patient'
 import { buildS3Url } from '../../utils/s3'
-import type { TreatmentRecord } from '../../types/pharmacyOrder'
+import type { TreatmentRecord } from '../../types/treatment'
 
 export interface PatientUpdateResponse {
 	success: boolean

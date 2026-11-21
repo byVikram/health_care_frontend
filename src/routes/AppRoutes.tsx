@@ -33,9 +33,6 @@ import LabBookedPage from '../features/lab/LabBookedPage'
 import LabOrderPage from '../features/lab/LabOrderPage'
 import LabReportPage from '../features/lab/LabReportPage'
 import PatientAppointmentDetailPage from '../features/patient/PatientAppointmentDetailPage'
-import OrderList from '../features/Pharmacy/orders/OrderList'
-import OrderDetailPage from '../features/Pharmacy/orders/OrderDeatailPage'
-import PharmacySearchPage from '../features/Pharmacy/components/PharmacySearchPage'
 import RadiologyProfilePage from '../features/radiology/profile/RadiologyProfilePage'
 import BookingsList from '../features/radiology/bookings/BookingsList'
 import BookingDetailPage from '../features/radiology/bookings/BookingDetailPage'
@@ -86,7 +83,7 @@ import HealthQuestionsPage from '../features/portal/HealthQuestionsPage'
 import DoctorEventListPage from '../features/doctor/events/DoctorEventListPage'
 import DoctorEventFormPage from '../features/doctor/events/DoctorEventFormPage'
 
-// '/' is the public / patient landing page. A signed-in doctor (or pharmacy / radiology user) has their own
+// '/' is the public / patient landing page. A signed-in doctor (or radiology user) has their own
 // dashboard in the portal, so reaching '/' (a stale history entry, a typed address) sends them there instead.
 function HomeRoute() {
 	const { accessToken, role } = useAuth()
@@ -210,7 +207,6 @@ export default function AppRoutes() {
 						<Route path={ROUTES.DOCTORS.SEARCH} element={<DoctorSearchPage />} />
 						<Route path={ROUTES.PAYMENT} element={<PaymentPage />} />
 						<Route path={ROUTES.APPOINTMENT_CONFIRMED} element={<AppointmentConfirmedPage />} />
-						<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
 						<Route path={ROUTES.SPECIALITIES} element={<AllSpecialitiesPage />} />
 						<Route path={ROUTES.SYMPTOMS} element={<AllSymptomsPage />} />
 						<Route path={ROUTES.RADIOLOGY.SEARCH} element={<RadiologySearchPage />} />
@@ -233,10 +229,6 @@ export default function AppRoutes() {
 						<Route path={ROUTES.PORTAL.APPOINTMENT_DETAIL} element={<PatientAppointmentDetailPage />} />
 						<Route path={ROUTES.PORTAL.PROFILE} element={<ProfilePage />} />
 						<Route path={ROUTES.PORTAL.CONSULTATION} element={<ConsultationPage />} />
-						<Route path={ROUTES.PHARMACY.ORDER_DETAIL} element={<OrderDetailPage />} />
-						<Route path={ROUTES.PHARMACY.ORDERS} element={<OrderList />} />
-						{/* <Route path={ROUTES.PHARMACY.PROFILE} element={<PharmacyProfilePage />} /> */}
-						<Route path={ROUTES.PHARMACY.SEARCH} element={<PharmacySearchPage />} />
 
 						<Route path={ROUTES.RADIOLOGY.PROFILE} element={<RadiologyProfilePage />} />
 						<Route path={ROUTES.RADIOLOGY.BOOKINGS} element={<BookingsList />} />

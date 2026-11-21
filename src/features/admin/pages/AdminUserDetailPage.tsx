@@ -43,7 +43,7 @@ import {
 import { buildS3Url } from '../../../utils/s3'
 import { ROUTES } from '../../../constants/routes'
 
-type DetailRole = 'patient' | 'doctor' | 'pharmacy' | 'radiology' | 'ancillary' | 'nurse'
+type DetailRole = 'patient' | 'doctor' | 'radiology' | 'ancillary' | 'nurse'
 
 const getErrorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
 

@@ -39,7 +39,6 @@ const WHEN_TABS: { value: BookingsWhen; label: string }[] = [
 
 const NEW_LINKS = [
 	{ label: 'Find a doctor', to: ROUTES.DOCTORS.SEARCH },
-	{ label: 'Order medicines', to: ROUTES.PHARMACY.SEARCH },
 	{ label: 'Book a scan', to: ROUTES.RADIOLOGY.SEARCH },
 ]
 

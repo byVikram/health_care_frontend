@@ -17,12 +17,6 @@ export const ROUTES = {
 		SEARCH: '/doctors/search',
 	},
 
-	PHARMACY: {
-		ORDERS: '/pharmacy/orders',
-		ORDER_DETAIL: '/pharmacy/orders/:orderId',
-		SEARCH: '/pharmacies',
-	},
-
 	RADIOLOGY: {
 		PROFILE: '/radiology/profile',
 		BOOKINGS: '/radiology/bookings',

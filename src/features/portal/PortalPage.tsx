@@ -33,8 +33,6 @@ import CommunityBlogsSection from '../dashboard/sections/CommunityBlogsSection'
 import { useDebouncedValue } from '../../utils/debounce'
 import { ROUTES } from '../../constants/routes'
 
-import OrderDetails from '../Pharmacy/orders/OrderDeatailPage'
-import { customCardStyle } from '../../styles/commonStyles'
 
 // ----------------------------- Video Slide Component -----------------------------
 interface VideoSlideProps {
@@ -259,8 +257,6 @@ export default function PortalPage() {
 			navigate(role === 'doctor' ? ROUTES.SCHEDULE : ROUTES.BOOKINGS)
 		} else if (title === 'Bookings') {
 			navigate(ROUTES.RADIOLOGY.BOOKINGS)
-		} else if (title === 'Orders') {
-			navigate(ROUTES.PHARMACY.ORDERS)
 		}
 	}
 
@@ -271,15 +267,6 @@ export default function PortalPage() {
 			{ title: 'Radiology', image: RadiologyIcon },
 			{ title: 'Paramedicals', image: null },
 		]
-
-		if (role === USER_ROLES.PHARMACY) {
-			return [
-				{ title: 'Orders', image: AppointmentsIcon },
-				{ title: 'Pharmacy', image: PharmacyIcon },
-				{ title: 'Radiology', image: RadiologyIcon },
-				{ title: 'Paramedicals', image: null },
-			]
-		}
 
 		if (role === USER_ROLES.RADIOLOGY) {
 			return [
@@ -939,11 +926,6 @@ export default function PortalPage() {
 								}}
 							>
 								<PatientAppointments />
-							</Box>
-						)}
-						{role === USER_ROLES.PHARMACY && (
-							<Box sx={customCardStyle}>
-								<OrderDetails />
 							</Box>
 						)}
 					</Grid>

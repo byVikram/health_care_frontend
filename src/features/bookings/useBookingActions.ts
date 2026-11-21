@@ -38,6 +38,9 @@ export const CANCEL_REASONS = [
 	'Other reason',
 ] as const
 
+// Medicines are ordered through LabStack now and no pincode is served yet.
+const MEDICINES_SOON = 'Medicine delivery is coming soon in your area.'
+
 export function useBookingActions(onChanged: () => void) {
 	const navigate = useNavigate()
 	const reschedule = useRescheduleFlow(onChanged)
@@ -46,7 +49,7 @@ export function useBookingActions(onChanged: () => void) {
 	const [cancelBusy, setCancelBusy] = useState(false)
 
 	const openDetail = (item: BookingItem) => {
-		if (item.category === 'pharmacy') navigate(ROUTES.PHARMACY.ORDER_DETAIL.replace(':orderId', item.target.id))
+		if (item.category === 'pharmacy') toast.info(MEDICINES_SOON)
 		else if (item.category === 'lab') navigate(ROUTES.LAB.ORDER.replace(':orderId', item.target.id))
 		else navigate(ROUTES.PORTAL.APPOINTMENT_DETAIL.replace(':appointmentId', item.target.id))
 	}
@@ -90,12 +93,8 @@ export function useBookingActions(onChanged: () => void) {
 	/** One of the server's own buttons, mapped to what it does on the web. */
 	const serverAction = (item: BookingItem, action: BookingAction, kind: DeskButtonKind): PanelAction => {
 		if (action.key === 'book_again') {
-			const to =
-				item.category === 'pharmacy'
-					? ROUTES.PHARMACY.SEARCH
-					: item.category === 'lab'
-						? ROUTES.LAB.HOME
-						: ROUTES.DOCTORS.SEARCH
+			if (item.category === 'pharmacy') return { key: action.key, label: action.label, kind, run: () => toast.info(MEDICINES_SOON) }
+			const to = item.category === 'lab' ? ROUTES.LAB.HOME : ROUTES.DOCTORS.SEARCH
 			return { key: action.key, label: action.label, kind, run: () => navigate(to) }
 		}
 		if (action.key === 'view_report' && item.category === 'lab') {

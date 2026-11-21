@@ -6,7 +6,6 @@ import { AppointmentStatus } from '../types/appointment'
 export type UserRole =
 	| 'doctor'
 	| 'patient'
-	| 'pharmacy'
 	| 'radiology'
 	| 'super_admin'
 	| 'support_admin'

@@ -64,7 +64,6 @@ const DEFAULT_ANCILLARY_SUBCATEGORIES = [
 
 const PROVIDER_SUBCATEGORIES = [
 	{ label: 'All', value: '', icon: <StorefrontIcon sx={{ fontSize: 14 }} /> },
-	{ label: 'Pharmacies', value: 'pharmacy', icon: <StorefrontIcon sx={{ fontSize: 14 }} /> },
 	{ label: 'Radiology', value: 'radiology', icon: <StorefrontIcon sx={{ fontSize: 14 }} /> },
 ]
 
@@ -339,7 +338,7 @@ export default function AdminVerificationsPage() {
 		} else if (type === 'nurse') {
 			navigate(`/admin/verifications/ancillary/${targetId}`)
 		} else {
-			const resolvedType = (item as ProviderVerificationItem).provider_type || 'pharmacy'
+			const resolvedType = (item as ProviderVerificationItem).provider_type || 'radiology'
 			navigate(`/admin/verifications/${resolvedType}/${targetId}`)
 		}
 	}
@@ -770,7 +769,7 @@ export default function AdminVerificationsPage() {
 						icon={<StorefrontIcon />}
 						iconColor="#7e22ce"
 						iconBg="rgba(126,34,206,0.12)"
-						description="Labs, Pharmacies & Diagnostic centers"
+						description="Diagnostic centers"
 						onClick={() => setActiveTab('providers')}
 					/>
 				</Grid>
@@ -1034,7 +1033,7 @@ export default function AdminVerificationsPage() {
 				<AdminEmptyState
 					icon={<VerifiedUserIcon />}
 					title="Providers queue is clear"
-					description="No pharmacy or diagnostic applications pending."
+					description="No diagnostic applications pending."
 				/>
 			) : (
 				<AppTable

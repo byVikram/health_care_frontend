@@ -18,9 +18,6 @@ export const API_ENDPOINTS = {
 		/** GET: the signed-in doctor's clinics (primary first) with today's workload. */
 		CLINICS: '/api/doctors/clinics',
 	},
-	PHARMACIES: {
-		LIST: '/api/pharmacies',
-	},
 	UPLOADS: {
 		/** PUT (multipart `file`): the signed-in user's own profile photo, for every role. */
 		AVATAR: '/api/uploads/avatar',
@@ -116,19 +113,6 @@ export const API_ENDPOINTS = {
 		STATUSES: '/api/appointments/statuses',
 		/** Doctor only: the "Auto-confirm bookings" switch (GET reads it, PUT {enabled} sets it). */
 		AUTO_CONFIRM: '/api/appointments/me/auto-confirm',
-	},
-	PHARMACY: {
-		LIST: '/api/pharmacies',
-		ME: '/api/pharmacies/me',
-		ME_DETAILS: '/api/pharmacies/me/details',
-	},
-	PHARMACY_ORDERS: {
-		CREATE: '/api/pharmacy-orders',
-		LIST: '/api/pharmacy-orders',
-		GET_BY_ID: (id: string) => `/api/pharmacy-orders/${id}`,
-		UPDATE_STATUS: (id: string) => `/api/pharmacy-orders/${id}/status`,
-		UPDATE_MEDICINES: (id: string) => `/api/pharmacy-orders/${id}/medicines`,
-		SEND_REMINDER: (id: string) => `/api/pharmacy-orders/${id}/remind`,
 	},
 	TREATMENTS: {
 		GET_BY_APPOINTMENT: (appointmentId: string) => `/api/treatments/appointment/${appointmentId}`,

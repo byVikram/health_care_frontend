@@ -17,7 +17,7 @@ export function targetOf(key: string, role: string): string | null {
 		case 'appointments':
 			return doctor ? ROUTES.SCHEDULE : ROUTES.BOOKINGS
 		case 'medicine_orders':
-			return doctor ? null : ROUTES.PHARMACY.ORDERS
+			return doctor ? null : `${ROUTES.BOOKINGS}?category=pharmacy`
 		// No pages of their own on the web: they open My bookings on that category (the list holds lab, home-care, pharmacy and doctor
 		// bookings together), and the treatment history is the doctor visits already finished.
 		case 'lab_bookings':

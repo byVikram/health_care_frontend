@@ -4,7 +4,6 @@ import { Box, Chip, Typography, CircularProgress } from '@mui/material'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { useNavigate } from 'react-router-dom'
-import pharmacyImg from '../../../assets/onboarding/pharmacy.png'
 import radiologyImg from '../../../assets/onboarding/radiology.png'
 import patientImg from '../../../assets/onboarding/patient.png'
 import doctorImg from '../../../assets/onboarding/doctor-team.png'
@@ -17,7 +16,6 @@ const ROLE_VISUALS: Record<string, { image: string; bg: string }> = {
 	patient: { image: patientImg, bg: '#f0fdf6' },
 	doctor: { image: doctorImg, bg: '#f0f8ff' },
 	
-	pharmacy: { image: pharmacyImg, bg: '#fff8f0' },
 	radiology: { image: radiologyImg, bg: '#f0f4ff' },
 	ancillary: { image: homeCareImg, bg: '#f0fdfa' },
 }

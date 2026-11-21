@@ -1,6 +1,6 @@
 # Whisper AI — Healthcare Web Portal
 
-The web app of the Karolahealth platform: one React app with portals for **patients** (find a doctor, book and manage appointments, pharmacy and radiology orders, family members, medical profile), **doctors** (schedule, booking requests, consultations, profile and availability) and **admins** (verification, users, content, appointments). It talks to the FastAPI backend in `../health_care_backend` and shares that backend with the mobile app in `../health_care_mobile`.
+The web app of the Karolahealth platform: one React app with portals for **patients** (find a doctor, book and manage appointments, lab tests and radiology orders (medicine ordering is coming), family members, medical profile), **doctors** (schedule, booking requests, consultations, profile and availability) and **admins** (verification, users, content, appointments). It talks to the FastAPI backend in `../health_care_backend` and shares that backend with the mobile app in `../health_care_mobile`.
 
 ## Tech stack
 
@@ -64,7 +64,7 @@ src/
 │   ├── layout/      # NavbarLayout, SidebarLayout, AdminLayout, MainLayout, AppFooter
 │   ├── admin/ staff/ ChatBot/
 ├── features/        # pages by domain: auth, dashboard, doctor, patient, appointments,
-│                    # bookings, schedule, account, consultation, radiology, Pharmacy,
+│                    # bookings, schedule, account, consultation, radiology, lab,
 │                    # profile, portal, referrals, admin
 ├── hooks/           # useAuth, useFamilyMembers, ...
 ├── services/        # apiService.ts (axios wrapper) and one service per domain

@@ -14,14 +14,12 @@ import { ROUTES } from '../../constants/routes'
 // import LocalHospitalOutlinedIcon from '@mui/icons-material/LocalHospitalOutlined'
 // import EventAvailableOutlinedIcon from '@mui/icons-material/EventAvailableOutlined'
 // MUI Icons - Patient
-// import LocalPharmacyOutlinedIcon from '@mui/icons-material/LocalPharmacyOutlined'
 // import BiotechOutlinedIcon from '@mui/icons-material/BiotechOutlined'
 
 // MUI Icons - Common
 // import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined'
 
 import AppointmentIcon from '../../assets/icons/appointments.svg'
-import PharmacyIcon from '../../assets/icons/pharmacy.svg'
 import RadiologyIcon from '../../assets/icons/radiology.svg'
 import AncillaryIcon from '../../assets/icons/ancillary.svg'
 import TreatmentIcon from '../../assets/icons/treatment.svg'
@@ -46,7 +44,6 @@ const DOCTOR_MENU_ITEMS = [
 		icon: AppointmentIcon,
 		path: ROUTES.SCHEDULE,
 	},
-	{ id: 'pharmacy', label: 'Pharmacy', icon: PharmacyIcon },
 	{ id: 'radiology', label: 'Radiology', icon: RadiologyIcon },
 	{ id: 'reminders', label: 'Reminders', icon: RemindersIcon },
 	{ id: 'events', label: 'Events & Seminars', icon: AppointmentIcon, path: ROUTES.DOCTOR.EVENTS },
@@ -66,7 +63,6 @@ const PATIENT_MENU_ITEMS = [
 		icon: AppointmentIcon,
 		path: ROUTES.BOOKINGS,
 	},
-	{ id: 'pharmacy', label: 'Pharmacy', icon: PharmacyIcon },
 	{ id: 'radiology', label: 'Radiology', icon: RadiologyIcon },
 	{ id: 'ancillary', label: 'Ancillary', icon: AncillaryIcon },
 	{ id: 'history', label: 'Treatment History', icon: TreatmentIcon },

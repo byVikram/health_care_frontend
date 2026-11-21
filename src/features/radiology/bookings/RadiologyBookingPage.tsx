@@ -2,7 +2,7 @@
 //
 // Web port of the React Native RadiologyBookingPage.tsx.
 // Rendered as drawer CONTENT — this component owns and renders its own <AppDrawer>,
-// mirroring how Pharmacy's PlaceOrderPage.tsx wraps AppDrawer. Consumers just render
+// wrapping AppDrawer. Consumers just render
 // <RadiologyBookingPage open={...} onClose={...} radiologyId={...} centerName={...} ... />
 // from the radiology search page/card instead of opening the old Dialog-based popup.
 
@@ -42,7 +42,7 @@ import {
 	RadiologyBookingCreatePayload,
 } from '../radiologyService'
 import { fetchPatientTreatmentHistory } from '../../patient/patientService'
-import { TreatmentRecord, SelectOption } from '../../../types/pharmacyOrder'
+import { TreatmentRecord, SelectOption } from '../../../types/treatment'
 import { formatINR } from '../../../utils/Utils'
 import SectionCard from '../../../components/common/Card/SectionCard'
 

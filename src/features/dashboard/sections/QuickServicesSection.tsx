@@ -1,8 +1,7 @@
 // src/features/dashboard/QuickServicesSection.tsx
 import { useState } from 'react'
 import { Box, Typography, Grid } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import { ROUTES } from '../../../constants/routes'
+import { toast } from 'react-toastify'
 import ScanTypeSelectorModal from '../selectors/ScanTypeSelectorModal'
 import AncillarySelectorModal from '../selectors/AncillarySelectorModal'
 import AlliedSelectorModal from '../selectors/AlliedSelectorModal'
@@ -84,7 +83,6 @@ function ServiceIcon({ service, onClick }: ServiceIconProps) {
 }
 
 export default function QuickServicesSection() {
-	const navigate = useNavigate()
 	const [scanPickerOpen, setScanPickerOpen] = useState(false)
 	const [ancillaryPickerOpen, setAncillaryPickerOpen] = useState(false)
 	const [alliedPickerOpen, setAlliedPickerOpen] = useState(false)
@@ -100,7 +98,7 @@ export default function QuickServicesSection() {
 		} else if (title === 'Therapeutic') {
 			setTherapeuticPickerOpen(true)
 		} else if (title === 'Pharmacy') {
-			navigate(ROUTES.PHARMACY.SEARCH)
+			toast.info('Medicine delivery is coming soon in your area.')
 		}
 	}
 

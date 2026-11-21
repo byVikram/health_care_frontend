@@ -60,7 +60,7 @@ export default function RadiologySearchPage() {
 
 	// ── Book Scan drawer state -- one RadiologyBookingPage instance, fed by the
 	//    (center, scan) pair the user clicked "Book Scan" on. Mirrors how
-	//    PharmacySearchPage lifts PlaceOrderPage's open/selected state up from the card. ──
+	//    the page lifts the booking drawer's open/selected state up from the card. ──
 	const [bookingOpen, setBookingOpen] = useState(false)
 	const [selectedItem, setSelectedItem] = useState<RadiologySearchResultItem | null>(null)
 

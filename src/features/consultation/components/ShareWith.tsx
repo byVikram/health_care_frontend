@@ -6,24 +6,20 @@ import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
 import AppSelect from '../../../components/common/Select/AppSelect'
 import AppButton from '../../../components/common/Button/AppButton'
 import { customCardStyle, customScrollbar } from '../../../styles/commonStyles'
-import { getPharmacies, PharmacyListItem } from '../../Pharmacy/pharmacyService'
 import { searchRadiologyCenters } from '../../radiology/radiologyService'
 import { RadiologySearchResultItem } from '../../../types/radiology-search'
 import ApiService from '../../../services/apiService'
 import { toast } from 'react-toastify'
 
 const TABS = [
-	{ id: 'pharmacy', label: 'Pharmacy' },
 	{ id: 'radiology', label: 'Radiology' },
 	{ id: 'ancillary', label: 'Ancillary' },
 ]
 
-import PrescriptionIcon from '../../../assets/icons/consultation/prescription.svg'
 import RadiologyIcon from '../../../assets/icons/consultation/radiology.svg'
 import AncillaryIcon from '../../../assets/icons/consultation/ancillary.svg'
 
 const TAB_ICONS: Record<string, string> = {
-	pharmacy: PrescriptionIcon,
 	radiology: RadiologyIcon,
 	ancillary: AncillaryIcon,
 }
@@ -104,21 +100,12 @@ function toPlaces<T extends SearchResultLike>(items: T[]): Place[] {
 	return Array.from(byId.values())
 }
 
-/** Pharmacy list is already one row per pharmacy — just reshape it. */
-function toPharmacyPlaces(items: PharmacyListItem[]): Place[] {
-	return items.map((item) => ({
-		id: item.id,
-		name: item.name || item.owner_name || 'Pharmacy',
-		address: [item.address, item.city].filter(Boolean).join(', ') || 'Address not available',
-	}))
-}
-
 interface ShareWithProps {
 	appointmentId?: string
 }
 
 export default function ShareWith({ appointmentId }: ShareWithProps) {
-	const [activeTab, setActiveTab] = useState('pharmacy')
+	const [activeTab, setActiveTab] = useState('radiology')
 	const [city, setCity] = useState('')
 	const [area, setArea] = useState('')
 
@@ -139,12 +126,11 @@ export default function ShareWith({ appointmentId }: ShareWithProps) {
 		}
 	}
 
-	const [pharmacyPlaces, setPharmacyPlaces] = useState<Place[]>([])
 	const [radiologyPlaces, setRadiologyPlaces] = useState<Place[]>([])
 	const [placesLoading, setPlacesLoading] = useState(false)
 	const [placesError, setPlacesError] = useState<string | null>(null)
 
-	const isBackedTab = activeTab === 'pharmacy' || activeTab === 'radiology'
+	const isBackedTab = activeTab === 'radiology'
 
 	useEffect(() => {
 		if (!isBackedTab) return
@@ -156,13 +142,8 @@ export default function ShareWith({ appointmentId }: ShareWithProps) {
 			setPlacesError(null)
 
 			try {
-				if (activeTab === 'pharmacy') {
-					const res = await getPharmacies({ city: city || undefined, limit: 50 })
-					if (!cancelled) setPharmacyPlaces(toPharmacyPlaces(res.data))
-				} else {
-					const res = await searchRadiologyCenters({ city: city || undefined, limit: 50 })
-					if (!cancelled) setRadiologyPlaces(toPlaces<RadiologySearchResultItem>(res.data))
-				}
+				const res = await searchRadiologyCenters({ city: city || undefined, limit: 50 })
+				if (!cancelled) setRadiologyPlaces(toPlaces<RadiologySearchResultItem>(res.data))
 			} catch {
 				if (!cancelled) setPlacesError('Unable to load centers right now. Please try again.')
 			} finally {
@@ -177,24 +158,14 @@ export default function ShareWith({ appointmentId }: ShareWithProps) {
 		}
 	}, [activeTab, city, isBackedTab])
 
-	const places: Place[] =
-		activeTab === 'pharmacy'
-			? pharmacyPlaces
-			: activeTab === 'radiology'
-				? radiologyPlaces
-				: ANCILLARY_MOCK_PLACES
+	const places: Place[] = activeTab === 'radiology' ? radiologyPlaces : ANCILLARY_MOCK_PLACES
 
 	const showLoading = isBackedTab && placesLoading
 	const showError = isBackedTab && !placesLoading && !!placesError
 	const showEmpty = !showLoading && !showError && places.length === 0
 	const showList = !showLoading && !showError && places.length > 0
 
-	const emptyStateLabel =
-		activeTab === 'pharmacy'
-			? 'No pharmacies found nearby.'
-			: activeTab === 'radiology'
-				? 'No radiology centers found nearby.'
-				: 'No results found nearby.'
+	const emptyStateLabel = activeTab === 'radiology' ? 'No radiology centers found nearby.' : 'No results found nearby.'
 
 	return (
 		<Box sx={{ ...customCardStyle, mt: 2 }}>

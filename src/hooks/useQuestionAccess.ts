@@ -4,7 +4,7 @@
 //   patient (or a visitor, who is sent to log in when they ask)  -> asks questions
 //   doctor an admin has verified                                  -> answers questions and replies
 //   doctor still awaiting verification                            -> reads only
-//   any other role (pharmacy, radiology, ...)                     -> reads; neither asks nor answers
+//   any other role (radiology, ...)                     -> reads; neither asks nor answers
 // The server enforces the same rules (POST /api/qa/questions is patient-only; answers and a doctor's replies need a
 // verified doctor), so this only decides what the UI offers.
 import { useEffect, useState } from 'react'

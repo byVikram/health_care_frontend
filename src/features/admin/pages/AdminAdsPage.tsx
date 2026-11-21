@@ -420,7 +420,7 @@ export default function AdminAdsPage() {
 					<Stack spacing={2.5} sx={{ pt: 1.5 }}>
 						<AppInput fullWidth label="Campaign Title" value={adTitle} onChange={(e) => setAdTitle(e.target.value)} placeholder="E.g., Elder Mobility Wheelchair Rentals" />
 						<ContentImageField label="Creative Banner Image" kind="ads" value={imageUrl} onChange={setImageUrl} disabled={saving} previewHeight={140} />
-						<AppInput fullWidth label="Click Redirect Destination URL" value={targetUrl} onChange={(e) => setTargetUrl(e.target.value)} placeholder="E.g., /pharmacies or https://example.com" />
+						<AppInput fullWidth label="Click Redirect Destination URL" value={targetUrl} onChange={(e) => setTargetUrl(e.target.value)} placeholder="E.g., /doctors or https://example.com" />
 						<Grid container spacing={2}>
 							<Grid size={{ xs: 6 }}>
 								<AppInput fullWidth label="Start Date" type="datetime-local" InputLabelProps={{ shrink: true }} value={startDate} onChange={(e) => setStartDate(e.target.value)} />

@@ -175,8 +175,6 @@ export default function NotificationPanel({ iconColor = 'inherit' }: Props) {
 			navigate(url)
 		} else if (notification.redirect_type === 'radiology' && notification.redirect_id) {
 			navigate(`/radiology/search?open_radiology_id=${notification.redirect_id}`)
-		} else if (notification.redirect_type === 'pharmacy' && notification.redirect_id) {
-			navigate(`/pharmacies?open_pharmacy_id=${notification.redirect_id}`)
 		} else if (
 			(notification.redirect_type === 'appointment' ||
 				notification.redirect_type === 'appointments' ||

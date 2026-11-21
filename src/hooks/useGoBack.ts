@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from './useAuth'
 import { ROUTES } from '../constants/routes'
 
-/** The user's home: the portal when signed in (patient, doctor, pharmacy, radiology), the landing page when not. */
+/** The user's home: the portal when signed in (patient, doctor, radiology), the landing page when not. */
 export function useHomePath(): string {
 	const { accessToken } = useAuth()
 	return accessToken ? ROUTES.PORTAL.HOME : ROUTES.ROOT

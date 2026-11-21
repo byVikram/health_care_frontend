@@ -166,7 +166,7 @@ export default function AdminDashboardPage() {
 								icon={<StorefrontIcon />}
 								iconColor="#0d9488"
 								iconBg="rgba(13,148,136,0.12)"
-								description="Labs, Pharmacies & Radiology"
+								description="Radiology centers"
 								onClick={() => navigate(`${ROUTES.ADMIN.VERIFICATIONS}?tab=providers`)}
 							/>
 						</Grid>

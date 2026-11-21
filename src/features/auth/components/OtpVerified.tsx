@@ -5,7 +5,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { ROUTES } from "../../../constants/routes";
 
 interface Props {
-	role: string   // e.g. 'doctor' | 'patient' | 'pharmacy' | 'radiology'
+	role: string   // e.g. 'doctor' | 'patient' | 'radiology'
 }
 
 export default function OtpVerified({ role }: Props) {

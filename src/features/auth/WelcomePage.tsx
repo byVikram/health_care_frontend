@@ -10,14 +10,13 @@ import nursingCareImg from '../../assets/ancillary/nursing-care.png'
 import appointmentsIcon from '../../assets/icons/appointments.svg'
 import carePlanIcon from '../../assets/icons/care-plan.svg'
 import confirmIcon from '../../assets/icons/confirm.svg'
-import pharmacyIcon from '../../assets/icons/pharmacy.svg'
 import referIcon from '../../assets/icons/refer.svg'
 import remindersIcon from '../../assets/icons/reminders.svg'
 import treatmentIcon from '../../assets/icons/treatment.svg'
 
 // ── Per-role config ────────────────────────────────────────────────────────
 
-type RoleKey = 'doctor' | 'patient' | 'ancillary' | 'pharmacy' | 'radiology'
+type RoleKey = 'doctor' | 'patient' | 'ancillary' | 'radiology'
 
 interface WelcomeConfig {
 	greeting: string
@@ -86,11 +85,6 @@ const WELCOME_CONFIG: Record<RoleKey, WelcomeConfig> = {
 				title: 'Home Care',
 				description: 'Nurses and physiotherapists at your door, on demand',
 			},
-			{
-				icon: pharmacyIcon,
-				title: 'Pharmacy',
-				description: 'Order your prescribed medicines from pharmacies near you',
-			},
 		],
 	},
 
@@ -131,31 +125,6 @@ const WELCOME_CONFIG: Record<RoleKey, WelcomeConfig> = {
 				icon: 'https://cdn-icons-png.flaticon.com/128/15869/15869487.png',
 				title: 'Reviews',
 				description: 'Build your reputation with ratings from patients',
-			},
-		],
-	},
-
-	pharmacy: {
-		greeting: 'Welcome PHARMACY👋',
-		subtitle: "Let's get your pharmacy listed and ready to serve patients.",
-		buttonLabel: 'Set Up Pharmacy Profile',
-		image: welcomeDoctorImg,
-		nextRoute: ROUTES.PORTAL.PROFILE,
-		features: [
-			{
-				icon: 'https://cdn-icons-png.flaticon.com/128/9439/9439123.png',
-				title: 'Profile',
-				description: 'Get discovered by patients looking for pharmacies on Whisper ai',
-			},
-			{
-				icon: 'https://cdn-icons-png.flaticon.com/128/2907/2907846.png',
-				title: 'Inventory',
-				description: 'Manage your medicine inventory and keep availability up to date',
-			},
-			{
-				icon: 'https://cdn-icons-png.flaticon.com/128/3063/3063176.png',
-				title: 'Orders',
-				description: 'Receive and fulfil prescription orders from patients directly',
 			},
 		],
 	},
