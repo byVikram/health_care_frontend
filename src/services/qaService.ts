@@ -52,13 +52,31 @@ export interface PaginatedQuestionsResponse {
 	}
 }
 
-export const listHealthQuestions = async (search?: string, page = 1, limit = 10): Promise<PaginatedQuestionsResponse> => {
+export const listHealthQuestions = async (
+	search?: string,
+	page = 1,
+	limit = 10,
+	tag?: string,
+	sort: 'newest' | 'most_answered' = 'newest'
+): Promise<PaginatedQuestionsResponse> => {
 	const params: Record<string, unknown> = { page, limit }
+	if (sort !== 'newest') {
+		params.sort = sort
+	}
+	if (tag) {
+		params.tag = tag
+	}
 	if (search) {
 		params.search = search
 	}
 	const res = await ApiService.getWithParams<PaginatedQuestionsResponse>('/api/qa', params)
 	return res.data
+}
+
+/** Tags that have at least one public question, for the filter chips. */
+export const listQuestionTags = async (): Promise<string[]> => {
+	const res = await ApiService.get<{ success: boolean; data: string[] }>('/api/qa/tags')
+	return res.data.data
 }
 
 export const getQuestionDetail = async (id: string): Promise<{ success: boolean; message: string; data: PatientQuestion }> => {

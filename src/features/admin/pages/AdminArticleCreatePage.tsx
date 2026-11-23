@@ -7,7 +7,8 @@ import { toast } from 'react-toastify'
 
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
 import AppButton from '../../../components/common/Button/AppButton'
-import ArticleForm, { ArticleFormData } from '../../../components/admin/ArticleForm'
+import ArticleForm from '../../../components/admin/ArticleForm'
+import type { ArticleFormData } from '../../../components/admin/ArticleForm'
 import { createAdminArticle } from '../adminService'
 import { ROUTES } from '../../../constants/routes'
 
@@ -33,6 +34,7 @@ export default function AdminArticleCreatePage() {
 				status,
 				publish_date: formData.publish_date || undefined,
 				publishDate: formData.publish_date || undefined,
+				is_featured: !!formData.is_featured,
 			})
 			toast.success(`Article successfully saved as ${status.toUpperCase()}!`)
 			navigate(ROUTES.ADMIN.ARTICLES)

@@ -1,5 +1,5 @@
 // src/components/admin/ArticleForm.tsx
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
 	Box,
 	Typography,
@@ -10,7 +10,9 @@ import {
 	Divider,
 	Paper,
 	Chip,
+	FormControlLabel,
 } from '@mui/material'
+import AppSwitch from '../common/Switch/AppSwitch'
 import SaveIcon from '@mui/icons-material/Save'
 import PublishIcon from '@mui/icons-material/Publish'
 import { toast } from 'react-toastify'
@@ -19,19 +21,7 @@ import RichTextEditor from './RichTextEditor'
 import AppInput from '../common/Input/AppInput'
 import AppButton from '../common/Button/AppButton'
 import AppSelect from '../common/Select/AppSelect'
-
-export const ARTICLE_CATEGORIES = [
-	{ value: 'Cardiology', label: 'Cardiology' },
-	{ value: 'Pediatrics', label: 'Pediatrics' },
-	{ value: 'Endocrinology', label: 'Endocrinology' },
-	{ value: 'Oncology', label: 'Oncology' },
-	{ value: 'Neurology', label: 'Neurology' },
-	{ value: 'General Health', label: 'General Health' },
-	{ value: 'Preventive Care', label: 'Preventive Care' },
-	{ value: 'Nutrition', label: 'Nutrition' },
-	{ value: 'Mental Wellness', label: 'Mental Wellness' },
-	{ value: 'Other', label: 'Other' },
-]
+import { ARTICLE_CATEGORIES } from '../../constants/constants'
 
 export interface ArticleFormData {
 	title: string
@@ -43,6 +33,7 @@ export interface ArticleFormData {
 	tags: string
 	status?: string
 	publish_date: string
+	is_featured?: boolean
 }
 
 export interface ArticleFormProps {
@@ -57,7 +48,6 @@ export default function ArticleForm({
 	initialData,
 	onSubmit,
 	onCancel,
-	isEdit = false,
 	submitting = false,
 }: ArticleFormProps) {
 	const [title, setTitle] = useState(initialData?.title || '')
@@ -72,18 +62,7 @@ export default function ArticleForm({
 			: new Date().toISOString().split('T')[0]
 	)
 	const [imgError, setImgError] = useState(false)
-
-	useEffect(() => {
-		if (initialData) {
-			if (initialData.title !== undefined) setTitle(initialData.title)
-			if (initialData.content !== undefined) setContent(initialData.content)
-			if (initialData.category !== undefined) setCategory(initialData.category)
-			if (initialData.cover_image !== undefined) setCoverImage(initialData.cover_image)
-			if (initialData.author !== undefined) setAuthor(initialData.author)
-			if (initialData.tags !== undefined) setTags(initialData.tags)
-			if (initialData.publish_date) setPublishDate(initialData.publish_date.split('T')[0])
-		}
-	}, [initialData])
+		const [isFeatured, setIsFeatured] = useState(initialData?.is_featured || false)
 
 	// Clean tags preview helper (removes duplicates and empty items)
 	const tagList = Array.from(
@@ -122,6 +101,7 @@ export default function ArticleForm({
 			tags: tagList.join(', '),
 			status: overrideStatus || initialData?.status || 'published',
 			publish_date: publishDate,
+			is_featured: isFeatured,
 		}
 
 		await onSubmit(formData, overrideStatus)
@@ -272,6 +252,21 @@ export default function ArticleForm({
 									onChange={(e) => setPublishDate(e.target.value)}
 									fullWidth
 								/>
+
+								{/* Featured Switch */}
+									<FormControlLabel
+										control={<AppSwitch checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />}
+										label={
+											<Box sx={{ ml: 1 }}>
+												<Typography variant="body2" fontWeight={700} color="#0f172a">
+													Feature Article
+												</Typography>
+												<Typography variant="caption" color="text.secondary" display="block">
+													Show on the user dashboard
+												</Typography>
+											</Box>
+										}
+									/>
 
 								<Divider />
 

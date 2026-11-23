@@ -6,8 +6,9 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { toast } from 'react-toastify'
 
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
-import ArticleForm, { ArticleFormData } from '../../../components/admin/ArticleForm'
-import { getAdminArticle, updateAdminArticle, AdminArticleItem } from '../adminService'
+import ArticleForm from '../../../components/admin/ArticleForm'
+import type { ArticleFormData } from '../../../components/admin/ArticleForm'
+import { getAdminArticle, updateAdminArticle, type AdminArticleItem } from '../adminService'
 import { ROUTES } from '../../../constants/routes'
 
 export default function AdminArticleEditPage() {
@@ -56,6 +57,7 @@ export default function AdminArticleEditPage() {
 				status,
 				publish_date: formData.publish_date || undefined,
 				publishDate: formData.publish_date || undefined,
+				is_featured: !!formData.is_featured,
 			})
 			toast.success(`Article successfully updated as ${status.toUpperCase()}!`)
 			navigate(ROUTES.ADMIN.ARTICLES)
@@ -89,6 +91,7 @@ export default function AdminArticleEditPage() {
 				tags: article.tags || '',
 				status: article.status,
 				publish_date: article.publish_date || article.publishDate || '',
+				is_featured: article.is_featured,
 		  }
 		: {}
 

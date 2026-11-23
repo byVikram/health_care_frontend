@@ -35,6 +35,11 @@ export interface PatientProfile {
 	relation: string
 	avatar_s3_key?: string
 	is_self: boolean
+	// What the Ask a doctor form needs, so it never has to call /family-members or /me/details (sent by GET /api/lookup).
+	age?: number | string | null
+	gender?: string | null
+	blood_group?: string | null
+	location?: string | null
 }
 
 export interface LookupData {

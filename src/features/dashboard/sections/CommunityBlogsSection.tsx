@@ -24,14 +24,15 @@ export default function CommunityBlogsSection({ variant = 'row' }: CommunityBlog
 		const load = async () => {
 			setLoading(true)
 			try {
-				// Fetch up to 2 featured blogs and featured communities in parallel.
+				// Blogs: all published posts, featured first (the backend orders featured
+				// before the rest, newest first). Communities: featured only.
 				const [blogsRes, groupsRes] = await Promise.all([
-					listBlogs(undefined, 1, 2, true),
-					listCommunityGroups(true),
+					listBlogs(undefined, 1, 6, undefined, 'blog'),
+					listCommunityGroups(true, { limit: 4 }),
 				])
 				if (!active) return
 				setFeaturedBlogs(blogsRes.data)
-				setFeaturedCommunities(groupsRes.data.slice(0, 4))
+				setFeaturedCommunities(groupsRes.data)
 			} catch (err) {
 				// ApiService's shared axios interceptor already shows a global
 				// error toast on failure -- just log for developers here.
@@ -142,7 +143,7 @@ export default function CommunityBlogsSection({ variant = 'row' }: CommunityBlog
 								</Grid>
 							))
 						) : featuredBlogs.length === 0 ? (
-							<DashboardEmptyState message="No featured blog posts configured." py={5} />
+							<DashboardEmptyState message="No blog posts published yet." py={5} />
 						) : (
 							featuredBlogs.map((blog) => (
 								<Grid

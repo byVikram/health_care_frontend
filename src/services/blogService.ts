@@ -25,6 +25,12 @@ export interface BlogPost {
 	published_at?: string
 	created_at: string
 	author: BlogAuthor
+	content_type?: 'article' | 'blog' | 'podcast'
+	tag?: string
+	author_name?: string
+	read_time_minutes?: number
+	media_url?: string
+	media_duration_seconds?: number
 }
 
 export interface BlogComment {
@@ -50,16 +56,53 @@ export interface PaginatedBlogsResponse {
 	}
 }
 
-export const listBlogs = async (category?: string, page = 1, limit = 10, isFeatured?: boolean): Promise<PaginatedBlogsResponse> => {
+export type BlogContentType = 'article' | 'blog' | 'podcast'
+
+export const listBlogs = async (
+	category?: string,
+	page = 1,
+	limit = 10,
+	isFeatured?: boolean,
+	contentType?: BlogContentType,
+	adminOnly?: boolean,
+	search?: string,
+	/** Leave this post out of the list (the page shows it separately). */
+	excludeId?: string,
+	/** Skip this many posts; overrides page, so one page can be smaller than the rest. */
+	offset?: number
+): Promise<PaginatedBlogsResponse> => {
 	const params: Record<string, unknown> = { page, limit }
+	if (adminOnly) {
+		params.admin_only = true
+	}
+	if (contentType) {
+		params.content_type = contentType
+	}
 	if (category) {
 		params.category = category
 	}
 	if (isFeatured !== undefined) {
 		params.is_featured = isFeatured
 	}
+	if (search?.trim()) {
+		params.search = search.trim()
+	}
+	if (excludeId) {
+		params.exclude_id = excludeId
+	}
+	if (offset !== undefined) {
+		params.offset = offset
+	}
 	const res = await ApiService.getWithParams<PaginatedBlogsResponse>('/api/blogs', params)
 	return res.data
+}
+
+/** Categories that have at least one published post of this type, for the filter chips. */
+export const listBlogCategories = async (contentType: BlogContentType): Promise<string[]> => {
+	const res = await ApiService.getWithParams<{ success: boolean; data: string[] }>('/api/blogs/categories', {
+		content_type: contentType,
+	})
+	return res.data.data
 }
 
 export const getBlogPost = async (slug: string): Promise<{ success: boolean; data: BlogPost }> => {

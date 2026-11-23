@@ -1,597 +1,348 @@
 // src/features/portal/BlogArticlePage.tsx
-import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import {
-	Box,
-	Container,
-	Typography,
-	Card,
-	CardContent,
-	CardMedia,
-	Chip,
-	Button,
-	CircularProgress,
-	Stack,
-	Divider,
-	TextField,
-	Avatar,
-	Paper,
-	Grid,
-} from '@mui/material'
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
-import PersonIcon from '@mui/icons-material/Person'
-import SendIcon from '@mui/icons-material/Send'
-import ReplyIcon from '@mui/icons-material/Reply'
-import VerifiedIcon from '@mui/icons-material/Verified'
-
-import { getBlogPost, getBlogComments, createBlogComment, BlogPost, BlogComment } from '../../services/blogService'
-import { getActiveAds, trackAdMetric, AdPlacementConfig } from '../../services/adService'
+//
+// Desktop article / blog / podcast reader (design: Desktop · 5a). GET /api/blogs/{slug}, its comments, ads and the
+// "Keep reading" list from GET /api/blogs. The design's Save, "Was this helpful?" and "Reviewed by" have no backend yet, so
+// they are not shown; Share copies the link.
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useParams, Link as RouterLink } from 'react-router-dom'
+import { Box } from '@mui/material'
+import { marked } from 'marked'
 import { toast } from 'react-toastify'
+import { DESK } from '../../styles/deskTokens'
+import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../hooks/useAuth'
-import AuthorInfoCard from '../../components/common/AuthorInfoCard'
+import { createBlogComment, getBlogComments, getBlogPost, listBlogs, type BlogComment, type BlogPost } from '../../services/blogService'
+import { listCommunityGroups, type CommunityGroup } from '../../services/communityService'
+import { AdSlot, Column, Crumbs, MiniRow, Note, PromoCard, ReadsPage, ReadsSubNav, SideCard, Spinner, Svg } from './readsKit'
+import { TONES, authorOf, cardSx, focusSx, initials, longDate, outlineBtnSx, primaryBtnSx, readMeta, timeAgo, topicStyle, useAds, useGroupJoin, type SubNavKey } from './readsHelpers'
+import DeskButton from '../../components/common/Button/DeskButton'
+import { useLoginPrompt } from '../../components/common/AuthModal/useLoginPrompt'
 
-const renderInFeedAd = (matchingAd: AdPlacementConfig, idx: number, onAdClick: (adId: string, url: string) => void) => (
-	<Card
-		key={`ad-card-${idx}`}
-		sx={{
-			my: 4,
-			mx: 'auto',
-			maxWidth: '100%',
-			borderRadius: 2,
-			border: '1px solid #cbd5e1',
-			overflow: 'hidden',
-			boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
-			cursor: 'pointer',
-			'&:hover': { transform: 'scale(1.005)' },
-			transition: 'transform 0.15s',
-		}}
-		onClick={() => onAdClick(matchingAd.ad.id, matchingAd.ad.target_url)}
-	>
-		<Grid container>
-			<Grid size={{ xs: 12, sm: 4 }}>
-				<CardMedia component="img" image={matchingAd.ad.image_url} alt={matchingAd.ad.title} sx={{ height: 140 }} />
-			</Grid>
-			<Grid size={{ xs: 12, sm: 8 }} sx={{ display: 'flex', alignItems: 'center' }}>
-				<CardContent sx={{ p: 3, width: '100%' }}>
-					<Chip
-						label="Sponsored"
-						size="small"
-						sx={{ mb: 1, fontSize: '0.65rem', fontWeight: 700, bgcolor: '#e2e8f0' }}
-					/>
-					<Typography variant="subtitle1" fontWeight={700} sx={{ color: '#0f172a', mb: 1 }}>
-						{matchingAd.ad.title}
-					</Typography>
-					<Typography variant="caption" color="text.secondary">
-						Click to learn more about this service.
-					</Typography>
-				</CardContent>
-			</Grid>
-		</Grid>
-	</Card>
-)
+const bodySx = {
+	fontSize: 18, lineHeight: '30px', color: DESK.ink, wordBreak: 'break-word',
+	'& p, & div': { m: '0 0 18px' },
+	'& pre': { bgcolor: '#0f172a', color: '#e2e8f0', p: '16px', borderRadius: '12px', fontFamily: 'monospace', fontSize: 14, lineHeight: '22px', overflowX: 'auto', m: '0 0 18px', whiteSpace: 'pre-wrap' },
+	'& hr': { border: 0, borderTop: `1px solid ${DESK.cardLine}`, m: '24px 0' },
+	'& h1, & h2': { fontSize: 24, lineHeight: '32px', fontWeight: 800, m: '28px 0 12px' },
+	'& h3, & h4': { fontSize: 20, lineHeight: '28px', fontWeight: 800, m: '24px 0 10px' },
+	'& ul, & ol': { pl: '22px', m: '0 0 18px' },
+	'& li': { mb: '6px' },
+	'& a': { color: DESK.primary, fontWeight: 700 },
+	'& img': { maxWidth: '100%', borderRadius: '14px' },
+	'& blockquote': { m: '0 0 18px', p: '12px 18px', borderLeft: `4px solid ${DESK.primary}`, bgcolor: DESK.primarySoft, borderRadius: '0 12px 12px 0', color: DESK.inkSoft },
+} as const
 
-// Simple custom renderer for Markdown or WYSIWYG HTML content
-const renderContentParagraphs = (content: string, ads: AdPlacementConfig[], onAdClick: (adId: string, url: string) => void) => {
-	const isHtml = /<[a-z][\s\S]*>/i.test(content)
-
-	if (!isHtml) {
-		const paragraphs = content.split('\n\n').filter((p) => p.trim() !== '')
-		return paragraphs.map((para, idx) => {
-			let element = null
-			if (para.startsWith('#### ')) {
-				element = (
-					<Typography key={idx} variant="h6" fontWeight={700} sx={{ mt: 3, mb: 1, color: '#0f172a' }}>
-						{para.replace('#### ', '')}
-					</Typography>
-				)
-			} else if (para.startsWith('### ')) {
-				element = (
-					<Typography key={idx} variant="h5" fontWeight={800} sx={{ mt: 4, mb: 1.5, color: '#0f172a' }}>
-						{para.replace('### ', '')}
-					</Typography>
-				)
-			} else if (para.startsWith('- ')) {
-				const items = para.split('\n').map((line) => line.replace('- ', '').trim())
-				element = (
-					<Box key={idx} component="ul" sx={{ pl: 3, mb: 2, color: '#334155' }}>
-						{items.map((item, i) => (
-							<li key={i} style={{ marginBottom: '8px' }}>
-								<Typography variant="body1">{item}</Typography>
-							</li>
-						))}
-					</Box>
-				)
-			} else {
-				element = (
-					<Typography key={idx} variant="body1" sx={{ mb: 2.5, lineHeight: 1.7, color: '#334155' }}>
-						{para}
-					</Typography>
-				)
-			}
-
-			const matchingAd = ads.find((ad) => ad.placement_key === 'in-feed' && ad.paragraph_index === idx + 1)
-			if (matchingAd) {
-				return (
-					<Box key={`para-ad-${idx}`}>
-						{element}
-						{renderInFeedAd(matchingAd, idx, onAdClick)}
-					</Box>
-				)
-			}
-			return element
-		})
-	}
-
-	const parts = content.split('</p>')
-	const paragraphs = parts.map((part, idx) => {
-		if (idx === parts.length - 1 && part.trim() === '') return ''
-		return part.trim() ? part + '</p>' : ''
-	}).filter((p) => p !== '')
-
-	return paragraphs.map((paraHtml, idx) => {
-		const element = (
-			<Box
-				key={idx}
-				dangerouslySetInnerHTML={{ __html: paraHtml }}
-				sx={{
-					color: '#334155',
-					lineHeight: 1.8,
-					fontSize: '1.05rem',
-					mb: 2.5,
-					'& h1': { fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', mt: 3, mb: 1.5 },
-					'& h2': { fontSize: '1.4rem', fontWeight: 700, color: '#0f172a', mt: 3, mb: 1.5 },
-					'& h3': { fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', mt: 2, mb: 1 },
-					'& blockquote': {
-						borderLeft: '4px solid #0d9488',
-						pl: 2,
-						ml: 0,
-						my: 2,
-						color: '#475569',
-						fontStyle: 'italic',
-						bgcolor: '#f0fdf4',
-						py: 1,
-						borderRadius: '0 8px 8px 0',
-					},
-					'& a': { color: '#0d9488', textDecoration: 'underline', fontWeight: 700 },
-					'& ul, & ol': { pl: 3, mb: 2 },
-					'& li': { mb: 1 },
-				}}
-			/>
-		)
-
-		const matchingAd = ads.find((ad) => ad.placement_key === 'in-feed' && ad.paragraph_index === idx + 1)
-		if (matchingAd) {
-			return (
-				<Box key={`para-ad-${idx}`}>
-					{element}
-					{renderInFeedAd(matchingAd, idx, onAdClick)}
-				</Box>
-			)
-		}
-		return element
-	})
-}
-
-// Recursive Comment Node Component
-const CommentNode = ({
-	comment,
-	onReplyTrigger,
-	activeReplyId,
-	replyContent,
-	setReplyContent,
-	onReplySubmit,
-}: {
-	comment: BlogComment
-	onReplyTrigger: (id: string) => void
-	activeReplyId: string | null
-	replyContent: string
-	setReplyContent: (val: string) => void
-	onReplySubmit: (parentId: string) => void
-}) => {
-	const isDoctor = comment.user_role === 'doctor'
-	const isReplyFormOpen = activeReplyId === comment.id
-
-	return (
-		<Paper elevation={0} sx={{ p: 2.5, mb: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
-			<Stack direction="row" spacing={2} sx={{ mb: 1.5 }}>
-				<Avatar sx={{ bgcolor: isDoctor ? '#0d9488' : '#64748b' }}>
-					{comment.user_name.charAt(0).toUpperCase()}
-				</Avatar>
-				<Box flex={1}>
-					<Stack direction="row" spacing={1} alignItems="center">
-						<Typography variant="subtitle2" fontWeight={700} color="#0f172a">
-							{comment.user_name}
-						</Typography>
-						{isDoctor && (
-							<Chip
-								icon={<VerifiedIcon sx={{ fontSize: '14px !important', color: '#0d9488' }} />}
-								label="Verified Medical Doctor"
-								size="small"
-								sx={{
-									height: 20,
-									fontSize: '0.7rem',
-									fontWeight: 700,
-									bgcolor: '#ccfbf1',
-									color: '#0f766e',
-									border: '1px solid rgba(45, 212, 191, 0.4)',
-								}}
-							/>
-						)}
-					</Stack>
-					<Typography variant="caption" color="text.secondary">
-						{new Date(comment.created_at).toLocaleDateString()}
-					</Typography>
-				</Box>
-				<Button
-					startIcon={<ReplyIcon />}
-					size="small"
-					onClick={() => onReplyTrigger(comment.id)}
-					sx={{ textTransform: 'none', color: '#0d9488' }}
-				>
-					Reply
-				</Button>
-			</Stack>
-			<Typography variant="body2" sx={{ color: '#334155', lineHeight: 1.5, pl: 0.5 }}>
-				{comment.content}
-			</Typography>
-
-			{/* Reply Form */}
-			{isReplyFormOpen && (
-				<Box sx={{ mt: 2, pl: 2, borderLeft: '2px solid #0d9488' }}>
-					<TextField
-						fullWidth
-						multiline
-						rows={2}
-						size="small"
-						placeholder={`Reply to ${comment.user_name}...`}
-						value={replyContent}
-						onChange={(e) => setReplyContent(e.target.value)}
-						sx={{ bgcolor: 'white', borderRadius: 2 }}
-					/>
-					<Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mt: 1 }}>
-						<Button size="small" color="inherit" onClick={() => onReplyTrigger('')}>
-							Cancel
-						</Button>
-						<Button
-							size="small"
-							variant="contained"
-							onClick={() => onReplySubmit(comment.id)}
-							sx={{ bgcolor: '#0d9488', '&:hover': { bgcolor: '#0f766e' } }}
-						>
-							Submit
-						</Button>
-					</Stack>
-				</Box>
-			)}
-
-			{/* Nested Replies */}
-			{comment.replies && comment.replies.length > 0 && (
-				<Box sx={{ pl: { xs: 2, sm: 4 }, mt: 2, borderLeft: '1px dashed #cbd5e1' }}>
-					{comment.replies.map((reply) => (
-						<CommentNode
-							key={reply.id}
-							comment={reply}
-							onReplyTrigger={onReplyTrigger}
-							activeReplyId={activeReplyId}
-							replyContent={replyContent}
-							setReplyContent={setReplyContent}
-							onReplySubmit={onReplySubmit}
-						/>
-					))}
-				</Box>
-			)}
-		</Paper>
-	)
+const renderBody = (content: string): string => {
+	if (/<[a-z][\s\S]*>/i.test(content)) return content
+	return marked.parse(content, { async: false }) as string
 }
 
 export default function BlogArticlePage() {
 	const { slug } = useParams<{ slug: string }>()
 	const navigate = useNavigate()
 	const { accessToken } = useAuth()
-	const [blog, setBlog] = useState<BlogPost | null>(null)
-	const [comments, setComments] = useState<BlogComment[]>([])
-	const [ads, setAds] = useState<AdPlacementConfig[]>([])
+	const [post, setPost] = useState<BlogPost | null>(null)
 	const [loading, setLoading] = useState(true)
-	const [commentText, setCommentText] = useState('')
-	const [replyTargetId, setReplyTargetId] = useState<string | null>(null)
-	const [replyText, setReplyText] = useState('')
-
-	const fetchComments = async (blogSlug: string) => {
-		try {
-			const res = await getBlogComments(blogSlug)
-			setComments(res.data)
-		} catch (err) {
-			console.error('Error fetching comments:', err)
-		}
-	}
+	const [comments, setComments] = useState<BlogComment[]>([])
+	const [related, setRelated] = useState<BlogPost[]>([])
+	const [group, setGroup] = useState<CommunityGroup | null>(null)
+	const [shared, setShared] = useState(false)
+	const ads = useAds('/blogs/*', post?.category)
 
 	useEffect(() => {
 		if (!slug) return
-		const fetchData = async () => {
+		let active = true
+		const load = async () => {
 			setLoading(true)
 			try {
-				const blogRes = await getBlogPost(slug)
-				setBlog(blogRes.data)
-
-				// Fetch contextual ads matching this category
-				const adsRes = await getActiveAds("/blogs/*", blogRes.data.category)
-				setAds(adsRes.data)
-
-				// Log impression metrics
-				adsRes.data.forEach((ad) => {
-					trackAdMetric(ad.ad.id, 'impression').catch(console.error)
-				})
-
-				await fetchComments(slug)
-			} catch (err) {
-				console.error('Error fetching article:', err)
-				toast.error('Article not found')
-				navigate('/blogs')
+				const res = await getBlogPost(slug)
+				if (!active) return
+				setPost(res.data)
+				window.scrollTo({ top: 0 })
+				try {
+					const c = await getBlogComments(slug)
+					if (active) setComments(c.data)
+				} catch {
+					// comments are secondary
+				}
+				try {
+					const list = await listBlogs(undefined, 1, 8, undefined, res.data.content_type ?? 'blog')
+					if (active) setRelated(list.data.filter((p) => p.slug !== slug).slice(0, 3))
+				} catch {
+					// keep reading stays empty
+				}
+				try {
+					const g = await listCommunityGroups(undefined, { limit: 1 })
+					if (active) setGroup(g.data[0] ?? null)
+				} catch {
+					// the community card stays hidden
+				}
+			} catch {
+				if (active) {
+					toast.error('Article not found')
+					navigate(ROUTES.BLOGS.LIST)
+				}
 			} finally {
-				setLoading(false)
+				if (active) setLoading(false)
 			}
 		}
-		fetchData()
-	}, [slug])
+		void load()
+		return () => {
+			active = false
+		}
+	}, [slug, navigate])
 
-	const handleAdClick = (adId: string, url: string) => {
-		trackAdMetric(adId, 'click').catch(console.error)
-		if (url.startsWith('/')) {
-			navigate(url)
-		} else {
-			window.open(url, '_blank')
-		}
-	}
-
-	const handleCommentSubmit = async () => {
-		if (!slug) return
-		if (!commentText.trim()) {
-			toast.warning('Please enter comment text')
-			return
-		}
-		try {
-			const res = await createBlogComment(slug, commentText)
-			toast.success('Comment posted successfully!')
-			setCommentText('')
-			await fetchComments(slug)
-		} catch (err) {
-			console.error('Error posting comment:', err)
-		}
-	}
-
-	const handleReplySubmit = async (parentId: string) => {
-		if (!slug) return
-		if (!replyText.trim()) {
-			toast.warning('Please enter reply text')
-			return
-		}
-		try {
-			const res = await createBlogComment(slug, replyText, parentId)
-			toast.success('Reply posted successfully!')
-			setReplyText('')
-			setReplyTargetId(null)
-			await fetchComments(slug)
-		} catch (err) {
-			console.error('Error posting reply:', err)
-		}
-	}
+	const html = useMemo(() => (post ? renderBody(post.content) : ''), [post])
 
 	if (loading) {
 		return (
-			<Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}>
-				<CircularProgress sx={{ color: '#0d9488' }} />
-			</Box>
+			<ReadsPage>
+				<Spinner />
+			</ReadsPage>
 		)
 	}
+	if (!post) return null
 
-	if (!blog) return null
+	const type = (post.content_type ?? 'blog') as SubNavKey
+	const { tone, icon } = topicStyle(post.category, post.content_type)
+	const [bg, ink] = TONES[tone]
+	const author = authorOf(post)
+	const meta = [longDate(post.published_at ?? post.created_at), readMeta(post)].filter(Boolean).join(' · ')
+	const sidebarAd = ads.find((a) => a.placement_key === 'sidebar')
+	const inFeedAd = ads.find((a) => a.placement_key === 'in-feed')
+	const isVideo = !!post.media_url && /\.(mp4|webm|mov)(\?|$)/i.test(post.media_url)
 
-	const rightSidebarAds = ads.filter((placement) => placement.placement_key === 'sidebar')
+	const share = async () => {
+		try {
+			await navigator.clipboard.writeText(window.location.href)
+			setShared(true)
+			setTimeout(() => setShared(false), 2500)
+		} catch {
+			toast.info(window.location.href)
+		}
+	}
 
 	return (
-		<Box sx={{ minHeight: '100vh', py: 5, bgcolor: '#f8fafc' }}>
-			<Container maxWidth="lg">
-				{/* Back Button */}
-				<Button
-					startIcon={<ArrowBackIcon />}
-					onClick={() => navigate('/blogs')}
-					sx={{ mb: 4, textTransform: 'none', color: '#0f172a', fontWeight: 600 }}
-				>
-					Back to articles
-				</Button>
+		<ReadsPage>
+			<ReadsSubNav active={type} />
+			<Column sx={{ pt: '24px', pb: '64px', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 340px', gap: '40px', alignItems: 'start' }}>
+				<Box component="article" sx={{ display: 'flex', flexDirection: 'column', gap: '18px', minWidth: 0 }}>
+					<Crumbs items={[{ label: 'Health reads', to: ROUTES.BLOGS.LIST }, { label: post.category, to: `${ROUTES.BLOGS.LIST}?type=${type}` }, { label: post.title }]} />
 
-				<Grid container spacing={4}>
-					{/* Article Main Content */}
-					<Grid size={{ xs: 12, lg: 8 }}>
-						<Card sx={{ borderRadius: 2, overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: 'none', mb: 5 }}>
-							<CardMedia
-								component="img"
-								height="380"
-								image={blog.image_url || 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=800'}
-								alt={blog.title}
-							/>
-							<CardContent sx={{ p: { xs: 3, md: 5 } }}>
-								<Box sx={{ mb: 3 }}>
-									<Chip
-										label={blog.category}
-										sx={{ bgcolor: '#ccfbf1', color: '#0f766e', fontWeight: 700, mb: 2 }}
-									/>
-									<Typography variant="h3" fontWeight={800} color="#0f172a" sx={{ fontSize: { xs: '1.8rem', sm: '2.5rem' }, lineHeight: 1.2, mb: 2.5 }}>
-										{blog.title}
-									</Typography>
-									<Stack direction="row" spacing={3} sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
-										<Stack direction="row" spacing={0.5} alignItems="center">
-											<PersonIcon sx={{ fontSize: 16 }} />
-											<Typography variant="body2" fontWeight={600}>
-												{blog.author.name}
-											</Typography>
-										</Stack>
-										<Stack direction="row" spacing={0.5} alignItems="center">
-											<CalendarTodayIcon sx={{ fontSize: 14 }} />
-											<Typography variant="body2">
-												{new Date(blog.created_at).toLocaleDateString()}
-											</Typography>
-										</Stack>
-									</Stack>
-								</Box>
-
-								<Divider sx={{ my: 3 }} />
-
-								{/* Dynamic Paragraphs + In-Feed Ad Injections */}
-								<Box className="article-body">
-									{renderContentParagraphs(blog.content, ads, handleAdClick)}
-								</Box>
-
-								{/* Author Information Section */}
-								<AuthorInfoCard author={blog.author} />
-							</CardContent>
-						</Card>
-
-						{/* Comments Header */}
-						<Box sx={{ mb: 4 }}>
-							<Typography variant="h5" fontWeight={800} color="#0f172a">
-								Discussion & Comments
-							</Typography>
-							<Typography variant="body2" color="text.secondary">
-								Join the discussion. Patient comments are moderated to verify medical compliance.
-							</Typography>
-						</Box>
-
-						{/* Add Comment Box */}
-						{accessToken ? (
-							<Paper elevation={0} sx={{ p: 3, mb: 4, borderRadius: 2, border: '1px solid #e2e8f0', bgcolor: 'white' }}>
-								<Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5, color: '#0f172a' }}>
-									Share your thoughts
-								</Typography>
-								<TextField
-									fullWidth
-									multiline
-									rows={3}
-									placeholder="Write your comment here..."
-									value={commentText}
-									onChange={(e) => setCommentText(e.target.value)}
-									sx={{ mb: 2 }}
-								/>
-								<Stack direction="row" justifyContent="flex-end">
-									<Button
-										variant="contained"
-										endIcon={<SendIcon />}
-										onClick={handleCommentSubmit}
-										sx={{ bgcolor: '#0d9488', textTransform: 'none', borderRadius: 2.5, '&:hover': { bgcolor: '#0f766e' } }}
-									>
-										Post Comment
-									</Button>
-								</Stack>
-							</Paper>
+					<Box aria-hidden="true" sx={{ position: 'relative', overflow: 'hidden', height: 300, borderRadius: '24px', bgcolor: bg, color: ink, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+						{post.image_url ? (
+							<Box component="img" src={post.image_url} alt="" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
 						) : (
-							<Paper elevation={0} sx={{ p: 3, mb: 4, textAlign: 'center', bgcolor: '#f1f5f9', borderRadius: 2 }}>
-								<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-									You must be logged in to post or reply to comments.
-								</Typography>
-								<Button
-									variant="outlined"
-									onClick={() => navigate('/login')}
-									sx={{ textTransform: 'none', color: '#0d9488', borderColor: '#0d9488' }}
-								>
-									Log In
-								</Button>
-							</Paper>
+							<>
+								<Box sx={{ position: 'absolute', left: -60, bottom: -90, width: 300, height: 300, borderRadius: '9999px', bgcolor: '#FFFFFF80' }} />
+								<Box sx={{ position: 'absolute', right: -40, top: -60, width: 220, height: 220, borderRadius: '9999px', bgcolor: '#FFFFFF66' }} />
+								<Box sx={{ position: 'relative', display: 'flex' }}>
+									<Svg name={icon} size={110} stroke={1.3} />
+								</Box>
+							</>
 						)}
+					</Box>
 
-						{/* Comments List */}
-						<Box>
-							{comments.length === 0 ? (
-								<Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', py: 2 }}>
-									No comments yet. Be the first to comment!
-								</Typography>
-							) : (
-								comments.map((comment) => (
-									<CommentNode
-										key={comment.id}
-										comment={comment}
-										onReplyTrigger={(id) => setReplyTargetId(id)}
-										activeReplyId={replyTargetId}
-										replyContent={replyText}
-										setReplyContent={setReplyText}
-										onReplySubmit={handleReplySubmit}
-									/>
-								))
-							)}
-						</Box>
-					</Grid>
+					<Box sx={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.06em', color: ink, textTransform: 'uppercase' }}>{post.category}</Box>
+					<Box component="h1" sx={{ m: 0, fontSize: 40, lineHeight: '50px', fontWeight: 800, letterSpacing: '-0.01em' }}>
+						{post.title}
+					</Box>
 
-					{/* Right Sidebar Advertisements */}
-					<Grid size={{ xs: 12, lg: 4 }}>
-						<Box sx={{ position: 'sticky', top: 88, display: 'flex', flexDirection: 'column', gap: 4 }}>
-							{rightSidebarAds.length > 0 ? (
-								rightSidebarAds.map((placement) => (
-									<Card
-										key={placement.id}
-										sx={{
-											borderRadius: 2,
-											overflow: 'hidden',
-											boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
-											border: '1px solid #cbd5e1',
-											cursor: 'pointer',
-											transition: 'transform 0.2s',
-											'&:hover': { transform: 'scale(1.015)' },
-										}}
-										onClick={() => handleAdClick(placement.ad.id, placement.ad.target_url)}
-									>
-										<Box sx={{ position: 'relative' }}>
-											<CardMedia
-												component="img"
-												image={placement.ad.image_url}
-												alt={placement.ad.title}
-												sx={{ height: 260 }}
-											/>
-											<Chip
-												label="Sponsored"
-												size="small"
-												sx={{
-													position: 'absolute',
-													top: 12,
-													right: 12,
-													bgcolor: 'rgba(15, 23, 42, 0.75)',
-													color: 'white',
-													fontWeight: 700,
-													fontSize: '0.65rem',
-													backdropFilter: 'blur(4px)',
-												}}
-											/>
-										</Box>
-										<CardContent sx={{ p: 2.5, bgcolor: '#0f172a', color: 'white' }}>
-											<Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1, lineHeight: 1.2 }}>
-												{placement.ad.title}
-											</Typography>
-											<Button
-												variant="contained"
-												fullWidth
-												sx={{
-													mt: 1,
-													bgcolor: '#0d9488',
-													textTransform: 'none',
-													borderRadius: 2.5,
-													'&:hover': { bgcolor: '#0f766e' },
-												}}
-											>
-												Learn More
-											</Button>
-										</CardContent>
-									</Card>
-								))
-							) : (
-								<Paper sx={{ p: 3, borderRadius: 2, bgcolor: '#f8fafc', border: '1px dashed #cbd5e1', textAlign: 'center' }}>
-									<Typography variant="body2" color="text.secondary">
-										Health advertisements align with your interests.
-									</Typography>
-								</Paper>
-							)}
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: '12px', pb: '18px', borderBottom: `1px solid ${DESK.cardLine}` }}>
+						{post.author?.avatar_url ? (
+							<Box component="img" src={post.author.avatar_url} alt="" sx={{ width: 44, height: 44, borderRadius: '9999px', objectFit: 'cover' }} />
+						) : (
+							<Box aria-hidden="true" sx={{ width: 44, height: 44, borderRadius: '9999px', bgcolor: DESK.primarySoft, color: DESK.primary, fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+								{initials(author)}
+							</Box>
+						)}
+						<Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+							<Box component="b" sx={{ fontSize: 15 }}>{author}</Box>
+							<Box sx={{ fontSize: 13, color: DESK.muted }}>{meta}</Box>
 						</Box>
-					</Grid>
-				</Grid>
-			</Container>
+						<Box component="button" type="button" onClick={() => void share()} sx={outlineBtnSx}>
+							<Svg name="share" size={18} />
+							{shared ? 'Link copied' : 'Share'}
+						</Box>
+					</Box>
+
+					{post.media_url &&
+						(isVideo ? (
+							<Box component="video" controls src={post.media_url} sx={{ width: '100%', borderRadius: '16px', bgcolor: '#000' }} />
+						) : (
+							<Box component="audio" controls src={post.media_url} sx={{ width: '100%' }} />
+						))}
+
+					<Box sx={bodySx} dangerouslySetInnerHTML={{ __html: html }} />
+
+					<AdSlot placement={inFeedAd} compact />
+
+					<Note>This content is general information, not medical advice. Speak to a doctor before changing medicines or starting supplements.</Note>
+
+					<Comments slug={post.slug} comments={comments} signedIn={!!accessToken} onReload={async () => setComments((await getBlogComments(post.slug)).data)} />
+				</Box>
+
+				<Box component="aside" sx={{ position: 'sticky', top: 88, display: 'flex', flexDirection: 'column', gap: '16px', pt: '32px' }}>
+					<AdSlot placement={sidebarAd} />
+					<PromoCard to={ROUTES.DOCTORS.SEARCH} title="Want advice made for you?" text="Consult a doctor on video or in clinic." button="Find a doctor" />
+					{related.length > 0 && (
+						<SideCard title="Keep reading">
+							<Box sx={{ display: 'flex', flexDirection: 'column' }}>
+								{related.map((p) => (
+									<MiniRow key={p.id} to={`/blogs/${p.slug}`} topic={p.category} contentType={p.content_type} title={p.title} meta={[authorOf(p), readMeta(p)].filter(Boolean).join(' · ')} size={52} />
+								))}
+							</Box>
+						</SideCard>
+					)}
+					{group && <GroupCard group={group} />}
+				</Box>
+			</Column>
+		</ReadsPage>
+	)
+}
+
+function GroupCard({ group }: { group: CommunityGroup }) {
+	const [joined, setJoined] = useState(!!group.is_joined)
+	const login = useLoginPrompt('Login to join a community')
+	const { toggle, busy } = useGroupJoin(login.prompt)
+	const { tone, icon } = topicStyle(group.category || group.name)
+	const [bg, ink] = TONES[tone]
+	return (
+		<SideCard>
+			{login.modal}
+			<Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+				<Box sx={{ flexShrink: 0, width: 44, height: 44, borderRadius: '12px', bgcolor: bg, color: ink, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+					<Svg name={icon} size={22} />
+				</Box>
+				<Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+					<Box component="b" sx={{ fontSize: 15 }}>{group.name}</Box>
+					{!!group.member_count && <Box sx={{ fontSize: 12, color: DESK.muted }}>{group.member_count.toLocaleString('en-IN')} members</Box>}
+				</Box>
+			</Box>
+			<DeskButton label={joined ? 'Joined' : 'Join group'} kind={joined ? 'secondary' : 'primary'} size="lg" fullWidth={!joined} loading={busy} onClick={() => void toggle(group.id, joined, setJoined)} />
+		</SideCard>
+	)
+}
+
+// ── Comments ─────────────────────────────────────────────────────────────────
+
+function Comments({ slug, comments, signedIn, onReload }: { slug: string; comments: BlogComment[]; signedIn: boolean; onReload: () => Promise<void> }) {
+	const [text, setText] = useState('')
+	const [busy, setBusy] = useState(false)
+
+	const send = async (content: string, parentId?: string) => {
+		if (!content.trim()) {
+			toast.warning('Please write something first')
+			return false
+		}
+		setBusy(true)
+		try {
+			await createBlogComment(slug, content.trim(), parentId)
+			toast.success('Thanks! Your comment will show once it is approved.')
+			await onReload()
+			return true
+		} catch {
+			return false
+		} finally {
+			setBusy(false)
+		}
+	}
+
+	return (
+		<Box component="section" aria-label="Comments" sx={{ ...cardSx, p: '22px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+			<Box component="h2" sx={{ m: 0, fontSize: 20, fontWeight: 800 }}>
+				Comments {comments.length > 0 && <span style={{ color: DESK.muted, fontWeight: 600, fontSize: 15 }}>· {comments.length}</span>}
+			</Box>
+			{signedIn ? (
+				<Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+					<Box
+						component="textarea"
+						rows={3}
+						value={text}
+						onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value)}
+						placeholder="Share your thoughts or ask the author"
+						aria-label="Write a comment"
+						sx={{ p: '12px 14px', borderRadius: '12px', border: `1.5px solid ${DESK.lineStrong}`, bgcolor: DESK.page, color: DESK.ink, fontSize: 15, lineHeight: '22px', resize: 'none', outline: 'none', fontFamily: 'inherit', '&:focus': { borderColor: DESK.primary } }}
+					/>
+					<Box
+						component="button"
+						type="button"
+						disabled={busy}
+						onClick={async () => {
+							if (await send(text)) setText('')
+						}}
+						sx={{ ...primaryBtnSx, alignSelf: 'flex-end', opacity: busy ? 0.7 : 1 }}
+					>
+						Post comment
+					</Box>
+				</Box>
+			) : (
+				<Box sx={{ fontSize: 14, color: DESK.muted }}>
+					<Box component={RouterLink} to={ROUTES.AUTH.LOGIN} sx={{ color: DESK.primary, fontWeight: 800 }}>
+						Log in
+					</Box>{' '}
+					to join the conversation.
+				</Box>
+			)}
+			{comments.map((c) => (
+				<CommentNode key={c.id} comment={c} signedIn={signedIn} onReply={send} />
+			))}
+		</Box>
+	)
+}
+
+function CommentNode({ comment, signedIn, onReply, depth = 0 }: { comment: BlogComment; signedIn: boolean; onReply: (content: string, parentId?: string) => Promise<boolean>; depth?: number }) {
+	const [open, setOpen] = useState(false)
+	const [text, setText] = useState('')
+	const isDoctor = comment.user_role === 'doctor'
+	return (
+		<Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px', pl: depth ? '20px' : 0, borderLeft: depth ? `2px solid ${DESK.lineSoft}` : 0 }}>
+			<Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+				<Box aria-hidden="true" sx={{ width: 34, height: 34, borderRadius: '9999px', bgcolor: isDoctor ? DESK.primarySoft : DESK.chip, color: isDoctor ? DESK.primary : DESK.muted, fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+					{initials(comment.user_name)}
+				</Box>
+				<Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: 14, fontWeight: 800 }}>
+						{comment.user_name}
+						{isDoctor && <Box sx={{ px: '8px', py: '1px', borderRadius: '6px', bgcolor: DESK.successSoft, color: DESK.success, fontSize: 11, fontWeight: 800 }}>Verified doctor</Box>}
+					</Box>
+					<Box sx={{ fontSize: 12, color: DESK.muted }}>{timeAgo(comment.created_at)}</Box>
+				</Box>
+				{signedIn && (
+					<Box component="button" type="button" onClick={() => setOpen(!open)} sx={{ border: 0, bgcolor: 'transparent', color: DESK.primary, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', ...focusSx }}>
+						Reply
+					</Box>
+				)}
+			</Box>
+			<Box sx={{ fontSize: 15, lineHeight: '23px', whiteSpace: 'pre-line' }}>{comment.content}</Box>
+			{open && (
+				<Box sx={{ display: 'flex', gap: '8px' }}>
+					<Box
+						component="input"
+						value={text}
+						onChange={(e: React.ChangeEvent<HTMLInputElement>) => setText(e.target.value)}
+						placeholder={`Reply to ${comment.user_name}`}
+						aria-label="Write a reply"
+						sx={{ flexGrow: 1, height: 40, px: '12px', borderRadius: '10px', border: `1.5px solid ${DESK.lineStrong}`, outline: 'none', fontSize: 14, fontFamily: 'inherit', color: DESK.ink, '&:focus': { borderColor: DESK.primary } }}
+					/>
+					<Box
+						component="button"
+						type="button"
+						onClick={async () => {
+							if (await onReply(text, comment.id)) {
+								setText('')
+								setOpen(false)
+							}
+						}}
+						sx={primaryBtnSx}
+					>
+						Send
+					</Box>
+				</Box>
+			)}
+			{comment.replies?.map((r) => (
+				<CommentNode key={r.id} comment={r} signedIn={signedIn} onReply={onReply} depth={depth + 1} />
+			))}
 		</Box>
 	)
 }
