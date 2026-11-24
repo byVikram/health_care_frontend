@@ -1,28 +1,51 @@
 // src/features/dashboard/PodcastsSection.tsx
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Box, Typography, Grid } from '@mui/material'
+import { listBlogs } from '../../../services/blogService'
 
-const podcasts = [
-	{
-		id: 1,
-		type: 'Podcast',
-		title: 'Healthy Habits for a Busy Life',
-		image: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=400&h=300&fit=crop&crop=center',
-	},
-	{
-		id: 2,
-		type: 'Videocast',
-		title: 'Expert Panel on Chronic Disease Management',
-		image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&h=300&fit=crop&crop=center',
-	},
-	{
-		id: 3,
-		type: 'Podcast',
-		title: 'Mindfulness for Stress Reduction',
-		image: 'https://images.unsplash.com/photo-1545205597-3d9d02c29597?w=400&h=300&fit=crop&crop=center',
-	},
-]
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=400&h=300&fit=crop&crop=center'
+
+interface PodcastItem {
+	id: string
+	slug: string
+	type: string
+	title: string
+	image: string
+}
 
 export default function PodcastsSection() {
+	const navigate = useNavigate()
+	const [podcasts, setPodcasts] = useState<PodcastItem[]>([])
+
+	useEffect(() => {
+		let active = true
+		const load = async () => {
+			try {
+				// Published podcasts; the backend lists featured ones first, then the rest.
+				const res = await listBlogs(undefined, 1, 3, undefined, 'podcast')
+				if (!active) return
+				setPodcasts(
+					res.data.map((p) => ({
+						id: p.id,
+						slug: p.slug,
+						type: 'Podcast',
+						title: p.title,
+						image: p.image_url || FALLBACK_IMAGE,
+					}))
+				)
+			} catch {
+				// ApiService already toasted the server's message
+			}
+		}
+		void load()
+		return () => {
+			active = false
+		}
+	}, [])
+
+	if (podcasts.length === 0) return null
+
 	return (
 		<Box maxWidth={'960px'} m={'auto'}>
 			{/* Heading */}
@@ -46,6 +69,7 @@ export default function PodcastsSection() {
 				{podcasts.map((podcast) => (
 					<Grid key={podcast.id} size={{ xs: 12, sm: 6, md: 4 }}>
 						<Box
+							onClick={() => navigate(`/blogs/${podcast.slug}`)}
 							sx={{
 								height: '100%',
 								bgcolor: '#fff',

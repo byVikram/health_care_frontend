@@ -28,7 +28,7 @@ import AppButton from '../../../components/common/Button/AppButton'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppSelect from '../../../components/common/Select/AppSelect'
 import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
-import { ARTICLE_CATEGORIES } from '../../../components/admin/ArticleForm'
+import { ARTICLE_CATEGORIES } from '../../../constants/constants'
 
 import {
 	listAdminArticles,

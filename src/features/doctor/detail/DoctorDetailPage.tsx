@@ -12,9 +12,7 @@ import AppSelect from '../../../components/common/Select/AppSelect'
 import AppButton from '../../../components/common/Button/AppButton'
 import DateSlotPicker, { SlotGroup, TimeSlot } from '../../../components/common/DateSlotPicker/DateSlotPicker'
 import AppModal from '../../../components/common/Modal/AppModal'
-import LoginForm from '../../../features/auth/components/LoginForm'
-import RegisterForm from '../../../features/auth/components/RegisterForm'
-import OtpForm from '../../../features/auth/components/OtpForm'
+import { useLoginPrompt } from '../../../components/common/AuthModal/useLoginPrompt'
 
 import { customCardStyle } from '../../../styles/commonStyles'
 import { AppointmentType } from '../../../types/doctor'
@@ -91,7 +89,6 @@ export default function DoctorDetailPage() {
 
 
 	const [consentOpen, setConsentOpen] = useState(false)
-	const [pendingBooking, setPendingBooking] = useState(false)
 
 
 
@@ -109,9 +106,7 @@ export default function DoctorDetailPage() {
 	const navigate = useNavigate()
 
 
-	const [authModalOpen, setAuthModalOpen] = useState(false)
-	const [authModalView, setAuthModalView] = useState<'login' | 'register' | 'otp'>('login')
-	const [authContactNumber, setAuthContactNumber] = useState('')
+	const { prompt: promptLogin, modal: loginModal } = useLoginPrompt('Login to book an appointment')
 	const { accessToken, role } = useAuth()
 
 	// Online booking can be paused for a patient (repeated missed appointments). Ask early, so they are told on this page and not after
@@ -137,27 +132,6 @@ export default function DoctorDetailPage() {
 		}
 	}, [accessToken, role])
 
-	const closeAuthModal = () => {
-		setAuthModalOpen(false)
-		setAuthModalView('login')
-		setAuthContactNumber('')
-	}
-
-	const handleAuthNext = (contactNumber: string) => {
-		setAuthContactNumber(contactNumber)
-		setAuthModalView('otp')
-	}
-
-	const handleAuthVerified = () => {
-		setAuthModalOpen(false)
-		setAuthModalView('login')
-		setAuthContactNumber('')
-		// After login, open consent form automatically
-		if (pendingBooking) {
-			setConsentOpen(true)
-			setPendingBooking(false)
-		}
-	}
 
 	const selectedPatient = patientProfiles.find((p) => p.id === selectedPatientId) || patientProfiles[0]
 
@@ -367,13 +341,6 @@ export default function DoctorDetailPage() {
 		if (showFullAbout) return about
 		return about.length > 120 ? `${about.slice(0, 120)}...` : about
 	})()
-
-	const authModalTitle =
-		authModalView === 'register'
-			? 'Register to book appointment'
-			: authModalView === 'otp'
-				? 'Verify OTP'
-				: 'Login to book an appointment'
 
 	if (error) {
 		return (
@@ -719,8 +686,8 @@ export default function DoctorDetailPage() {
 									loading={false}
 									onClick={() => {
 										if (!accessToken) {
-											setPendingBooking(true)
-											setAuthModalOpen(true)
+											// After login, open the consent form automatically
+											promptLogin(() => setConsentOpen(true))
 										} else {
 											setConsentOpen(true)
 										}
@@ -732,25 +699,7 @@ export default function DoctorDetailPage() {
 				</Grid>
 			</Container>
 
-			<AppModal open={authModalOpen} onClose={closeAuthModal} title={authModalTitle} maxWidth="xs" fullWidth>
-				{authModalView === 'login' && (
-					<LoginForm
-						mode="modal"
-						onSubmit={handleAuthNext}
-						onSwitchToRegister={() => setAuthModalView('register')}
-					/>
-				)}
-				{authModalView === 'register' && (
-					<RegisterForm
-						mode="modal"
-						onSubmit={handleAuthNext}
-						onSwitchToLogin={() => setAuthModalView('login')}
-					/>
-				)}
-				{authModalView === 'otp' && (
-					<OtpForm mode="modal" contactNumber={authContactNumber} onVerify={handleAuthVerified} />
-				)}
-			</AppModal>
+			{loginModal}
 
 			<ConsentForm
 				open={consentOpen}

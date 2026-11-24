@@ -183,7 +183,6 @@ export default function CommunityThreadPage() {
 				await fetchComments(threadId)
 			} catch (err) {
 				console.error('Error fetching thread:', err)
-				toast.error('Discussion thread not found')
 				navigate('/communities')
 			} finally {
 				setLoading(false)

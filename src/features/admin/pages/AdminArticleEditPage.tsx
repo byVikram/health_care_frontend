@@ -6,8 +6,9 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { toast } from 'react-toastify'
 
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
-import ArticleForm, { ArticleFormData } from '../../../components/admin/ArticleForm'
-import { getAdminArticle, updateAdminArticle, AdminArticleItem } from '../adminService'
+import ArticleForm from '../../../components/admin/ArticleForm'
+import type { ArticleFormData } from '../../../components/admin/ArticleForm'
+import { getAdminArticle, updateAdminArticle, type AdminArticleItem } from '../adminService'
 import { ROUTES } from '../../../constants/routes'
 
 export default function AdminArticleEditPage() {
@@ -46,16 +47,14 @@ export default function AdminArticleEditPage() {
 			const status = statusOverride || formData.status || article?.status || 'published'
 			await updateAdminArticle(id, {
 				title: formData.title,
-				summary: formData.summary || article?.summary || formData.title,
 				content: formData.content,
 				category: formData.category,
 				cover_image: formData.cover_image || undefined,
 				coverImage: formData.cover_image || undefined,
-				author: formData.author || 'Admin',
-				tags: formData.tags || undefined,
 				status,
 				publish_date: formData.publish_date || undefined,
 				publishDate: formData.publish_date || undefined,
+				is_featured: !!formData.is_featured,
 			})
 			toast.success(`Article successfully updated as ${status.toUpperCase()}!`)
 			navigate(ROUTES.ADMIN.ARTICLES)
@@ -81,14 +80,12 @@ export default function AdminArticleEditPage() {
 	const initialFormData: Partial<ArticleFormData> = article
 		? {
 				title: article.title,
-				summary: article.summary,
 				content: article.content,
 				category: article.category,
 				cover_image: article.cover_image || article.coverImage || '',
-				author: article.author,
-				tags: article.tags || '',
 				status: article.status,
 				publish_date: article.publish_date || article.publishDate || '',
+				is_featured: article.is_featured,
 		  }
 		: {}
 

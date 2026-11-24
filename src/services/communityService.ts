@@ -1,5 +1,6 @@
 // src/services/communityService.ts
 import ApiService from './apiService'
+import { API_ENDPOINTS } from '../constants/apiUrls'
 
 export interface CommunityGroup {
 	id: string
@@ -8,6 +9,9 @@ export interface CommunityGroup {
 	category: string
 	icon_name?: string
 	is_featured: boolean
+	group_type?: string
+	member_count?: number
+	is_joined?: boolean
 }
 
 export interface CommunityPost {
@@ -44,13 +48,43 @@ export interface PaginatedPostsResponse {
 	}
 }
 
-export const listCommunityGroups = async (isFeatured?: boolean): Promise<{ success: boolean; data: CommunityGroup[] }> => {
+export interface PaginatedGroupsResponse {
+	success: boolean
+	message?: string
+	data: CommunityGroup[]
+	meta: { total: number; page: number; limit: number; pages: number }
+}
+
+export interface ListGroupsOptions {
+	category?: string
+	search?: string
+	/** Only the groups the signed-in user joined. */
+	joinedOnly?: boolean
+	/** Page size; leave out to get every group. */
+	limit?: number
+	page?: number
+}
+
+export const listCommunityGroups = async (isFeatured?: boolean, opts: ListGroupsOptions = {}): Promise<PaginatedGroupsResponse> => {
 	const params: Record<string, unknown> = {}
 	if (isFeatured !== undefined) {
 		params.is_featured = isFeatured
 	}
-	const res = await ApiService.getWithParams<{ success: boolean; data: CommunityGroup[] }>('/api/communities', params)
+	if (opts.category) params.category = opts.category
+	if (opts.search?.trim()) params.search = opts.search.trim()
+	if (opts.joinedOnly) params.joined_only = true
+	if (opts.limit) {
+		params.limit = opts.limit
+		params.page = opts.page ?? 1
+	}
+	const res = await ApiService.getWithParams<PaginatedGroupsResponse>(API_ENDPOINTS.COMMUNITIES.LIST, params)
 	return res.data
+}
+
+/** Categories that have at least one community group, for the filter chips. */
+export const listCommunityCategories = async (): Promise<string[]> => {
+	const res = await ApiService.get<{ success: boolean; data: string[] }>(API_ENDPOINTS.COMMUNITIES.CATEGORIES)
+	return res.data.data
 }
 
 export const listCommunityPosts = async (
@@ -97,5 +131,15 @@ export const createCommunityComment = async (
 		`/api/communities/threads/${postId}/comments`,
 		body
 	)
+	return res.data
+}
+
+export const joinCommunityGroup = async (groupId: string): Promise<{ success: boolean }> => {
+	const res = await ApiService.post<{ success: boolean }>(`/api/communities/${groupId}/join`, {})
+	return res.data
+}
+
+export const leaveCommunityGroup = async (groupId: string): Promise<{ success: boolean }> => {
+	const res = await ApiService.delete<{ success: boolean }>(`/api/communities/${groupId}/join`)
 	return res.data
 }

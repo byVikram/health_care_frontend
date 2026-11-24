@@ -10,6 +10,7 @@ export const ROUTES = {
 		WELCOME: '/welcome',
 		WELCOME_DOCTOR: '/welcome-doctor',
 		HEALTH_QUESTIONS: '/health-questions',
+		HEALTH_QUESTION_DETAIL: '/health-questions/:id',
 	},
 
 	DOCTORS: {

@@ -286,7 +286,7 @@ function QuestionDetailPanel({
 					}}
 				/>
 				<Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>
-					â€¢ Asked for {q.gender}, {q.age} â€¢ {q.location}
+					â€¢ Asked for {q.gender}, {q.age}
 				</Typography>
 			</Box>
 
@@ -519,7 +519,6 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 	const [askDialogOpen, setAskDialogOpen] = useState(false)
 	const [askGender, setAskGender] = useState('')
 	const [askAge, setAskAge] = useState('')
-	const [askLocation, setAskLocation] = useState('')
 	const [askTag, setAskTag] = useState('General')
 	const [askQuestion, setAskQuestion] = useState('')
 	const [askDesc, setAskDesc] = useState('')
@@ -565,7 +564,6 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 				const personal = res.data?.personal
 				setAskGender(personal?.gender || '')
 				setAskAge(formatProfileAge(personal?.date_of_birth))
-				setAskLocation(personal?.location || '')
 			} catch (err) {
 				console.error('Failed to load patient profile for question form:', err)
 			} finally {
@@ -638,7 +636,6 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 			await submitHealthQuestion({
 				gender: askGender,
 				age: askAge,
-				location: askLocation,
 				tag: askTag,
 				question: askQuestion,
 				short_description: askQuestion.substring(0, 80) + '...',
@@ -665,7 +662,7 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 			<DialogContent>
 				<Stack spacing={3} sx={{ pt: 1.5 }}>
 					<Grid container spacing={2}>
-						<Grid size={{ xs: 4 }}>
+						<Grid size={{ xs: 6 }}>
 							<TextField
 								fullWidth
 								label="Gender"
@@ -673,19 +670,11 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 								disabled
 							/>
 						</Grid>
-						<Grid size={{ xs: 4 }}>
+						<Grid size={{ xs: 6 }}>
 							<TextField
 								fullWidth
 								label="Age"
 								value={profileLoading ? 'Loading...' : askAge}
-								disabled
-							/>
-						</Grid>
-						<Grid size={{ xs: 4 }}>
-							<TextField
-								fullWidth
-								label="Location"
-								value={profileLoading ? 'Loading...' : askLocation}
 								disabled
 							/>
 						</Grid>

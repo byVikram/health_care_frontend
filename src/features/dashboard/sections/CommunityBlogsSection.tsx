@@ -24,18 +24,17 @@ export default function CommunityBlogsSection({ variant = 'row' }: CommunityBlog
 		const load = async () => {
 			setLoading(true)
 			try {
-				// Fetch up to 2 featured blogs and featured communities in parallel.
+				// Blogs: all published posts, featured first (the backend orders featured
+				// before the rest, newest first). Communities: featured only.
 				const [blogsRes, groupsRes] = await Promise.all([
-					listBlogs(undefined, 1, 2, true),
-					listCommunityGroups(true),
+					listBlogs(undefined, 1, 6, undefined, 'blog'),
+					listCommunityGroups(true, { limit: 4 }),
 				])
 				if (!active) return
 				setFeaturedBlogs(blogsRes.data)
-				setFeaturedCommunities(groupsRes.data.slice(0, 4))
-			} catch (err) {
-				// ApiService's shared axios interceptor already shows a global
-				// error toast on failure -- just log for developers here.
-				console.error('Error loading featured dashboard content:', err)
+				setFeaturedCommunities(groupsRes.data)
+			} catch {
+				// ApiService's shared axios interceptor already shows the error toast
 			} finally {
 				if (active) setLoading(false)
 			}
@@ -142,7 +141,7 @@ export default function CommunityBlogsSection({ variant = 'row' }: CommunityBlog
 								</Grid>
 							))
 						) : featuredBlogs.length === 0 ? (
-							<DashboardEmptyState message="No featured blog posts configured." py={5} />
+							<DashboardEmptyState message="No blog posts published yet." py={5} />
 						) : (
 							featuredBlogs.map((blog) => (
 								<Grid
@@ -213,7 +212,7 @@ export default function CommunityBlogsSection({ variant = 'row' }: CommunityBlog
 													lineHeight: 1.2,
 												}}
 											>
-												{blog.content.replace(/[#*`]/g, '')}
+												{(blog.content ?? '').replace(/[#*`]/g, '')}
 											</Typography>
 											<Typography variant="body1" color="neutral.main">
 												Read More
@@ -227,10 +226,10 @@ export default function CommunityBlogsSection({ variant = 'row' }: CommunityBlog
 												}}
 											>
 												<Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>
-													By {blog.author.name}
+													By {blog.author?.name ?? 'Unknown'}
 												</Typography>
 												<Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>
-													{new Date(blog.created_at).toLocaleDateString()}
+													{blog.created_at ? new Date(blog.created_at).toLocaleDateString() : ''}
 												</Typography>
 											</Box>
 										</Box>

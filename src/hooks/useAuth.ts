@@ -35,6 +35,9 @@ export interface PatientProfile {
 	relation: string
 	avatar_s3_key?: string
 	is_self: boolean
+	// Age and gender of each person (sent by GET /api/lookup).
+	age?: number | string | null
+	gender?: string | null
 }
 
 export interface LookupData {
