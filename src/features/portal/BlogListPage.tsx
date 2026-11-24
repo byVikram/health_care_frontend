@@ -11,7 +11,6 @@ import { listBlogCategories, listBlogs, type BlogContentType, type BlogPost } fr
 import { listCommunityGroups, type CommunityGroup } from '../../services/communityService'
 import { AdSlot, Chip, Column, EmptyBox, Hero, MiniRow, Pager, PromoCard, ReadsPage, ReadsSubNav, SearchPill, SideCard, Spinner, Svg } from './readsKit'
 import { TONES, authorOf, cardSx, excerpt, focusSx, hoverCardSx, initials, outlineBtnSx, readMeta, topicStyle, useAds, useUrlPage } from './readsHelpers'
-import VoiceMicButton from '../../components/common/Voice/VoiceMicButton'
 
 const PER_PAGE = 6
 const POPULAR = ['diabetes', 'BP', 'sleep', 'PCOS']
@@ -217,55 +216,23 @@ export default function BlogListPage() {
 						</Box>
 					))}
 				</Box>
+			</Hero>
 
-				{/* Search & Filter Bar */}
-				<Grid container spacing={3} sx={{ mb: 5, alignItems: 'center' }}>
-					<Grid size={{ xs: 12, md: 5 }}>
-						<TextField
-							fullWidth
-							placeholder="Search health articles..."
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-							InputProps={{
-								startAdornment: (
-									<InputAdornment position="start">
-										<SearchIcon sx={{ color: '#0d9488' }} />
-									</InputAdornment>
-								),
-								sx: { borderRadius: '12px', bgcolor: 'white' },
-							}}
-							size="medium"
-						/>
-					</Grid>
-					<Grid size={{ xs: 12, md: 7 }}>
-						<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: { md: 'flex-end' } }}>
-							{CATEGORIES.map((cat) => (
-								<Chip
-									key={cat}
-									label={cat}
-									onClick={() => setSelectedCategory(cat)}
-									sx={{
-										fontSize: '0.85rem',
-										fontWeight: 600,
-										px: 1,
-										py: 2,
-										borderRadius: '10px',
-										cursor: 'pointer',
-										bgcolor: selectedCategory === cat ? '#0d9488' : 'white',
-										color: selectedCategory === cat ? 'white' : '#475569',
-										border: '1px solid',
-										borderColor: selectedCategory === cat ? '#0d9488' : '#e2e8f0',
-										transition: 'all 0.2s',
-										'&:hover': {
-											bgcolor: selectedCategory === cat ? '#0f766e' : '#f1f5f9',
-											borderColor: selectedCategory === cat ? '#0f766e' : '#cbd5e1',
-										},
-									}}
-								/>
-							))}
-						</Box>
-					</Grid>
-				</Grid>
+			<Column sx={{ pt: '28px', pb: '64px', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 360px', gap: '28px', alignItems: 'start' }}>
+				<Box sx={{ display: 'flex', flexDirection: 'column', gap: '20px', minWidth: 0 }}>
+					<Box role="group" aria-label="Topic" sx={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+						{topics.map((t) => (
+							<Chip
+								key={t}
+								label={t}
+								on={t === topic}
+								onClick={() => {
+									setTopic(t)
+									window.scrollTo({ top: 0 })
+								}}
+							/>
+						))}
+					</Box>
 
 					{loading ? (
 						<Spinner />

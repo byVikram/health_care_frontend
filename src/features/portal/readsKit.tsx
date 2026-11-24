@@ -10,6 +10,7 @@ import { DESK } from '../../styles/deskTokens'
 import { ROUTES } from '../../constants/routes'
 import { trackAdMetric, type AdPlacementConfig } from '../../services/adService'
 import { ICON_PATHS, PAGE_WIDTH, TONES, cardSx, focusSx, hoverCardSx, topicStyle, type IconName, type SubNavKey } from './readsHelpers'
+import VoiceMicButton from '../../components/common/Voice/VoiceMicButton'
 
 export function Svg({ name, size = 20, stroke = 2, fill = 'none' }: { name: IconName; size?: number; stroke?: number; fill?: string }) {
 	return (
@@ -144,6 +145,7 @@ export function SearchPill({ value, onChange, placeholder, label }: { value: str
 				aria-label={label}
 				sx={{ flexGrow: 1, minWidth: 0, height: 50, border: 0, outline: 'none', bgcolor: 'transparent', fontSize: 16, color: DESK.ink, fontFamily: 'inherit' }}
 			/>
+			<VoiceMicButton onResult={onChange} />
 		</Box>
 	)
 }
