@@ -24,13 +24,10 @@ export default function AdminArticleCreatePage() {
 			const status = statusOverride || formData.status || 'published'
 			await createAdminArticle({
 				title: formData.title,
-				summary: formData.summary || formData.title,
 				content: formData.content,
 				category: formData.category,
 				cover_image: formData.cover_image || undefined,
 				coverImage: formData.cover_image || undefined,
-				author: formData.author || 'Admin',
-				tags: formData.tags || undefined,
 				status,
 				publish_date: formData.publish_date || undefined,
 				publishDate: formData.publish_date || undefined,

@@ -1,5 +1,6 @@
 // src/services/qaService.ts
 import ApiService from './apiService'
+import { API_ENDPOINTS } from '../constants/apiUrls'
 
 export interface DoctorAnswerReply {
 	id: string
@@ -29,7 +30,6 @@ export interface PatientQuestion {
 	id: string
 	gender: string
 	age: string
-	location: string
 	tag: string
 	question: string
 	short_description: string
@@ -75,7 +75,7 @@ export const listHealthQuestions = async (
 
 /** Tags that have at least one public question, for the filter chips. */
 export const listQuestionTags = async (): Promise<string[]> => {
-	const res = await ApiService.get<{ success: boolean; data: string[] }>('/api/qa/tags')
+	const res = await ApiService.get<{ success: boolean; data: string[] }>(API_ENDPOINTS.QA.TAGS)
 	return res.data.data
 }
 
@@ -87,7 +87,6 @@ export const getQuestionDetail = async (id: string): Promise<{ success: boolean;
 export const submitHealthQuestion = async (payload: {
 	gender: string
 	age: string
-	location: string
 	tag: string
 	question: string
 	short_description: string

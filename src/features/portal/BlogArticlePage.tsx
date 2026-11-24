@@ -17,6 +17,7 @@ import { AdSlot, Column, Crumbs, MiniRow, Note, PromoCard, ReadsPage, ReadsSubNa
 import { TONES, authorOf, cardSx, focusSx, initials, longDate, outlineBtnSx, primaryBtnSx, readMeta, timeAgo, topicStyle, useAds, useGroupJoin, type SubNavKey } from './readsHelpers'
 import DeskButton from '../../components/common/Button/DeskButton'
 import { useLoginPrompt } from '../../components/common/AuthModal/useLoginPrompt'
+import { safeUrl, sanitizeHtml } from '../../utils/sanitize'
 
 const bodySx = {
 	fontSize: 18, lineHeight: '30px', color: DESK.ink, wordBreak: 'break-word',
@@ -33,8 +34,8 @@ const bodySx = {
 } as const
 
 const renderBody = (content: string): string => {
-	if (/<[a-z][\s\S]*>/i.test(content)) return content
-	return marked.parse(content, { async: false }) as string
+	const raw = /<[a-z][\s\S]*>/i.test(content) ? content : (marked.parse(content, { async: false }) as string)
+	return sanitizeHtml(raw)
 }
 
 export default function BlogArticlePage() {
@@ -78,10 +79,8 @@ export default function BlogArticlePage() {
 					// the community card stays hidden
 				}
 			} catch {
-				if (active) {
-					toast.error('Article not found')
-					navigate(ROUTES.BLOGS.LIST)
-				}
+				// ApiService already toasted the server's message
+				if (active) navigate(ROUTES.BLOGS.LIST)
 			} finally {
 				if (active) setLoading(false)
 			}
@@ -110,7 +109,8 @@ export default function BlogArticlePage() {
 	const meta = [longDate(post.published_at ?? post.created_at), readMeta(post)].filter(Boolean).join(' · ')
 	const sidebarAd = ads.find((a) => a.placement_key === 'sidebar')
 	const inFeedAd = ads.find((a) => a.placement_key === 'in-feed')
-	const isVideo = !!post.media_url && /\.(mp4|webm|mov)(\?|$)/i.test(post.media_url)
+	const mediaUrl = safeUrl(post.media_url)
+	const isVideo = !!mediaUrl && /\.(mp4|webm|mov)(\?|$)/i.test(mediaUrl)
 
 	const share = async () => {
 		try {
@@ -166,11 +166,11 @@ export default function BlogArticlePage() {
 						</Box>
 					</Box>
 
-					{post.media_url &&
+					{mediaUrl &&
 						(isVideo ? (
-							<Box component="video" controls src={post.media_url} sx={{ width: '100%', borderRadius: '16px', bgcolor: '#000' }} />
+							<Box component="video" controls src={mediaUrl} sx={{ width: '100%', borderRadius: '16px', bgcolor: '#000' }} />
 						) : (
-							<Box component="audio" controls src={post.media_url} sx={{ width: '100%' }} />
+							<Box component="audio" controls src={mediaUrl} sx={{ width: '100%' }} />
 						))}
 
 					<Box sx={bodySx} dangerouslySetInnerHTML={{ __html: html }} />

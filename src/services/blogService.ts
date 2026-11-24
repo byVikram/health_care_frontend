@@ -1,5 +1,6 @@
 // src/services/blogService.ts
 import ApiService from './apiService'
+import { API_ENDPOINTS } from '../constants/apiUrls'
 
 export interface BlogAuthor {
 	id?: string
@@ -71,7 +72,8 @@ export const listBlogs = async (
 	/** Skip this many posts; overrides page, so one page can be smaller than the rest. */
 	offset?: number
 ): Promise<PaginatedBlogsResponse> => {
-	const params: Record<string, unknown> = { page, limit }
+	// The web lists the editor's pick first; the API default is newest first.
+	const params: Record<string, unknown> = { page, limit, featured_first: true }
 	if (adminOnly) {
 		params.admin_only = true
 	}
@@ -99,7 +101,7 @@ export const listBlogs = async (
 
 /** Categories that have at least one published post of this type, for the filter chips. */
 export const listBlogCategories = async (contentType: BlogContentType): Promise<string[]> => {
-	const res = await ApiService.getWithParams<{ success: boolean; data: string[] }>('/api/blogs/categories', {
+	const res = await ApiService.getWithParams<{ success: boolean; data: string[] }>(API_ENDPOINTS.BLOGS.CATEGORIES, {
 		content_type: contentType,
 	})
 	return res.data.data

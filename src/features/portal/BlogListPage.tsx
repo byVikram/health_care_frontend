@@ -19,8 +19,18 @@ const ALL_TOPICS = 'All topics'
 const asType = (v: string | null): BlogContentType => (v === 'blog' || v === 'podcast' ? v : 'article')
 
 export default function BlogListPage() {
-	const [params] = useSearchParams()
+	const [params, setParams] = useSearchParams()
 	const type = asType(params.get('type'))
+	// The topic lives in the URL (?topic=Coronavirus) so it can be shared, bookmarked and used with the back button.
+	const topic = params.get('topic') || ALL_TOPICS
+	const setTopic = (t: string) =>
+		setParams((prev) => {
+			const p = new URLSearchParams(prev)
+			if (t === ALL_TOPICS) p.delete('topic')
+			else p.set('topic', t)
+			p.delete('page')
+			return p
+		})
 	const [posts, setPosts] = useState<BlogPost[]>([])
 	// The editor's pick is kept out of the paged list, so every page is a full grid of PER_PAGE cards.
 	const [editorPick, setEditorPick] = useState<BlogPost | null>(null)
@@ -31,7 +41,6 @@ export default function BlogListPage() {
 	const [failed, setFailed] = useState(false)
 	const [reloadKey, setReloadKey] = useState(0)
 	const [groups, setGroups] = useState<CommunityGroup[]>([])
-	const [topic, setTopic] = useState(ALL_TOPICS)
 	const [q, setQ] = useState('')
 	const [needle, setNeedle] = useState('')
 	const [page, setPage] = useUrlPage()
@@ -45,7 +54,6 @@ export default function BlogListPage() {
 		setPrevType(type)
 		setEditorPick(null)
 		setPickReady(false)
-		setTopic(ALL_TOPICS)
 		setQ('')
 		setNeedle('')
 		needleRef.current = ''
@@ -220,7 +228,7 @@ export default function BlogListPage() {
 								on={t === topic}
 								onClick={() => {
 									setTopic(t)
-									setPage(1)
+									window.scrollTo({ top: 0 })
 								}}
 							/>
 						))}

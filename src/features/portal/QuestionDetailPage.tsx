@@ -75,7 +75,7 @@ export default function QuestionDetailPage() {
 			setVoted((v) => ({ ...v, [a.id]: true }))
 			setQ((cur) => (cur ? { ...cur, answers: cur.answers.map((x) => (x.id === a.id ? { ...x, likes: res.likes ?? x.likes + 1 } : x)) } : cur))
 		} catch {
-			toast.error('Could not save your vote')
+			// ApiService already toasted the server's message
 		}
 	}
 
@@ -101,7 +101,7 @@ export default function QuestionDetailPage() {
 			setDraft('')
 			await load()
 		} catch {
-			toast.error('Could not post your answer')
+			// ApiService already toasted the server's message
 		} finally {
 			setPosting(false)
 		}
@@ -241,7 +241,7 @@ function Replies({ answerId, replies, canReply, onChanged }: { answerId: string;
 			await onChanged()
 			return true
 		} catch {
-			toast.error('Could not post your reply')
+			// ApiService already toasted the server's message
 			return false
 		} finally {
 			setBusy(false)

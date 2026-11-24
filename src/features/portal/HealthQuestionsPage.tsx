@@ -2,13 +2,12 @@
 //
 // Desktop "Ask a doctor" (design: Desktop · 8 and 8a): the public question list on the left (GET /api/qa) and the ask form
 // on the right (POST /api/qa/questions). Age and gender come from the chosen family member / profile, never typed.
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link as RouterLink, Navigate, useSearchParams } from 'react-router-dom'
 import { Box } from '@mui/material'
-import { toast } from 'react-toastify'
 import { DESK } from '../../styles/deskTokens'
 import { useAuth } from '../../hooks/useAuth'
-import { buildS3Url } from '../../utils/s3'
+import { useFamilyMembers } from '../../hooks/useFamilyMembers'
 import { useQuestionAccess } from '../../hooks/useQuestionAccess'
 import { listHealthQuestions, listQuestionTags, submitHealthQuestion, type PatientQuestion } from '../../services/qaService'
 import { Chip, Column, EmptyBox, Hero, Pager, ReadsPage, ReadsSubNav, Svg } from './readsKit'
@@ -32,18 +31,19 @@ const SPECS: { name: string; tag: string; sub: string }[] = [
 	{ name: 'Mental health', tag: 'Mental health', sub: 'Stress, sleep, anxiety' },
 ]
 const AUTO: [string, RegExp][] = [
-	['Respiratory', /cough|breath|asthma|wheez|lung/i],
-	['Endocrinology', /sugar|diabet|insulin|thyroid|hba1c/i],
-	['Gastroenterology', /acid|reflux|stomach|swallow|loose motion|constipat/i],
-	['Skin', /skin|rash|acne|itch|hair/i],
-	['Women’s health', /period|pregnan|pcos|breast/i],
-	['Child health', /child|baby|son|daughter|kid|infant/i],
-	['Mental health', /anxiety|stress|sleep|depress|panic/i],
+	['Respiratory', /\b(cough|breath|asthma|wheez|lung)/i],
+	['Endocrinology', /\b(sugar|diabet|insulin|thyroid|hba1c)/i],
+	['Gastroenterology', /\b(acid|reflux|stomach|swallow|loose motion|constipat)/i],
+	['Skin', /\b(skin|rash|acne|itch|hair)/i],
+	['Women’s health', /\b(period|pregnan|pcos|breast)/i],
+	['Child health', /\b(child\w*|baby|babies|sons?|daughters?|kids?|infants?)\b/i],
+	['Mental health', /\b(anxiety|stress|sleep|depress|panic)/i],
 ]
 const URGENT = /chest pain|can.?t breathe|breathless|unconscious|fainted|heavy bleeding|stroke|seizure/i
 
 const who = (q: PatientQuestion) => [q.gender, q.age].filter(Boolean).join(', ')
-const ageText = (age: string | number) => (/^\d+$/.test(String(age).trim()) ? `${age} Years` : String(age))
+const ageText = (age: string | number) => (age === '' || age == null ? 'age not set' : ageText0(age))
+const ageText0 = (age: string | number) => (/^\d+$/.test(String(age).trim()) ? `${age} Years` : String(age))
 
 export default function HealthQuestionsPage() {
 	const [params] = useSearchParams()
@@ -53,25 +53,11 @@ export default function HealthQuestionsPage() {
 }
 
 function AskADoctor() {
-	const { accessToken, lookupData } = useAuth()
+	const { accessToken } = useAuth()
 	const login = useLoginPrompt('Login to ask a question')
 	const access = useQuestionAccess()
-	// The people the question can be asked for come from the login lookup (patient_profiles, the account holder first), not from /family-members.
-	const members = useMemo(
-		() =>
-			[...(lookupData?.patient_profiles ?? [])]
-				.sort((a, b) => Number(b.is_self) - Number(a.is_self))
-				.map((p) => ({
-					id: p.id,
-					name: p.name,
-					relationship: p.is_self ? 'Self' : p.relation,
-					age: p.age ?? '',
-					gender: p.gender ?? '',
-					location: p.location ?? '',
-					avatar: buildS3Url(p.avatar_s3_key) || undefined,
-				})),
-		[lookupData]
-	)
+	// The people the question can be asked for: the same list as the booking pages (the account holder first); it also refreshes when a family member is added.
+	const { members } = useFamilyMembers()
 
 	const [questions, setQuestions] = useState<PatientQuestion[]>([])
 	const [tags, setTags] = useState<string[]>([])
@@ -154,8 +140,8 @@ function AskADoctor() {
 	}, [needle, page, topic, sort, setPage])
 
 	const person = members.find((m) => m.id === forId) ?? members[0]
-	// the place of the person the question is for (the API asks for it; it is not shown with the question)
-	const location = person?.location ?? ''
+	// age and gender are the only things shown with a question, so the person must have both
+	const needsProfile = !!person && !person.isComplete
 
 	const topics = [ALL, ...tags]
 	const list = questions
@@ -172,7 +158,7 @@ function AskADoctor() {
 			login.prompt()
 			return
 		}
-		if (missing.length || !spec || !person) {
+		if (missing.length || !spec || !person || needsProfile) {
 			setTried(true)
 			return
 		}
@@ -182,7 +168,6 @@ function AskADoctor() {
 			const res = await submitHealthQuestion({
 				gender: person.gender,
 				age: ageText(person.age),
-				location,
 				tag: spec.tag,
 				question: title,
 				short_description: trimmed.length > 160 ? `${trimmed.slice(0, 157)}…` : trimmed,
@@ -194,7 +179,7 @@ function AskADoctor() {
 			setSent({ id: res.data.id, text: trimmed, spec: spec.name, who: `${person.name.split(' ')[0]}, ${ageText(person.age)}, ${person.gender}` })
 			setTried(false)
 		} catch {
-			toast.error('Could not post your question. Please try again.')
+			// ApiService already toasted the server's message
 		} finally {
 			setPosting(false)
 		}
@@ -313,6 +298,11 @@ function AskADoctor() {
 									</Box>
 								</Field>
 							)}
+							{accessToken && needsProfile && (
+								<Box role="alert" sx={{ p: '12px 14px', borderRadius: '12px', bgcolor: DESK.dangerSoft, border: `1px solid ${DESK.dangerLine}`, fontSize: 13, lineHeight: '18px', color: DESK.inkSoft }}>
+								Add {person.name.split(' ')[0]}’s date of birth and gender to ask for them. <Box component={RouterLink} to="/profile" sx={{ color: DESK.primary, fontWeight: 800 }}>Complete profile</Box>
+							</Box>
+						)}
 
 							<Field label="Specialization">
 								<Box sx={{ position: 'relative', zIndex: spOpen ? 30 : 1 }}>
@@ -350,7 +340,7 @@ function AskADoctor() {
 							)}
 							{tried && missing.length > 0 && <Box sx={{ fontSize: 13, fontWeight: 700, color: DESK.danger }}>Add {missing.join(', ')} to post.</Box>}
 
-							<Box component="button" type="button" disabled={posting} onClick={() => void submit()} sx={{ height: 50, border: 0, borderRadius: '12px', bgcolor: missing.length ? '#7FA9AA' : DESK.primary, color: '#fff', fontSize: 16, fontWeight: 800, cursor: posting ? 'default' : 'pointer', fontFamily: 'inherit', ...focusSx }}>
+							<Box component="button" type="button" disabled={posting || needsProfile} onClick={() => void submit()} sx={{ height: 50, border: 0, borderRadius: '12px', bgcolor: missing.length || needsProfile ? '#7FA9AA' : DESK.primary, color: '#fff', fontSize: 16, fontWeight: 800, cursor: posting || needsProfile ? 'default' : 'pointer', fontFamily: 'inherit', ...focusSx }}>
 								{posting ? 'Posting…' : accessToken ? 'Post question' : 'Log in to post'}
 							</Box>
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: 12, lineHeight: '17px', color: DESK.muted }}>

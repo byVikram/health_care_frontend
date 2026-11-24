@@ -34,8 +34,8 @@ export default function PodcastsSection() {
 						image: p.image_url || FALLBACK_IMAGE,
 					}))
 				)
-			} catch (err) {
-				console.error('Error loading dashboard podcasts:', err)
+			} catch {
+				// ApiService already toasted the server's message
 			}
 		}
 		void load()

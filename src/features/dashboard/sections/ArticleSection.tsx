@@ -46,8 +46,8 @@ export default function ArticleSection() {
 						authorData: p.author ?? { name: p.author_name ?? 'Admin' },
 					}))
 				)
-			} catch (err) {
-				console.error('Error loading dashboard articles:', err)
+			} catch {
+				// ApiService already toasted the server's message
 			}
 		}
 		void load()

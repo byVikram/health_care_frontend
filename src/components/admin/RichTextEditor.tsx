@@ -1,6 +1,23 @@
 // src/components/admin/RichTextEditor.tsx
 import React, { useRef, useState, useEffect, useCallback } from 'react'
-import { Box, Stack, IconButton, Tooltip, Divider, Select, MenuItem, Tabs, Tab, TextField, Paper } from '@mui/material'
+import {
+	Box,
+	Stack,
+	IconButton,
+	Tooltip,
+	Divider,
+	Select,
+	MenuItem,
+	Tabs,
+	Tab,
+	TextField,
+	Paper,
+	Dialog,
+	DialogTitle,
+	DialogContent,
+	DialogActions,
+	Button,
+} from '@mui/material'
 import FormatBoldIcon from '@mui/icons-material/FormatBold'
 import FormatItalicIcon from '@mui/icons-material/FormatItalic'
 import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined'
@@ -19,6 +36,8 @@ import UndoIcon from '@mui/icons-material/Undo'
 import RedoIcon from '@mui/icons-material/Redo'
 import FormatClearIcon from '@mui/icons-material/FormatClear'
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule'
+import { toast } from 'react-toastify'
+import { safeUrl, sanitizeHtml } from '../../utils/sanitize'
 
 export interface RichTextEditorProps {
 	value: string
@@ -37,16 +56,23 @@ export default function RichTextEditor({
 	const [activeTab, setActiveTab] = useState<'visual' | 'code'>('visual')
 	const [heading, setHeading] = useState<string>('p')
 	const isMounted = useRef(false)
+	// Link / image URL dialog. The editor loses focus while it is open, so the caret / selection is saved first and restored on insert.
+	const [urlDialog, setUrlDialog] = useState<'link' | 'image' | null>(null)
+	const [urlInput, setUrlInput] = useState('')
+	const savedRange = useRef<Range | null>(null)
 
 	// Sync initial value or tab switch back to visual
 	useEffect(() => {
 		if (editorRef.current && (!isMounted.current || activeTab === 'visual')) {
+			// Only rewrites the DOM when it differs from `value`, which is not the case while typing (onChange sends innerHTML back),
+			// so the caret does not jump; it does when `value` changes from outside (e.g. the article loads).
 			if (editorRef.current.innerHTML !== value) {
-				editorRef.current.innerHTML = value || ''
+				// Sanitised: a stored body with an onerror/script payload must not run when an admin opens it to edit.
+				editorRef.current.innerHTML = sanitizeHtml(value || '')
 			}
 			isMounted.current = true
 		}
-	}, [activeTab, value]) // Intentionally not re-triggering on value to prevent cursor jump during active editing
+	}, [activeTab, value])
 
 	const handleInput = useCallback(() => {
 		if (editorRef.current) {
@@ -63,6 +89,8 @@ export default function RichTextEditor({
 		}
 	}, [])
 
+	// document.execCommand is deprecated but still supported by every browser and has no standard replacement for contentEditable;
+	// moving off it means a rich-text library (e.g. Tiptap / Lexical).
 	const execCommand = (command: string, arg: string | undefined = undefined) => {
 		document.execCommand(command, false, arg)
 		handleInput()
@@ -77,18 +105,32 @@ export default function RichTextEditor({
 		}
 	}
 
-	const handleInsertLink = () => {
-		const url = prompt('Enter destination web link (e.g. https://example.com):', 'https://')
-		if (url) {
-			execCommand('createLink', url)
-		}
+	const openUrlDialog = (kind: 'link' | 'image') => {
+		const sel = window.getSelection()
+		const range = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null
+		savedRange.current = range && editorRef.current?.contains(range.commonAncestorContainer) ? range.cloneRange() : null
+		setUrlInput('https://')
+		setUrlDialog(kind)
 	}
 
-	const handleInsertImage = () => {
-		const url = prompt('Enter public image URL:', 'https://images.unsplash.com/')
-		if (url) {
-			execCommand('insertImage', url)
+	const closeUrlDialog = () => setUrlDialog(null)
+
+	const submitUrlDialog = () => {
+		const kind = urlDialog
+		if (!kind || !urlInput.trim() || urlInput.trim() === 'https://') return
+		const url = safeUrl(urlInput.trim())
+		if (!url) {
+			toast.error(kind === 'link' ? 'Only http:// or https:// links are allowed' : 'Only http:// or https:// image URLs are allowed')
+			return
 		}
+		setUrlDialog(null)
+		editorRef.current?.focus()
+		if (savedRange.current) {
+			const sel = window.getSelection()
+			sel?.removeAllRanges()
+			sel?.addRange(savedRange.current)
+		}
+		execCommand(kind === 'link' ? 'createLink' : 'insertImage', url)
 	}
 
 	return (
@@ -367,7 +409,7 @@ export default function RichTextEditor({
 					<Tooltip title="Insert Hyperlink">
 						<IconButton
 							size="small"
-							onClick={handleInsertLink}
+							onClick={() => openUrlDialog('link')}
 							sx={{
 								borderRadius: 1.5,
 								border: '1px solid #bbf7d0',
@@ -382,7 +424,7 @@ export default function RichTextEditor({
 					<Tooltip title="Insert Image Banner">
 						<IconButton
 							size="small"
-							onClick={handleInsertImage}
+							onClick={() => openUrlDialog('image')}
 							sx={{
 								borderRadius: 1.5,
 								border: '1px solid #bbf7d0',
@@ -523,6 +565,32 @@ export default function RichTextEditor({
 					}}
 				/>
 			)}
+
+			<Dialog open={urlDialog !== null} onClose={closeUrlDialog} maxWidth="xs" fullWidth>
+				<DialogTitle>{urlDialog === 'image' ? 'Insert image' : 'Insert link'}</DialogTitle>
+				<DialogContent>
+					<TextField
+						autoFocus
+						fullWidth
+						margin="dense"
+						label={urlDialog === 'image' ? 'Public image URL (http or https)' : 'Destination web link (http or https)'}
+						value={urlInput}
+						onChange={(e) => setUrlInput(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === 'Enter') {
+								e.preventDefault()
+								submitUrlDialog()
+							}
+						}}
+					/>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={closeUrlDialog}>Cancel</Button>
+					<Button variant="contained" onClick={submitUrlDialog}>
+						Insert
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</Paper>
 	)
 }

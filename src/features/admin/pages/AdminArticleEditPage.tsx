@@ -47,13 +47,10 @@ export default function AdminArticleEditPage() {
 			const status = statusOverride || formData.status || article?.status || 'published'
 			await updateAdminArticle(id, {
 				title: formData.title,
-				summary: formData.summary || article?.summary || formData.title,
 				content: formData.content,
 				category: formData.category,
 				cover_image: formData.cover_image || undefined,
 				coverImage: formData.cover_image || undefined,
-				author: formData.author || 'Admin',
-				tags: formData.tags || undefined,
 				status,
 				publish_date: formData.publish_date || undefined,
 				publishDate: formData.publish_date || undefined,
@@ -83,12 +80,9 @@ export default function AdminArticleEditPage() {
 	const initialFormData: Partial<ArticleFormData> = article
 		? {
 				title: article.title,
-				summary: article.summary,
 				content: article.content,
 				category: article.category,
 				cover_image: article.cover_image || article.coverImage || '',
-				author: article.author,
-				tags: article.tags || '',
 				status: article.status,
 				publish_date: article.publish_date || article.publishDate || '',
 				is_featured: article.is_featured,

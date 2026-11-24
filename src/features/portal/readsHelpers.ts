@@ -4,7 +4,6 @@
 // (the components that use them are in readsKit.tsx).
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { toast } from 'react-toastify'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../hooks/useAuth'
 import { joinCommunityGroup, leaveCommunityGroup } from '../../services/communityService'
@@ -236,7 +235,7 @@ export function useGroupJoin(askLogin?: (after: () => void) => void) {
 			else await joinCommunityGroup(groupId)
 			onChange(!joined)
 		} catch {
-			toast.error(joined ? 'Could not leave the group. Please try again.' : 'Could not join the group. Please try again.')
+			// ApiService already toasted the server's message
 		} finally {
 			setBusy(false)
 		}

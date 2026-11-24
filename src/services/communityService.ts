@@ -1,5 +1,6 @@
 // src/services/communityService.ts
 import ApiService from './apiService'
+import { API_ENDPOINTS } from '../constants/apiUrls'
 
 export interface CommunityGroup {
 	id: string
@@ -76,13 +77,13 @@ export const listCommunityGroups = async (isFeatured?: boolean, opts: ListGroups
 		params.limit = opts.limit
 		params.page = opts.page ?? 1
 	}
-	const res = await ApiService.getWithParams<PaginatedGroupsResponse>('/api/communities', params)
+	const res = await ApiService.getWithParams<PaginatedGroupsResponse>(API_ENDPOINTS.COMMUNITIES.LIST, params)
 	return res.data
 }
 
 /** Categories that have at least one community group, for the filter chips. */
 export const listCommunityCategories = async (): Promise<string[]> => {
-	const res = await ApiService.get<{ success: boolean; data: string[] }>('/api/communities/categories')
+	const res = await ApiService.get<{ success: boolean; data: string[] }>(API_ENDPOINTS.COMMUNITIES.CATEGORIES)
 	return res.data.data
 }
 

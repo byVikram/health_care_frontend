@@ -1,7 +1,6 @@
 // src/components/ChatBot/ChatMessage.tsx
 import React, { useState } from 'react'
 import { Box, Typography, IconButton, TextField, Button, Chip, Avatar } from '@mui/material'
-import SmartToyIcon from '@mui/icons-material/SmartToy'
 import ThumbUpIcon from '@mui/icons-material/ThumbUp'
 import ThumbDownIcon from '@mui/icons-material/ThumbDown'
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined'
@@ -10,6 +9,7 @@ import { ChatResponse, SourceReference } from '../../types/chatbot'
 import { marked } from 'marked'
 import { useNavigate } from 'react-router-dom'
 import { buildS3Url } from '../../utils/s3'
+import { sanitizeHtml } from '../../utils/sanitize'
 
 export interface Message {
 	id: string
@@ -112,7 +112,7 @@ export default function ChatMessage({ message, onFeedbackSubmit }: ChatMessagePr
 									fontSize: '0.9em',
 								}
 							}}
-							dangerouslySetInnerHTML={{ __html: marked.parse(message.text) }}
+							dangerouslySetInnerHTML={{ __html: sanitizeHtml(marked.parse(message.text) as string) }}
 						/>
 					) : (
 						<Typography

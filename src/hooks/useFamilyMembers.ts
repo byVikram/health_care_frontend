@@ -22,6 +22,8 @@ export interface FamilyMemberOption {
 	bloodGroup?: string
 	avatar?: string
 	isSelf: boolean
+	/** Date of birth and gender are filled in, so an age and gender can be shown with a question. */
+	isComplete: boolean
 }
 
 const capitalise = (value: string) => value.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
@@ -35,6 +37,7 @@ const toOption = (m: FamilyMemberApi): FamilyMemberOption => ({
 	bloodGroup: m.blood_group || undefined,
 	avatar: buildS3Url(m.avatar_s3_key) || undefined,
 	isSelf: !!m.is_self,
+	isComplete: !!m.is_complete && !!m.age && !!m.gender,
 })
 
 export function useFamilyMembers() {
