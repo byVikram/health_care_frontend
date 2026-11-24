@@ -244,7 +244,7 @@ function QAInspectionDrawer({
 								{[
 									{ label: "Gender", value: detail.gender },
 									{ label: "Age", value: detail.age },
-									{ label: "Location", value: detail.location },
+									{ label: "Location", value: detail.location || "Not given" },
 									{ label: "Specialty Tag", value: detail.tag },
 								].map(({ label, value }) => (
 									<Grid key={label} size={{ xs: 6 }}>
@@ -443,7 +443,7 @@ export default function AdminQAPage() {
 			label: "Patient",
 			render: (_, q) => (
 				<Typography variant="caption" color="#475569">
-					{q.gender} · {q.age} · {q.location}
+					{[q.gender, q.age, q.location].filter(Boolean).join(' · ')}
 				</Typography>
 			),
 		},

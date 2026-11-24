@@ -1279,6 +1279,7 @@ export interface AdminArticleItem {
 	author: string
 	tags?: string
 	status: 'draft' | 'published' | string
+	is_featured?: boolean
 	publish_date?: string
 	publishDate?: string
 	created_at: string

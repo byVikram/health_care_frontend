@@ -18,6 +18,7 @@
     "@types/marked": "^6.0.0",
     "axios": "^1.16.1",
     "dayjs": "^1.11.20",
+    "dompurify": "^3.5.0",
     "expo": "~57.0.22",
     "firebase": "^12.16.0",
     "formik": "^2.4.9",

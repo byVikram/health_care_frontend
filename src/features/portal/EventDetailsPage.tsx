@@ -10,7 +10,6 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import AppButton from '../../components/common/Button/AppButton'
 import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
-import { toast } from 'react-toastify'
 
 const DEFAULT_COVER_IMAGE = 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1200&h=400&fit=crop'
 
@@ -31,7 +30,6 @@ export default function EventDetailsPage() {
 				}
 			} catch (err) {
 				console.error('Failed to fetch event detail', err)
-				toast.error('Could not load event details')
 			} finally {
 				setLoading(false)
 			}

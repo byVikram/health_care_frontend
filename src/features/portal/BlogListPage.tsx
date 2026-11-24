@@ -1,305 +1,361 @@
 // src/features/portal/BlogListPage.tsx
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import {
-	Box,
-	Container,
-	Typography,
-	Grid,
-	Card,
-	CardContent,
-	CardMedia,
-	Chip,
-	TextField,
-	InputAdornment,
-	Button,
-	CircularProgress,
-	Stack,
-	Divider,
-} from '@mui/material'
-import SearchIcon from '@mui/icons-material/Search'
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
-import PersonIcon from '@mui/icons-material/Person'
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+//
+// Desktop "Health reads" (design: Desktop · 5). Articles, blogs and podcasts from GET /api/blogs?content_type=..., with the
+// search, topic chips and paging done by the server (the page is in the URL as ?page=); only the editor's pick is a separate call.
+import { useEffect, useRef, useState } from 'react'
+import { Link as RouterLink, useSearchParams } from 'react-router-dom'
+import { Box } from '@mui/material'
+import { DESK } from '../../styles/deskTokens'
+import { ROUTES } from '../../constants/routes'
+import { listBlogCategories, listBlogs, type BlogContentType, type BlogPost } from '../../services/blogService'
+import { listCommunityGroups, type CommunityGroup } from '../../services/communityService'
+import { AdSlot, Chip, Column, EmptyBox, Hero, MiniRow, Pager, PromoCard, ReadsPage, ReadsSubNav, SearchPill, SideCard, Spinner, Svg } from './readsKit'
+import { TONES, authorOf, cardSx, excerpt, focusSx, hoverCardSx, initials, outlineBtnSx, readMeta, topicStyle, useAds, useUrlPage } from './readsHelpers'
 
-import { listBlogs, BlogPost } from '../../services/blogService'
-import { getActiveAds, trackAdMetric, AdPlacementConfig } from '../../services/adService'
+const PER_PAGE = 6
+const POPULAR = ['diabetes', 'BP', 'sleep', 'PCOS']
+const ALL_TOPICS = 'All topics'
 
-const CATEGORIES = ['All', 'Endocrinology', 'Oncology', 'Geriatrics', 'General']
+const asType = (v: string | null): BlogContentType => (v === 'blog' || v === 'podcast' ? v : 'article')
 
 export default function BlogListPage() {
-	const navigate = useNavigate()
-	const [blogs, setBlogs] = useState<BlogPost[]>([])
-	const [ads, setAds] = useState<AdPlacementConfig[]>([])
+	const [params, setParams] = useSearchParams()
+	const type = asType(params.get('type'))
+	// The topic lives in the URL (?topic=Coronavirus) so it can be shared, bookmarked and used with the back button.
+	const topic = params.get('topic') || ALL_TOPICS
+	const setTopic = (t: string) =>
+		setParams((prev) => {
+			const p = new URLSearchParams(prev)
+			if (t === ALL_TOPICS) p.delete('topic')
+			else p.set('topic', t)
+			p.delete('page')
+			return p
+		})
+	const [posts, setPosts] = useState<BlogPost[]>([])
+	// The editor's pick is kept out of the paged list, so every page is a full grid of PER_PAGE cards.
+	const [editorPick, setEditorPick] = useState<BlogPost | null>(null)
+	const [pickReady, setPickReady] = useState(false)
+	const [pages, setPages] = useState(1)
+	const [categories, setCategories] = useState<string[]>([])
 	const [loading, setLoading] = useState(true)
-	const [selectedCategory, setSelectedCategory] = useState('All')
-	const [searchQuery, setSearchQuery] = useState('')
+	const [failed, setFailed] = useState(false)
+	const [reloadKey, setReloadKey] = useState(0)
+	const [groups, setGroups] = useState<CommunityGroup[]>([])
+	const [q, setQ] = useState('')
+	const [needle, setNeedle] = useState('')
+	const [page, setPage] = useUrlPage()
+	const needleRef = useRef('')
+	const ads = useAds('/blogs')
 
-	useEffect(() => {
-		const fetchData = async () => {
-			setLoading(true)
-			try {
-				const catFilter = selectedCategory === 'All' ? undefined : selectedCategory
-				const blogsRes = await listBlogs(catFilter, 1, 20)
-				setBlogs(blogsRes.data)
-
-				const adsRes = await getActiveAds('/blogs')
-				setAds(adsRes.data)
-
-				// Track impressions for loaded ads
-				adsRes.data.forEach((placement) => {
-					trackAdMetric(placement.ad.id, 'impression').catch(console.error)
-				})
-			} catch (err) {
-				console.error('Error fetching blog data:', err)
-			} finally {
-				setLoading(false)
-			}
-		}
-		fetchData()
-	}, [selectedCategory])
-
-	const filteredBlogs = blogs.filter((blog) =>
-		blog.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-		blog.content.toLowerCase().includes(searchQuery.toLowerCase())
-	)
-
-	const handleAdClick = (adId: string, targetUrl: string) => {
-		trackAdMetric(adId, 'click').catch(console.error)
-		if (targetUrl.startsWith('/')) {
-			navigate(targetUrl)
-		} else {
-			window.open(targetUrl, '_blank')
-		}
+	// Switching Articles / Blogs / Podcasts clears the filters in the same render, so the posts are fetched once, not twice.
+	// (The sub-nav links carry no ?page=, so the page goes back to 1 with the URL.)
+	const [prevType, setPrevType] = useState(type)
+	if (type !== prevType) {
+		setPrevType(type)
+		setEditorPick(null)
+		setPickReady(false)
+		setQ('')
+		setNeedle('')
+		needleRef.current = ''
 	}
 
+	// The search text goes to the server a moment after typing stops; the page only resets when the search really changed.
+	useEffect(() => {
+		const t = setTimeout(() => {
+			const v = q.trim()
+			if (v === needleRef.current) return
+			needleRef.current = v
+			setNeedle(v)
+			setPage(1)
+		}, 350)
+		return () => clearTimeout(t)
+	}, [q, setPage])
+
+	// Topic chips: the categories that have published posts of this type, from the server.
+	useEffect(() => {
+		let active = true
+		const load = async () => {
+			try {
+				const cats = await listBlogCategories(type)
+				if (active) setCategories(cats)
+			} catch {
+				if (active) setCategories([])
+			}
+		}
+		void load()
+		return () => {
+			active = false
+		}
+	}, [type])
+
+	// The editor's pick: the newest featured post of this type.
+	useEffect(() => {
+		let active = true
+		const load = async () => {
+			try {
+				const res = await listBlogs(undefined, 1, 1, true, type)
+				if (active) setEditorPick(res.data[0] ?? null)
+			} catch {
+				if (active) setEditorPick(null)
+			} finally {
+				if (active) setPickReady(true)
+			}
+		}
+		void load()
+		return () => {
+			active = false
+		}
+	}, [type])
+
+	const unfiltered = topic === ALL_TOPICS && !needle
+	const excludeId = unfiltered ? editorPick?.id : undefined
+
+	// One page of published posts, filtered and searched by the server (featured first, then newest).
+	useEffect(() => {
+		if (!pickReady) {
+			setLoading(true)
+			return
+		}
+		let active = true
+		const load = async () => {
+			setLoading(true)
+			setFailed(false)
+			try {
+				const res = await listBlogs(topic === ALL_TOPICS ? undefined : topic, page, PER_PAGE, undefined, type, undefined, needle, excludeId)
+				if (!active) return
+				const lastPage = Math.max(1, res.meta.pages)
+				// A link to a page that no longer exists (?page=99) falls back to the last real page.
+				if (page > lastPage) {
+					setPage(lastPage)
+					return
+				}
+				setPosts(res.data)
+				setPages(lastPage)
+			} catch {
+				if (active) {
+					setPosts([])
+					setPages(1)
+					setFailed(true)
+				}
+			} finally {
+				if (active) setLoading(false)
+			}
+		}
+		void load()
+		return () => {
+			active = false
+		}
+	}, [type, topic, needle, page, reloadKey, pickReady, excludeId, setPage])
+
+	useEffect(() => {
+		let active = true
+		const load = async () => {
+			try {
+				const res = await listCommunityGroups(undefined, { limit: 2 })
+				if (active) setGroups(res.data)
+			} catch {
+				// the side card just stays empty
+			}
+		}
+		void load()
+		return () => {
+			active = false
+		}
+	}, [])
+
+	const topics = [ALL_TOPICS, ...categories]
+
+	// Shown above the grid on the unfiltered first page only.
+	const pick = page === 1 && unfiltered ? (editorPick ?? undefined) : undefined
+	const shown = posts
+	const cur = page
+	const mostRead = posts.slice(0, 3)
+
+	const reset = () => {
+		setTopic(ALL_TOPICS)
+		setQ('')
+		setNeedle('')
+		needleRef.current = ''
+		setPage(1)
+	}
+
+	const sidebarAd = ads.find((a) => a.placement_key === 'sidebar')
+
 	return (
-		<Box sx={{ minHeight: '100vh', py: 6, bgcolor: '#f8fafc' }}>
-			<Container maxWidth="lg">
-				{/* Header Section */}
-				<Box sx={{ mb: 6, textAlign: 'center' }}>
-					<Typography
-						variant="h3"
-						fontWeight={800}
-						sx={{
-							background: 'linear-gradient(135deg, #0d9488 0%, #115e59 100%)',
-							WebkitBackgroundClip: 'text',
-							WebkitTextFillColor: 'transparent',
-							letterSpacing: '-0.02em',
-							mb: 1.5,
-						}}
-					>
-						Health & Wellness Library
-					</Typography>
-					<Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto', fontSize: '1.1rem' }}>
-						Browse medical articles, health updates, and wellness guides reviewed by certified healthcare professionals.
-					</Typography>
-				</Box>
-
-				{/* Search & Filter Bar */}
-				<Grid container spacing={3} sx={{ mb: 5, alignItems: 'center' }}>
-					<Grid size={{ xs: 12, md: 5 }}>
-						<TextField
-							fullWidth
-							placeholder="Search health articles..."
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-							InputProps={{
-								startAdornment: (
-									<InputAdornment position="start">
-										<SearchIcon sx={{ color: '#0d9488' }} />
-									</InputAdornment>
-								),
-								sx: { borderRadius: '12px', bgcolor: 'white' },
+		<ReadsPage>
+			<ReadsSubNav active={type} />
+			<Hero
+				eyebrow="HEALTH READS"
+				title="Read up, from doctors you can trust"
+				subtitle="Articles, blogs and podcasts written and reviewed by verified doctors."
+				crumbs={[{ label: 'Health reads' }]}
+			>
+				<SearchPill
+					value={q}
+					onChange={(v) => {
+						setQ(v)
+						setPage(1)
+					}}
+					placeholder="Search “diabetes diet”, “BP at home”, “sleep”…"
+					label="Search health reads"
+				/>
+				<Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 13, color: DESK.muted, flexWrap: 'wrap' }}>
+					Popular:
+					{POPULAR.map((p) => (
+						<Box
+							key={p}
+							component="button"
+							type="button"
+							onClick={() => {
+								setQ(p)
+								setPage(1)
 							}}
-							size="medium"
-						/>
-					</Grid>
-					<Grid size={{ xs: 12, md: 7 }}>
-						<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: { md: 'flex-end' } }}>
-							{CATEGORIES.map((cat) => (
-								<Chip
-									key={cat}
-									label={cat}
-									onClick={() => setSelectedCategory(cat)}
-									sx={{
-										fontSize: '0.85rem',
-										fontWeight: 600,
-										px: 1,
-										py: 2,
-										borderRadius: '10px',
-										cursor: 'pointer',
-										bgcolor: selectedCategory === cat ? '#0d9488' : 'white',
-										color: selectedCategory === cat ? 'white' : '#475569',
-										border: '1px solid',
-										borderColor: selectedCategory === cat ? '#0d9488' : '#e2e8f0',
-										transition: 'all 0.2s',
-										'&:hover': {
-											bgcolor: selectedCategory === cat ? '#0f766e' : '#f1f5f9',
-											borderColor: selectedCategory === cat ? '#0f766e' : '#cbd5e1',
-										},
-									}}
-								/>
-							))}
+							sx={{ height: 30, px: '12px', borderRadius: '9999px', border: `1px solid ${DESK.lineStrong}`, bgcolor: '#fff', color: DESK.ink, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', ...focusSx }}
+						>
+							{p}
 						</Box>
-					</Grid>
-				</Grid>
+					))}
+				</Box>
+			</Hero>
 
-				{/* Main Content Layout */}
-				{loading ? (
-					<Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-						<CircularProgress sx={{ color: '#0d9488' }} />
+			<Column sx={{ pt: '28px', pb: '64px', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 360px', gap: '28px', alignItems: 'start' }}>
+				<Box sx={{ display: 'flex', flexDirection: 'column', gap: '20px', minWidth: 0 }}>
+					<Box role="group" aria-label="Topic" sx={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+						{topics.map((t) => (
+							<Chip
+								key={t}
+								label={t}
+								on={t === topic}
+								onClick={() => {
+									setTopic(t)
+									window.scrollTo({ top: 0 })
+								}}
+							/>
+						))}
 					</Box>
-				) : (
-					<Grid container spacing={4}>
-						{/* Blogs Grid */}
-						<Grid size={{ xs: 12, lg: 8 }}>
-							{filteredBlogs.length === 0 ? (
-								<Box sx={{ textAlign: 'center', py: 8, bgcolor: 'white', borderRadius: 2, border: '1px solid #e2e8f0' }}>
-									<Typography variant="h6" color="text.secondary" fontWeight={600}>
-										No health articles found
-									</Typography>
-									<Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-										Try searching with different keywords or choosing another category.
-									</Typography>
-								</Box>
-							) : (
-								<Grid container spacing={3}>
-									{filteredBlogs.map((blog) => (
-										<Grid size={{ xs: 12, sm: 6 }} key={blog.id}>
-											<Card
-												sx={{
-													height: '100%',
-													display: 'flex',
-													flexDirection: 'column',
-													borderRadius: 2,
-													boxShadow: '0 4px 20px rgba(15, 23, 42, 0.04)',
-													border: '1px solid #e2e8f0',
-													transition: 'transform 0.2s, box-shadow 0.2s',
-													cursor: 'pointer',
-													'&:hover': {
-														transform: 'translateY(-4px)',
-														boxShadow: '0 12px 30px rgba(15, 23, 42, 0.08)',
-													},
-												}}
-												onClick={() => navigate(`/blogs/${blog.slug}`)}
-											>
-												<CardMedia
-													component="img"
-													height="160"
-													image={blog.image_url || 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=400'}
-													alt={blog.title}
-												/>
-												<CardContent sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column' }}>
-													<Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
-														<Chip
-															label={blog.category}
-															size="small"
-															sx={{
-																bgcolor: '#ccfbf1',
-																color: '#0f766e',
-																fontWeight: 600,
-																fontSize: '0.75rem',
-															}}
-														/>
-													</Box>
-													<Typography variant="h6" fontWeight={700} sx={{ lineClamp: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', mb: 1, lineHeight: 1.3, color: '#0f172a' }}>
-														{blog.title}
-													</Typography>
-													<Typography variant="body2" color="text.secondary" sx={{ lineClamp: 3, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', mb: 2, fontSize: '0.875rem' }}>
-														{blog.content.replace(/[#*`]/g, '')}
-													</Typography>
-													<Box sx={{ mt: 'auto' }}>
-														<Divider sx={{ my: 1.5 }} />
-														<Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
-															<Stack direction="row" spacing={0.5} alignItems="center">
-																<PersonIcon sx={{ fontSize: 14 }} />
-																<Typography variant="caption" fontWeight={500}>
-																	{blog.author.name}
-																</Typography>
-															</Stack>
-															<Stack direction="row" spacing={0.5} alignItems="center">
-																<CalendarTodayIcon sx={{ fontSize: 12 }} />
-																<Typography variant="caption">
-																	{new Date(blog.created_at).toLocaleDateString()}
-																</Typography>
-															</Stack>
-														</Stack>
-													</Box>
-												</CardContent>
-											</Card>
-										</Grid>
-									))}
-								</Grid>
-							)}
-						</Grid>
 
-						{/* Sidebar / Advertisements Column */}
-						<Grid size={{ xs: 12, lg: 4 }}>
-							<Box sx={{ position: 'sticky', top: 88, display: 'flex', flexDirection: 'column', gap: 4 }}>
-								{/* Sidebar Ads */}
-								{ads.filter((placement) => placement.placement_key === 'sidebar').map((placement) => (
-									<Card
-										key={placement.id}
-										sx={{
-											borderRadius: 2,
-											overflow: 'hidden',
-											boxShadow: '0 4px 20px rgba(15, 23, 42, 0.05)',
-											border: '1px solid #cbd5e1',
-											cursor: 'pointer',
-											transition: 'transform 0.2s',
-											'&:hover': { transform: 'scale(1.015)' },
-										}}
-										onClick={() => handleAdClick(placement.ad.id, placement.ad.target_url)}
-									>
-										<Box sx={{ position: 'relative' }}>
-											<CardMedia
-												component="img"
-												image={placement.ad.image_url}
-												alt={placement.ad.title}
-												sx={{ height: 260 }}
-											/>
-											<Chip
-												label="Sponsored"
-												size="small"
-												sx={{
-													position: 'absolute',
-													top: 12,
-													right: 12,
-													bgcolor: 'rgba(15, 23, 42, 0.75)',
-													color: 'white',
-													fontWeight: 700,
-													fontSize: '0.65rem',
-													backdropFilter: 'blur(4px)',
-												}}
-											/>
-										</Box>
-										<CardContent sx={{ p: 2.5, bgcolor: '#0f172a', color: 'white' }}>
-											<Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1, lineHeight: 1.2 }}>
-												{placement.ad.title}
-											</Typography>
-											<Button
-												variant="contained"
-												fullWidth
-												endIcon={<ArrowForwardIcon />}
-												sx={{
-													mt: 1,
-													bgcolor: '#0d9488',
-													textTransform: 'none',
-													borderRadius: 2.5,
-													'&:hover': { bgcolor: '#0f766e' },
-												}}
-											>
-												Learn More
-											</Button>
-										</CardContent>
-									</Card>
+					{loading ? (
+						<Spinner />
+					) : failed ? (
+						<EmptyBox title="We couldn’t load the reads" text="Check your connection and try again." action={<Box component="button" type="button" onClick={() => setReloadKey((k) => k + 1)} sx={{ ...outlineBtnSx, borderColor: DESK.primary, color: DESK.primary }}>Retry</Box>} />
+					) : (
+						<>
+							{pick && <EditorsPick post={pick} />}
+							<Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px' }}>
+								{shown.map((p) => (
+									<ReadCard key={p.id} post={p} />
 								))}
 							</Box>
-						</Grid>
-					</Grid>
-				)}
-			</Container>
+							{posts.length === 0 && (
+								<EmptyBox
+									title="Nothing here yet for this topic"
+									text="Try another topic, or ask a doctor directly."
+									action={
+										<Box component="button" type="button" onClick={reset} sx={{ ...outlineBtnSx, borderColor: DESK.primary, color: DESK.primary }}>
+											Show all reads
+										</Box>
+									}
+								/>
+							)}
+							<Pager page={cur} pages={pages} onChange={setPage} />
+						</>
+					)}
+				</Box>
+
+				<Box component="aside" sx={{ position: 'sticky', top: 88, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+					<AdSlot placement={sidebarAd} />
+					{mostRead.length > 0 && (
+						<SideCard title="Most read this week" subtitle="What people are reading on KarolaHealth">
+							<Box sx={{ display: 'flex', flexDirection: 'column' }}>
+								{mostRead.map((p) => (
+									<MiniRow key={p.id} to={`/blogs/${p.slug}`} topic={p.category} contentType={p.content_type} title={p.title} meta={readMeta(p)} />
+								))}
+							</Box>
+						</SideCard>
+					)}
+					<PromoCard to={ROUTES.PUBLIC.HEALTH_QUESTIONS} title="Didn’t find your answer?" text="Ask a verified doctor, free. Only your age and gender are shown." cta="Ask a doctor" />
+					{groups.length > 0 && (
+						<SideCard title="Join a community" subtitle="Talk to people going through the same thing">
+							<Box sx={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+								{groups.map((g) => (
+									<MiniRow key={g.id} to={ROUTES.COMMUNITIES.LIST} topic={g.category || g.name} title={g.name} meta={g.member_count ? `${g.member_count.toLocaleString('en-IN')} members` : g.category} size={40} />
+								))}
+							</Box>
+							<Box component={RouterLink} to={ROUTES.COMMUNITIES.LIST} sx={{ fontSize: 14, fontWeight: 800, color: DESK.primary, textDecoration: 'none' }}>
+								All communities ›
+							</Box>
+						</SideCard>
+					)}
+				</Box>
+			</Column>
+		</ReadsPage>
+	)
+}
+
+/** The cover of a card: the post's picture when it has one, otherwise the tinted tile with the topic icon. */
+function Cover({ post, height, iconSize }: { post: BlogPost; height: number | string; iconSize: number }) {
+	const { tone, icon } = topicStyle(post.category, post.content_type)
+	const [bg, ink] = TONES[tone]
+	return (
+		<Box aria-hidden="true" sx={{ position: 'relative', overflow: 'hidden', height, minHeight: typeof height === 'number' ? height : undefined, bgcolor: bg, color: ink, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+			{post.image_url ? (
+				<Box component="img" src={post.image_url} alt="" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+			) : (
+				<>
+					<Box sx={{ position: 'absolute', right: -30, top: -40, width: 120, height: 120, borderRadius: '9999px', bgcolor: '#FFFFFF66' }} />
+					<Box sx={{ position: 'relative', display: 'flex' }}>
+						<Svg name={icon} size={iconSize} stroke={1.4} />
+					</Box>
+				</>
+			)}
 		</Box>
 	)
 }
+
+function ReadCard({ post }: { post: BlogPost }) {
+	const { tone } = topicStyle(post.category, post.content_type)
+	const ink = TONES[tone][1]
+	return (
+		<Box component={RouterLink} to={`/blogs/${post.slug}`} sx={{ ...cardSx, ...hoverCardSx, borderRadius: '18px', overflow: 'hidden', color: DESK.ink, textDecoration: 'none', display: 'flex', flexDirection: 'column', ...focusSx }}>
+			<Box sx={{ position: 'relative' }}>
+				<Cover post={post} height={120} iconSize={48} />
+			</Box>
+			<Box sx={{ p: '16px 18px 18px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+				<Box sx={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.06em', color: ink, textTransform: 'uppercase' }}>{post.category}</Box>
+				<Box sx={{ fontSize: 17, lineHeight: '24px', fontWeight: 800 }}>{post.title}</Box>
+				<Box sx={{ fontSize: 13, lineHeight: '19px', color: DESK.muted }}>{excerpt(post.content, 110)}</Box>
+				<Box sx={{ mt: '4px', fontSize: 12, color: DESK.muted }}>
+					<b style={{ color: DESK.ink }}>{authorOf(post)}</b>
+					{readMeta(post) && ` · ${readMeta(post)}`}
+				</Box>
+			</Box>
+		</Box>
+	)
+}
+
+function EditorsPick({ post }: { post: BlogPost }) {
+	const { tone } = topicStyle(post.category, post.content_type)
+	const ink = TONES[tone][1]
+	return (
+		<Box component={RouterLink} to={`/blogs/${post.slug}`} sx={{ ...cardSx, ...hoverCardSx, borderRadius: '22px', overflow: 'hidden', display: 'grid', gridTemplateColumns: '340px minmax(0, 1fr)', color: DESK.ink, textDecoration: 'none', ...focusSx }}>
+			<Cover post={post} height="100%" iconSize={88} />
+			<Box sx={{ p: '28px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+				<Box sx={{ alignSelf: 'flex-start', px: '10px', py: '3px', borderRadius: '6px', bgcolor: DESK.ink, color: '#fff', fontSize: 11, fontWeight: 800, letterSpacing: '0.06em' }}>EDITOR’S PICK</Box>
+				<Box sx={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.06em', color: ink, textTransform: 'uppercase' }}>{post.category}</Box>
+				<Box sx={{ fontSize: 26, lineHeight: '34px', fontWeight: 800 }}>{post.title}</Box>
+				<Box sx={{ fontSize: 15, lineHeight: '23px', color: DESK.muted }}>{excerpt(post.content, 190)}</Box>
+				<Box sx={{ mt: 'auto', display: 'flex', alignItems: 'center', gap: '10px' }}>
+					<Box aria-hidden="true" sx={{ width: 36, height: 36, borderRadius: '9999px', bgcolor: DESK.primarySoft, color: DESK.primary, fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+						{initials(authorOf(post))}
+					</Box>
+					<Box sx={{ flexGrow: 1, fontSize: 13, color: DESK.muted }}>
+						<b style={{ color: DESK.ink }}>{authorOf(post)}</b>
+						{readMeta(post) && ` · ${readMeta(post)}`}
+					</Box>
+					<Box sx={{ height: 40, px: '16px', borderRadius: '10px', bgcolor: DESK.primary, color: '#fff', fontSize: 14, fontWeight: 800, display: 'inline-flex', alignItems: 'center' }}>Read now</Box>
+				</Box>
+			</Box>
+		</Box>
+	)
+}
+

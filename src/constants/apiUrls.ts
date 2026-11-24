@@ -231,6 +231,17 @@ export const API_ENDPOINTS = {
 		UPDATE: (id: string) => `/api/events/${id}`,
 		DELETE: (id: string) => `/api/events/${id}`,
 	},
+	BLOGS: {
+		/** GET ?content_type: categories with at least one published post of that type. */
+		CATEGORIES: '/api/blogs/categories',
+	},
+	COMMUNITIES: {
+		LIST: '/api/communities',
+		CATEGORIES: '/api/communities/categories',
+	},
+	QA: {
+		TAGS: '/api/qa/tags',
+	},
 	FOLLOW_UPS: {
 		CREATE: '/api/follow-ups',
 		CANCEL: (id: string) => `/api/follow-ups/${id}/cancel`,

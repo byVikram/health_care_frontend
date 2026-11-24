@@ -78,6 +78,7 @@ import CommunityThreadPage from '../features/portal/CommunityThreadPage'
 import EventDetailsPage from '../features/portal/EventDetailsPage'
 import EventsListPage from '../features/portal/EventsListPage'
 import HealthQuestionsPage from '../features/portal/HealthQuestionsPage'
+import QuestionDetailPage from '../features/portal/QuestionDetailPage'
 
 // Doctor Events
 import DoctorEventListPage from '../features/doctor/events/DoctorEventListPage'
@@ -164,6 +165,15 @@ export default function AppRoutes() {
 				<Route element={<PublicOrAuthenticatedLayout />}>
 					<Route path={ROUTES.ROOT} element={<HomeRoute />} />
 					<Route path={ROUTES.PUBLIC.HEALTH_QUESTIONS} element={<HealthQuestionsPage />} />
+					<Route path={ROUTES.PUBLIC.HEALTH_QUESTION_DETAIL} element={<QuestionDetailPage />} />
+					<Route path={ROUTES.BLOGS.LIST} element={<BlogListPage />} />
+					<Route path={ROUTES.BLOGS.DETAIL} element={<BlogArticlePage />} />
+					<Route path={ROUTES.COMMUNITIES.LIST} element={<CommunityForumPage />} />
+					<Route path={ROUTES.COMMUNITIES.DETAIL} element={<CommunityThreadPage />} />
+					<Route path={ROUTES.COMMUNITIES.THREAD} element={<CommunityThreadPage />} />
+					{/* Doctors can be browsed without logging in; booking asks for login (DoctorDetailPage) */}
+					<Route path={ROUTES.DOCTORS.SEARCH} element={<DoctorSearchPage />} />
+					<Route path={ROUTES.DOCTORS.DETAIL} element={<DoctorDetailPage />} />
 				</Route>
 
 				{/* Admin Login Route */}
@@ -202,9 +212,7 @@ export default function AppRoutes() {
 				{/* Protected routes */}
 				<Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
 					<Route element={<AuthenticatedNavbarLayout />}>
-						
-						<Route path={ROUTES.DOCTORS.DETAIL} element={<DoctorDetailPage />} />
-						<Route path={ROUTES.DOCTORS.SEARCH} element={<DoctorSearchPage />} />
+
 						<Route path={ROUTES.PAYMENT} element={<PaymentPage />} />
 						<Route path={ROUTES.APPOINTMENT_CONFIRMED} element={<AppointmentConfirmedPage />} />
 						<Route path={ROUTES.SPECIALITIES} element={<AllSpecialitiesPage />} />
@@ -240,11 +248,6 @@ export default function AppRoutes() {
 						<Route path={ROUTES.DOCTOR.EVENT_CREATE} element={<DoctorEventFormPage />} />
 						<Route path={ROUTES.DOCTOR.EVENT_EDIT} element={<DoctorEventFormPage />} />
 						
-						<Route path={ROUTES.BLOGS.LIST} element={<BlogListPage />} />
-						<Route path={ROUTES.BLOGS.DETAIL} element={<BlogArticlePage />} />
-						<Route path={ROUTES.COMMUNITIES.LIST} element={<CommunityForumPage />} />
-						<Route path={ROUTES.COMMUNITIES.DETAIL} element={<CommunityThreadPage />} />
-						<Route path={ROUTES.COMMUNITIES.THREAD} element={<CommunityThreadPage />} />
 						
 						<Route path={ROUTES.EVENTS.LIST} element={<EventsListPage />} />
 						<Route path={ROUTES.EVENTS.DETAIL} element={<EventDetailsPage />} />

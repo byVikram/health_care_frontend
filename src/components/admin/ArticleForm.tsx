@@ -1,5 +1,5 @@
 // src/components/admin/ArticleForm.tsx
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
 	Box,
 	Typography,
@@ -9,8 +9,9 @@ import {
 	CardContent,
 	Divider,
 	Paper,
-	Chip,
+	FormControlLabel,
 } from '@mui/material'
+import AppSwitch from '../common/Switch/AppSwitch'
 import SaveIcon from '@mui/icons-material/Save'
 import PublishIcon from '@mui/icons-material/Publish'
 import { toast } from 'react-toastify'
@@ -19,30 +20,16 @@ import RichTextEditor from './RichTextEditor'
 import AppInput from '../common/Input/AppInput'
 import AppButton from '../common/Button/AppButton'
 import AppSelect from '../common/Select/AppSelect'
-
-export const ARTICLE_CATEGORIES = [
-	{ value: 'Cardiology', label: 'Cardiology' },
-	{ value: 'Pediatrics', label: 'Pediatrics' },
-	{ value: 'Endocrinology', label: 'Endocrinology' },
-	{ value: 'Oncology', label: 'Oncology' },
-	{ value: 'Neurology', label: 'Neurology' },
-	{ value: 'General Health', label: 'General Health' },
-	{ value: 'Preventive Care', label: 'Preventive Care' },
-	{ value: 'Nutrition', label: 'Nutrition' },
-	{ value: 'Mental Wellness', label: 'Mental Wellness' },
-	{ value: 'Other', label: 'Other' },
-]
+import { ARTICLE_CATEGORIES } from '../../constants/constants'
 
 export interface ArticleFormData {
 	title: string
-	summary?: string
 	content: string
 	category: string
 	cover_image: string
-	author: string
-	tags: string
 	status?: string
 	publish_date: string
+	is_featured?: boolean
 }
 
 export interface ArticleFormProps {
@@ -57,43 +44,19 @@ export default function ArticleForm({
 	initialData,
 	onSubmit,
 	onCancel,
-	isEdit = false,
 	submitting = false,
 }: ArticleFormProps) {
 	const [title, setTitle] = useState(initialData?.title || '')
 	const [content, setContent] = useState(initialData?.content || '')
 	const [category, setCategory] = useState(initialData?.category || 'General Health')
 	const [coverImage, setCoverImage] = useState(initialData?.cover_image || '')
-	const [author, setAuthor] = useState(initialData?.author || 'Admin')
-	const [tags, setTags] = useState(initialData?.tags || '')
 	const [publishDate, setPublishDate] = useState(
 		initialData?.publish_date
 			? initialData.publish_date.split('T')[0]
 			: new Date().toISOString().split('T')[0]
 	)
 	const [imgError, setImgError] = useState(false)
-
-	useEffect(() => {
-		if (initialData) {
-			if (initialData.title !== undefined) setTitle(initialData.title)
-			if (initialData.content !== undefined) setContent(initialData.content)
-			if (initialData.category !== undefined) setCategory(initialData.category)
-			if (initialData.cover_image !== undefined) setCoverImage(initialData.cover_image)
-			if (initialData.author !== undefined) setAuthor(initialData.author)
-			if (initialData.tags !== undefined) setTags(initialData.tags)
-			if (initialData.publish_date) setPublishDate(initialData.publish_date.split('T')[0])
-		}
-	}, [initialData])
-
-	// Clean tags preview helper (removes duplicates and empty items)
-	const tagList = Array.from(
-		new Set(
-			tags
-				.split(',')
-				.map((t) => t.trim())
-				.filter(Boolean)
-		)
-	)
+		const [isFeatured, setIsFeatured] = useState(initialData?.is_featured || false)
 
 	const handleSubmit = async (overrideStatus?: string) => {
 		const finalTitle = title.trim()
@@ -114,14 +77,12 @@ export default function ArticleForm({
 
 		const formData: ArticleFormData = {
 			title: finalTitle,
-			summary: initialData?.summary || finalTitle,
 			content: finalContent,
 			category,
 			cover_image: coverImage.trim(),
-			author: author.trim() || 'Admin',
-			tags: tagList.join(', '),
 			status: overrideStatus || initialData?.status || 'published',
 			publish_date: publishDate,
+			is_featured: isFeatured,
 		}
 
 		await onSubmit(formData, overrideStatus)
@@ -255,15 +216,6 @@ export default function ArticleForm({
 									fullWidth
 								/>
 
-								{/* Author Input */}
-								<AppInput
-									label="Author Name"
-									placeholder="E.g., Dr. Sarah Jenkins"
-									value={author}
-									onChange={(e) => setAuthor(e.target.value)}
-									fullWidth
-								/>
-
 								{/* Publish Date */}
 								<AppInput
 									type="date"
@@ -273,37 +225,20 @@ export default function ArticleForm({
 									fullWidth
 								/>
 
-								<Divider />
-
-								{/* Tags Input */}
-								<Stack spacing={1}>
-									<AppInput
-										label="Tags (Comma separated)"
-										placeholder="Cardiology, Heart, Prevention"
-										value={tags}
-										onChange={(e) => setTags(e.target.value)}
-										fullWidth
+								{/* Featured Switch */}
+									<FormControlLabel
+										control={<AppSwitch checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />}
+										label={
+											<Box sx={{ ml: 1 }}>
+												<Typography variant="body2" fontWeight={700} color="#0f172a">
+													Feature Article
+												</Typography>
+												<Typography variant="caption" color="text.secondary" display="block">
+													Show on the user dashboard
+												</Typography>
+											</Box>
+										}
 									/>
-									{tagList.length > 0 && (
-										<Stack direction="row" flexWrap="wrap" gap={0.5} sx={{ pt: 0.5 }}>
-											{tagList.map((tag) => (
-												<Chip
-													key={tag}
-													label={tag}
-													size="small"
-													sx={{
-														bgcolor: '#ccfbf1',
-														color: '#0f766e',
-														fontWeight: 600,
-														fontSize: '0.68rem',
-														borderRadius: '6px',
-														height: 22,
-													}}
-												/>
-											))}
-										</Stack>
-									)}
-								</Stack>
 
 								<Divider />
 

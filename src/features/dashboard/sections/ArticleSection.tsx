@@ -1,11 +1,11 @@
 // src/features/dashboard/ArticleSection.tsx
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Box, Typography, Grid, Container, Chip, Divider } from '@mui/material'
 import AppButton from '../../../components/common/Button/AppButton'
 import AppModal from '../../../components/common/Modal/AppModal'
 import AuthorInfoCard from '../../../components/common/AuthorInfoCard'
-import { BlogAuthor } from '../../../services/blogService'
+import { listBlogs, type BlogAuthor } from '../../../services/blogService'
 
 export interface ArticleItem {
 	id: number
@@ -19,85 +19,44 @@ export interface ArticleItem {
 	authorData: BlogAuthor
 }
 
-const articles: ArticleItem[] = [
-	{
-		id: 1,
-		category: 'VITAMINS AND SUPPLEMENTS',
-		categoryColor: '#0c7c7c',
-		title: 'Eating Right to Build Immunity Against Cold and Viral Infections',
-		author: 'Dr. Diana Borgio',
-		image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&h=450&fit=crop',
-		publishDate: 'August 10, 2026',
-		authorData: {
-			name: 'Dr. Diana Borgio',
-			designation: 'Senior Clinical Nutritionist & Immunologist',
-			specialty: 'Preventive Nutrition & Immune System Health',
-			bio: 'Dr. Diana Borgio is a renowned clinical nutritionist with over 12 years of experience specializing in preventive dietary interventions for immune system resilience and viral infection prevention.',
-			credentials: 'MD, M.Sc. Clinical Nutrition',
-			experience: '12+ Years Clinical Experience',
-			avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200&h=200&fit=crop',
-		},
-		content: `Building a strong immune system starts with what you put on your plate. With seasonal shifts and viral risks, optimizing your daily intake of key micronutrients plays a crucial role in defending your body against infections.
-
-Focusing on Whole, Nutritious Foods
-Incorporating citrus fruits rich in Vitamin C, dark leafy greens packed with antioxidants, and zinc-dense seeds or legumes can significantly bolster white blood cell production. Hydration and gut health through probiotics like natural yogurt are equally foundational.
-
-Evidence-Based Supplementation
-While food remains the primary source of nutrients, targeted supplementation under medical guidance can fill critical gaps during high-risk seasons. Always consult with a certified clinical practitioner before starting high-dose vitamin regimens.`,
-	},
-	{
-		id: 2,
-		category: 'CORONAVIRUS',
-		categoryColor: '#0c7c7c',
-		title: '12 Coronavirus Myths and Facts That You Should Be Aware Of',
-		author: 'Dr. Sarah Jenkins',
-		image: 'https://images.unsplash.com/photo-1584118624012-df056829fbd0?w=800&h=450&fit=crop',
-		publishDate: 'July 28, 2026',
-		authorData: {
-			name: 'Dr. Sarah Jenkins',
-			designation: 'Consultant Pulmonologist & Epidemiologist',
-			specialty: 'Respiratory Infections & Public Health Safety',
-			bio: 'Dr. Sarah Jenkins is a board-certified pulmonologist and public health expert specializing in viral respiratory diseases and evidence-based epidemic management.',
-			credentials: 'MD, FCCP (Preventive Medicine)',
-			experience: '15+ Years Experience',
-			avatar: 'https://images.unsplash.com/photo-1594824813566-78a93272d34e?w=200&h=200&fit=crop',
-		},
-		content: `Misinformation during public health crises can spread faster than viruses themselves. Distinguishing scientifically verified facts from internet myths is essential for personal and community safety.
-
-Myth vs. Fact: Essential Guidance
-1. Myth: Holding your breath for 10 seconds means you are virus-free.
-Fact: This is not a reliable test. Only PCR or certified laboratory assays can accurately diagnose viral infection.
-
-2. Myth: Warm weather completely eradicates transmission.
-Fact: Respiratory viruses can transmit across various climates. Strict hand hygiene and proper ventilation remain vital protocols worldwide.`,
-	},
-	{
-		id: 3,
-		category: 'CARDIOVASCULAR HEALTH',
-		categoryColor: '#0c7c7c',
-		title: 'Essential Guidelines for Maintaining Optimal Heart Health at Any Age',
-		author: 'Dr. Marcus Vance',
-		image: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800&h=450&fit=crop',
-		publishDate: 'June 14, 2026',
-		authorData: {
-			name: 'Dr. Marcus Vance',
-			designation: 'Senior Interventional Cardiologist',
-			specialty: 'Preventive Cardiology & Vascular Health',
-			bio: 'Dr. Marcus Vance is a leading cardiologist dedicated to heart disease prevention, blood pressure management, and lifestyle medicine.',
-			credentials: 'MD, FACC',
-			experience: '18+ Years Cardiology Practice',
-			avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=200&h=200&fit=crop',
-		},
-		content: `Cardiovascular wellness is a lifelong commitment. Simple lifestyle modifications—such as 30 minutes of daily moderate aerobic exercise, maintaining a low-sodium Mediterranean diet, and managing stress levels—dramatically reduce long-term cardiac risks.
-
-Key Indicators to Track Regularly
-Monitoring systemic blood pressure, fasting lipid profiles, and blood glucose levels allows for early detection of pre-clinical vascular changes before adverse cardiovascular events occur.`,
-	},
-]
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&h=450&fit=crop'
 
 export default function ArticleSection() {
 	const navigate = useNavigate()
 	const [selectedArticle, setSelectedArticle] = useState<ArticleItem | null>(null)
+	const [articles, setArticles] = useState<ArticleItem[]>([])
+
+	useEffect(() => {
+		let active = true
+		const load = async () => {
+			try {
+				// Published articles; the backend lists featured ones first, then the rest.
+				const res = await listBlogs(undefined, 1, 3, undefined, 'article')
+				if (!active) return
+				setArticles(
+					res.data.map((p, i) => ({
+						id: i + 1,
+						category: p.category,
+						categoryColor: '#0c7c7c',
+						title: p.title,
+						author: p.author?.name ?? p.author_name ?? 'Admin',
+						image: p.image_url || FALLBACK_IMAGE,
+						content: p.content,
+						publishDate: new Date(p.published_at ?? p.created_at).toLocaleDateString(),
+						authorData: p.author ?? { name: p.author_name ?? 'Admin' },
+					}))
+				)
+			} catch {
+				// ApiService already toasted the server's message
+			}
+		}
+		void load()
+		return () => {
+			active = false
+		}
+	}, [])
+
+	if (articles.length === 0) return null
 
 	return (
 		<Box sx={{ width: '100%', bgcolor: '#e5e9e9', py: 6 }}>
