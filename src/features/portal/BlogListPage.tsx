@@ -24,6 +24,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 
 import { listBlogs, BlogPost } from '../../services/blogService'
 import { getActiveAds, trackAdMetric, AdPlacementConfig } from '../../services/adService'
+import VoiceMicButton from '../../components/common/Voice/VoiceMicButton'
 
 const CATEGORIES = ['All', 'Endocrinology', 'Oncology', 'Geriatrics', 'General']
 
@@ -108,6 +109,11 @@ export default function BlogListPage() {
 								startAdornment: (
 									<InputAdornment position="start">
 										<SearchIcon sx={{ color: '#0d9488' }} />
+									</InputAdornment>
+								),
+								endAdornment: (
+									<InputAdornment position="end">
+										<VoiceMicButton onResult={(text) => setSearchQuery(text)} />
 									</InputAdornment>
 								),
 								sx: { borderRadius: '12px', bgcolor: 'white' },

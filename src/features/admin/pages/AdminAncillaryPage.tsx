@@ -141,8 +141,7 @@ export default function AdminAncillaryPage() {
 	const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null)
 
 	// ── Debounced Search ─────────────────────────────────────────────────────
-	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const val = e.target.value
+	const applySearch = (val: string) => {
 		setSearchInput(val)
 		if (debounceRef.current) clearTimeout(debounceRef.current)
 		debounceRef.current = setTimeout(() => {
@@ -150,6 +149,7 @@ export default function AdminAncillaryPage() {
 			setPage(1)
 		}, 400)
 	}
+	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => applySearch(e.target.value)
 
 	// ── Map Tab to Status Parameter (Single Source of Truth) ─────────────────
 	const getStatusFilterForTab = (tab: OperationalTab): string | undefined => {
@@ -737,6 +737,8 @@ export default function AdminAncillaryPage() {
 					placeholder="Search by Patient, Nurse, Request ID..."
 					value={searchInput}
 					onChange={handleSearchChange}
+					enableVoiceSearch
+					onVoiceResult={applySearch}
 					startIcon={<SearchIcon sx={{ color: '#94a3b8' }} />}
 					sx={{ width: { xs: '100%', sm: 300, md: 360 } }}
 				/>

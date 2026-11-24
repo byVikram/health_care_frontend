@@ -3,6 +3,7 @@
 // The three highlight cards above the list (full body checkup, diabetes care, vitamin check). The catalogue has no promotions, so each card
 // is built from what was loaded and is left out when the catalogue has nothing for it (no invented prices or offers).
 import { Box } from '@mui/material'
+import DashboardCarousel from '../../../components/common/Carousel/DashboardCarousel'
 import { DESK } from '../../../styles/deskTokens'
 import type { LabItem } from '../labConstants'
 import { inr } from '../labFormat'
@@ -33,7 +34,11 @@ const cta = (bg: string, fg: string) =>
 	}) as const
 
 const cardSx = {
-	p: '18px',
+	width: '100%',
+	height: '100%',
+	boxSizing: 'border-box',
+	justifyContent: 'center',
+	p: '20px 26px',
 	border: 0,
 	borderRadius: '18px',
 	fontFamily: 'inherit',
@@ -108,22 +113,13 @@ export default function LabPromoCards({ packages, tests, cart, onOpen, onToggleA
 					Both tests for {inr(pair[0].price + pair[1].price)}
 				</Box>
 				<Box component="span" sx={cta(DESK.sand, '#FFFFFF')}>
-					{pairAdded ? 'Added ✓' : 'Add both'}
+					{pairAdded ? 'Added' : 'Add both'}
 				</Box>
 			</Box>
 		) : null,
 	].filter(Boolean)
 
 	if (cards.length === 0) return null
-	return (
-		<Box
-			sx={{
-				display: 'grid',
-				gap: '14px',
-				gridTemplateColumns: cards.length === 3 ? '1.2fr 1fr 1fr' : `repeat(${cards.length}, 1fr)`,
-			}}
-		>
-			{cards}
-		</Box>
-	)
+	// the cards slide one at a time like the native Home offers banner (auto-play every 4.5 s, pill dots)
+	return <DashboardCarousel slides={cards} height={168} radius={18} autoPlay ariaLabel="Offers" />
 }

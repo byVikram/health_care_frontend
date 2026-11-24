@@ -30,6 +30,8 @@ export const API_ENDPOINTS = {
 		ADDITIONAL_DETAILS: '/api/doctors/profile/additional-details',
 		HOSPITALS: '/api/doctors/hospitals',
 		UPDATE_HOSPITAL: '/api/doctors/hospitals',
+		/** DELETE: removes (soft delete) one of the doctor's hospitals; `id` is the hospital's public id. */
+		DELETE_HOSPITAL: (id: string) => `/api/doctors/hospitals/${id}`,
 		UPDATE_AVAILABILITY: '/api/doctors/availability',
 		DELETE_ACCOUNT: '/api/doctors/profile',
 		ACHIEVEMENTS: '/api/doctors/achievements',
@@ -85,6 +87,28 @@ export const API_ENDPOINTS = {
 		QUOTE: '/api/laboratory/quote',
 		ORDERS: '/api/laboratory/orders',
 	},
+	/** Home care (nursing care at home): the catalogue, the instant / scheduled bookings and the patient's orders. All under /api/ancillary. */
+	ANCILLARY: {
+		CATALOG: '/api/ancillary/catalog',
+		CATEGORIES: '/api/ancillary/categories',
+		PACKAGE_DETAIL: (id: string) => `/api/ancillary/packages/${id}`,
+		/** POST: an instant ("Book now") request. */
+		REQUESTS: '/api/ancillary/patient/requests',
+		/** POST: a scheduled ("Later") order of up to 7 visits. */
+		REQUESTS_SCHEDULED: '/api/ancillary/requests/scheduled',
+		ACTIVE_REQUEST: '/api/ancillary/patient/requests/active',
+		REQUEST_STATUS: (id: string) => `/api/ancillary/patient/requests/${id}/status`,
+		TIP: (id: string) => `/api/ancillary/patient/requests/${id}/tip`,
+		SEARCH_AGAIN: (id: string) => `/api/ancillary/patient/requests/${id}/search-again`,
+		CANCEL: (id: string) => `/api/ancillary/patient/requests/${id}/cancel`,
+		CANCEL_VISITS: (id: string) => `/api/ancillary/patient/requests/${id}/visits/cancel`,
+		RESCHEDULE_VISIT: (id: string, visitId: string) => `/api/ancillary/patient/requests/${id}/visits/${visitId}/reschedule`,
+		BOOKING_RESTRICTION: '/api/ancillary/patient/booking-restriction',
+		REVIEWS: '/api/ancillary/reviews',
+		REVIEW_BY_BOOKING: (id: string) => `/api/ancillary/reviews/booking/${id}`,
+		/** WebSocket (ws:// or wss://, built from the API base URL): the first message is {type:'auth', token}. */
+		WS_PATIENT_REQUEST: (id: string) => `/api/ancillary/ws/patient/requests/${id}`,
+	},
 	REVIEWS: {
 		CREATE: '/api/reviews',
 		BY_DOCTOR: (doctorId: string | number) => `/api/reviews/doctor/${doctorId}`,
@@ -94,6 +118,8 @@ export const API_ENDPOINTS = {
 		GET: '/api/lookup',
 		/** GET: the signed-in user's sidebar rows (stable keys, label, icon key, group), chosen by role; the same list the mobile app's drawer shows. */
 		NAVIGATION: '/api/lookup/navigation',
+		/** GET: public client config (home_care_visit_policy, nursing_helpline_number ...). */
+		APP_CONFIG: '/api/lookup/app-config',
 	},
 	DOCTORS_FAVOURITES: {
 		GET: '/api/doctors/favourites',

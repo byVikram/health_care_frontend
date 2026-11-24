@@ -10,6 +10,7 @@
 import { useMemo, useState } from 'react'
 import { Box, Dialog, Typography } from '@mui/material'
 import { toast } from 'react-toastify'
+import VoiceMicButton from '../Voice/VoiceMicButton'
 
 const INK = '#12373E'
 const MUTED = '#5B6B6E'
@@ -297,6 +298,7 @@ export default function LocationPickerModal({ open, selected, onClose, onSelect 
 									'&::placeholder': { color: '#7A8B8E' },
 								}}
 							/>
+							<VoiceMicButton onResult={(text) => setQuery(text)} />
 						</Box>
 						<Box
 							component="button"
@@ -686,6 +688,7 @@ function AreaStep({ city, area, query, onQuery, onArea, onBack, onConfirm }: Are
 							'&::placeholder': { color: FAINT },
 						}}
 					/>
+					<VoiceMicButton onResult={(text) => onQuery(text)} />
 				</Box>
 			</Box>
 

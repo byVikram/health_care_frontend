@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom'
 import DeskIcon from '../../../components/common/Icon/DeskIcon'
 import { ROUTES } from '../../../constants/routes'
 import { DESK, DESK_ICONS } from '../../../styles/deskTokens'
+import VoiceMicButton from '../../../components/common/Voice/VoiceMicButton'
 
 const TRUCK = 'M3 6h11v10H3zM14 9h4l3 3v4h-7M7 19a2 2 0 1 0 0-.01M17 19a2 2 0 1 0 0-.01'
 const REPORT = 'M6 3h9l4 4v14H6zM14 3v5h5M9 13h6M9 17h4'
@@ -31,7 +32,7 @@ export default function LabBrowseHero({ search, onSearch }: LabBrowseHeroProps) 
 				position: 'relative',
 				overflow: 'hidden',
 				color: '#FFFFFF',
-				background: `radial-gradient(50% 120% at 100% 0%, ${DESK.primary} 0%, ${DESK.primary}00 70%), radial-gradient(40% 90% at 0% 100%, ${DESK.heroGlow} 0%, ${DESK.heroGlow}00 70%), ${DESK.hero}`,
+				bgcolor: DESK.primary,
 			}}
 		>
 			<Box
@@ -110,6 +111,7 @@ export default function LabBrowseHero({ search, onSearch }: LabBrowseHeroProps) 
 								'&::-webkit-search-cancel-button': { display: 'none' },
 							}}
 						/>
+						<VoiceMicButton onResult={onSearch} />
 						{search ? (
 							<Box
 								component="button"

@@ -26,6 +26,7 @@ import ApiService from '../../services/apiService'
 import { API_ENDPOINTS } from '../../constants/apiUrls'
 import { ROUTES } from '../../constants/routes'
 import AppButton from '../../components/common/Button/AppButton'
+import VoiceMicButton from '../../components/common/Voice/VoiceMicButton'
 
 export interface EventItem {
 	id: string
@@ -127,6 +128,11 @@ export default function EventsListPage() {
 								startAdornment: (
 									<InputAdornment position="start">
 										<SearchIcon sx={{ color: '#0d9488' }} />
+									</InputAdornment>
+								),
+								endAdornment: (
+									<InputAdornment position="end">
+										<VoiceMicButton onResult={(text) => setSearchQuery(text)} />
 									</InputAdornment>
 								),
 								sx: { borderRadius: '12px', bgcolor: 'white' },

@@ -332,6 +332,8 @@ export default function AdminReviewsPage() {
 							placeholder="Search patient, doctor, hospital..."
 							value={searchInput}
 							onChange={(e) => setSearchInput(e.target.value)}
+							enableVoiceSearch
+							onVoiceResult={(text) => setSearchInput(text)}
 							InputProps={{
 								startAdornment: (
 									<InputAdornment position="start">

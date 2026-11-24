@@ -39,6 +39,7 @@ import { toast } from 'react-toastify'
 import ConfirmModal from '../../../components/common/Modal/ConfirmModal'
 import { getDoctorEvents, deleteEvent, DoctorEvent } from './eventService'
 import AdminPageHeader from '../../../components/admin/AdminPageHeader'
+import VoiceMicButton from '../../../components/common/Voice/VoiceMicButton'
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=600'
 
@@ -222,13 +223,16 @@ export default function DoctorEventListPage() {
 												<SearchIcon sx={{ color: '#94a3b8', fontSize: 20 }} />
 											</InputAdornment>
 										),
-										endAdornment: searchQuery ? (
+										endAdornment: (
 											<InputAdornment position="end">
-												<IconButton size="small" onClick={() => setSearchQuery('')}>
-													<ClearIcon sx={{ fontSize: 16 }} />
-												</IconButton>
+												{searchQuery ? (
+													<IconButton size="small" onClick={() => setSearchQuery('')} aria-label="Clear search">
+														<ClearIcon sx={{ fontSize: 16 }} />
+													</IconButton>
+												) : null}
+												<VoiceMicButton onResult={(text) => setSearchQuery(text)} />
 											</InputAdornment>
-										) : null,
+										),
 									}}
 									sx={{
 										'& .MuiOutlinedInput-root': {

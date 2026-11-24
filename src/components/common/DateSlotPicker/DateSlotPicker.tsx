@@ -58,6 +58,11 @@ type MultiProps = {
 type CommonProps = {
 	selectedDate: Date
 	onDateChange: (date: Date) => void
+	/** Several days can be picked (e.g. a repeat home-care visit): these are the picked days, highlighted together; a click calls `onDateToggle` instead of `onDateChange`. */
+	selectedDates?: Date[]
+	onDateToggle?: (date: Date) => void
+	/** Hides the legend next to the "Select Time" label (when the slots are not booked / blocked ones). */
+	hideLegend?: boolean
 	dateLabel?: string
 	timeLabel?: string
 	hideNavigation?: boolean
@@ -94,6 +99,9 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 	const {
 		selectedDate,
 		onDateChange,
+		selectedDates,
+		onDateToggle,
+		hideLegend = false,
 		dateLabel = 'Select Date',
 		timeLabel = 'Select Time',
 		hideNavigation = false,
@@ -117,8 +125,9 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 	const today = new Date()
 
 	const [weekStart, setWeekStart] = useState(() => {
-		const d = new Date(today)
-		d.setDate(today.getDate() - today.getDay())
+		const anchor = selectedDates?.[0] ?? selectedDate
+		const d = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate())
+		d.setDate(d.getDate() - d.getDay())
 		return d
 	})
 
@@ -321,13 +330,17 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 						{/* Day strip */}
 						<Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 0.5 }}>
 							{weekDates.map((date) => {
-								const isSelected = isSameDay(date, selectedDate)
+								const isSelected = selectedDates ? selectedDates.some((d) => isSameDay(d, date)) : isSameDay(date, selectedDate)
 								const past = isPast(date) || isBeyondWindow(date)
 								const isSat = date.getDay() === 6
 								return (
 									<Box
 										key={date.toISOString()}
-										onClick={() => !past && onDateChange(date)}
+										onClick={() => {
+											if (past) return
+											if (onDateToggle) onDateToggle(date)
+											else onDateChange(date)
+										}}
 										sx={{
 											flex: 1,
 											textAlign: 'center',
@@ -420,7 +433,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 							<Typography variant="h6" sx={{ fontWeight: 600, fontSize: '15.5px' }}>
 								{timeLabel}
 							</Typography>
-							{timeLegend}
+							{hideLegend ? null : timeLegend}
 						</Box>
 
 						{slotsLoading ? (

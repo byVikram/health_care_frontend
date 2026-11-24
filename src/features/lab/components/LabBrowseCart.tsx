@@ -171,7 +171,6 @@ export default function LabBrowseCart() {
 						}}
 					>
 						Choose slot &amp; book
-						<DeskIcon d={DESK_ICONS.chevronRight} size={16} strokeWidth={2.4} />
 					</Box>
 					{savings > 0 ? (
 						<Box component="span" sx={{ textAlign: 'center', fontSize: 12, color: DESK.success, fontWeight: 700 }}>

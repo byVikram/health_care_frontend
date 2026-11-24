@@ -566,6 +566,11 @@ export default function AdminQAPage() {
 						placeholder="Search questions or tags... (Enter)"
 						value={searchInput}
 						onChange={(e) => setSearchInput(e.target.value)}
+						enableVoiceSearch
+						onVoiceResult={(text) => {
+							setSearchInput(text)
+							setSearch(text)
+						}}
 						onKeyDown={(e) => { if (e.key === "Enter") setSearch(searchInput) }}
 						InputProps={{
 							startAdornment: (

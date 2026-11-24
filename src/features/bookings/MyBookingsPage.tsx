@@ -203,6 +203,7 @@ function PatientBookings() {
 						onChange={setQuery}
 						placeholder="Search doctor, test, medicine or ID"
 						ariaLabel="Search bookings"
+						voice
 					/>
 				</Box>
 

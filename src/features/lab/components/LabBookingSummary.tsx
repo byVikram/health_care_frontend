@@ -144,20 +144,8 @@ export default function LabBookingSummary({
 					'&:hover': { filter: ready ? 'brightness(0.97)' : 'none' },
 				}}
 			>
-				{ready ? (
-					<>
-						<DeskIcon d={DESK_ICONS.lock} size={16} strokeWidth={2.4} />
-						Continue to payment
-					</>
-				) : (
-					blocker
-				)}
+				{ready ? 'Continue to payment' : blocker}
 			</Box>
-			{savings > 0 ? (
-				<Box component="span" sx={{ textAlign: 'center', fontSize: 12, color: DESK.success, fontWeight: 700 }}>
-					You save {inr(savings)} on this booking
-				</Box>
-			) : null}
 		</Box>
 	)
 }

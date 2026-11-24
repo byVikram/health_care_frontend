@@ -166,12 +166,12 @@ export default function AdminAppointmentCards({
 	} = useAdminAppointmentActions(fetchAppointments)
 
 	// ── debounced search ────────────────────────────────────────────────────
-	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const val = e.target.value
+	const applySearch = (val: string) => {
 		setSearchInput(val)
 		if (debounceRef.current) clearTimeout(debounceRef.current)
 		debounceRef.current = setTimeout(() => setSearchQuery(val.trim()), 400)
 	}
+	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => applySearch(e.target.value)
 
 	return (
 		<Box>
@@ -182,6 +182,8 @@ export default function AdminAppointmentCards({
 						placeholder="Search appointment ID, doctor, or hospital..."
 						value={searchInput}
 						onChange={handleSearchChange}
+						enableVoiceSearch
+						onVoiceResult={applySearch}
 						size="small"
 						startIcon={<SearchIcon sx={{ fontSize: 18, color: '#94a3b8' }} />}
 					/>

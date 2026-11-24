@@ -110,10 +110,6 @@ export default function LabBrowsePage() {
 
 	const toggleConcern = (id: string) => setChosen((cur) => (cur.includes(id) ? cur.filter((c) => c !== id) : [...cur, id]))
 
-	const resultLabel = term
-		? `${shown} ${shown === 1 ? 'result' : 'results'} for “${term}”`
-		: `${shown}${hasMore ? '+' : ''} ${shown === 1 ? 'test or package' : 'tests and packages'}`
-
 	const typeCounts: Record<LabTypeId, string> = {
 		all: loading ? '' : `${packages.length + tests.length}${hasMore ? '+' : ''}`,
 		packages: loading ? '' : String(packages.length),
@@ -136,10 +132,7 @@ export default function LabBrowsePage() {
 					onClear={clearAll}
 				/>
 				<Box component="section" sx={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '22px' }}>
-					<Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-						<Box aria-live="polite" sx={{ flexGrow: 1, fontSize: 15, fontWeight: 700 }}>
-							{loading ? 'Loading tests…' : resultLabel}
-						</Box>
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-end' }}>
 						<Box component="label" sx={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 14, color: DESK.muted }}>
 							Sort by
 							<Box
