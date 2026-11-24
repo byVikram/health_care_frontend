@@ -84,6 +84,24 @@ export const ROUTES = {
 		ORDER: '/lab-tests/orders/:orderId',
 		REPORT: '/lab-tests/orders/:orderId/report',
 	},
+	/** Nursing care at home (patients): browse -> who / where / when -> review -> finding a nurse (Book now) or booked (Later) -> order. */
+	NURSING: {
+		HOME: '/nursing-care',
+		SCHEDULE: '/nursing-care/schedule',
+		REVIEW: '/nursing-care/review',
+		MATCHING: '/nursing-care/finding/:requestId',
+		BOOKED: '/nursing-care/booked/:requestId',
+		ORDER: '/nursing-care/orders/:requestId',
+	},
+	/** The other home-care services (physiotherapy, rehab-care, home-care, medical-equipment): the same pages as nursing, under /care/<service>. Build addresses with carePath(). */
+	CARE: {
+		HOME: '/care/:serviceKey',
+		SCHEDULE: '/care/:serviceKey/schedule',
+		REVIEW: '/care/:serviceKey/review',
+		MATCHING: '/care/:serviceKey/finding/:requestId',
+		BOOKED: '/care/:serviceKey/booked/:requestId',
+		ORDER: '/care/:serviceKey/orders/:requestId',
+	},
 	/** The doctor's Schedule page (calendar, clinics, the day's list and booking requests). */
 	SCHEDULE: '/schedule',
 

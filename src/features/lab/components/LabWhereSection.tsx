@@ -5,7 +5,7 @@
 import { Box, CircularProgress } from '@mui/material'
 import type { ReactNode } from 'react'
 import DeskIcon from '../../../components/common/Icon/DeskIcon'
-import PillToggle, { type PillToggleOption } from '../../../components/common/PillToggle/PillToggle'
+import AppSegmentedToggle, { type SegmentedToggleOption } from '../../../components/common/Switch/AppSegmentedToggle'
 import { DESK, DESK_ICONS } from '../../../styles/deskTokens'
 import type { LabWhere } from '../labBookingStore'
 import { addressLineOf, type LabAddress } from '../useLabAddresses'
@@ -21,9 +21,9 @@ export type LabAvailabilityStatus = {
 	onRetry?: () => void
 }
 
-const OPTIONS: PillToggleOption<LabWhere>[] = [
-	{ value: 'home', label: 'Home visit', sub: 'At your door · Free' },
-	{ value: 'lab', label: 'Visit a lab', sub: 'Walk in near you' },
+const OPTIONS: SegmentedToggleOption<LabWhere>[] = [
+	{ value: 'home', label: 'Home visit' },
+	{ value: 'lab', label: 'Visit a lab' },
 ]
 
 interface LabWhereSectionProps {
@@ -79,13 +79,10 @@ export default function LabWhereSection({
 			title="Where should we collect the sample?"
 			sub="Home collection is free. Or walk in at a lab near you."
 		>
-			<PillToggle
-				value={where}
-				options={OPTIONS}
-				onChange={onWhere}
-				ariaLabel="Where should we collect the sample"
-				size="lg"
-			/>
+			{/* in a row, so it is as wide as its two options (the section stacks its children full-width) */}
+			<Box sx={{ display: 'flex' }}>
+				<AppSegmentedToggle variant="pill" fullWidth={false} equalWidth value={where} onChange={onWhere} options={OPTIONS} />
+			</Box>
 
 			<Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
 				<Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

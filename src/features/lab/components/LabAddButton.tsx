@@ -1,6 +1,6 @@
 // src/features/lab/components/LabAddButton.tsx
 //
-// The "Add" / "Added ✓" button on a test or package card (and "Add to cart" / "Remove from cart" in the details drawer): teal outline
+// The "Add" / "Added" button on a test or package card (and "Add to cart" / "Remove from cart" in the details drawer): teal outline
 // when the item is not in the cart, filled teal when it is.
 import { Box } from '@mui/material'
 import { DESK } from '../../../styles/deskTokens'
@@ -19,7 +19,7 @@ interface LabAddButtonProps {
 export default function LabAddButton({
 	added,
 	onClick,
-	labels = ['Add', 'Added ✓'],
+	labels = ['Add', 'Added'],
 	height = 40,
 	minWidth = 104,
 	name,

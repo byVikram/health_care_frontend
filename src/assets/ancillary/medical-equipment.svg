@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Medical equipment">
+  <g stroke="#2A2A3C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- back rest and handle -->
+    <path d="M62 30 L62 112" fill="none"/>
+    <path d="M62 30 L46 30" fill="none"/>
+    <!-- seat -->
+    <path d="M62 112 L124 112" fill="none"/>
+    <!-- leg rest -->
+    <path d="M124 112 L148 150 L168 150" fill="none"/>
+    <!-- big wheel -->
+    <circle cx="86" cy="140" r="38" fill="#FFFFFF"/>
+    <circle cx="86" cy="140" r="26" fill="#DDEBFA"/>
+    <circle cx="86" cy="140" r="6" fill="#2A2A3C"/>
+    <!-- small front wheel -->
+    <circle cx="164" cy="164" r="10" fill="#FFFFFF"/>
+    <!-- seat cushion -->
+    <rect x="58" y="100" width="72" height="14" rx="7" fill="#E4572E"/>
+    <!-- back cushion -->
+    <rect x="52" y="44" width="14" height="60" rx="7" fill="#E4572E"/>
+  </g>
+  <!-- medical cross badge -->
+  <circle cx="148" cy="52" r="26" fill="#2B6F71" stroke="#2A2A3C" stroke-width="5"/>
+  <path d="M148 40 V64 M136 52 H160" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>
+</svg>

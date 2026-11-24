@@ -62,10 +62,11 @@ export default function AppDrawer({
 				paper: {
 					sx: {
 						width: { xs: '100%', sm: width },
-						top: '64px',
-						height: 'calc(100vh - 64px)',
+						// from the very top of the page, over the navbar (the modal layer is above the navbar's)
+						top: 0,
+						height: '100vh',
 						m: 0,
-						borderRadius: '16px 0 0 0',
+						borderRadius: '16px 0 0 16px',
 						p: 0,
 						display: 'flex',
 						flexDirection: 'column',

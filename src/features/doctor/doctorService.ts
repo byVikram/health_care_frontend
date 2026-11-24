@@ -513,6 +513,12 @@ export const updateHospital = async (payload: UpdateHospitalPayload) => {
 	return ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.UPDATE_HOSPITAL, payload)
 }
 
+/** "Deactivate" on a hospital: the server removes the link (its hours stop producing slots) and, when it was the primary one, promotes another. */
+export const deleteHospital = async (hospitalId: string): Promise<{ message?: string }> => {
+	const res = await ApiService.delete<{ message?: string }>(API_ENDPOINTS.DOCTOR_PROFILE.DELETE_HOSPITAL(hospitalId))
+	return res.data
+}
+
 export const updateAvailability = async (payload: UpdateAvailabilityPayload) => {
 	return ApiService.patch(API_ENDPOINTS.DOCTOR_PROFILE.UPDATE_AVAILABILITY, payload)
 }

@@ -306,6 +306,8 @@ export function FavouriteDoctorsList({
 					placeholder={mode === 'refer' ? 'Search doctor...' : 'Search and add doctor'}
 					value={searchQuery}
 					onChange={(e) => setSearchQuery(e.target.value)}
+					enableVoiceSearch
+					onVoiceResult={(text) => setSearchQuery(text)}
 					size="small"
 					autoFocus={mode === 'refer'}
 					InputProps={{

@@ -374,12 +374,10 @@ export default function AdminArticlesPage() {
 							placeholder="Search articles..."
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
-							slotProps={{
-								input: {
-									startAdornment: <SearchIcon sx={{ color: '#94a3b8', mr: 1, fontSize: 18 }} />,
-								},
-							}}
-							sx={{ width: { xs: '100%', sm: 220 } }}
+							startIcon={<SearchIcon sx={{ color: '#94a3b8', fontSize: 18 }} />}
+							enableVoiceSearch
+							onVoiceResult={(text) => setSearchQuery(text)}
+							sx={{ width: { xs: '100%', sm: 260 } }}
 						/>
 						<AppSelect
 							value={categoryFilter}

@@ -41,6 +41,7 @@ import {
 import { toast } from 'react-toastify'
 import { getPatientDetails } from '../patientService'
 import { useQuestionAccess } from '../../../hooks/useQuestionAccess'
+import VoiceMicButton from '../../../components/common/Voice/VoiceMicButton'
 
 // Same minimum as the mobile app, so a one-liner is not posted as an expert answer.
 const MIN_ANSWER_LENGTH = 60
@@ -786,6 +787,11 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 										startAdornment: (
 											<InputAdornment position="start">
 												<SearchIcon sx={{ fontSize: 16, color: '#94a3b8' }} />
+											</InputAdornment>
+										),
+										endAdornment: (
+											<InputAdornment position="end">
+												<VoiceMicButton onResult={(text) => handleSearchChange(text)} iconSize={16} />
 											</InputAdornment>
 										),
 									}}

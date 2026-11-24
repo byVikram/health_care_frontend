@@ -107,8 +107,7 @@ export default function AdminAppointmentsPage() {
 	} = useAdminAppointmentActions(fetchAppointments)
 
 	// ── Debounced search ────────────────────────────────────────────────────
-	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const val = e.target.value
+	const applySearch = (val: string) => {
 		setSearchInput(val)
 		if (debounceRef.current) clearTimeout(debounceRef.current)
 		debounceRef.current = setTimeout(() => {
@@ -116,6 +115,7 @@ export default function AdminAppointmentsPage() {
 			setSearchQuery(val.trim())
 		}, 400)
 	}
+	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => applySearch(e.target.value)
 
 	// ── Table columns ───────────────────────────────────────────────────────
 	const columns: Column<AdminAppointmentItem>[] = [
@@ -274,6 +274,8 @@ export default function AdminAppointmentsPage() {
 					placeholder="Search patient, doctor, or ID..."
 					value={searchInput}
 					onChange={handleSearchChange}
+					enableVoiceSearch
+					onVoiceResult={applySearch}
 					InputProps={{
 						startAdornment: (
 							<InputAdornment position="start">

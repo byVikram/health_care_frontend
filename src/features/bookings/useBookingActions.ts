@@ -6,12 +6,14 @@
 //   pharmacy order                   View order / Track / View report -> the order page
 //   lab booking                      View / Track / Reschedule / Cancel -> the lab order page; View report -> its report page;
 //                                    Book again -> the lab tests
-//   home care                        nothing to press: managed in the app (the panel says so)
+//   home care the web books          nursing, physiotherapy, rehab, home care, medical equipment: Track / View details / Book again -> that service's order page
+//   other home care                  nothing to press: managed in the app (the panel says so)
 import axios from 'axios'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { ROUTES } from '../../constants/routes'
+import { carePath, careKeyOf, type CareServiceKey } from '../nursing/careServices'
 import { getAppointmentById, getAppointmentStatusId, updateAppointmentsStatus } from '../../services/appointmentService'
 import { DESK_ICONS } from '../../styles/deskTokens'
 import type { DeskButtonKind } from '../../components/common/Button/DeskButton'
@@ -29,6 +31,10 @@ export interface PanelAction {
 	run?: () => void
 	loading?: boolean
 }
+
+/** The home-care service of a booking when the web has a booking flow for it (nursing, physiotherapy, rehab, home care, medical equipment), else null. */
+export const careKeyOfBooking = (item: BookingItem) => (item.category === 'ancillary' ? careKeyOf(item.service?.key) : null)
+export const isNursing = (item: BookingItem) => careKeyOfBooking(item) !== null
 
 export const CANCEL_REASONS = [
 	'Feeling better',
@@ -51,6 +57,7 @@ export function useBookingActions(onChanged: () => void) {
 	const openDetail = (item: BookingItem) => {
 		if (item.category === 'pharmacy') toast.info(MEDICINES_SOON)
 		else if (item.category === 'lab') navigate(ROUTES.LAB.ORDER.replace(':orderId', item.target.id))
+		else if (careKeyOfBooking(item)) navigate(carePath(careKeyOfBooking(item) as CareServiceKey, 'order', item.target.id))
 		else navigate(ROUTES.PORTAL.APPOINTMENT_DETAIL.replace(':appointmentId', item.target.id))
 	}
 
@@ -94,7 +101,8 @@ export function useBookingActions(onChanged: () => void) {
 	const serverAction = (item: BookingItem, action: BookingAction, kind: DeskButtonKind): PanelAction => {
 		if (action.key === 'book_again') {
 			if (item.category === 'pharmacy') return { key: action.key, label: action.label, kind, run: () => toast.info(MEDICINES_SOON) }
-			const to = item.category === 'lab' ? ROUTES.LAB.HOME : ROUTES.DOCTORS.SEARCH
+			const careKey = careKeyOfBooking(item)
+			const to = item.category === 'lab' ? ROUTES.LAB.HOME : careKey ? carePath(careKey, 'home') : ROUTES.DOCTORS.SEARCH
 			return { key: action.key, label: action.label, kind, run: () => navigate(to) }
 		}
 		if (action.key === 'view_report' && item.category === 'lab') {
@@ -139,13 +147,13 @@ export function useBookingActions(onChanged: () => void) {
 				},
 			]
 		}
-		if (item.category === 'doctor' || item.category === 'pharmacy' || item.category === 'lab') {
+		if (item.category === 'doctor' || item.category === 'pharmacy' || item.category === 'lab' || isNursing(item)) {
 			const out: PanelAction[] = []
 			if (item.actions.primary) out.push(serverAction(item, item.actions.primary, 'primary'))
 			if (item.actions.secondary) out.push(serverAction(item, item.actions.secondary, 'secondary'))
-			// a lab booking always has its order page to open
-			if (item.category === 'lab' && out.length === 0) {
-				out.push({ key: 'view', label: 'View order', kind: 'primary', run: () => openDetail(item) })
+			// a lab or nursing booking always has its order page to open
+			if ((item.category === 'lab' || isNursing(item)) && out.length === 0) {
+				out.push({ key: 'view', label: item.category === 'lab' ? 'View order' : 'View booking', kind: 'primary', run: () => openDetail(item) })
 			}
 			return out
 		}

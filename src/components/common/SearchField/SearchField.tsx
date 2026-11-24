@@ -4,6 +4,7 @@
 import { Box } from '@mui/material'
 import type { ChangeEvent } from 'react'
 import DeskIcon from '../Icon/DeskIcon'
+import VoiceMicButton from '../Voice/VoiceMicButton'
 import { DESK, DESK_ICONS } from '../../../styles/deskTokens'
 
 interface SearchFieldProps {
@@ -12,9 +13,11 @@ interface SearchFieldProps {
 	placeholder?: string
 	ariaLabel?: string
 	width?: number | string
+	/** Shows a mic: the spoken text becomes the search text. */
+	voice?: boolean
 }
 
-export default function SearchField({ value, onChange, placeholder, ariaLabel, width = 320 }: SearchFieldProps) {
+export default function SearchField({ value, onChange, placeholder, ariaLabel, width = 320, voice = false }: SearchFieldProps) {
 	return (
 		<Box
 			component="label"
@@ -54,6 +57,7 @@ export default function SearchField({ value, onChange, placeholder, ariaLabel, w
 					'&::placeholder': { color: DESK.faint },
 				}}
 			/>
+			{voice ? <VoiceMicButton onResult={onChange} iconSize={18} sx={{ mr: '-6px' }} /> : null}
 		</Box>
 	)
 }

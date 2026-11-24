@@ -26,7 +26,6 @@ import NotificationPanel from '../../../features/referrals/NotificationPanel'
 
 const navItems = [
 	{ label: 'Home', href: '/#home' },
-	{ label: 'Services', href: '/#services' },
 	{ label: 'Find doctors', href: '/doctors/search' },
 	{ label: 'Lab tests', href: '/lab-tests' },
 	{ label: 'Community', href: '/communities' },

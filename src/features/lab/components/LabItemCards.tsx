@@ -269,7 +269,17 @@ export function LabTestCard({ item, added, onToggle, onOpen }: LabItemCardProps)
 				<Box sx={{ flexGrow: 1 }}>
 					<Price item={item} size={18} />
 				</Box>
-				<LabAddButton added={added} onClick={() => onToggle(item)} name={item.name} />
+				<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+					<LabAddButton added={added} onClick={() => onToggle(item)} name={item.name} />
+					<Box
+						component="button"
+						type="button"
+						onClick={() => onOpen(item)}
+						sx={{ p: 0, border: 0, bgcolor: 'transparent', color: DESK.primary, fontFamily: 'inherit', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}
+					>
+						View details
+					</Box>
+				</Box>
 			</Box>
 		</Box>
 	)

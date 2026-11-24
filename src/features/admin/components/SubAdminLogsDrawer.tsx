@@ -34,6 +34,7 @@ import {
 	OperationalLogListResult,
 	SubAdminItem,
 } from '../adminService'
+import VoiceMicButton from '../../../components/common/Voice/VoiceMicButton'
 
 interface SubAdminLogsDrawerProps {
 	open: boolean
@@ -279,6 +280,16 @@ export default function SubAdminLogsDrawer({ open, subAdmin, onClose }: SubAdmin
 							startAdornment: (
 								<InputAdornment position="start">
 									<SearchIcon sx={{ color: '#94a3b8', fontSize: 18 }} />
+								</InputAdornment>
+							),
+							endAdornment: (
+								<InputAdornment position="end">
+									<VoiceMicButton
+										onResult={(text) => {
+											setSearchQuery(text)
+											setPage(1)
+										}}
+									/>
 								</InputAdornment>
 							),
 						}}

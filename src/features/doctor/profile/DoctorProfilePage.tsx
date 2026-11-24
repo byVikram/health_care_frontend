@@ -186,7 +186,7 @@ export default function DoctorProfilePage() {
 					/>
 				)
 			case 'hospitals':
-				return <DoctorHospitalsTab hospitals={doctor.hospitals} onChange={handleHospitalsChange} />
+				return <DoctorHospitalsTab hospitals={doctor.hospitals} onChange={handleHospitalsChange} onRefresh={fetchProfile} />
 			case 'availability':
 				return (
 					<DoctorAvailabilityTab

@@ -334,6 +334,8 @@ export default function AdminAppointmentsPanel({
 						placeholder="Search by name or ID..."
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
+						enableVoiceSearch
+						onVoiceResult={(text) => setSearch(text)}
 						size="small"
 					/>
 				</Box>

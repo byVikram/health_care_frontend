@@ -91,16 +91,40 @@ export default function UpcomingEventsSection({ variant = 'row' }: UpcommingEven
 
 	return (
 		<Box sx={{ py: 2 }}>
-			<Typography
-				variant="h3"
-				align={variant === 'column' ? 'left' : 'center'}
-				mb={4}
-				fontWeight={600}
-				fontSize={variant === 'column' ? '1.25rem' : '1.75rem'}
-				color="#0f172a"
+			{/* Header Row (same as the symptoms and specialities sections) */}
+			<Grid
+				container
+				sx={{
+					display: 'flex',
+					alignItems: 'flex-start',
+					justifyContent: 'space-between',
+					mb: 4,
+				}}
 			>
-				Upcoming Events
-			</Typography>
+				{/* Left: accent border + text */}
+				<Grid
+					size={{ xs: 12, md: 8 }}
+					sx={{
+						borderLeft: '3px solid',
+						borderColor: 'primary.main',
+						pl: 1.5,
+					}}
+				>
+					<Typography variant={variant === 'column' ? 'h5' : 'h4'}>Upcoming Events</Typography>
+					<Typography variant="body2">Webinars, camps and health talks you can join</Typography>
+				</Grid>
+
+				{/* Right: View All button */}
+				<Grid size={{ xs: 12, md: 2 }}>
+					<AppButton
+						fullWidth
+						variant="outlined"
+						label="View All"
+						borderRadius="30px"
+						sx={{ mt: { xs: 2, md: 0 } }}
+					/>
+				</Grid>
+			</Grid>
 
 			<Grid container spacing={3}>
 				{events.map((event) => {

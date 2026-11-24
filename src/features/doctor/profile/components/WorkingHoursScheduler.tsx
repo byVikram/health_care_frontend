@@ -5,7 +5,7 @@
 // before the save would refuse it.
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Box, Typography, IconButton } from '@mui/material'
+import { Box, Typography, IconButton, Tooltip } from '@mui/material'
 import {
 	Add as AddIcon,
 	ArrowForward as ArrowForwardIcon,
@@ -85,6 +85,15 @@ const withCurrent = (options: Option[], current: string): Option[] =>
 		: [...options, { value: current, label: formatTime(current) }].sort((a, b) => a.value.localeCompare(b.value))
 
 const snapToStep = (time: string, stepMins: number): string => toTime(Math.round(toMinutes(time) / stepMins) * stepMins)
+
+/**
+ * The end a block gets by default: as many whole slots as fit from `start` up to `limit` (the session end, or the start of
+ * the next block). 9:40 with 25-minute slots and a 12:00 limit ends at 11:45. When not even one slot fits it ends at the limit.
+ */
+const defaultBlockEnd = (start: number, limit: number, step: number): number => {
+	const slots = Math.floor((limit - start) / step)
+	return slots >= 1 ? start + slots * step : limit
+}
 
 const overlaps = (a: TimeSlot, b: TimeSlot) =>
 	toMinutes(a.start) < toMinutes(b.end) && toMinutes(b.start) < toMinutes(a.end)
@@ -246,7 +255,8 @@ export default function WorkingHoursScheduler({ hospital, others, onSaved }: Wor
 			const blocks = current.sections[sessionKey] ?? []
 			const start = nextBlockStart(sessionKey, blocks)
 			if (!session || start === null) return current
-			const end = Math.min(start + current.slotDuration, toMinutes(session.end))
+			// A new block runs to the last whole slot before the end of its session (the doctor shortens it if needed)
+			const end = defaultBlockEnd(start, toMinutes(session.end), current.slotDuration)
 			return {
 				...current,
 				sections: {
@@ -268,15 +278,23 @@ export default function WorkingHoursScheduler({ hospital, others, onSaved }: Wor
 	}
 
 	const updateSlotTime = (sessionKey: string, slotIndex: number, field: 'start' | 'end', value: string) => {
-		updateMode((current) => ({
-			...current,
-			sections: {
-				...current.sections,
-				[sessionKey]: current.sections[sessionKey].map((slot, i) =>
-					i === slotIndex ? { ...slot, [field]: value } : slot
-				),
-			},
-		}))
+		updateMode((current) => {
+			const session = SESSIONS.find((s) => s.key === sessionKey)
+			const blocks = current.sections[sessionKey]
+			return {
+				...current,
+				sections: {
+					...current.sections,
+					[sessionKey]: blocks.map((slot, i) => {
+						if (i !== slotIndex) return slot
+						if (field === 'end' || !session) return { ...slot, [field]: value }
+						// A new start time brings its default end: the last whole slot before the next block (or the session end)
+						const limit = blocks[slotIndex + 1] ? toMinutes(blocks[slotIndex + 1].start) : toMinutes(session.end)
+						return { start: value, end: toTime(defaultBlockEnd(toMinutes(value), limit, current.slotDuration)) }
+					}),
+				},
+			}
+		})
 	}
 
 	const updateSlotDuration = (value: number) => {
@@ -488,6 +506,9 @@ export default function WorkingHoursScheduler({ hospital, others, onSaved }: Wor
 					<>
 						{SESSIONS.map((session) => {
 							const blocks = selectedWorkingHours.sections[session.key] ?? []
+							// The button stays on screen while the session has fewer than the maximum blocks; it is disabled when the
+							// last block already reaches the end of the session (no room for another).
+							const showAdd = blocks.length < MAX_BLOCKS_PER_SESSION
 							const canAdd = nextBlockStart(session.key, blocks) !== null
 							const step = selectedWorkingHours.slotDuration
 							const windowStart = toMinutes(session.start)
@@ -538,7 +559,7 @@ export default function WorkingHoursScheduler({ hospital, others, onSaved }: Wor
 												step,
 												false
 											).filter((o) => slotIdx === 0 || o.value >= blocks[slotIdx - 1].end)
-											const endChoices = timeOptions(windowStart, windowEnd, step, true).filter(
+											const endChoices = timeOptions(toMinutes(slot.start) + step, windowEnd, step, true).filter(
 												(o) => o.value > slot.start
 											)
 											const clash = describeClashes(slot, selectedDay, selectedAppointmentType)
@@ -607,27 +628,31 @@ export default function WorkingHoursScheduler({ hospital, others, onSaved }: Wor
 											)
 										})}
 
-										{canAdd && (
-											<AppButton
-												variant="text"
-												size="small"
-												borderRadius="8px"
-												startIcon={<AddIcon />}
-												label="Add Slot Block"
-												onClick={() => addSlot(session.key)}
-												sx={{
-													// a small card sized to its content: white with a soft shadow and no border
-													justifySelf: 'start',
-													px: 1.75,
-													py: 0.5,
-													border: 0,
-													boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
-													'&:hover': {
-														bgcolor: '#fff',
-														boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-													},
-												}}
-											/>
+										{showAdd && (
+											<Tooltip title={canAdd ? '' : 'Shorten the last block to add another one'}>
+												<Box component="span" sx={{ justifySelf: 'start' }}>
+													<AppButton
+														variant="text"
+														size="small"
+														borderRadius="8px"
+														startIcon={<AddIcon />}
+														label="Add Slot Block"
+														disabled={!canAdd}
+														onClick={() => addSlot(session.key)}
+														sx={{
+															// a small card sized to its content: white with a soft shadow and no border
+															px: 1.75,
+															py: 0.5,
+															border: 0,
+															boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+															'&:hover': {
+																bgcolor: '#fff',
+																boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+															},
+														}}
+													/>
+												</Box>
+											</Tooltip>
 										)}
 									</Box>
 								</Box>

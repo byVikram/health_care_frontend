@@ -1,7 +1,7 @@
 // src/components/common/Input/AppInput.tsx
-import React, { forwardRef, ReactNode, useState } from 'react'
+import React, { forwardRef, ReactNode } from 'react'
 import { Box, TextField, InputAdornment, Typography, SxProps, Theme, TextFieldProps } from '@mui/material'
-import MicIcon from '@mui/icons-material/Mic'
+import VoiceMicButton from '../Voice/VoiceMicButton'
 
 interface AppInputProps extends Omit<TextFieldProps, 'variant'> {
     label?: string
@@ -49,64 +49,6 @@ const AppInput = forwardRef<HTMLDivElement, AppInputProps>((props, ref) => {
         ...rest
     } = props
 
-    const [isListening, setIsListening] = useState(false)
-    const startListening = () => {
-        type SpeechRecognitionConstructor = new () => {
-            lang: string
-            continuous: boolean
-            interimResults: boolean
-            start: () => void
-            onresult: ((event: Event) => void) | null
-            onend: (() => void) | null
-            onerror: (() => void) | null
-        }
-        const SpeechRecognition =
-            (
-                window as typeof window & {
-                    SpeechRecognition?: SpeechRecognitionConstructor
-                    webkitSpeechRecognition?: SpeechRecognitionConstructor
-                }
-            ).SpeechRecognition ||
-            (
-                window as typeof window & {
-                    SpeechRecognition?: SpeechRecognitionConstructor
-                    webkitSpeechRecognition?: SpeechRecognitionConstructor
-                }
-            ).webkitSpeechRecognition
-
-        if (!SpeechRecognition) {
-            alert('Speech recognition is not supported in this browser')
-            return
-        }
-
-        const recognition = new SpeechRecognition()
-
-        recognition.lang = 'en-US'
-        recognition.continuous = false
-        recognition.interimResults = false
-
-        recognition.start()
-
-        setIsListening(true)
-
-        recognition.onresult = (event: Event) => {
-            const speechEvent = event as unknown as {
-                results: ArrayLike<ArrayLike<{ transcript: string }>>
-            }
-
-            const transcript = speechEvent.results[0][0].transcript
-
-            onVoiceResult?.(transcript)
-        }
-        recognition.onend = () => {
-            setIsListening(false)
-        }
-
-        recognition.onerror = () => {
-            setIsListening(false)
-        }
-    }
-
     const inputProps = {
         ...InputProps,
         startAdornment: startIcon ? (
@@ -122,15 +64,7 @@ const AppInput = forwardRef<HTMLDivElement, AppInputProps>((props, ref) => {
 
                     {endIcon}
 
-                    {enableVoiceSearch && (
-                        <MicIcon
-                            onClick={startListening}
-                            sx={{
-                                cursor: 'pointer',
-                                color: isListening ? 'red' : 'text.secondary',
-                            }}
-                        />
-                    )}
+                    {enableVoiceSearch && <VoiceMicButton onResult={(text) => onVoiceResult?.(text)} />}
                 </Box>
             </InputAdornment>
         ),

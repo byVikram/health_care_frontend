@@ -24,11 +24,14 @@ import AppInput from '../../../../components/common/Input/AppInput'
 import AppSelect from '../../../../components/common/Select/AppSelect'
 import { customCardStyle } from '../../../../styles/commonStyles'
 import type { DoctorHospital } from '../../../../types/doctor-profile'
-import { createHospital, updateHospital } from '../../doctorService'
+import ConfirmModal from '../../../../components/common/Modal/ConfirmModal'
+import { createHospital, deleteHospital, updateHospital } from '../../doctorService'
 
 interface DoctorHospitalsTabProps {
 	hospitals: DoctorHospital[]
 	onChange: (hospitals: DoctorHospital[]) => void
+	/** Reloads the profile from the server (used after the primary hospital was deactivated and the server picked another). */
+	onRefresh?: () => void
 }
 
 const EMPTY_FORM = {
@@ -63,7 +66,7 @@ const getHospitalAddressText = (hospital: DoctorHospital) => {
 	return fullAddress || location
 }
 
-export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospitalsTabProps) {
+export default function DoctorHospitalsTab({ hospitals, onChange, onRefresh }: DoctorHospitalsTabProps) {
 	const [showForm, setShowForm] = useState(false)
 	const [form, setForm] = useState(EMPTY_FORM)
 	const [isSaving, setIsSaving] = useState(false)
@@ -71,6 +74,9 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
 	const [menuHospitalId, setMenuHospitalId] = useState<string | null>(null)
 	const [editingHospitalId, setEditingHospitalId] = useState<string | null>(null)
+	const [hospitalToDeactivate, setHospitalToDeactivate] = useState<DoctorHospital | null>(null)
+	// the hospital a set-primary / deactivate call is running for (blocks a second click)
+	const [busyHospitalId, setBusyHospitalId] = useState<string | null>(null)
 
 	const handleOpenMenu = (e: React.MouseEvent<HTMLElement>, hospitalId: string) => {
 		e.stopPropagation()
@@ -113,8 +119,45 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 		setShowForm(true)
 	}
 
-	const handleSetPrimary = (id: string) => {
-		onChange(hospitals.map((h) => ({ ...h, isPrimary: h.id === id })))
+	// "Set as Primary": the server makes this hospital the only primary one; the list follows only once that worked.
+	const handleSetPrimary = async (id: string) => {
+		if (busyHospitalId) return
+		setBusyHospitalId(id)
+		try {
+			const res = await updateHospital({ hospital_id: id, is_primary: true })
+			onChange(hospitals.map((h) => ({ ...h, isPrimary: h.id === id })))
+			toast.success(getSuccessMessage(res.data))
+		} catch (err) {
+			// the shared API client already shows the server's reason
+			console.error('Failed to set the primary hospital:', err)
+		} finally {
+			setBusyHospitalId(null)
+		}
+	}
+
+	const handleAskDeactivate = (hospitalId: string) => {
+		handleCloseMenu()
+		setHospitalToDeactivate(hospitals.find((h) => h.id === hospitalId) ?? null)
+	}
+
+	// "Deactivate": the server removes the hospital (soft delete) and, when it was the primary one, promotes another.
+	const handleConfirmDeactivate = async () => {
+		if (!hospitalToDeactivate) return
+		const removed = hospitalToDeactivate
+		setBusyHospitalId(removed.id)
+		try {
+			const res = await deleteHospital(removed.id)
+			onChange(hospitals.filter((h) => h.id !== removed.id))
+			toast.success(getSuccessMessage(res))
+			setHospitalToDeactivate(null)
+			// which hospital the server made primary is only known from the server
+			if (removed.isPrimary) onRefresh?.()
+		} catch (err) {
+			// the shared API client already shows the server's reason
+			console.error('Failed to deactivate the hospital:', err)
+		} finally {
+			setBusyHospitalId(null)
+		}
 	}
 
 	const handleSave = async () => {
@@ -179,7 +222,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 						allow_pay_later: DEFAULT_ALLOW_PAY_LATER,
 					},
 				})
-				const hospitalId = response.data.public_id
+				const hospitalId = response.data.hospital_id
 				const newHospital: DoctorHospital = {
 					id: hospitalId,
 					name: trimmedName,
@@ -596,7 +639,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 									{/* Set Primary Button Widget */}
 									{!hospital.isPrimary ? (
 										<Box
-											onClick={() => handleSetPrimary(hospital.id)}
+											onClick={() => void handleSetPrimary(hospital.id)}
 											sx={{
 												display: 'inline-flex',
 												alignItems: 'center',
@@ -687,7 +730,7 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 					Edit
 				</MuiMenuItem>
 				<MuiMenuItem
-					onClick={handleCloseMenu}
+					onClick={() => menuHospitalId && handleAskDeactivate(menuHospitalId)}
 					sx={{
 						fontSize: '12.5px',
 						fontWeight: 600,
@@ -701,6 +744,17 @@ export default function DoctorHospitalsTab({ hospitals, onChange }: DoctorHospit
 					Deactivate
 				</MuiMenuItem>
 			</Menu>
+
+			<ConfirmModal
+				open={Boolean(hospitalToDeactivate)}
+				onClose={() => !busyHospitalId && setHospitalToDeactivate(null)}
+				onConfirm={() => void handleConfirmDeactivate()}
+				variant="delete"
+				title="Deactivate this hospital?"
+				description={`${hospitalToDeactivate?.name ?? 'This hospital'} will be removed from your profile and its working hours will stop giving slots. Existing appointments are not changed.`}
+				confirmLabel="Deactivate"
+				loading={Boolean(busyHospitalId)}
+			/>
 		</Box>
 	)
 }
