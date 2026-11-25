@@ -83,7 +83,7 @@ const statusLabels = (noun: string): Record<string, [string, DeskTone]> => {
 const statusOf = (status: string, noun: string): [string, DeskTone] =>
 	/CANCEL/.test(status) ? ['Cancelled', 'bad'] : (statusLabels(noun)[status] ?? [status.replace(/_/g, ' ').toLowerCase().replace(/^./, (c) => c.toUpperCase()), 'quiet'])
 
-const refOf = (id: string) => `KH-${id.replace(/[^a-z0-9]/gi, '').slice(0, 8).toUpperCase()}`
+const refOf = (id: string) => id
 
 function Stars({ value, onChange }: { value: number; onChange?: (v: number) => void }) {
 	return (

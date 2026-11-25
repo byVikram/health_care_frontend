@@ -44,8 +44,6 @@ export interface FamilyMemberApi {
 	avatar_s3_key?: string | null
 	date_of_birth?: string | null
 	contact_number?: string | null
-	/** The member's own Karola ID */
-	patient_code?: string | null
 	/** Date of birth and gender are filled in */
 	is_complete?: boolean
 }

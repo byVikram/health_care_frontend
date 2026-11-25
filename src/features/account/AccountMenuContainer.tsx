@@ -85,7 +85,6 @@ export default function AccountMenuContainer({
 		<AccountMenu
 			name={name}
 			avatarSrc={avatarSrc}
-			idLine={patient && summary?.display_id ? `ID · ${summary.display_id}` : undefined}
 			completion={patient && summary ? summary.profile_completion : null}
 			onViewProfile={() => open(ROUTES.PORTAL.PROFILE)}
 			family={

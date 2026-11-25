@@ -73,7 +73,7 @@ export const API_ENDPOINTS = {
 		LABORATORY_REPORTS: (id: string) => `/api/patients/${id}/laboratory-reports`,
 		RADIOLOGY_REPORTS: (id: string) => `/api/patients/${id}/radiology-reports`,
 		APPOINTMENTS_HOSPITALS: '/api/patients/appointments/hospitals',
-		/** GET: the signed-in patient's header data: name, display id (KH-...), photo, profile completion %, family count. */
+		/** GET: the signed-in patient's header data: name, photo, profile completion %, family count. */
 		SUMMARY: '/api/patients/me/summary',
 		/** GET ?when=upcoming|past&category=all|doctor|ancillary|lab|pharmacy&page&limit: the combined bookings list (the app's Bookings tab). */
 		BOOKINGS: '/api/patients/me/bookings',

@@ -34,8 +34,6 @@ export interface AccountMenuFamilyMember {
 interface AccountMenuProps {
 	name: string
 	avatarSrc?: string
-	/** "ID · KH-000123" */
-	idLine?: string
 	/** 0-100; null hides the bar (a role with no completion figure). */
 	completion?: number | null
 	onViewProfile: () => void
@@ -75,7 +73,6 @@ const linkButtonSx = {
 export default function AccountMenu({
 	name,
 	avatarSrc,
-	idLine,
 	completion = null,
 	onViewProfile,
 	onOpenQr,
@@ -144,11 +141,6 @@ export default function AccountMenu({
 							<Box component="b" sx={{ fontSize: 17, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
 								{name}
 							</Box>
-							{idLine ? (
-								<Box component="span" sx={{ fontSize: 12, color: DESK.muted }}>
-									{idLine}
-								</Box>
-							) : null}
 							<Box component="button" type="button" onClick={onViewProfile} sx={{ ...linkButtonSx, alignSelf: 'flex-start' }}>
 								View profile
 								<DeskIcon d={DESK_ICONS.chevronRight} size={14} strokeWidth={2.4} />

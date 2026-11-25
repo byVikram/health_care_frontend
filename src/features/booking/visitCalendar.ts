@@ -14,7 +14,7 @@ const escapeText = (text: string) =>
 	text.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
 
 export type VisitEvent = {
-	/** The order id shown to the patient ("KH-1A2B3C4D"). */
+	/** The order id shown to the patient ("7K3Q-9M2X-4D8R"). */
 	orderId: string
 	title: string
 	/** 'YYYY-MM-DD' */

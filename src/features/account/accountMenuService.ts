@@ -16,7 +16,6 @@ export interface NavigationRow {
 
 export interface PatientSummary {
 	public_id: string
-	display_id: string
 	name: string
 	avatar_url?: string | null
 	profile_completion: number

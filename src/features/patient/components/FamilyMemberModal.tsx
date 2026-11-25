@@ -126,7 +126,7 @@ export default function FamilyMemberModal({ open, memberId, onClose }: Props) {
 	const [values, setValues] = useState<FormValues>(EMPTY)
 	const [savedSnapshot, setSavedSnapshot] = useState(JSON.stringify(EMPTY))
 	const [errors, setErrors] = useState<BasicErrors>({})
-	const [meta, setMeta] = useState({ code: '', complete: true })
+	const [meta, setMeta] = useState({ complete: true })
 	const [loading, setLoading] = useState(isEdit)
 	const [loadError, setLoadError] = useState<string | null>(null)
 	const [saving, setSaving] = useState(false)
@@ -184,7 +184,7 @@ export default function FamilyMemberModal({ open, memberId, onClose }: Props) {
 				}
 				setValues(loaded)
 				setSavedSnapshot(JSON.stringify(loaded))
-				setMeta({ code: member.patient_code || '', complete: !!member.is_complete })
+				setMeta({ complete: !!member.is_complete })
 				setAvatar(buildS3Url(member.avatar_s3_key) || '')
 			} catch (error) {
 				if (active) setLoadError(messageOf(error, 'We could not load this family member.'))
@@ -523,7 +523,7 @@ export default function FamilyMemberModal({ open, memberId, onClose }: Props) {
 						<Typography sx={{ py: 3, textAlign: 'center' }}>{loadError}</Typography>
 					) : (
 						<>
-							{/* Photo, name and Karola ID */}
+							{/* Photo and name */}
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
 								<Box sx={{ position: 'relative', flexShrink: 0 }}>
 									<Avatar src={avatar || undefined} alt={values.name} sx={{ width: 72, height: 72, fontSize: 26 }}>
@@ -567,7 +567,7 @@ export default function FamilyMemberModal({ open, memberId, onClose }: Props) {
 									</Typography>
 									<Typography variant="body2" color="text.secondary" noWrap>
 										{isEdit
-											? `${relationLabel(values.relation)}${meta.code ? ` · Karola ID ${meta.code}` : ''}${meta.complete ? '' : ' · details incomplete'}`
+											? `${relationLabel(values.relation)}${meta.complete ? '' : ' · details incomplete'}`
 											: 'Profile photo (optional)'}
 									</Typography>
 									<Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
