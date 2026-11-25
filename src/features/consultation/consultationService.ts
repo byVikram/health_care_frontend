@@ -6,8 +6,22 @@ export interface VitalRecord {
 	vital_type: string
 	recorded_at: string
 	value: Record<string, unknown>
+	/** How the reading rates, decided by the backend (patients/vitals.py): null for weight, height and others. */
+	rating?: 'normal' | 'medium' | 'high' | null
+	/** Only on the merged "others" rows of the history: the rating of each reading merged into the row, by its vital type. */
+	ratings?: Record<string, 'normal' | 'medium' | 'high'>
 	created_at: string
 }
+
+/** One band of a rated reading: a value is in the last band it has reached (equal to `starts_at` counts only when `inclusive`). */
+export interface VitalBand {
+	rating: 'normal' | 'medium' | 'high'
+	starts_at: number | null
+	inclusive: boolean
+}
+
+/** The bands per rated reading (systolic, diastolic, pulse_rate, spo2, temperature, random), lowest first. */
+export type VitalRanges = Record<string, { label: string; unit: string; bands: VitalBand[] }>
 
 export interface ReportRecord {
 	id: string
@@ -63,7 +77,8 @@ interface PatientMetrics {
 	weightKg: number | null
 }
 
-const OTHER_VITAL_TYPES = ['others', 'temperature', 'spo2'] as const
+// The vital types the "others" tab merges into one row per recorded time (pulse has a type of its own since the consultation vitals contract).
+const OTHER_VITAL_TYPES = ['others', 'pulse', 'temperature', 'spo2'] as const
 
 function hasValue(value: unknown): boolean {
 	return value !== null && value !== undefined && value !== ''
@@ -175,11 +190,14 @@ function mergeOtherVitals(records: VitalRecord[]): VitalRecord[] {
 	for (const record of records) {
 		const existingRecord = mergedRecords.get(record.recorded_at)
 
+		const ratings = record.rating ? { [record.vital_type]: record.rating } : {}
+
 		if (!existingRecord) {
 			mergedRecords.set(record.recorded_at, {
 				...record,
 				vital_type: 'others',
 				value: { ...record.value },
+				ratings,
 			})
 			continue
 		}
@@ -190,6 +208,7 @@ function mergeOtherVitals(records: VitalRecord[]): VitalRecord[] {
 				...existingRecord.value,
 				...record.value,
 			},
+			ratings: { ...existingRecord.ratings, ...ratings },
 		})
 	}
 
@@ -232,12 +251,46 @@ async function fetchVitalsHistory(
 	return res.data.data ?? []
 }
 
+// The heights measured at a patient's visits, for the BMI of each weight in the Weight tab. Kept for a minute per patient, so changing the
+// tab's period does not fetch them again, and dropped when a reading is saved. A failure only means the profile's height is used: no toast.
+const HEIGHT_CACHE_MS = 60_000
+const heightHistory = new Map<string, { at: number; records: Promise<VitalRecord[]> }>()
+
+async function fetchHeights(patientPublicId: string): Promise<VitalRecord[]> {
+	try {
+		const res = await ApiService.getWithParams<VitalApiResponse>(
+			API_ENDPOINTS.PATIENT.VITALS_HISTORY(patientPublicId),
+			{ vital_type: 'height' },
+			{ suppressErrorToast: true }
+		)
+		return res.data.data ?? []
+	} catch {
+		heightHistory.delete(patientPublicId)
+		return []
+	}
+}
+
+function getHeightHistory(patientPublicId: string): Promise<VitalRecord[]> {
+	const cached = heightHistory.get(patientPublicId)
+	if (cached && Date.now() - cached.at < HEIGHT_CACHE_MS) return cached.records
+	const records = fetchHeights(patientPublicId)
+	heightHistory.set(patientPublicId, { at: Date.now(), records })
+	return records
+}
+
 async function fetchVitalsByType(
 	patientPublicId: string,
 	vitalType: string,
 	days?: number
 ): Promise<VitalRecord[]> {
 	return fetchVitalsHistory(patientPublicId, { vital_type: vitalType, days })
+}
+
+/** The height measured at a visit (a `height` vital) wins over the one on the profile. */
+function withMeasuredHeight(metrics: PatientMetrics | null, heightRecord?: VitalRecord | null): PatientMetrics | undefined {
+	const measured = toNumber(heightRecord?.value?.height ?? heightRecord?.value?.value)
+	if (measured === null) return metrics ?? undefined
+	return { weightKg: metrics?.weightKg ?? null, heightCm: measured }
 }
 
 export const getLatestVitals = async (
@@ -248,11 +301,13 @@ export const getLatestVitals = async (
 		ApiService.get<LatestVitalsApiResponse>(API_ENDPOINTS.PATIENT.VITALS_LATEST(patientPublicId)),
 		getPatientMetrics(patientPublicId, role).catch(() => null),
 	])
+	const latest = res.data.data ?? {}
+	const bmiMetrics = withMeasuredHeight(metrics, latest.height)
 
 	return Object.fromEntries(
-		Object.entries(res.data.data ?? {}).map(([vitalType, record]) => [
+		Object.entries(latest).map(([vitalType, record]) => [
 			vitalType,
-			record ? normalizeVitalRecord(record, metrics ?? undefined) : null,
+			record ? normalizeVitalRecord(record, bmiMetrics) : null,
 		])
 	)
 }
@@ -281,6 +336,22 @@ export const getVitalsHistory = async (
 		)
 	}
 
+	if (params.vital_type === 'weight') {
+		// BMI of each weight uses the height measured at (or before) that visit, then the profile's.
+		const [metrics, records, heights] = await Promise.all([
+			metricsPromise,
+			fetchVitalsHistory(patientPublicId, params),
+			getHeightHistory(patientPublicId),
+		])
+		const newestFirst = [...heights].sort(sortByRecordedAtDesc)
+
+		return records.map((record) => {
+			const at = new Date(record.recorded_at).getTime()
+			const height = newestFirst.find((h) => new Date(h.recorded_at).getTime() <= at) ?? newestFirst[newestFirst.length - 1]
+			return normalizeVitalRecord(record, withMeasuredHeight(metrics, height))
+		})
+	}
+
 	const [metrics, records] = await Promise.all([
 		metricsPromise,
 		fetchVitalsHistory(patientPublicId, params),
@@ -289,8 +360,17 @@ export const getVitalsHistory = async (
 	return records.map((record) => normalizeVitalRecord(record, metrics ?? undefined))
 }
 
+/** The bands the backend rates a reading by, so a field can be coloured while it is typed (no numbers are kept here). */
+export const getVitalRanges = async (): Promise<VitalRanges> => {
+	const res = await ApiService.get<{ success: boolean; data: VitalRanges }>(API_ENDPOINTS.PATIENT.VITAL_RANGES, {
+		suppressErrorToast: true, // a failure only means no colour while typing
+	})
+	return res.data.data ?? {}
+}
+
 export const createVital = async (payload: CreateVitalPayload): Promise<void> => {
 	await ApiService.post(API_ENDPOINTS.PATIENT.VITALS_CREATE, payload)
+	heightHistory.delete(payload.patient_public_id) // a saved height must show in the next Weight tab
 }
 
 export const getPatientReports = async (patientPublicId: string): Promise<ReportRecord[]> => {

@@ -65,6 +65,7 @@ export const API_ENDPOINTS = {
 		VITALS_CREATE: '/api/patients/vitals',
 		VITALS_LATEST: (id: string) => `/api/patients/${id}/vitals/latest`,
 		VITALS_HISTORY: (id: string) => `/api/patients/${id}/vitals`,
+		VITAL_RANGES: '/api/patients/vitals/ranges',
 		REPORTS: (id: string) => `/api/patients/${id}/reports`,
 		REPORTS_CREATE: '/api/patients/reports',
 		FAVOURITES: '/api/doctors/favourites',
