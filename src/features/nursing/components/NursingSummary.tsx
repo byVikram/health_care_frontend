@@ -4,11 +4,12 @@
 // services, the price lines and the button, which says what is still missing while the booking is not complete. The price is what the
 // patient pays AFTER each visit; nothing is charged now.
 import { Box } from '@mui/material'
-import type { ReactNode } from 'react'
+import type { ChangeEvent, ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import DeskIcon from '../../../components/common/Icon/DeskIcon'
 import { DESK, DESK_ICONS } from '../../../styles/deskTokens'
-import { inr, plural } from '../../lab/labFormat'
-import { LAB_CARD } from '../../lab/labStyles'
+import { inr, plural } from '../../booking/bookingFormat'
+import { BOOKING_CARD } from '../../booking/bookingStyles'
 import type { NursingItem } from '../nursingService'
 
 interface Row {
@@ -34,11 +35,15 @@ interface NursingSummaryProps {
 	buttonLabel: string
 	busy?: boolean
 	onContinue: () => void
-	/** Extra lines under the button (the review page's policy notes). */
+	/** The "Add another service" link under the services (the browse page). */
+	addMoreTo?: string
+	/** The optional note for the provider, written in the summary. */
+	note?: { label: string; value: string; max: number; onChange: (value: string) => void }
+	/** The policy notes shown above the button. */
 	footer?: ReactNode
 }
 
-export default function NursingSummary({ forWho, where, when, whenMissing, items, perVisit, visits, total, blocker, buttonLabel, busy = false, onContinue, footer }: NursingSummaryProps) {
+export default function NursingSummary({ forWho, where, when, whenMissing, items, perVisit, visits, total, blocker, buttonLabel, busy = false, onContinue, addMoreTo, note, footer }: NursingSummaryProps) {
 	const rows: Row[] = [
 		{ icon: DESK_ICONS.user, label: 'For', value: forWho, missing: 'Choose who it is for' },
 		{ icon: DESK_ICONS.home, label: 'Where', value: where, missing: 'Choose an address' },
@@ -46,7 +51,7 @@ export default function NursingSummary({ forWho, where, when, whenMissing, items
 	]
 	const ready = !blocker && !busy
 	return (
-		<Box component="aside" aria-label="Booking summary" sx={{ ...LAB_CARD, position: 'sticky', top: 20, width: 380, flexShrink: 0, p: '22px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+		<Box component="aside" aria-label="Booking summary" sx={{ ...BOOKING_CARD, position: { lg: 'sticky' }, top: 20, width: { xs: '100%', lg: 380 }, flexShrink: 0, p: '22px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 			<Box component="b" sx={{ fontSize: 18 }}>
 				Booking summary
 			</Box>
@@ -74,7 +79,31 @@ export default function NursingSummary({ forWho, where, when, whenMissing, items
 						<b>{inr(item.price)}</b>
 					</Box>
 				))}
+				{addMoreTo ? (
+					<Box component={Link} to={addMoreTo} sx={{ alignSelf: 'flex-start', fontSize: 13, fontWeight: 800, color: DESK.primary, textDecoration: 'none' }}>
+						+ Add another service
+					</Box>
+				) : null}
 			</Box>
+			{note ? (
+				<Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+					<Box component="b" sx={{ fontSize: 14 }}>
+						{note.label}
+					</Box>
+					<Box
+						component="textarea"
+						value={note.value}
+						onChange={(e: ChangeEvent<HTMLTextAreaElement>) => note.onChange(e.target.value.slice(0, note.max))}
+						placeholder="Optional. For example: ring the bell twice, the patient is on the 3rd floor"
+						rows={3}
+						aria-label={note.label}
+						sx={{ width: '100%', boxSizing: 'border-box', p: '10px 12px', border: `1.5px solid ${DESK.lineStrong}`, borderRadius: '12px', fontFamily: 'inherit', fontSize: 13, color: DESK.ink, resize: 'vertical', outline: 0, '&:focus': { borderColor: DESK.primary } }}
+					/>
+					<Box component="span" sx={{ alignSelf: 'flex-end', fontSize: 12, color: DESK.muted }}>
+						{note.value.length}/{note.max}
+					</Box>
+				</Box>
+			) : null}
 			<Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: 14 }}>
 				{visits > 1 ? (
 					<Box component="span" sx={{ display: 'flex', justifyContent: 'space-between', color: DESK.muted }}>
@@ -84,6 +113,12 @@ export default function NursingSummary({ forWho, where, when, whenMissing, items
 						<span>{inr(total)}</span>
 					</Box>
 				) : null}
+				<Box component="span" sx={{ display: 'flex', justifyContent: 'space-between', color: DESK.muted }}>
+					<span>Visit fee</span>
+					<Box component="b" sx={{ color: DESK.success }}>
+						Free
+					</Box>
+				</Box>
 				<Box component="span" sx={{ display: 'flex', justifyContent: 'space-between', pt: '10px', borderTop: `1px dashed ${DESK.lineStrong}`, fontSize: 17 }}>
 					<b>To pay after the visit{visits > 1 ? 's' : ''}</b>
 					<b>{inr(total)}</b>
@@ -92,6 +127,7 @@ export default function NursingSummary({ forWho, where, when, whenMissing, items
 					Nothing is charged now.
 				</Box>
 			</Box>
+			{footer}
 			<Box
 				component="button"
 				type="button"
@@ -117,7 +153,6 @@ export default function NursingSummary({ forWho, where, when, whenMissing, items
 			>
 				{busy ? 'Please wait…' : ready ? buttonLabel : blocker}
 			</Box>
-			{footer}
 		</Box>
 	)
 }

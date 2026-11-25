@@ -29,7 +29,6 @@ import SchedulePage from '../features/schedule/SchedulePage'
 import LabBrowsePage from '../features/lab/LabBrowsePage'
 import NursingBrowsePage from '../features/nursing/NursingBrowsePage'
 import NursingSchedulePage from '../features/nursing/NursingSchedulePage'
-import NursingReviewPage from '../features/nursing/NursingReviewPage'
 import NursingMatchingPage from '../features/nursing/NursingMatchingPage'
 import NursingBookedPage from '../features/nursing/NursingBookedPage'
 import NursingOrderPage from '../features/nursing/NursingOrderPage'
@@ -242,13 +241,11 @@ export default function AppRoutes() {
 						<Route path={ROUTES.LAB.REPORT} element={<LabReportPage />} />
 						<Route path={ROUTES.NURSING.HOME} element={<NursingBrowsePage />} />
 						<Route path={ROUTES.NURSING.SCHEDULE} element={<NursingSchedulePage />} />
-						<Route path={ROUTES.NURSING.REVIEW} element={<NursingReviewPage />} />
 						<Route path={ROUTES.NURSING.MATCHING} element={<NursingMatchingPage />} />
 						<Route path={ROUTES.NURSING.BOOKED} element={<NursingBookedPage />} />
 						<Route path={ROUTES.NURSING.ORDER} element={<NursingOrderPage />} />
 						<Route path={ROUTES.CARE.HOME} element={<CareRoute><NursingBrowsePage /></CareRoute>} />
 						<Route path={ROUTES.CARE.SCHEDULE} element={<CareRoute><NursingSchedulePage /></CareRoute>} />
-						<Route path={ROUTES.CARE.REVIEW} element={<CareRoute><NursingReviewPage /></CareRoute>} />
 						<Route path={ROUTES.CARE.MATCHING} element={<CareRoute><NursingMatchingPage /></CareRoute>} />
 						<Route path={ROUTES.CARE.BOOKED} element={<CareRoute><NursingBookedPage /></CareRoute>} />
 						<Route path={ROUTES.CARE.ORDER} element={<CareRoute><NursingOrderPage /></CareRoute>} />

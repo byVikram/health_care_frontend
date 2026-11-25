@@ -69,6 +69,8 @@ type CommonProps = {
 	disablePast?: boolean
 	/** How many days ahead (today included) can be chosen; unset = no limit. Later days are disabled and the strip cannot move past them. */
 	maxDaysAhead?: number
+	/** The date to count "today" from (default: the browser's). A booking in another time zone passes that zone's date, so past days and the end of the window are right whatever the browser's zone is. */
+	today?: Date
 	compactAppointmentToggle?: boolean
 	timeSlotColumns?: number
 	timeSlotVariant?: 'default' | 'availability'
@@ -122,7 +124,7 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		slotVariant = 'pill',
 	} = props
 
-	const today = new Date()
+	const today = props.today ?? new Date()
 
 	const [weekStart, setWeekStart] = useState(() => {
 		const anchor = selectedDates?.[0] ?? selectedDate

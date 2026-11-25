@@ -8,9 +8,9 @@ import { ROUTES } from '../../../constants/routes'
 import { DESK, DESK_ICONS, DESK_TILES } from '../../../styles/deskTokens'
 import { labBooking } from '../labBookingStore'
 import { LAB_ICONS, type LabItem } from '../labConstants'
-import { inr } from '../labFormat'
+import { inr } from '../../booking/bookingFormat'
 import { fastingKnown } from '../labStyles'
-import LabCartSection from './LabCartSection'
+import CartSection from '../../booking/CartSection'
 
 /** One cart line: the item, with the price it has at the lab shown (`price` / `mrp` replace the catalogue's "from" price). */
 export type LabCartLine = { item: LabItem; price: number; mrp: number; fromPrice: boolean }
@@ -26,7 +26,7 @@ const metaOf = (item: LabItem) =>
 
 export default function LabCartItems({ lines }: { lines: LabCartLine[] }) {
 	return (
-		<LabCartSection
+		<CartSection
 			title="Tests in your cart"
 			right={
 				<Box
@@ -106,6 +106,6 @@ export default function LabCartItems({ lines }: { lines: LabCartLine[] }) {
 					)
 				})}
 			</Box>
-		</LabCartSection>
+		</CartSection>
 	)
 }

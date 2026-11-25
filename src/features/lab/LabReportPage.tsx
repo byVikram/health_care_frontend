@@ -13,9 +13,9 @@ import FactList from '../../components/common/FactList/FactList'
 import { ROUTES } from '../../constants/routes'
 import { DESK, DESK_ICONS } from '../../styles/deskTokens'
 import { LAB_ICONS } from './labConstants'
-import { commaDate, plural, stampLabel } from './labFormat'
+import { commaDate, plural, stampLabel } from '../booking/bookingFormat'
 import { fetchOrder, labErrorMessage, type ApiOrder } from './labService'
-import LabPageShell from './LabPageShell'
+import PatientPageShell from '../../components/layout/PatientPageShell'
 
 const NOT_YET = 'Not available yet'
 
@@ -61,7 +61,7 @@ export default function LabReportPage() {
 
 	if (!order) {
 		return (
-			<LabPageShell>
+			<PatientPageShell>
 				{back}
 				{loading ? (
 					<Box sx={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -90,7 +90,7 @@ export default function LabReportPage() {
 						<DeskButton label="Try again" kind="primary" fullWidth={false} onClick={() => setReload((n) => n + 1)} />
 					</Box>
 				)}
-			</LabPageShell>
+			</PatientPageShell>
 		)
 	}
 
@@ -108,7 +108,7 @@ export default function LabReportPage() {
 	]
 
 	return (
-		<LabPageShell>
+		<PatientPageShell>
 			{back}
 
 			<Box
@@ -161,7 +161,7 @@ export default function LabReportPage() {
 				</Box>
 			</Box>
 
-			<Box sx={{ display: 'flex', gap: '28px', alignItems: 'flex-start' }}>
+			<Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: '28px', alignItems: { xs: 'stretch', lg: 'flex-start' } }}>
 				<Box
 					component="section"
 					sx={{
@@ -218,6 +218,6 @@ export default function LabReportPage() {
 					<FactList facts={facts} />
 				</Box>
 			</Box>
-		</LabPageShell>
+		</PatientPageShell>
 	)
 }

@@ -2,7 +2,7 @@
 //
 // Turns the server's order (and the booking in progress) into the `LabOrder` the Booked / Order screens show (same as the native app's labOrder.ts).
 import { cartItems, totalsOf, type LabBookingState, type LabOrder } from './labBookingStore'
-import { timeLabel } from './labFormat'
+import { timeLabel } from '../booking/bookingFormat'
 import type { ApiOrder } from './labService'
 
 export const itemSubLine = (item: ReturnType<typeof cartItems>[number]) =>

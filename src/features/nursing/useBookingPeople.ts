@@ -3,20 +3,20 @@
 // "Who is this visit for" and "where": the people (the patient and their family) and the saved addresses, with the chosen ones kept in the
 // booking store (the review page reads the store). Shared by the booking and review pages. Until the lists load, what the store holds is kept.
 import { useEffect, useState } from 'react'
-import { useLabAddresses, addressLineOf } from '../lab/useLabAddresses'
-import { labPatientKey, labPatientId, useLabPatients, type LabPatient } from '../lab/useLabPatients'
+import { useBookingAddresses, addressLineOf } from '../booking/useBookingAddresses'
+import { bookingPatientKey, bookingPatientId, useBookingPatients, type BookingPatient } from '../booking/useBookingPatients'
 import { nursingBooking, useNursingBooking } from './nursingBookingStore'
 import { fetchBookingRestriction } from './nursingService'
 
 export function useBookingPeople() {
 	const booking = useNursingBooking()
-	const { patients, loading: patientsLoading } = useLabPatients()
-	const { addresses, loading: addressesLoading, error: addressError, add } = useLabAddresses()
+	const { patients, loading: patientsLoading } = useBookingPatients()
+	const { addresses, loading: addressesLoading, error: addressError, add } = useBookingAddresses()
 
-	const patient = patients.find((p) => labPatientKey(p) === booking.patientKey) ?? patients[0]
+	const patient = patients.find((p) => bookingPatientKey(p) === booking.patientKey) ?? patients[0]
 	const address = addresses.find((a) => a.id === booking.addressId) ?? addresses[0]
 
-	const patientKey = patient ? labPatientKey(patient) : null
+	const patientKey = patient ? bookingPatientKey(patient) : null
 	const patientName = patient?.name
 	const patientRelation = patient?.relationship
 	const addressId = address?.id
@@ -30,7 +30,7 @@ export function useBookingPeople() {
 		})
 	}, [patientKey, patientName, patientRelation, addressId, addressTag, addressText])
 
-	const selectPatient = (p: LabPatient) => nursingBooking.set({ patientKey: labPatientKey(p), patientName: p.name, patientRelation: p.relationship })
+	const selectPatient = (p: BookingPatient) => nursingBooking.set({ patientKey: bookingPatientKey(p), patientName: p.name, patientRelation: p.relationship })
 	const selectAddress = (a: (typeof addresses)[number]) => nursingBooking.set({ addressId: a.id, addressTag: a.label, addressLine: addressLineOf(a) })
 
 	const saveAddress = async (payload: Parameters<typeof add>[0]) => {
@@ -45,7 +45,7 @@ export function useBookingPeople() {
 		patientsLoading,
 		patient,
 		/** The `patientPublicId` for the booking calls: undefined for the account holder. */
-		patientPublicId: patient ? labPatientId(patient) : undefined,
+		patientPublicId: patient ? bookingPatientId(patient) : undefined,
 		addresses,
 		addressesLoading,
 		addressError,

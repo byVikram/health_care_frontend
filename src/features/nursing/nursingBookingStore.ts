@@ -5,8 +5,7 @@
 // through its navigation params. It is kept in sessionStorage (a refresh keeps the cart, the person, the address and the days) and cleared on logout.
 //
 // The cart rule is the server's: ONE package, or one or more procedures, never both.
-import { useSyncExternalStore } from 'react'
-import { registerSessionCache } from '../lab/labSession'
+import { createSessionStore } from '../booking/createSessionStore'
 import { hhmm, minutesOf } from './nursingTime'
 import { MAX_VISITS, type NursingItem, type Selection, type VisitInput } from './nursingService'
 
@@ -54,98 +53,59 @@ const initial = (): NursingBookingState => ({
 	timesByDate: {},
 })
 
-const STORAGE_KEY = 'kh-nursing-booking-v1'
-
-const readStored = (): NursingBookingState => {
-	try {
-		const raw = sessionStorage.getItem(STORAGE_KEY)
-		if (!raw) return initial()
-		const parsed = JSON.parse(raw) as Partial<NursingBookingState>
-		if (!Array.isArray(parsed.items)) return initial()
-		return { ...initial(), ...parsed }
-	} catch {
-		return initial()
-	}
-}
-
-const writeStored = (s: NursingBookingState) => {
-	try {
-		if (s.items.length === 0 && !s.addressId && !s.patientName) {
-			sessionStorage.removeItem(STORAGE_KEY)
-			return
-		}
-		sessionStorage.setItem(STORAGE_KEY, JSON.stringify(s))
-	} catch {
-		// private mode / quota: the booking just is not kept across a refresh
-	}
-}
-
-let state: NursingBookingState = readStored()
-const listeners = new Set<() => void>()
-
-const emit = () => {
-	writeStored(state)
-	listeners.forEach((l) => l())
-}
-
-const subscribe = (l: () => void) => {
-	listeners.add(l)
-	return () => {
-		listeners.delete(l)
-	}
-}
-
-const getState = () => state
+const store = createSessionStore<NursingBookingState>({
+	key: 'kh-nursing-booking-v1',
+	initial,
+	restore: (raw) => {
+		const parsed = raw as Partial<NursingBookingState>
+		return Array.isArray(parsed.items) ? { ...initial(), ...parsed } : null
+	},
+	// an empty booking is not kept; the note can hold health details, so it is never kept across a refresh
+	persist: (s) => (s.items.length === 0 && !s.addressId && !s.patientName ? null : { ...s, note: '' }),
+})
 
 export const nursingBooking = {
-	get: getState,
+	get: store.get,
 	set(patch: Partial<NursingBookingState>) {
-		state = { ...state, ...patch }
-		emit()
+		store.replace({ ...store.get(), ...patch })
 	},
 	reset() {
-		state = initial()
-		emit()
+		store.replace(initial())
 	},
 	/** A new booking: empty cart and days, but the same person, address and service. */
 	startOver() {
-		const { serviceKey, patientKey, patientName, patientRelation, addressId, addressTag, addressLine } = state
-		state = { ...initial(), serviceKey, patientKey, patientName, patientRelation, addressId, addressTag, addressLine }
-		emit()
+		const { serviceKey, patientKey, patientName, patientRelation, addressId, addressTag, addressLine } = store.get()
+		store.replace({ ...initial(), serviceKey, patientKey, patientName, patientRelation, addressId, addressTag, addressLine })
 	},
 	/** The page is about this service: a cart that was for another one is cleared (the person and the address stay). */
 	useService(serviceKey: string) {
-		if (state.serviceKey === serviceKey) return
-		const { patientKey, patientName, patientRelation, addressId, addressTag, addressLine } = state
-		state = { ...initial(), serviceKey, patientKey, patientName, patientRelation, addressId, addressTag, addressLine }
-		emit()
+		if (store.get().serviceKey === serviceKey) return
+		const { patientKey, patientName, patientRelation, addressId, addressTag, addressLine } = store.get()
+		store.replace({ ...initial(), serviceKey, patientKey, patientName, patientRelation, addressId, addressTag, addressLine })
 	},
 	has(id: string) {
-		return state.items.some((i) => i.id === id)
+		return store.get().items.some((i) => i.id === id)
 	},
 	/** Would adding this item mix a package with procedures (the server takes one or the other)? */
 	conflictsWith(item: NursingItem) {
-		if (state.items.length === 0 || state.items.some((i) => i.id === item.id)) return false
+		if (store.get().items.length === 0 || store.get().items.some((i) => i.id === item.id)) return false
 		// a package replaces whatever is there; a procedure replaces a package
-		return item.kind === 'package' || state.items.some((i) => i.kind === 'package')
+		return item.kind === 'package' || store.get().items.some((i) => i.kind === 'package')
 	},
 	/** Adds the item; a package replaces everything, a procedure replaces a package. */
 	addItem(item: NursingItem) {
-		if (state.items.some((i) => i.id === item.id)) return
-		const keep = item.kind === 'package' ? [] : state.items.filter((i) => i.kind === 'procedure')
-		state = { ...state, items: [...keep, item] }
-		emit()
+		if (store.get().items.some((i) => i.id === item.id)) return
+		const keep = item.kind === 'package' ? [] : store.get().items.filter((i) => i.kind === 'procedure')
+		store.replace({ ...store.get(), items: [...keep, item] })
 	},
 	removeItem(id: string) {
-		state = { ...state, items: state.items.filter((i) => i.id !== id) }
-		emit()
+		store.replace({ ...store.get(), items: store.get().items.filter((i) => i.id !== id) })
 	},
 }
 
-registerSessionCache(() => nursingBooking.reset())
 
 export function useNursingBooking() {
-	return useSyncExternalStore(subscribe, getState, getState)
+	return store.useStore()
 }
 
 // ---------------------------------------------------------------------------------------------------------

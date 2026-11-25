@@ -9,7 +9,8 @@ import DeskButton from '../../../components/common/Button/DeskButton'
 import DateSlotPicker from '../../../components/common/DateSlotPicker/DateSlotPicker'
 import { slotGroupsFromTimes } from '../../../components/common/DateSlotPicker/slotGroups'
 import { DESK, DESK_ICONS } from '../../../styles/deskTokens'
-import LabCartSection from './LabCartSection'
+import CartSection from '../../booking/CartSection'
+import { browserOutsideIndia } from '../../../utils/istTime'
 
 const hourOf = (hhmm: string) => Number(hhmm.split(':')[0])
 
@@ -42,7 +43,7 @@ export default function LabWhenSection({ sub, days, dayIdx, onDay, fasting, hasL
 	const selectedDate = dateOf(days[dayIdx] ?? days[0])
 
 	return (
-		<LabCartSection step={3} title="When?" sub={sub}>
+		<CartSection step={3} title="When?" sub={sub}>
 			{fasting ? (
 				<Box
 					component="span"
@@ -79,6 +80,8 @@ export default function LabWhenSection({ sub, days, dayIdx, onDay, fasting, hasL
 					dateLabel=""
 					timeLabel="Select Time"
 					maxDaysAhead={days.length}
+					// India's today (the first day offered), not the browser's
+					today={dateOf(days[0])}
 					timeSlotColumns={5}
 					hideLegend
 					slotsLoading={hasLab && loading}
@@ -87,11 +90,17 @@ export default function LabWhenSection({ sub, days, dayIdx, onDay, fasting, hasL
 				/>
 			)}
 
+			{browserOutsideIndia() ? (
+				<Box component="span" sx={{ fontSize: 13, color: DESK.muted }}>
+					Times are in India Standard Time (IST), not your device's time zone.
+				</Box>
+			) : null}
+
 			{!hasLab ? (
 				<Box component="span" sx={{ fontSize: 14, color: DESK.muted }}>
 					Choose a lab above to see its times.
 				</Box>
 			) : null}
-		</LabCartSection>
+		</CartSection>
 	)
 }

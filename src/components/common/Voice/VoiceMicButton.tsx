@@ -4,7 +4,21 @@
 // listening. `onResult` gets the final text. It is a real button (keyboard focus, label, pressed state). Put it in the field's end adornment.
 import MicIcon from '@mui/icons-material/Mic'
 import { IconButton, Tooltip, type SxProps, type Theme } from '@mui/material'
+import { toast } from 'react-toastify'
 import { useVoiceInput } from '../../../hooks/useVoiceInput'
+
+const NOTICE_KEY = 'voice-search-notice-seen'
+
+/** Browsers send the audio to their speech service (Google, Apple ...): said once, the first time the mic is used. */
+function showSpeechNoticeOnce() {
+	try {
+		if (localStorage.getItem(NOTICE_KEY)) return
+		localStorage.setItem(NOTICE_KEY, '1')
+	} catch {
+		// storage blocked: the notice shows each time, which is fine
+	}
+	toast.info("Your speech is processed by your browser's provider (for example Google or Apple) to turn it into text.", { autoClose: 7000 })
+}
 
 interface VoiceMicButtonProps {
 	onResult: (text: string) => void
@@ -24,7 +38,10 @@ export default function VoiceMicButton({ onResult, label = 'Search by voice', si
 			<IconButton
 				type="button"
 				size={size}
-				onClick={toggle}
+				onClick={() => {
+					if (!listening) showSpeechNoticeOnce()
+					toggle()
+				}}
 				aria-label={listening ? 'Stop listening' : label}
 				aria-pressed={listening}
 				sx={{

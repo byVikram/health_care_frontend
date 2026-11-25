@@ -88,7 +88,6 @@ export const ROUTES = {
 	NURSING: {
 		HOME: '/nursing-care',
 		SCHEDULE: '/nursing-care/schedule',
-		REVIEW: '/nursing-care/review',
 		MATCHING: '/nursing-care/finding/:requestId',
 		BOOKED: '/nursing-care/booked/:requestId',
 		ORDER: '/nursing-care/orders/:requestId',
@@ -97,7 +96,6 @@ export const ROUTES = {
 	CARE: {
 		HOME: '/care/:serviceKey',
 		SCHEDULE: '/care/:serviceKey/schedule',
-		REVIEW: '/care/:serviceKey/review',
 		MATCHING: '/care/:serviceKey/finding/:requestId',
 		BOOKED: '/care/:serviceKey/booked/:requestId',
 		ORDER: '/care/:serviceKey/orders/:requestId',

@@ -4,6 +4,7 @@
 // category tiles and the doctor-appointment rules. Ported from the mobile app's bookingListUtils.
 import { DESK_ICONS, DESK_TILES, type DeskTone } from '../../styles/deskTokens'
 import type { BookingCategory, BookingItem, BookingsCategoryFilter, BookingsWhen } from './bookingsTypes'
+import { IST_OFFSET_MS } from '../../utils/istTime'
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -23,9 +24,17 @@ const MONTH_LONG = [
 ]
 const DAY_MS = 86_400_000
 
+// Every booking time is India time. The Dates in this file hold INDIA'S WALL CLOCK in their local fields (getDate(), getHours() ...), so a day
+// is the same day, and "today" the same today, whatever time zone the browser is set to.
+/** `instant` as a Date whose local fields read India's clock. */
+const istWall = (instant: Date) => {
+	const t = new Date(instant.getTime() + IST_OFFSET_MS)
+	return new Date(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate(), t.getUTCHours(), t.getUTCMinutes(), t.getUTCSeconds())
+}
+
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
-/** Whole calendar days from `from` to `d`; negative when `d` is in the past. */
-const dayDiff = (d: Date, from = new Date()) =>
+/** Whole calendar days from `from` (India's now) to `d`; negative when `d` is in the past. */
+const dayDiff = (d: Date, from = istWall(new Date())) =>
 	Math.round((startOfDay(d).getTime() - startOfDay(from).getTime()) / DAY_MS)
 const formatClock = (d: Date) =>
 	`${d.getHours() % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')} ${d.getHours() >= 12 ? 'PM' : 'AM'}`
@@ -48,15 +57,15 @@ const combineDateTime = (date?: string | null, time?: string | null): Date | nul
 }
 
 /**
- * starts_at as a local Date. A naive ISO ("2026-09-26T07:00:00", clinic-local) or a date-only value is read as local time; a value
- * with a zone ("…Z" / "+05:30") goes through Date.
+ * starts_at as a Date with India's wall clock in its local fields. A naive ISO ("2026-09-26T07:00:00", clinic-local, so India) or a
+ * date-only value is read as it is; a value with a zone ("…Z" / "+05:30") is an instant and is shown as India's clock.
  */
 export const parseStartsAt = (value?: string | null): { date: Date; hasTime: boolean } | null => {
 	if (!value) return null
 	const rest = value.slice(10)
 	if (/(z|[+-]\d{2}:?\d{2})$/i.test(rest)) {
 		const d = new Date(value)
-		return Number.isNaN(d.getTime()) ? null : { date: d, hasTime: true }
+		return Number.isNaN(d.getTime()) ? null : { date: istWall(d), hasTime: true }
 	}
 	const [datePart, timePart] = value.split(/[T ]/)
 	const d = combineDateTime(datePart, timePart)
@@ -87,7 +96,7 @@ const UPCOMING_ORDER = ['TODAY', 'TOMORROW', 'LATER THIS WEEK', 'LATER', 'IN PRO
 const upcomingBucket = (item: BookingItem, now: Date) => {
 	const start = parseStartsAt(item.starts_at)
 	if (!start) return 'IN PROGRESS'
-	const diff = dayDiff(start.date, now)
+	const diff = dayDiff(start.date, istWall(now))
 	if (diff < 0) return 'IN PROGRESS'
 	if (diff === 0) return 'TODAY'
 	if (diff === 1) return 'TOMORROW'

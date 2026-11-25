@@ -182,8 +182,6 @@ export default function AdminAppointmentCards({
 						placeholder="Search appointment ID, doctor, or hospital..."
 						value={searchInput}
 						onChange={handleSearchChange}
-						enableVoiceSearch
-						onVoiceResult={applySearch}
 						size="small"
 						startIcon={<SearchIcon sx={{ fontSize: 18, color: '#94a3b8' }} />}
 					/>

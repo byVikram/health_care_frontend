@@ -1,22 +1,22 @@
-// src/features/lab/useLabAddresses.ts
+// src/features/lab/useBookingAddresses.ts
 //
 // The signed-in patient's saved addresses (the lab availability / slots / quote are checked against one of them) and a way to save a new
 // one ("Type an address"). Uses the same calls as the profile's Addresses tab (features/patient/patientService.ts).
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { addPatientAddress, getPatientAddresses, type PatientAddressCreate, type PatientAddressOut } from '../patient/patientService'
-import { labErrorMessage } from './labService'
+import { labErrorMessage } from '../lab/labService'
 
-export type LabAddress = PatientAddressOut
+export type BookingAddress = PatientAddressOut
 
 /** "14, 2nd Cross, Chickpet, Bengaluru 560053" */
 export const addressLineOf = (a: Pick<PatientAddressOut, 'address_line' | 'city' | 'pincode'>) =>
 	[a.address_line, a.city, a.pincode].filter(Boolean).join(', ')
 
-export function useLabAddresses() {
+export function useBookingAddresses() {
 	const { role, accessToken } = useAuth()
 	const enabled = !!accessToken && role === 'patient'
-	const [addresses, setAddresses] = useState<LabAddress[]>([])
+	const [addresses, setAddresses] = useState<BookingAddress[]>([])
 	const [loading, setLoading] = useState(enabled)
 	const [error, setError] = useState<string | null>(null)
 
@@ -41,7 +41,7 @@ export function useLabAddresses() {
 
 	/** Saves a new address and reloads the list; resolves with the saved address (null when it could not be saved: `error` says why). */
 	const add = useCallback(
-		async (payload: PatientAddressCreate): Promise<LabAddress | null> => {
+		async (payload: PatientAddressCreate): Promise<BookingAddress | null> => {
 			setError(null)
 			try {
 				const res = await addPatientAddress(payload)

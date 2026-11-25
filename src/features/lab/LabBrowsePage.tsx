@@ -18,10 +18,9 @@ import LabPromoCards from './components/LabPromoCards'
 import { concernCounts as countConcerns, matchesConcerns, useLabCatalogue } from './labCatalogue'
 import { MAX_LAB_ITEMS, labBooking, useLabBooking } from './labBookingStore'
 import { LAB_CONCERNS, type LabItem, type LabTypeId } from './labConstants'
-import { plural } from './labFormat'
-import { LAB_CARD, LAB_H2 } from './labStyles'
-import LabPageShell from './LabPageShell'
-import { useLabAddresses } from './useLabAddresses'
+import { BOOKING_CARD, BOOKING_H2 } from '../booking/bookingStyles'
+import PatientPageShell from '../../components/layout/PatientPageShell'
+import { useBookingAddresses } from '../booking/useBookingAddresses'
 
 type SortId = 'pop' | 'low' | 'high'
 
@@ -32,7 +31,7 @@ const sortItems = (items: LabItem[], sort: SortId) => {
 
 export default function LabBrowsePage() {
 	const booking = useLabBooking()
-	const { addresses, loading: addressesLoading } = useLabAddresses()
+	const { addresses, loading: addressesLoading } = useBookingAddresses()
 	const address = addresses.find((a) => a.id === booking.addressId) ?? addresses[0]
 
 	const [search, setSearch] = useState('')
@@ -119,8 +118,8 @@ export default function LabBrowsePage() {
 	const unserviceable = coverage?.serviceable === false
 
 	return (
-		<LabPageShell hero={<LabBrowseHero search={search} onSearch={setSearch} />}>
-			<Box sx={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
+		<PatientPageShell hero={<LabBrowseHero search={search} onSearch={setSearch} />}>
+			<Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: '24px', alignItems: { xs: 'stretch', lg: 'flex-start' } }}>
 				<LabFilters
 					type={type}
 					onType={setType}
@@ -200,7 +199,7 @@ export default function LabBrowsePage() {
 					) : null}
 
 					{error ? (
-						<Box sx={{ ...LAB_CARD, p: '32px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+						<Box sx={{ ...BOOKING_CARD, p: '32px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
 							<Box component="b" sx={{ fontSize: 18 }}>
 								We could not load the tests
 							</Box>
@@ -236,11 +235,8 @@ export default function LabBrowsePage() {
 							{showPackages ? (
 								<Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 									<Box sx={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-										<Box component="h2" sx={LAB_H2}>
+										<Box component="h2" sx={BOOKING_H2}>
 											Health packages
-										</Box>
-										<Box component="span" sx={{ fontSize: 14, color: DESK.muted }}>
-											{plural(visiblePackages.length, 'package', 'packages')}
 										</Box>
 									</Box>
 									{visiblePackages.map((item) => (
@@ -258,15 +254,11 @@ export default function LabBrowsePage() {
 							{showTests ? (
 								<Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 									<Box sx={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-										<Box component="h2" sx={LAB_H2}>
+										<Box component="h2" sx={BOOKING_H2}>
 											Single tests
 										</Box>
-										<Box component="span" sx={{ fontSize: 14, color: DESK.muted }}>
-											{plural(visibleTests.length, 'test', 'tests')}
-											{hasMore ? ' so far' : ''}
-										</Box>
 									</Box>
-									<Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+									<Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: '14px' }}>
 										{visibleTests.map((item) => (
 											<LabTestCard
 												key={item.id}
@@ -288,7 +280,7 @@ export default function LabBrowsePage() {
 							{shown === 0 && !unserviceable ? (
 								<Box
 									sx={{
-										...LAB_CARD,
+										...BOOKING_CARD,
 										borderStyle: 'dashed',
 										p: '48px 24px',
 										textAlign: 'center',
@@ -321,6 +313,6 @@ export default function LabBrowsePage() {
 				onToggle={toggleItem}
 				onClose={() => setOpened(undefined)}
 			/>
-		</LabPageShell>
+		</PatientPageShell>
 	)
 }

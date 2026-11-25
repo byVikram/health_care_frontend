@@ -1,4 +1,4 @@
-// src/features/lab/labSession.ts
+// src/features/booking/sessionCache.ts
 //
 // The web's counterpart of the native app's `utils/sessionCache.ts`: the lab caches (browsed items, the booking in progress) hold the
 // patient's name, address and order, so they are cleared when the user logs out. The app announces every sign-in / sign-out with the

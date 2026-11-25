@@ -14,7 +14,7 @@ import {
 	createSlotOverrideBatch,
 	SlotOverridePayload,
 	SlotOverrideBatchPayload,
-} from '../../../../features/doctor/doctorService'
+} from '../../doctorService'
 import WorkingHoursScheduler from './WorkingHoursScheduler'
 
 interface DoctorAvailabilityTabProps {

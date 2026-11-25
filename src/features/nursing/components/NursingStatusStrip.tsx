@@ -36,7 +36,7 @@ export default function NursingStatusStrip({ timeline }: { timeline: StatusTimel
 										boxSizing: 'border-box',
 										borderRadius: '9999px',
 										bgcolor: done ? DESK.primary : stopped ? DESK.dangerSoft : DESK.raised,
-										border: `2px solid ${done || current ? DESK.primary : stopped ? DESK.danger : '#C9D6D7'}`,
+										border: `2px solid ${done || current ? DESK.primary : stopped ? DESK.danger : DESK.lineChoice}`,
 										color: done ? '#FFFFFF' : current ? DESK.primary : stopped ? DESK.danger : DESK.faint,
 										display: 'flex',
 										alignItems: 'center',

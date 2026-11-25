@@ -5,17 +5,19 @@
 // (7 AM - 9 PM). With more than one day the patient chooses the same time every day or a time per day. A time that starts less than an hour from now (to the
 // second, Mumbai's clock) is greyed out and cannot be picked, like the native app.
 import { Box } from '@mui/material'
+import { toast } from 'react-toastify'
 import { useEffect, useMemo, useState } from 'react'
 import { DESK } from '../../../styles/deskTokens'
 import DateSlotPicker from '../../../components/common/DateSlotPicker/DateSlotPicker'
 import { slotGroupsFromTimes } from '../../../components/common/DateSlotPicker/slotGroups'
 import AppSegmentedToggle, { type SegmentedToggleOption } from '../../../components/common/Switch/AppSegmentedToggle'
-import LabCartSection from '../../lab/components/LabCartSection'
-import { plural, toIso } from '../../lab/labFormat'
+import CartSection from '../../booking/CartSection'
+import { plural, toIso } from '../../booking/bookingFormat'
 import type { BookingMode } from '../nursingBookingStore'
 import { MAX_VISITS } from '../nursingService'
 import { SLOT_GROUPS, chipTime, dayLabel, istTodayIso, leadText, minutesOf, slotTooSoon } from '../nursingTime'
 import { useCareService } from '../useCareService'
+import { browserOutsideIndia } from '../../../utils/istTime'
 
 const ALL_TIMES = SLOT_GROUPS.flatMap((g) => g.slots)
 
@@ -37,6 +39,8 @@ interface NursingWhenSectionProps {
 	onDayTime: (date: string, time: string) => void
 	/** Minutes before a visit within which it cannot be booked (60). */
 	leadMinutes: number
+	/** How long one visit lasts (the services added up): a time that would end after midnight is not offered. */
+	visitMinutes: number
 }
 
 const pillSx = (on: boolean) =>
@@ -44,7 +48,7 @@ const pillSx = (on: boolean) =>
 		height: 38,
 		px: '14px',
 		borderRadius: '9999px',
-		border: `1.5px solid ${on ? DESK.primary : '#C9D6D7'}`,
+		border: `1.5px solid ${on ? DESK.primary : DESK.lineChoice}`,
 		bgcolor: on ? DESK.primaryTint : DESK.raised,
 		color: on ? DESK.primary : DESK.ink,
 		fontFamily: 'inherit',
@@ -53,7 +57,7 @@ const pillSx = (on: boolean) =>
 		cursor: 'pointer',
 	}) as const
 
-export default function NursingWhenSection({ mode, onMode, dates, onDates, sameTime, onSameTime, time, onTime, timesByDate, onDayTime, leadMinutes }: NursingWhenSectionProps) {
+export default function NursingWhenSection({ mode, onMode, dates, onDates, sameTime, onSameTime, time, onTime, timesByDate, onDayTime, leadMinutes, visitMinutes }: NursingWhenSectionProps) {
 	const care = useCareService()
 	const MODES: SegmentedToggleOption<BookingMode>[] = [
 		{ value: 'now', label: 'Book now' },
@@ -76,23 +80,31 @@ export default function NursingWhenSection({ mode, onMode, dates, onDates, sameT
 			onDates(dates.filter((d) => d !== iso))
 			return
 		}
-		if (dates.length >= MAX_VISITS) return
+		if (dates.length >= MAX_VISITS) {
+			toast.info(`You can pick up to ${MAX_VISITS} days.`)
+			return
+		}
 		onDates([...dates, iso].sort())
 	}
 
 	// the days a picked time must work for: every picked day (same time), or just the day being set
 	const tooSoonDays = sameTime ? dates : editingDay ? [editingDay] : []
 	const slotGroups = useMemo(
-		() => slotGroupsFromTimes(ALL_TIMES, (t) => tooSoonDays.some((d) => slotTooSoon(d, minutesOf(t), leadMinutes, now))),
+		() =>
+			slotGroupsFromTimes(
+				ALL_TIMES,
+				// too soon, or a visit that would run past midnight (the end time cannot be after 23:59)
+				(t) => minutesOf(t) + visitMinutes > 24 * 60 - 1 || tooSoonDays.some((d) => slotTooSoon(d, minutesOf(t), leadMinutes, now))
+			),
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[tooSoonDays.join(','), leadMinutes, now]
+		[tooSoonDays.join(','), leadMinutes, now, visitMinutes]
 	)
 
 	const pickedDates = useMemo(() => dates.map(dateOf), [dates])
 	const calendarDay = editingDay ? dateOf(editingDay) : (pickedDates[0] ?? dateOf(istTodayIso(now)))
 
 	return (
-		<LabCartSection
+		<CartSection
 			step={3}
 			title={`When should the ${care.noun} come?`}
 			sub={mode === 'now' ? `A nearby ${care.noun} accepts your request and comes as soon as possible.` : `Pick up to ${MAX_VISITS} days in the next 14. A ${care.noun} is assigned ${leadText(leadMinutes)} before each visit.`}
@@ -146,11 +158,18 @@ export default function NursingWhenSection({ mode, onMode, dates, onDates, sameT
 						dateLabel={dates.length === 0 ? 'Which days?' : `Which days? · ${plural(dates.length, 'day', 'days')} picked`}
 						timeLabel="What time?"
 						maxDaysAhead={14}
+						// India's date, not the browser's: the day grid and the 14-day window must match what the server accepts
+						today={dateOf(istTodayIso())}
 						timeSlotColumns={5}
 						hideLegend
 						// no times to pick until a day is picked
 						availableSlots={dates.length > 0 ? slotGroups : undefined}
 					/>
+					{browserOutsideIndia() ? (
+						<Box component="span" sx={{ fontSize: 13, color: DESK.muted }}>
+							Times are in India Standard Time (IST), not your device's time zone.
+						</Box>
+					) : null}
 					{dates.length === 0 ? (
 						<Box component="span" sx={{ fontSize: 14, color: DESK.muted }}>
 							Pick one day, or several for a repeat visit, to see the times.
@@ -158,6 +177,6 @@ export default function NursingWhenSection({ mode, onMode, dates, onDates, sameT
 					) : null}
 				</>
 			)}
-		</LabCartSection>
+		</CartSection>
 	)
 }

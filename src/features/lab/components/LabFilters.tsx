@@ -6,7 +6,7 @@ import { Box } from '@mui/material'
 import DeskIcon from '../../../components/common/Icon/DeskIcon'
 import { DESK } from '../../../styles/deskTokens'
 import { LAB_CONCERNS, LAB_TYPES, type LabTypeId } from '../labConstants'
-import { LAB_CARD } from '../labStyles'
+import { BOOKING_CARD } from '../../booking/bookingStyles'
 
 interface LabFiltersProps {
 	type: LabTypeId
@@ -38,10 +38,10 @@ export default function LabFilters({
 			component="aside"
 			aria-label="Filters"
 			sx={{
-				...LAB_CARD,
+				...BOOKING_CARD,
 				position: 'sticky',
 				top: 20,
-				width: 260,
+				width: { xs: '100%', lg: 260 },
 				flexShrink: 0,
 				p: '6px 18px 12px',
 				boxSizing: 'border-box',

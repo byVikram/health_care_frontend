@@ -1,4 +1,4 @@
-// src/features/lab/labFormat.ts
+// src/features/booking/bookingFormat.ts
 //
 // Small formatting helpers shared by the Lab tests screens (₹ amounts, plurals and the "Thu 24 Sep" style date labels the design uses).
 

@@ -1,8 +1,8 @@
-// src/features/lab/labCalendar.ts
+// src/features/booking/visitCalendar.ts
 //
 // "Add to calendar" for a lab visit: builds a small .ics file in the browser and downloads it (Google, Apple and Outlook calendars open it).
 // The visit time is the clinic's wall-clock time, so the event uses floating local times (no zone), like the time the page shows.
-import { slotStart } from './labFormat'
+import { slotStart } from './bookingFormat'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
@@ -13,7 +13,7 @@ const localStamp = (d: Date) =>
 const escapeText = (text: string) =>
 	text.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
 
-export type LabVisitEvent = {
+export type VisitEvent = {
 	/** The order id shown to the patient ("KH-1A2B3C4D"). */
 	orderId: string
 	title: string
@@ -21,15 +21,18 @@ export type LabVisitEvent = {
 	date: string
 	/** A display label ("7:30 AM"). */
 	time: string
+	/** A display label of the end of the visit ("9:00 AM"); without it the event lasts 2 hours. */
+	end?: string
 	location?: string
 	notes?: string
 }
 
 /** Downloads the visit as an .ics file. Returns false when there is no date to put in a calendar. */
-export function downloadVisitCalendar(event: LabVisitEvent): boolean {
+export function downloadVisitCalendar(event: VisitEvent): boolean {
 	if (!event.date) return false
 	const start = slotStart(event.date, event.time)
-	const end = new Date(start.getTime() + 2 * 60 * 60_000)
+	const known = event.end ? slotStart(event.date, event.end) : null
+	const end = known && known.getTime() > start.getTime() ? known : new Date(start.getTime() + 2 * 60 * 60_000)
 	const stamp = `${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`
 	const lines = [
 		'BEGIN:VCALENDAR',

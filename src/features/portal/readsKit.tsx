@@ -265,7 +265,7 @@ export function AdSlot({ placement, compact = false }: { placement?: AdPlacement
 		<Box component="section" aria-label="Advertisement" sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
 			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: '2px' }}>
 				<Box sx={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', color: DESK.muted }}>SPONSORED</Box>
-				<Box sx={{ px: '6px', py: '1px', borderRadius: '4px', border: '1px solid #C9D6D7', fontSize: 10, fontWeight: 800, color: DESK.muted }}>Ad</Box>
+				<Box sx={{ px: '6px', py: '1px', borderRadius: '4px', border: `1px solid ${DESK.lineChoice}`, fontSize: 10, fontWeight: 800, color: DESK.muted }}>Ad</Box>
 			</Box>
 			<Box
 				component="button"

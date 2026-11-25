@@ -5,7 +5,7 @@
 import { Box } from '@mui/material'
 import AvatarTile from '../../../components/common/Avatar/AvatarTile'
 import { DESK } from '../../../styles/deskTokens'
-import { inr } from '../labFormat'
+import { inr } from '../../booking/bookingFormat'
 
 const capsSx = { fontSize: 12, lineHeight: '16px', fontWeight: 800, letterSpacing: '0.06em', color: DESK.primary } as const
 
@@ -64,7 +64,7 @@ export default function LabReviewSummary({
 					</Box>
 				) : null}
 			</Box>
-			<Box aria-hidden="true" sx={{ position: 'relative', height: 0, borderTop: '2px dashed #9FD3D1', mx: '24px' }}>
+			<Box aria-hidden="true" sx={{ position: 'relative', height: 0, borderTop: `2px dashed ${DESK.mint}`, mx: '24px' }}>
 				<Box
 					component="span"
 					sx={{ position: 'absolute', left: -36, top: -11, width: 20, height: 20, borderRadius: '9999px', bgcolor: DESK.page }}
@@ -74,7 +74,7 @@ export default function LabReviewSummary({
 					sx={{ position: 'absolute', right: -36, top: -11, width: 20, height: 20, borderRadius: '9999px', bgcolor: DESK.page }}
 				/>
 			</Box>
-			<Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', p: '20px 20px 14px' }}>
+			<Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: '14px', p: '20px 20px 14px' }}>
 				<Box component="span" sx={{ display: 'flex', flexDirection: 'column' }}>
 					<Box component="span" sx={capsSx}>
 						WHEN

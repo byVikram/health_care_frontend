@@ -6,8 +6,8 @@ import { Box } from '@mui/material'
 import DeskIcon from '../../../components/common/Icon/DeskIcon'
 import { DESK, DESK_ICONS } from '../../../styles/deskTokens'
 import { LAB_ICONS } from '../labConstants'
-import { inr, plural } from '../labFormat'
-import { LAB_CARD } from '../labStyles'
+import { inr, plural } from '../../booking/bookingFormat'
+import { BOOKING_CARD } from '../../booking/bookingStyles'
 
 interface SummaryRow {
 	icon: string
@@ -59,10 +59,10 @@ export default function LabBookingSummary({
 			component="aside"
 			aria-label="Booking summary"
 			sx={{
-				...LAB_CARD,
+				...BOOKING_CARD,
 				position: 'sticky',
 				top: 20,
-				width: 380,
+				width: { xs: '100%', lg: 380 },
 				flexShrink: 0,
 				p: '22px',
 				boxSizing: 'border-box',

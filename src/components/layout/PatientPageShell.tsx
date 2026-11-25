@@ -1,6 +1,6 @@
-// src/features/lab/LabPageShell.tsx
+// src/components/layout/PatientPageShell.tsx
 //
-// The frame every Lab tests page sits in: the desktop page background under the navbar, a centred column with the design's gutters, and the
+// The frame of the patient booking pages (Lab tests, home care): the desktop page background under the navbar, a centred column with the design's gutters, and the
 // patient-only guard (a doctor who lands here is sent to their Schedule).
 import { Box } from '@mui/material'
 import type { ReactNode } from 'react'
@@ -10,7 +10,7 @@ import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../hooks/useAuth'
 import { DESK } from '../../styles/deskTokens'
 
-interface LabPageShellProps {
+interface PatientPageShellProps {
 	children: ReactNode
 	/** Width of the centred column in px (the design: 1240 for the browse / cart / order pages, narrower for Booked and Report). */
 	maxWidth?: number
@@ -18,7 +18,7 @@ interface LabPageShellProps {
 	hero?: ReactNode
 }
 
-export default function LabPageShell({ children, maxWidth = 1240, hero }: LabPageShellProps) {
+export default function PatientPageShell({ children, maxWidth = 1240, hero }: PatientPageShellProps) {
 	const { role } = useAuth()
 	if (role === USER_ROLES.DOCTOR) return <Navigate to={ROUTES.SCHEDULE} replace />
 

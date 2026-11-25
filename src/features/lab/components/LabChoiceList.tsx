@@ -4,10 +4,10 @@
 // the total it charges for the cart. Picking one decides whose slots are listed in step 3 and which prices the booking carries.
 import { Box } from '@mui/material'
 import { DESK, DESK_TONES } from '../../../styles/deskTokens'
-import { inr } from '../labFormat'
+import { inr } from '../../booking/bookingFormat'
 import type { ApiQuoteLab } from '../labService'
-import { choiceSx } from '../labStyles'
-import { LabRadioDot } from './LabCartSection'
+import { choiceSx } from '../../booking/bookingStyles'
+import { RadioDot } from '../../booking/CartSection'
 import LabLogo from './LabLogo'
 
 interface LabChoiceListProps {
@@ -71,7 +71,7 @@ export default function LabChoiceList({ labs, labId, onPick, isHome, logos, dist
 									</Box>
 								) : null}
 							</Box>
-							<LabRadioDot on={on} size={20} />
+							<RadioDot on={on} size={20} />
 						</Box>
 					)
 				})}

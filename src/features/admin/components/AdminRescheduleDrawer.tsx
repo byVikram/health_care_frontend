@@ -69,6 +69,7 @@ export default function AdminRescheduleDrawer({
 			sx={{
 				top: '64px',
 				height: 'calc(100vh - 64px)',
+				'@supports (height: 100dvh)': { height: 'calc(100dvh - 64px)' },
 				m: 0,
 				borderRadius: '16px 0 0 16px',
 				...sx,

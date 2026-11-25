@@ -1,11 +1,11 @@
-// src/features/lab/components/LabAddButton.tsx
+// src/components/common/Button/AddToggleButton.tsx
 //
-// The "Add" / "Added" button on a test or package card (and "Add to cart" / "Remove from cart" in the details drawer): teal outline
-// when the item is not in the cart, filled teal when it is.
+// The "Add" / "Added" toggle of a card or details drawer (Lab tests, home-care services): teal outline
+// when the item is not in the cart (or booking), filled teal when it is.
 import { Box } from '@mui/material'
 import { DESK } from '../../../styles/deskTokens'
 
-interface LabAddButtonProps {
+interface AddToggleButtonProps {
 	added: boolean
 	onClick: () => void
 	/** Overrides the label pair ([not in cart, in cart]). */
@@ -14,23 +14,26 @@ interface LabAddButtonProps {
 	minWidth?: number
 	/** Which item it is for (read out by screen readers). */
 	name?: string
+	/** What the item goes into, for the accessible label: "cart" (Lab tests) or "booking" (home care). */
+	noun?: string
 }
 
-export default function LabAddButton({
+export default function AddToggleButton({
 	added,
 	onClick,
 	labels = ['Add', 'Added'],
 	height = 40,
 	minWidth = 104,
 	name,
-}: LabAddButtonProps) {
+	noun = 'cart',
+}: AddToggleButtonProps) {
 	return (
 		<Box
 			component="button"
 			type="button"
 			onClick={onClick}
 			aria-pressed={added}
-			aria-label={name ? `${added ? 'Remove' : 'Add'} ${name} ${added ? 'from' : 'to'} cart` : undefined}
+			aria-label={name ? `${added ? 'Remove' : 'Add'} ${name} ${added ? 'from' : 'to'} ${noun}` : undefined}
 			sx={{
 				height,
 				minWidth,

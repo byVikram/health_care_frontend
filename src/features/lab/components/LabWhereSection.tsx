@@ -8,9 +8,9 @@ import DeskIcon from '../../../components/common/Icon/DeskIcon'
 import AppSegmentedToggle, { type SegmentedToggleOption } from '../../../components/common/Switch/AppSegmentedToggle'
 import { DESK, DESK_ICONS } from '../../../styles/deskTokens'
 import type { LabWhere } from '../labBookingStore'
-import { addressLineOf, type LabAddress } from '../useLabAddresses'
-import { choiceSx } from '../labStyles'
-import LabCartSection, { LabRadioDot } from './LabCartSection'
+import { addressLineOf, type BookingAddress } from '../../booking/useBookingAddresses'
+import { choiceSx } from '../../booking/bookingStyles'
+import CartSection, { RadioDot } from '../../booking/CartSection'
 
 const WORK = 'M4 7h16v13H4zM9 7V4h6v3'
 
@@ -29,10 +29,10 @@ const OPTIONS: SegmentedToggleOption<LabWhere>[] = [
 interface LabWhereSectionProps {
 	where: LabWhere
 	onWhere: (where: LabWhere) => void
-	addresses: LabAddress[]
+	addresses: BookingAddress[]
 	addressesLoading: boolean
 	addressId: string | null
-	onAddress: (address: LabAddress) => void
+	onAddress: (address: BookingAddress) => void
 	onAddAddress: () => void
 	/** Asks the browser for the position and starts a new address from it. */
 	onUseCurrentLocation: () => void
@@ -74,7 +74,7 @@ export default function LabWhereSection({
 	const isHome = where === 'home'
 	const bad = status?.kind === 'warn' || status?.kind === 'error'
 	return (
-		<LabCartSection
+		<CartSection
 			step={2}
 			title="Where should we collect the sample?"
 			sub="Home collection is free. Or walk in at a lab near you."
@@ -112,7 +112,7 @@ export default function LabWhereSection({
 					<Box
 						role="radiogroup"
 						aria-label="Address"
-						sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px' }}
+						sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' }, gap: '10px' }}
 					>
 						{addresses.map((a) => {
 							const on = a.id === addressId
@@ -147,7 +147,7 @@ export default function LabWhereSection({
 											{addressLineOf(a)}
 										</Box>
 									</Box>
-									<LabRadioDot on={on} size={20} />
+									<RadioDot on={on} size={20} />
 								</Box>
 							)
 						})}
@@ -218,6 +218,6 @@ export default function LabWhereSection({
 				</Box>
 			) : null}
 			{children}
-		</LabCartSection>
+		</CartSection>
 	)
 }

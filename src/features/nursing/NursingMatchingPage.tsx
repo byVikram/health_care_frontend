@@ -13,9 +13,9 @@ import DeskButton from '../../components/common/Button/DeskButton'
 import DeskIcon from '../../components/common/Icon/DeskIcon'
 import ReasonDialog from '../../components/common/Modal/ReasonDialog'
 import { DESK, DESK_ICONS } from '../../styles/deskTokens'
-import LabPageShell from '../lab/LabPageShell'
-import { inr } from '../lab/labFormat'
-import { LAB_CARD } from '../lab/labStyles'
+import PatientPageShell from '../../components/layout/PatientPageShell'
+import { inr } from '../booking/bookingFormat'
+import { BOOKING_CARD } from '../booking/bookingStyles'
 import { NO_ACCEPT_SECONDS, POPULAR_TIP, SEARCH_CANCEL_REASONS, TIP_MAX, TIP_OPTIONS } from './nursingConstants'
 import { nursingBooking } from './nursingBookingStore'
 import { restoreCartFromOrder } from './nursingRebook'
@@ -40,7 +40,7 @@ export default function NursingMatchingPage() {
 	const { requestId } = useParams()
 	const navigate = useNavigate()
 	const care = useCareService()
-	const { order, loading, error, heardAt } = useNursingOrder(requestId, { live: true, pollMs: 2000, pollWithSocketMs: 6000, stopWhenDone: false })
+	const { order, loading, error, reconnecting, heardAt } = useNursingOrder(requestId, { live: true, pollMs: 2000, pollWithSocketMs: 6000, stopWhenDone: false })
 
 	const [now, setNow] = useState(() => Date.now())
 	const [mountMs] = useState(() => Date.now())
@@ -103,7 +103,7 @@ export default function NursingMatchingPage() {
 		setClock({ searching: searchingSeconds, sinceLast: 0, at: Date.now() })
 	}
 
-	const serviceName = order?.package?.name ?? order?.serviceName ?? order?.services?.map((s) => s.name).join(', ') ?? 'Nursing care'
+	const serviceName = order?.package?.name ?? order?.serviceName ?? order?.services?.map((s) => s.name).join(', ') ?? care.sentence
 	const patientName = order?.patientName ?? order?.patient?.name ?? 'You'
 	const addressText = order?.address?.street_address ?? ''
 	const baseTotal = order?.totalAmount ?? order?.totals?.total ?? null
@@ -172,15 +172,23 @@ export default function NursingMatchingPage() {
 		} catch {
 			// already closed on the server, or it will expire on its own: scheduling must not be blocked
 		}
-		const restored = await restoreCartFromOrder(order, care.key)
-		setBusy(false)
-		if (!restored) {
-			toast.info('Please pick the services again.')
+		try {
+			const { ok, missing } = await restoreCartFromOrder(order, care.key)
+			if (!ok) {
+				toast.info('Please pick the services again.')
+				navigate(carePath(care.key, 'home'), { replace: true })
+				return
+			}
+			if (missing > 0) toast.info(`${missing === 1 ? 'One service is' : `${missing} services are`} not available now, so it was left out.`)
+			nursingBooking.set({ mode: 'later' })
+			navigate(carePath(care.key, 'schedule'), { replace: true })
+		} catch {
+			// the request is already stopped: the catalogue could not be read, so the patient picks the services again
+			toast.info('We could not load the services. Please pick them again.')
 			navigate(carePath(care.key, 'home'), { replace: true })
-			return
+		} finally {
+			setBusy(false)
 		}
-		nursingBooking.set({ mode: 'later' })
-		navigate(carePath(care.key, 'schedule'), { replace: true })
 	}
 
 	const canRaise = tip < TIP_MAX
@@ -188,7 +196,12 @@ export default function NursingMatchingPage() {
 	const customTooHigh = customValue + tip > TIP_MAX
 
 	return (
-		<LabPageShell maxWidth={900}>
+		<PatientPageShell maxWidth={900}>
+			{reconnecting ? (
+				<Box role="status" sx={{ p: '10px 14px', borderRadius: '12px', bgcolor: DESK.warningSoft, color: DESK.warning, fontSize: 13, fontWeight: 600 }}>
+					Reconnecting… we are having trouble reaching the server and will keep trying.
+				</Box>
+			) : null}
 			<Box
 				component="section"
 				sx={{
@@ -242,29 +255,29 @@ export default function NursingMatchingPage() {
 			</Box>
 
 			{error && !order && !loading ? (
-				<Box role="alert" sx={{ ...LAB_CARD, p: '18px', color: DESK.danger, fontSize: 14 }}>
+				<Box role="alert" sx={{ ...BOOKING_CARD, p: '18px', color: DESK.danger, fontSize: 14 }}>
 					{error}
 				</Box>
 			) : null}
 
-			<Box sx={{ ...LAB_CARD, p: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+			<Box sx={{ ...BOOKING_CARD, p: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 				<Box component="b" sx={{ fontSize: 16 }}>
 					Your request
 				</Box>
-				<Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '12px', fontSize: 14 }}>
+				<Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)', gap: '12px 56px', fontSize: 14 }}>
 					<Box component="span" sx={{ display: 'flex', flexDirection: 'column' }}>
 						<Box component="span" sx={{ fontSize: 12, color: DESK.muted }}>
 							Service
 						</Box>
 						<b>{serviceName}</b>
 					</Box>
-					<Box component="span" sx={{ display: 'flex', flexDirection: 'column' }}>
+					<Box component="span" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
 						<Box component="span" sx={{ fontSize: 12, color: DESK.muted }}>
 							For
 						</Box>
 						<b>{patientName}</b>
 					</Box>
-					<Box component="span" sx={{ display: 'flex', flexDirection: 'column' }}>
+					<Box component="span" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', textAlign: 'right' }}>
 						<Box component="span" sx={{ fontSize: 12, color: DESK.muted }}>
 							To pay after the visit
 						</Box>
@@ -287,7 +300,7 @@ export default function NursingMatchingPage() {
 			</Box>
 
 			{!assigned && !endedByServer ? (
-				<Box sx={{ ...LAB_CARD, p: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+				<Box sx={{ ...BOOKING_CARD, p: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 					<Box sx={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
 						<Box component="b" sx={{ fontSize: 16, flexGrow: 1 }}>
 							Add a tip to get matched faster
@@ -322,7 +335,7 @@ export default function NursingMatchingPage() {
 												height: 44,
 												px: '18px',
 												borderRadius: '12px',
-												border: `1.5px solid ${on ? DESK.primary : '#C9D6D7'}`,
+												border: `1.5px solid ${on ? DESK.primary : DESK.lineChoice}`,
 												bgcolor: on ? DESK.primaryTint : DESK.raised,
 												color: DESK.ink,
 												fontFamily: 'inherit',
@@ -349,7 +362,7 @@ export default function NursingMatchingPage() {
 										setCustomOpen(true)
 										setPendingTip(0)
 									}}
-									sx={{ height: 44, px: '18px', borderRadius: '12px', border: `1.5px solid ${customOpen ? DESK.primary : '#C9D6D7'}`, bgcolor: customOpen ? DESK.primaryTint : DESK.raised, color: DESK.ink, fontFamily: 'inherit', fontSize: 14, fontWeight: 800, cursor: 'pointer' }}
+									sx={{ height: 44, px: '18px', borderRadius: '12px', border: `1.5px solid ${customOpen ? DESK.primary : DESK.lineChoice}`, bgcolor: customOpen ? DESK.primaryTint : DESK.raised, color: DESK.ink, fontFamily: 'inherit', fontSize: 14, fontWeight: 800, cursor: 'pointer' }}
 								>
 									Other amount
 								</Box>
@@ -405,7 +418,7 @@ export default function NursingMatchingPage() {
 				</Box>
 			) : null}
 
-			<Box sx={{ ...LAB_CARD, p: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+			<Box sx={{ ...BOOKING_CARD, p: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 				<Box component="b" sx={{ fontSize: 16 }}>
 					What happens next
 				</Box>
@@ -425,8 +438,10 @@ export default function NursingMatchingPage() {
 			</Box>
 
 			{!assigned && !endedByServer ? (
-				<Box sx={{ alignSelf: 'center', width: 240 }}>
-					<DeskButton label="Cancel request" kind="danger" onClick={() => setCancelOpen(true)} />
+				<Box sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+					<Box sx={{ width: 'min(480px, 100%)', '& > button': { width: '100%', height: 54, fontSize: 16, borderRadius: '12px' } }}>
+						<DeskButton label="Cancel request" kind="danger" onClick={() => setCancelOpen(true)} />
+					</Box>
 				</Box>
 			) : endedByServer ? (
 				<Box sx={{ alignSelf: 'center', width: 240 }}>
@@ -447,6 +462,6 @@ export default function NursingMatchingPage() {
 				onClose={() => setCancelOpen(false)}
 				onConfirm={(reason) => void handleCancel(reason)}
 			/>
-		</LabPageShell>
+		</PatientPageShell>
 	)
 }

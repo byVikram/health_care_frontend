@@ -11,13 +11,11 @@
 //
 // The chosen lab, slot and prices depend on the cart, the address and home / in-clinic: changing any of them clears the lab + slot (see
 // `set`), so Review never shows a pick the cart no longer matches.
-import { useSyncExternalStore } from 'react'
 import { toast } from 'react-toastify'
 import { labItemById, labItemsOf, seedLabItems } from './labCatalogue'
 import type { LabItem, LabPayMethod } from './labConstants'
-import { slotAt } from './labFormat'
 import type { ApiTimelineStep } from './labService'
-import { registerSessionCache } from './labSession'
+import { createSessionStore } from '../booking/createSessionStore'
 
 export type LabWhere = 'home' | 'lab'
 
@@ -114,107 +112,68 @@ const initial = (): LabBookingState => ({
 
 // ---- persistence (sessionStorage, versioned; every access is guarded: the storage can be missing or full) ----
 
-const STORAGE_KEY = 'kh-lab-booking-v1'
-
 type Persisted = { state: Omit<LabBookingState, 'order'>; items: LabItem[] }
 
-const readStored = (): LabBookingState => {
-	try {
-		const raw = sessionStorage.getItem(STORAGE_KEY)
-		if (!raw) return initial()
-		const parsed = JSON.parse(raw) as Partial<Persisted>
-		if (!parsed.state || !Array.isArray(parsed.state.cart)) return initial()
+const store = createSessionStore<LabBookingState>({
+	key: 'kh-lab-booking-v1',
+	initial,
+	restore: (raw) => {
+		const parsed = raw as Partial<Persisted>
+		if (!parsed.state || !Array.isArray(parsed.state.cart)) return null
 		seedLabItems(Array.isArray(parsed.items) ? parsed.items : [])
 		return { ...initial(), ...parsed.state, order: null }
-	} catch {
-		return initial()
-	}
-}
-
-const writeStored = (s: LabBookingState) => {
-	try {
+	},
+	// the placed order is not kept; an empty booking is not kept either
+	persist: (s) => {
 		const rest: Omit<LabBookingState, 'order'> & { order?: LabOrder | null } = { ...s }
 		delete rest.order
-		const isEmpty = rest.cart.length === 0 && !rest.addressId && !rest.patientName
-		if (isEmpty) {
-			sessionStorage.removeItem(STORAGE_KEY)
-			return
-		}
+		if (rest.cart.length === 0 && !rest.addressId && !rest.patientName) return null
 		const payload: Persisted = { state: rest, items: labItemsOf(s.cart) }
-		sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
-	} catch {
-		// private mode / quota: the booking just is not kept across a refresh
-	}
-}
+		return payload
+	},
+})
 
-let state: LabBookingState = readStored()
-const listeners = new Set<() => void>()
-
-const emit = () => {
-	writeStored(state)
-	listeners.forEach((l) => l())
-}
-
-const subscribe = (l: () => void) => {
-	listeners.add(l)
-	return () => {
-		listeners.delete(l)
-	}
-}
-
-const getState = () => state
 
 const CLEARED_PICK = { lab: null, slot: null, lineAmounts: {}, quoteTotal: null } as const
 
 export const labBooking = {
-	get: getState,
+	get: store.get,
 	set(patch: Partial<LabBookingState>) {
 		const invalidates =
-			(patch.cart !== undefined && patch.cart !== state.cart) ||
-			(patch.addressId !== undefined && patch.addressId !== state.addressId) ||
-			(patch.where !== undefined && patch.where !== state.where)
-		state = { ...state, ...(invalidates ? CLEARED_PICK : {}), ...patch }
-		emit()
+			(patch.cart !== undefined && patch.cart !== store.get().cart) ||
+			(patch.addressId !== undefined && patch.addressId !== store.get().addressId) ||
+			(patch.where !== undefined && patch.where !== store.get().where)
+		store.replace({ ...store.get(), ...(invalidates ? CLEARED_PICK : {}), ...patch })
 	},
 	/** Back to an empty cart and no pick. */
 	reset() {
-		state = initial()
-		emit()
+		store.replace(initial())
 	},
 	/** New booking: clear everything except who the tests are for and where. */
 	startOver() {
-		const { patientKey, patientName, patientRelation, addressId, addressTag, addressLine } = state
-		state = { ...initial(), patientKey, patientName, patientRelation, addressId, addressTag, addressLine }
-		emit()
+		const { patientKey, patientName, patientRelation, addressId, addressTag, addressLine } = store.get()
+		store.replace({ ...initial(), patientKey, patientName, patientRelation, addressId, addressTag, addressLine })
 	},
 	addItem(id: string) {
-		if (state.cart.includes(id)) return
-		if (state.cart.length >= MAX_LAB_ITEMS) {
+		if (store.get().cart.includes(id)) return
+		if (store.get().cart.length >= MAX_LAB_ITEMS) {
 			toast.info(`You can book up to ${MAX_LAB_ITEMS} tests at a time`)
 			return
 		}
-		labBooking.set({ cart: [...state.cart, id] })
+		labBooking.set({ cart: [...store.get().cart, id] })
 	},
 	removeItem(id: string) {
-		labBooking.set({ cart: state.cart.filter((c) => c !== id) })
+		labBooking.set({ cart: store.get().cart.filter((c) => c !== id) })
 	},
 	toggleItem(id: string) {
-		if (state.cart.includes(id)) labBooking.removeItem(id)
+		if (store.get().cart.includes(id)) labBooking.removeItem(id)
 		else labBooking.addItem(id)
-	},
-	/** Drop a slot that has gone by (the page can stay open for a long time). */
-	dropExpired() {
-		if (state.slot && slotAt(state.slot.date, state.slot.time).getTime() <= Date.now()) {
-			labBooking.set({ slot: null })
-		}
 	},
 }
 
-// The booking holds the patient's name, address and order: clear it on logout like the other per-user caches.
-registerSessionCache(() => labBooking.reset())
 
 export function useLabBooking() {
-	return useSyncExternalStore(subscribe, getState, getState)
+	return store.useStore()
 }
 
 // ---------------------------------------------------------------------------------------------------------

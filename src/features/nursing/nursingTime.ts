@@ -3,22 +3,12 @@
 // The clock rules of a nursing visit, the way the server counts them (the native app's utils/visitSlots.ts): days are counted in Mumbai
 // (IST, +05:30, no daylight saving) whatever zone the browser is in, a slot today must start at least the lead time (60 minutes) from now
 // to the second, and the day's slots are hourly from 7 AM to 9 PM in Morning / Afternoon / Evening groups.
-import { commaDate, longDate, timeLabel, toIso } from '../lab/labFormat'
+import { istSecondsNow, istTodayIso } from '../../utils/istTime'
+import { commaDate, longDate, timeLabel, toIso } from '../booking/bookingFormat'
 import { BOOKING_WINDOW_DAYS } from './nursingService'
 
-const IST_OFFSET_MS = 330 * 60_000
-
-/** 'YYYY-MM-DD' in Mumbai at `now`. */
-export const istTodayIso = (now: Date = new Date()): string => {
-	const t = new Date(now.getTime() + IST_OFFSET_MS)
-	return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(t.getUTCDate()).padStart(2, '0')}`
-}
-
-/** Seconds since midnight in Mumbai at `now`. */
-export const istSecondsNow = (now: Date = new Date()): number => {
-	const t = new Date(now.getTime() + IST_OFFSET_MS)
-	return t.getUTCHours() * 3600 + t.getUTCMinutes() * 60 + t.getUTCSeconds()
-}
+// the India-time helpers are shared with the Lab flow (utils/istTime.ts); they are re-exported here for the home-care files that import them from this file
+export { istTodayIso, istSecondsNow }
 
 /** The booking window: today and the next 13 days in Mumbai, as 'YYYY-MM-DD'. */
 export const bookingDays = (now: Date = new Date()): string[] => {
@@ -40,7 +30,10 @@ export const minutesOf = (value: string): number => Number(value.slice(0, 2)) * 
  * are too soon and 1 PM is the first that can be picked.
  */
 export const slotTooSoon = (iso: string, startMinutes: number, leadMinutes: number, now: Date = new Date()): boolean => {
-	if (iso !== istTodayIso(now)) return false
+	const today = istTodayIso(now)
+	// a day that has already passed in India is always too soon (a browser behind India can still show it as today)
+	if (iso < today) return true
+	if (iso > today) return false
 	return startMinutes * 60 < istSecondsNow(now) + leadMinutes * 60
 }
 

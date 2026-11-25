@@ -124,7 +124,7 @@ export async function fetchCatalogue(serviceKey: string, search?: string): Promi
 	const params: Record<string, string> = { specialty_id: serviceKey }
 	const term = (search ?? '').trim().slice(0, 100).trim()
 	if (term) params.search = term
-	const res = await ApiService.getWithParams<Envelope<{ services?: Raw[]; packages?: Raw[] }>>(API_ENDPOINTS.ANCILLARY.CATALOG, params)
+	const res = await ApiService.getWithParams<Envelope<{ services?: Raw[]; packages?: Raw[] }>>(API_ENDPOINTS.ANCILLARY.CATALOG, params, { suppressErrorToast: true })
 	const data = res.data?.data ?? {}
 	return {
 		procedures: Array.isArray(data.services) ? data.services.map(mapProcedure) : [],
@@ -177,7 +177,8 @@ export const DEFAULT_POLICY: VisitPolicy = { assignLeadMinutes: 60, cancelCutoff
 
 export type NursingConfig = { policy: VisitPolicy; helpline: string | null }
 
-export async function fetchConfig(): Promise<NursingConfig> {
+/** The server's config, or null when the call failed (the caller keeps the defaults and tries again later; it does not cache the defaults). */
+export async function fetchConfig(): Promise<NursingConfig | null> {
 	try {
 		const res = await ApiService.get<
 			Envelope<{ home_care_visit_policy?: { assign_lead_minutes?: number; cancel_cutoff_minutes?: number }; nursing_helpline_number?: string | null }>
@@ -192,7 +193,7 @@ export async function fetchConfig(): Promise<NursingConfig> {
 			helpline: text(data?.nursing_helpline_number) || null,
 		}
 	} catch {
-		return { policy: DEFAULT_POLICY, helpline: null }
+		return null
 	}
 }
 

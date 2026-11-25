@@ -6,7 +6,7 @@
 import { Box } from '@mui/material'
 import DashboardCarousel from '../../../components/common/Carousel/DashboardCarousel'
 import { DESK } from '../../../styles/deskTokens'
-import { inr, plural } from '../../lab/labFormat'
+import { inr, plural } from '../../booking/bookingFormat'
 import type { NursingItem } from '../nursingService'
 import { offLabel } from '../nursingFormat'
 

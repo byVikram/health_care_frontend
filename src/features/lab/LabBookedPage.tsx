@@ -11,11 +11,10 @@ import DeskButton from '../../components/common/Button/DeskButton'
 import DeskIcon from '../../components/common/Icon/DeskIcon'
 import { ROUTES } from '../../constants/routes'
 import { DESK, DESK_ICONS } from '../../styles/deskTokens'
-import LabStepper from './components/LabStepper'
-import { downloadVisitCalendar } from './labCalendar'
+import { downloadVisitCalendar } from '../booking/visitCalendar'
 import { labBooking, useLabBooking } from './labBookingStore'
-import { commaDate, inr, plural } from './labFormat'
-import LabPageShell from './LabPageShell'
+import { commaDate, inr, plural } from '../booking/bookingFormat'
+import PatientPageShell from '../../components/layout/PatientPageShell'
 
 const capsSx = { fontSize: 12, lineHeight: '16px', fontWeight: 800, letterSpacing: '0.06em', color: DESK.primary } as const
 
@@ -24,7 +23,7 @@ function Fact({ label, title, sub, last = false }: { label: string; title: strin
 		<Box
 			sx={{
 				p: '18px 20px',
-				borderRight: last ? 0 : '1px solid #EEF2F2',
+				borderRight: last ? 0 : `1px solid ${DESK.lineSoft}`,
 				display: 'flex',
 				flexDirection: 'column',
 				gap: '2px',
@@ -112,9 +111,7 @@ export default function LabBookedPage() {
 	}
 
 	return (
-		<LabPageShell maxWidth={960}>
-			<LabStepper current={3} />
-
+		<PatientPageShell maxWidth={960}>
 			<Box
 				component="section"
 				sx={{
@@ -151,7 +148,7 @@ export default function LabBookedPage() {
 							boxSizing: 'border-box',
 							borderRadius: '9999px',
 							bgcolor: DESK.success,
-							border: '4px solid #9FD3D1',
+							border: `4px solid ${DESK.mint}`,
 							display: 'flex',
 							alignItems: 'center',
 							justifyContent: 'center',
@@ -167,7 +164,7 @@ export default function LabBookedPage() {
 							alignSelf: 'flex-start',
 							p: '4px 12px',
 							borderRadius: '9999px',
-							bgcolor: '#9FD3D1',
+							bgcolor: DESK.mint,
 							color: DESK.ink,
 							fontSize: 12,
 							fontWeight: 800,
@@ -190,10 +187,10 @@ export default function LabBookedPage() {
 				component="section"
 				sx={{
 					bgcolor: DESK.raised,
-					border: '1px solid #E3EAEB',
+					border: `1px solid ${DESK.cardLine}`,
 					borderRadius: '18px',
 					display: 'grid',
-					gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+					gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' },
 				}}
 			>
 				<Fact label="WHEN" title={time} sub={date} />
@@ -206,7 +203,7 @@ export default function LabBookedPage() {
 				component="section"
 				sx={{
 					bgcolor: DESK.raised,
-					border: '1px solid #E3EAEB',
+					border: `1px solid ${DESK.cardLine}`,
 					borderRadius: '18px',
 					p: '22px 24px',
 					display: 'flex',
@@ -246,7 +243,7 @@ export default function LabBookedPage() {
 				component="section"
 				sx={{
 					bgcolor: DESK.raised,
-					border: '1px solid #E3EAEB',
+					border: `1px solid ${DESK.cardLine}`,
 					borderRadius: '18px',
 					p: '16px 24px',
 					display: 'flex',
@@ -288,6 +285,6 @@ export default function LabBookedPage() {
 					/>
 				</Box>
 			</Box>
-		</LabPageShell>
+		</PatientPageShell>
 	)
 }

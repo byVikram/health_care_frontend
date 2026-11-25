@@ -35,6 +35,8 @@ type AppDrawerProps = {
 	/** When provided, replaces the default Cancel/Confirm footer with custom content (e.g. multiple action buttons). */
 	footerContent?: ReactNode
 	sx?: SxProps<Theme>
+	/** Slide in / out time in ms (MUI's own is about 225 in, 195 out). */
+	transitionDuration?: number | { enter?: number; exit?: number }
 }
 
 export default function AppDrawer({
@@ -51,13 +53,15 @@ export default function AppDrawer({
 	confirmDisabled = false,
 	width = 400,
 	footerContent,
-	sx
+	sx,
+	transitionDuration
 }: AppDrawerProps) {
 	return (
 		<Drawer
 			anchor="right"
 			open={open}
 			onClose={onClose}
+			transitionDuration={transitionDuration}
 			slotProps={{
 				paper: {
 					sx: {
@@ -65,6 +69,8 @@ export default function AppDrawer({
 						// from the very top of the page, over the navbar (the modal layer is above the navbar's)
 						top: 0,
 						height: '100vh',
+						// the visible height on phone browsers, where 100vh is taller than the screen
+						'@supports (height: 100dvh)': { height: '100dvh' },
 						m: 0,
 						borderRadius: '16px 0 0 16px',
 						p: 0,

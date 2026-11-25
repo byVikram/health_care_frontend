@@ -71,6 +71,8 @@ export function useNursingConfig(): NursingConfig {
 		let alive = true
 		void (async () => {
 			const result = await fetchConfig()
+			// a failed call keeps the defaults for now and is tried again the next time a page asks
+			if (!result) return
 			configCache = result
 			if (alive) setConfig(result)
 		})()

@@ -737,8 +737,6 @@ export default function AdminAncillaryPage() {
 					placeholder="Search by Patient, Nurse, Request ID..."
 					value={searchInput}
 					onChange={handleSearchChange}
-					enableVoiceSearch
-					onVoiceResult={applySearch}
 					startIcon={<SearchIcon sx={{ color: '#94a3b8' }} />}
 					sx={{ width: { xs: '100%', sm: 300, md: 360 } }}
 				/>

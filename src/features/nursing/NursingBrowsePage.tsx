@@ -11,9 +11,8 @@ import DeskButton from '../../components/common/Button/DeskButton'
 import ConfirmModal from '../../components/common/Modal/ConfirmModal'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import { DESK } from '../../styles/deskTokens'
-import LabPageShell from '../lab/LabPageShell'
-import { plural } from '../lab/labFormat'
-import { LAB_CARD, LAB_H2 } from '../lab/labStyles'
+import PatientPageShell from '../../components/layout/PatientPageShell'
+import { BOOKING_CARD, BOOKING_H2 } from '../booking/bookingStyles'
 import NursingBrowseCart from './components/NursingBrowseCart'
 import NursingBrowseHero from './components/NursingBrowseHero'
 import NursingDetailsDrawer from './components/NursingDetailsDrawer'
@@ -103,8 +102,8 @@ export default function NursingBrowsePage() {
 	}
 
 	return (
-		<LabPageShell hero={<NursingBrowseHero search={search} onSearch={setSearch} />}>
-			<Box sx={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
+		<PatientPageShell hero={<NursingBrowseHero search={search} onSearch={setSearch} />}>
+			<Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: '24px', alignItems: { xs: 'stretch', lg: 'flex-start' } }}>
 				<NursingFilters
 					type={type}
 					onType={setType}
@@ -118,7 +117,7 @@ export default function NursingBrowsePage() {
 				/>
 				<Box component="section" sx={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '22px' }}>
 					{error ? (
-						<Box sx={{ ...LAB_CARD, p: '32px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+						<Box sx={{ ...BOOKING_CARD, p: '32px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
 							<Box component="b" sx={{ fontSize: 18 }}>
 								We could not load the services
 							</Box>
@@ -148,11 +147,8 @@ export default function NursingBrowsePage() {
 							{showPackages ? (
 								<Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 									<Box sx={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-										<Box component="h2" sx={LAB_H2}>
+										<Box component="h2" sx={{ ...BOOKING_H2, whiteSpace: 'nowrap', flexShrink: 0 }}>
 											Care packages
-										</Box>
-										<Box component="span" sx={{ fontSize: 14, color: DESK.muted }}>
-											{care.packagesSubtitle} · {plural(visiblePackages.length, 'package', 'packages')}
 										</Box>
 									</Box>
 									{visiblePackages.map((item) => (
@@ -164,14 +160,11 @@ export default function NursingBrowsePage() {
 							{showProcedures ? (
 								<Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 									<Box sx={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-										<Box component="h2" sx={LAB_H2}>
+										<Box component="h2" sx={{ ...BOOKING_H2, whiteSpace: 'nowrap', flexShrink: 0 }}>
 											{care.servicesTitle}
 										</Box>
-										<Box component="span" sx={{ fontSize: 14, color: DESK.muted }}>
-											{care.servicesSubtitle} · {plural(visibleProcedures.length, care.serviceWord[0], care.serviceWord[1])}
-										</Box>
 									</Box>
-									<Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+									<Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: '14px' }}>
 										{visibleProcedures.map((item) => (
 											<NursingProcedureCard key={item.id} item={item} added={cart.includes(item.id)} onToggle={toggleItem} onOpen={setOpened} />
 										))}
@@ -180,7 +173,7 @@ export default function NursingBrowsePage() {
 							) : null}
 
 							{shown === 0 ? (
-								<Box sx={{ ...LAB_CARD, borderStyle: 'dashed', p: '48px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+								<Box sx={{ ...BOOKING_CARD, borderStyle: 'dashed', p: '48px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
 									<Box component="b" sx={{ fontSize: 18 }}>
 										No services match
 									</Box>
@@ -216,6 +209,6 @@ export default function NursingBrowsePage() {
 				}
 				confirmLabel="Replace"
 			/>
-		</LabPageShell>
+		</PatientPageShell>
 	)
 }

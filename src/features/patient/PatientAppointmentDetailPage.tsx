@@ -361,7 +361,7 @@ export default function PatientAppointmentDetailPage() {
       </Box>
 
       <Container maxWidth="lg" sx={{ py: { xs: 2.5, sm: 4 } }}>
-        <Grid container spacing={3} alignItems="stretch">
+        <Grid container spacing={3} alignItems="stretch" justifyContent="center">
           {/* ── LEFT COLUMN: Doctor Info + Consultation Details ───────────── */}
           <Grid size={{ xs: 12, md: 5 }}>
             {/* Doctor Information Card */}
@@ -549,28 +549,15 @@ export default function PatientAppointmentDetailPage() {
           </Grid>
 
           {/* ── RIGHT COLUMN: Prescription & Consultation Notes ───────────── */}
-          <Grid size={{ xs: 12, md: 7 }} display="flex" flexDirection="column">
-            <Typography
-              variant="overline"
-              sx={{
-                fontSize: '10px',
-                fontWeight: 700,
-                color: 'text.secondary',
-                letterSpacing: '0.08em',
-                display: 'block',
-                mb: 1.5,
-              }}
-            >
-              Doctor's Prescription &amp; Consultation Notes
-            </Typography>
-
-            {/* PrescriptionView grows to fill the remaining column height */}
+          <Grid size={{ xs: 12, md: 5 }} sx={{ position: 'relative', minHeight: { xs: 420, md: 0 } }}>
+            {/* On desktop the card is taken out of the flow and stretched over the column, so the column is exactly as tall as the left cards and a long prescription scrolls inside the card */}
             {consultationDoctor && (
-              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ position: { xs: 'static', md: 'absolute' }, inset: 0, minHeight: { xs: 420, md: 0 }, display: 'flex', flexDirection: 'column' }}>
                 <PrescriptionView
                   doctor={consultationDoctor}
                   treatment={treatment}
                   loading={treatmentLoading}
+                  appointmentId={appointmentId}
                 />
               </Box>
             )}
