@@ -28,7 +28,8 @@ import AddIcon from '@mui/icons-material/Add'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined'
 import { customCardStyle } from '../../../styles/commonStyles'
-import { VitalStat, VitalHistoryRow } from '../../../types/consultation'
+import type { VitalStat, VitalHistoryRow, VitalRating } from '../../../types/consultation'
+import { RATING_LABELS, RATING_TONES } from '../vitalRating'
 import AppModal from '../../../components/common/Modal/AppModal'
 import AppSkeleton from '../../../components/common/Skeleton/AppSkeleton'
 import AddVitals from './AddVitals'
@@ -88,36 +89,30 @@ const TAB_CONFIGS: TabConfig[] = [
 		id: 'bp',
 		label: 'Blood Pressure',
 		columns: [
-			{ key: 'morning', label: 'Morning', refRange: '90/60 - 120/80 mmHg', showDot: true },
-			{ key: 'evening', label: 'Evening', refRange: '90/60 - 120/80 mmHg', showDot: true },
+			{ key: 'bp', label: 'Blood Pressure', refRange: '90/60 - 120/80 mmHg', showDot: true },
 		],
 	},
 	{
 		id: 'glucose',
 		label: 'Glucose Level',
-		columns: [
-			{ key: 'fasting', label: 'Fasting Sugar', refRange: '70 - 99 mg/dL', showDot: true },
-			{ key: 'random', label: 'Random Sugar', refRange: '< 140 mg/dL', showDot: true },
-		],
+		columns: [{ key: 'random', label: 'Random Sugar (RBS)', refRange: '< 140 mg/dL', showDot: true }],
 	},
 	{
 		id: 'weight',
 		label: 'Weight',
-		columns: [{ key: 'weight', label: 'Weight in Kg', refRange: 'Ideal range: 58-70 kg', showDot: true }],
+		columns: [
+			{ key: 'weight', label: 'Weight in Kg', refRange: 'Ideal range: 58-70 kg', showDot: true },
+			{ key: 'height', label: 'Height in cm' },
+			{ key: 'bmi', label: 'BMI' },
+		],
 	},
 	{
 		id: 'others',
-		label: 'Others',
+		label: 'Pulse, SpO2 & Temp',
 		columns: [
-			{ key: 'waist', label: 'Waist' },
-			{ key: 'hba1c', label: 'HbA1C' },
-			{ key: 'ldl', label: 'LDL' },
-			{ key: 'hdl', label: 'HDL' },
-			{ key: 'tgl', label: 'TGL' },
-			{ key: 'respRate', label: 'Respiration rate' },
-			{ key: 'pulseRate', label: 'Pulse rate' },
-			{ key: 'spo2', label: 'SpO2' },
-			{ key: 'temp', label: 'Temperature' },
+			{ key: 'pulseRate', label: 'Pulse rate', refRange: '60 - 100 bpm', showDot: true },
+			{ key: 'spo2', label: 'SpO2', refRange: '≥ 95 %', showDot: true },
+			{ key: 'temp', label: 'Temperature', refRange: '≤ 99.5 °F', showDot: true },
 		],
 	},
 	{
@@ -206,7 +201,7 @@ const SUMMARY_CONFIG: Record<string, SummaryConfig> = {
 
 	glucose_level: {
 		unit: 'mg/dL',
-		getValue: (v) => String(v.fasting ?? v.random ?? v.post_meal ?? v.value ?? '—'),
+		getValue: (v) => String(v.random ?? v.post_meal ?? v.value ?? v.fasting ?? '—'),
 	},
 
 	spo2: {
@@ -243,36 +238,52 @@ function getLatestSummary(record: VitalRecord | null, type: string): { value: st
 
 const ROW_MAPPERS: Record<string, (v: VitalValue) => Record<string, string>> = {
 	bp: (v) => ({
-		morning:
+		// One reading (systolic + diastolic); an older "120/80" under morning / evening still shows.
+		bp:
 			hasValue(v.systolic) && hasValue(v.diastolic)
 				? `${v.systolic}/${v.diastolic} mmHg`
 				: hasValue(v.morning)
 					? String(v.morning)
-					: '—',
-		evening: hasValue(v.evening) ? String(v.evening) : '—',
+					: hasValue(v.evening)
+						? String(v.evening)
+						: '—',
 	}),
 
-
+	// Random blood sugar; an older fasting-only row still shows its value.
 	glucose: (v) => ({
-		fasting: formatValueWithUnit(v.fasting, 'mg/dL'),
-		random: formatValueWithUnit(v.random ?? v.post_meal, 'mg/dL'),
+		random: formatValueWithUnit(v.random ?? v.post_meal ?? v.fasting, 'mg/dL'),
 	}),
 	weight: (v) => ({
 		weight: formatValueWithUnit(v.weight ?? v.value, 'Kg'),
+		height: formatValueWithUnit(v.height, 'cm'),
+		bmi: hasValue(v.bmi) ? String(v.bmi) : '—',
 	}),
 
 	others: (v) => ({
-		waist: hasValue(v.waist) ? String(v.waist) : '—',
-		hba1c: hasValue(v.hba1c) ? String(v.hba1c) : '—',
-		ldl: hasValue(v.ldl) ? String(v.ldl) : '—',
-		hdl: hasValue(v.hdl) ? String(v.hdl) : '—',
-		tgl: hasValue(v.tgl) ? String(v.tgl) : '—',
-		respRate: hasValue(v.resp_rate) ? String(v.resp_rate) : '—',
 		pulseRate: hasValue(v.pulse_rate) ? String(v.pulse_rate) : '—',
 		spo2: hasValue(v.spo2) ? String(v.spo2) : '—',
-		temp: hasValue(v.temperature) ? String(v.temperature) : '—',
+		temp: hasValue(v.temperature) ? `${v.temperature} °F` : '—',
 	}),
 }
+/** The backend's rating of a saved record, as the colour of its cell ('unset' when it has none). */
+function ratingOf(record: VitalRecord | null | undefined): VitalRating {
+	return record?.rating ?? 'unset'
+}
+
+// How each cell of a history row rates: the backend's `rating` of the record (patients/vitals.py; no cut-off lives here). The "others"
+// row merges pulse, SpO2 and temperature records of one time, each carrying its own rating (see mergeOtherVitals); the weight tab has
+// none (a measurement, not rated).
+const CELL_STATUS: Record<string, (v: VitalRecord) => Record<string, VitalRating>> = {
+	bp: (v) => ({ bp: ratingOf(v) }),
+	glucose: (v) => ({ random: ratingOf(v) }),
+	others: (v) => ({
+		// a pulse saved the old way, inside an `others` record, is rated by the backend as that record's rating
+		pulseRate: v.ratings?.pulse ?? v.ratings?.others ?? 'unset',
+		spo2: v.ratings?.spo2 ?? 'unset',
+		temp: v.ratings?.temperature ?? 'unset',
+	}),
+}
+
 function mapVitalToRow(vital: VitalRecord, tabId: string, idx: number): VitalHistoryRow {
 	const mapper = ROW_MAPPERS[tabId]
 
@@ -280,6 +291,7 @@ function mapVitalToRow(vital: VitalRecord, tabId: string, idx: number): VitalHis
 		id: String(idx),
 		date: formatRecordedAt(vital.recorded_at),
 		cells: mapper ? mapper(vital.value) : {},
+		cellStatus: CELL_STATUS[tabId]?.(vital),
 	}
 }
 
@@ -308,9 +320,22 @@ function VitalStatCard({ stat }: { stat: VitalStat }) {
 			<Box sx={{ flexShrink: 0 }}>{VITAL_ICONS[stat.id]}</Box>
 			<Box sx={{ flex: 1 }}>
 				<Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-					<Typography sx={{ fontWeight: 700, fontSize: '16px', color: 'text.primary' }}>
+					<Typography
+						sx={{
+							fontWeight: 700,
+							fontSize: '16px',
+							color: stat.rating && RATING_TONES[stat.rating].ink ? RATING_TONES[stat.rating].ink : 'text.primary',
+						}}
+					>
 						{stat.value}
 					</Typography>
+					{!!stat.rating && (stat.rating === 'medium' || stat.rating === 'high') && (
+						<Box
+							role="img"
+							aria-label={RATING_LABELS[stat.rating]}
+							sx={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, bgcolor: RATING_TONES[stat.rating].dot }}
+						/>
+					)}
 					<Typography variant="caption" sx={{ fontSize: '11px', color: 'text.secondary' }}>
 						{stat.unit}
 					</Typography>
@@ -412,21 +437,21 @@ function WeightBmiCard({
 	)
 }
 
-function DataCell({ value, status, showDot }: { value: string; status?: 'normal' | 'abnormal'; showDot?: boolean }) {
+function DataCell({ value, status, showDot }: { value: string; status?: VitalRating; showDot?: boolean }) {
+	const rated = !!status && status !== 'unset'
 	return (
 		<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-			<Typography variant="body2" sx={{ fontSize: '13px', color: 'text.primary' }}>
+			<Typography
+				variant="body2"
+				sx={{ fontSize: '13px', color: rated && status !== 'normal' ? RATING_TONES[status].ink : 'text.primary' }}
+			>
 				{value}
 			</Typography>
-			{showDot && status && (
+			{showDot && rated && (
 				<Box
-					sx={{
-						width: 7,
-						height: 7,
-						borderRadius: '50%',
-						flexShrink: 0,
-						bgcolor: status === 'normal' ? 'success.main' : 'error.main',
-					}}
+					role="img"
+					aria-label={RATING_LABELS[status]}
+					sx={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, bgcolor: RATING_TONES[status].dot }}
 				/>
 			)}
 		</Box>
@@ -555,14 +580,23 @@ export default function VitalsTab({ patientPublicId }: VitalsTabProps) {
 			value: tempSummary.value,
 			unit: tempSummary.unit,
 			date: tempSummary.date,
+			rating: ratingOf(latestVitals['temperature']),
 		},
-		{ id: 'bp', label: 'Blood Pressure', value: bpSummary.value, unit: bpSummary.unit, date: bpSummary.date },
+		{
+			id: 'bp',
+			label: 'Blood Pressure',
+			value: bpSummary.value,
+			unit: bpSummary.unit,
+			date: bpSummary.date,
+			rating: ratingOf(latestVitals['blood_pressure']),
+		},
 		{
 			id: 'glucose',
 			label: 'Blood Glucose Level',
 			value: glucoseSummary.value,
 			unit: glucoseSummary.unit,
 			date: glucoseSummary.date,
+			rating: ratingOf(latestVitals['glucose_level']),
 		},
 		{
 			id: 'spo2',
@@ -570,6 +604,7 @@ export default function VitalsTab({ patientPublicId }: VitalsTabProps) {
 			value: spo2Summary.value,
 			unit: spo2Summary.unit,
 			date: spo2Summary.date,
+			rating: ratingOf(latestVitals['spo2']),
 		},
 	]
 
