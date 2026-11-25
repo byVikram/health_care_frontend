@@ -19,6 +19,8 @@ export interface BlogPost {
 	title: string
 	slug: string
 	content: string
+	/** Plain-text teaser. The list endpoint sends this instead of `content`. */
+	summary?: string
 	category: string
 	status: string
 	image_url?: string

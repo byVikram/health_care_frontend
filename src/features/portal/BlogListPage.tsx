@@ -312,7 +312,8 @@ function Cover({ post, height, iconSize }: { post: BlogPost; height: number | st
 	)
 }
 
-function ReadCard({ post }: { post: BlogPost }) {
+/** The blog card of the Health reads grid; the portal home's featured blogs row reuses it. */
+export function ReadCard({ post }: { post: BlogPost }) {
 	const { tone } = topicStyle(post.category, post.content_type)
 	const ink = TONES[tone][1]
 	return (
@@ -323,7 +324,7 @@ function ReadCard({ post }: { post: BlogPost }) {
 			<Box sx={{ p: '16px 18px 18px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
 				<Box sx={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.06em', color: ink, textTransform: 'uppercase' }}>{post.category}</Box>
 				<Box sx={{ fontSize: 17, lineHeight: '24px', fontWeight: 800 }}>{post.title}</Box>
-				<Box sx={{ fontSize: 13, lineHeight: '19px', color: DESK.muted }}>{excerpt(post.content, 110)}</Box>
+				<Box sx={{ fontSize: 13, lineHeight: '19px', color: DESK.muted }}>{excerpt(post.summary || post.content, 110)}</Box>
 				<Box sx={{ mt: '4px', fontSize: 12, color: DESK.muted }}>
 					<b style={{ color: DESK.ink }}>{authorOf(post)}</b>
 					{readMeta(post) && ` · ${readMeta(post)}`}
@@ -343,7 +344,7 @@ function EditorsPick({ post }: { post: BlogPost }) {
 				<Box sx={{ alignSelf: 'flex-start', px: '10px', py: '3px', borderRadius: '6px', bgcolor: DESK.ink, color: '#fff', fontSize: 11, fontWeight: 800, letterSpacing: '0.06em' }}>EDITOR’S PICK</Box>
 				<Box sx={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.06em', color: ink, textTransform: 'uppercase' }}>{post.category}</Box>
 				<Box sx={{ fontSize: 26, lineHeight: '34px', fontWeight: 800 }}>{post.title}</Box>
-				<Box sx={{ fontSize: 15, lineHeight: '23px', color: DESK.muted }}>{excerpt(post.content, 190)}</Box>
+				<Box sx={{ fontSize: 15, lineHeight: '23px', color: DESK.muted }}>{excerpt(post.summary || post.content, 190)}</Box>
 				<Box sx={{ mt: 'auto', display: 'flex', alignItems: 'center', gap: '10px' }}>
 					<Box aria-hidden="true" sx={{ width: 36, height: 36, borderRadius: '9999px', bgcolor: DESK.primarySoft, color: DESK.primary, fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 						{initials(authorOf(post))}
