@@ -32,12 +32,13 @@ const toOption = (m: FamilyMemberApi): FamilyMemberOption => ({
 	id: m.id,
 	name: m.name,
 	relationship: m.is_self ? 'Self' : capitalise(m.relationship || m.relation || 'Family member'),
-	age: m.age || '',
+	// age 0 is a real age (a baby under one), so test for null/undefined rather than truthiness
+	age: m.age ?? '',
 	gender: m.gender || '',
 	bloodGroup: m.blood_group || undefined,
 	avatar: buildS3Url(m.avatar_s3_key) || undefined,
 	isSelf: !!m.is_self,
-	isComplete: !!m.is_complete && !!m.age && !!m.gender,
+	isComplete: !!m.is_complete && m.age != null && !!m.gender,
 })
 
 export function useFamilyMembers() {

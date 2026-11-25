@@ -933,10 +933,10 @@ export default function PortalPage() {
 
 				{/* BOTTOM sections */}
 				<Grid container spacing={3} alignItems="stretch" sx={{ mt: 3 }}>
-					<Grid size={{ xs: 12, md: 6 }}>
-						<CommunityBlogsSection variant={'column'} />
+					<Grid size={{ xs: 12 }}>
+						<CommunityBlogsSection />
 					</Grid>
-					<Grid size={{ xs: 12, md: 6 }}>
+					<Grid size={{ xs: 12 }}>
 						<UpcomingEventsSection variant={'column'} />
 					</Grid>
 				</Grid>
