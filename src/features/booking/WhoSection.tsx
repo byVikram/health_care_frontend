@@ -1,16 +1,15 @@
-// src/features/nursing/components/NursingWhoSection.tsx
+// src/features/booking/WhoSection.tsx
 //
-// Step 1 of the booking page: who the visit is for. The signed-in patient and their family members as tiles, and "Add member" (the same
+// Step 1 of the Lab tests cart and the home-care booking: who it is for. The signed-in patient and their family members as tiles, and "Add member" (the same
 // family-member dialog the profile uses).
 import { Avatar, Box } from '@mui/material'
 import { useEffect, useRef, useState } from 'react'
-import DeskIcon from '../../../components/common/Icon/DeskIcon'
-import { DESK, DESK_ICONS, DESK_TILES } from '../../../styles/deskTokens'
-import FamilyMemberModal from '../../patient/components/FamilyMemberModal'
-import { labPatientKey, type LabPatient } from '../../lab/useLabPatients'
-import { choiceSx } from '../../lab/labStyles'
-import LabCartSection from '../../lab/components/LabCartSection'
-import { useCareService } from '../useCareService'
+import DeskIcon from '../../components/common/Icon/DeskIcon'
+import { DESK, DESK_ICONS, DESK_TILES } from '../../styles/deskTokens'
+import FamilyMemberModal from '../patient/components/FamilyMemberModal'
+import { bookingPatientKey, type BookingPatient } from './useBookingPatients'
+import { choiceSx } from './bookingStyles'
+import CartSection from './CartSection'
 
 const TINTS = [DESK_TILES.all, DESK_TILES.care, DESK_TILES.pharmacy, DESK_TILES.lab]
 
@@ -23,16 +22,18 @@ const initials = (name: string) =>
 		.slice(0, 2)
 		.toUpperCase()
 
-interface NursingWhoSectionProps {
-	patients: LabPatient[]
+interface WhoSectionProps {
+	/** The question ("Who is this test for?") and the line under it. */
+	title: string
+	sub: string
+	patients: BookingPatient[]
 	loading: boolean
-	/** `labPatientKey` of the chosen person. */
+	/** `bookingPatientKey` of the chosen person. */
 	selectedKey: string
-	onSelect: (patient: LabPatient) => void
+	onSelect: (patient: BookingPatient) => void
 }
 
-export default function NursingWhoSection({ patients, loading, selectedKey, onSelect }: NursingWhoSectionProps) {
-	const care = useCareService()
+export default function WhoSection({ title, sub, patients, loading, selectedKey, onSelect }: WhoSectionProps) {
 	const [adding, setAdding] = useState(false)
 	// How many people there were when "Add member" was opened: when the list grows, the new person is chosen.
 	const before = useRef<number | null>(null)
@@ -45,10 +46,10 @@ export default function NursingWhoSection({ patients, loading, selectedKey, onSe
 	}, [patients, onSelect])
 
 	return (
-		<LabCartSection step={1} title="Who is this visit for?" sub={`The ${care.noun} is told who to look after.`}>
-			<Box role="radiogroup" aria-label="Who is this visit for?" sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '12px' }}>
+		<CartSection step={1} title={title} sub={sub}>
+			<Box role="radiogroup" aria-label={title} sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(3, minmax(0, 1fr))', md: 'repeat(5, minmax(0, 1fr))' }, gap: '12px' }}>
 				{patients.map((p, index) => {
-					const on = labPatientKey(p) === selectedKey
+					const on = bookingPatientKey(p) === selectedKey
 					const tint = TINTS[index % TINTS.length]
 					return (
 						<Box
@@ -152,6 +153,6 @@ export default function NursingWhoSection({ patients, loading, selectedKey, onSe
 				</Box>
 			</Box>
 			{adding ? <FamilyMemberModal key="new" open onClose={() => setAdding(false)} /> : null}
-		</LabCartSection>
+		</CartSection>
 	)
 }

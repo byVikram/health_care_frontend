@@ -11,6 +11,7 @@ import { customCardStyle } from '../../../styles/commonStyles'
 import type { DoctorSearchItem } from '../../../types/doctor-search'
 import AppSkeleton from '../../../components/common/Skeleton/AppSkeleton'
 import { getDoctors } from '../doctorService'
+import { getBrowserPosition } from '../../../hooks/useCurrentLocation'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppButton from '../../../components/common/Button/AppButton'
 
@@ -37,20 +38,11 @@ type Located = { coords: Coordinates; /** false: not found for now (timed out, u
  * `final`: the page asks again on the next request, so allowing location later is picked up. A refusal (or no support) is final.
  */
 function resolveLocation(): Promise<Located> {
-	if (!navigator.geolocation) {
-		console.warn('Geolocation is not supported by your browser, using default coordinates.')
-		return Promise.resolve({ coords: DEFAULT_LOCATION, final: true })
-	}
-	return new Promise<Located>((resolve) => {
-		navigator.geolocation.getCurrentPosition(
-			(position) =>
-				resolve({ coords: { latitude: position.coords.latitude, longitude: position.coords.longitude }, final: true }),
-			(err) => {
-				console.warn('Geolocation failed or denied, using default coordinates.', err)
-				resolve({ coords: DEFAULT_LOCATION, final: err.code === err.PERMISSION_DENIED })
-			},
-			{ enableHighAccuracy: true, timeout: 10000, maximumAge: 5 * 60 * 1000 },
-		)
+	return getBrowserPosition({ enableHighAccuracy: true, timeout: 10000, maximumAge: 5 * 60 * 1000 }).then((here): Located => {
+		if (here.coords) return { coords: here.coords, final: true }
+		console.warn('Geolocation is unavailable or was refused, using default coordinates.')
+		// no support or a refusal is final; a time-out is not (the permission prompt may still be open)
+		return { coords: DEFAULT_LOCATION, final: here.unsupported || here.denied }
 	})
 }
 
@@ -79,7 +71,7 @@ export default function DoctorSearchPage() {
 
 	// ── Data state ─────────────────────────────────────────────────────────
 	const [doctors,     setDoctors]     = useState<DoctorSearchItem[]>([])
-	const [total,       setTotal]       = useState(0)
+	const [, setTotal]            = useState(0)
 	const [loading,     setLoading]     = useState(true)
 	const [loadingMore, setLoadingMore] = useState(false)
 	const [hasMore,     setHasMore]     = useState(false)
@@ -216,7 +208,6 @@ export default function DoctorSearchPage() {
 		setPage(1)
 	}, [])
 
-	const visibleCount = total || doctors.length
 
 	return (
 		<Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
@@ -279,7 +270,7 @@ export default function DoctorSearchPage() {
 						>
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
 								<Typography variant="h5" sx={{ fontWeight: 600 }}>
-									{isNearby ? `${visibleCount} Doctors Near You` : `${visibleCount} Doctors Found`}
+									{isNearby ? 'Doctors Near You' : 'Doctors'}
 								</Typography>
 								{filters.speciality && specialityLabel && (
 									<Chip

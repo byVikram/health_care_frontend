@@ -52,9 +52,6 @@ export default function NursingBrowseHero({ search, onSearch }: NursingBrowseHer
 						{care.title}
 					</Box>
 					<Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 15, color: DESK.mintText }}>
-						<Box component="span" sx={{ display: 'flex', color: DESK.mint }}>
-							<DeskIcon d={DESK_ICONS.homeCare} size={18} />
-						</Box>
 						{care.tagline}
 					</Box>
 					<Box

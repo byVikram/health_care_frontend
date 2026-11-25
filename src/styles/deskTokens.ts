@@ -13,6 +13,8 @@ export const DESK = {
 	/** Buttons, inputs and the calendar. */
 	lineStrong: '#D5E1E2',
 	field: '#C9D5D6',
+	/** The border of a choice chip, a step dot and a scrollbar thumb that is not chosen. */
+	lineChoice: '#C9D6D7',
 	ink: '#12373E',
 	inkSoft: '#3D5054',
 	muted: '#5B6B6E',

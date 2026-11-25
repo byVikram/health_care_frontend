@@ -4,7 +4,7 @@
 import { Box } from '@mui/material'
 import { useState } from 'react'
 import DeskIcon from '../../../components/common/Icon/DeskIcon'
-import { DESK_TILES } from '../../../styles/deskTokens'
+import { DESK, DESK_TILES } from '../../../styles/deskTokens'
 import { LAB_ICONS } from '../labConstants'
 
 interface LabLogoProps {
@@ -26,7 +26,7 @@ export default function LabLogo({ url, size = 42 }: LabLogoProps) {
 				overflow: 'hidden',
 				bgcolor: url && !failed ? '#FFFFFF' : tile.bg,
 				color: tile.ink,
-				border: url && !failed ? '1px solid #E3EAEB' : 0,
+				border: url && !failed ? `1px solid ${DESK.cardLine}` : 0,
 				display: 'flex',
 				alignItems: 'center',
 				justifyContent: 'center',

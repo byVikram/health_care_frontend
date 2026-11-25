@@ -21,9 +21,9 @@ import FactList from '../../components/common/FactList/FactList'
 import StatusPill from '../../components/common/StatusPill/StatusPill'
 import { ROUTES } from '../../constants/routes'
 import { DESK, DESK_ICONS, type DeskTone } from '../../styles/deskTokens'
-import LabPageShell from '../lab/LabPageShell'
-import { commaDate, dayNum, dowShort, inr, monShort, plural } from '../lab/labFormat'
-import { LAB_CARD } from '../lab/labStyles'
+import PatientPageShell from '../../components/layout/PatientPageShell'
+import { commaDate, dayNum, dowShort, inr, monShort, plural } from '../booking/bookingFormat'
+import { BOOKING_CARD } from '../booking/bookingStyles'
 import NursingStatusStrip from './components/NursingStatusStrip'
 import { NursingCancelVisitsDialog, NursingRescheduleDialog } from './components/NursingVisitDialogs'
 import { nursingBooking } from './nursingBookingStore'
@@ -112,7 +112,7 @@ export default function NursingOrderPage() {
 	const [search] = useSearchParams()
 	const navigate = useNavigate()
 	const care = useCareService()
-	const { order, loading, error, reload } = useNursingOrder(requestId, { live: true, pollMs: 5000, pollWithSocketMs: 10000 })
+	const { order, loading, error, reconnecting, reload } = useNursingOrder(requestId, { live: true, pollMs: 5000, pollWithSocketMs: 10000 })
 
 	const [focusId, setFocusId] = useState<string | null>(search.get('visit'))
 	const [cancelVisitsOpen, setCancelVisitsOpen] = useState(false)
@@ -146,17 +146,17 @@ export default function NursingOrderPage() {
 
 	if (loading && !order) {
 		return (
-			<LabPageShell>
+			<PatientPageShell>
 				<AppSkeleton height={120} sx={{ borderRadius: '18px' }} />
 				<AppSkeleton height={260} sx={{ borderRadius: '18px' }} />
-			</LabPageShell>
+			</PatientPageShell>
 		)
 	}
 
 	if (!order) {
 		return (
-			<LabPageShell maxWidth={720}>
-				<Box sx={{ ...LAB_CARD, p: '48px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+			<PatientPageShell maxWidth={720}>
+				<Box sx={{ ...BOOKING_CARD, p: '48px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
 					<Box component="b" sx={{ fontSize: 20 }}>
 						We could not find this booking
 					</Box>
@@ -167,11 +167,11 @@ export default function NursingOrderPage() {
 						<DeskButton label="Back to my bookings" kind="primary" onClick={() => navigate(`${ROUTES.BOOKINGS}?category=ancillary`)} />
 					</Box>
 				</Box>
-			</LabPageShell>
+			</PatientPageShell>
 		)
 	}
 
-	const serviceName = order.package?.name ?? order.serviceName ?? (order.services?.map((s) => s.name).join(', ') || 'Nursing care')
+	const serviceName = order.package?.name ?? order.serviceName ?? (order.services?.map((s) => s.name).join(', ') || care.sentence)
 	const [statusLabel, statusTone] = statusOf(status, care.noun)
 	const timeline = (focused?.timeline ?? order.timeline ?? fallbackTimeline(status)) as NonNullable<typeof order.timeline>
 	const next = nextVisitId(visits)
@@ -197,7 +197,8 @@ export default function NursingOrderPage() {
 		try {
 			await action()
 			toast.success(done)
-			await reload()
+			// the action worked: a refresh that fails (a short network drop) must not look like the action failing
+			void reload().catch(() => undefined)
 			return true
 		} catch (e) {
 			toast.error(nursingErrorMessage(e))
@@ -222,11 +223,19 @@ export default function NursingOrderPage() {
 
 	const bookAgain = async () => {
 		setBusy(true)
-		const ok = await restoreCartFromOrder(order, care.key)
-		setBusy(false)
-		if (!ok) toast.info('Those services are not available now. Pick again.')
-		else nursingBooking.set({ mode: 'later' })
-		navigate(ok ? carePath(care.key, 'schedule') : carePath(care.key, 'home'))
+		try {
+			const { ok, missing } = await restoreCartFromOrder(order, care.key)
+			if (!ok) toast.info('Those services are not available now. Pick again.')
+			else {
+				nursingBooking.set({ mode: 'later' })
+				if (missing > 0) toast.info(`${missing === 1 ? 'One service is' : `${missing} services are`} not available now, so it was left out.`)
+			}
+			navigate(ok ? carePath(care.key, 'schedule') : carePath(care.key, 'home'))
+		} catch (e) {
+			toast.error(nursingErrorMessage(e, 'We could not load the services. Please try again.'))
+		} finally {
+			setBusy(false)
+		}
 	}
 
 	const sendRating = async () => {
@@ -257,13 +266,18 @@ export default function NursingOrderPage() {
 	]
 
 	return (
-		<LabPageShell>
+		<PatientPageShell>
+			{reconnecting ? (
+				<Box role="status" sx={{ p: '10px 14px', borderRadius: '12px', bgcolor: DESK.warningSoft, color: DESK.warning, fontSize: 13, fontWeight: 600 }}>
+					Reconnecting… we are having trouble reaching the server and will keep trying.
+				</Box>
+			) : null}
 			<Box component={Link} to={`${ROUTES.BOOKINGS}?category=ancillary`} sx={{ width: 220, fontSize: 14, fontWeight: 800, textDecoration: 'none', color: DESK.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
 				<DeskIcon d={DESK_ICONS.chevronLeft} size={16} strokeWidth={2.4} />
 				My bookings
 			</Box>
 
-			<Box sx={{ ...LAB_CARD, p: '20px 24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+			<Box sx={{ ...BOOKING_CARD, p: '20px 24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
 				<Box component="span" sx={{ width: 52, height: 52, borderRadius: '14px', bgcolor: DESK.primarySoft, color: DESK.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
 					<DeskIcon d={DESK_ICONS.homeCare} size={26} />
 				</Box>
@@ -284,11 +298,12 @@ export default function NursingOrderPage() {
 
 			<NursingStatusStrip timeline={timeline} />
 
-			<Box sx={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
-				<Box sx={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '18px' }}>
+			{/* a grid: the first card on the left and the booking details share the first row, so they are the same height; the other cards go below on the left */}
+			<Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: 'minmax(0, 1fr) 380px' }, columnGap: '24px', rowGap: '18px', alignItems: 'stretch' }}>
+				<Box sx={{ display: 'contents', '& > *': { gridColumn: 1, minWidth: 0 }, '& > :first-child': { gridRow: { lg: 1 } } }}>
 					{/* Book now: the provider and the codes */}
 					{!scheduled && provider ? (
-						<Box sx={{ ...LAB_CARD, p: '22px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+						<Box sx={{ ...BOOKING_CARD, p: '22px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 							<Box component="b" sx={{ fontSize: 18 }}>
 								Your {care.noun}
 							</Box>
@@ -319,7 +334,7 @@ export default function NursingOrderPage() {
 								) : null}
 							</Box>
 							{startCode || completionCode ? (
-								<Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+								<Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: '12px' }}>
 									{startCode && !completed ? (
 										<Box sx={{ p: '14px', borderRadius: '14px', bgcolor: DESK.primaryTint, display: 'flex', flexDirection: 'column', gap: '4px' }}>
 											<Box component="span" sx={{ fontSize: 12, color: DESK.muted }}>
@@ -347,7 +362,7 @@ export default function NursingOrderPage() {
 
 					{/* tasks of the visit that is on */}
 					{focused?.tasks && focused.tasks.length > 0 ? (
-						<Box sx={{ ...LAB_CARD, p: '22px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+						<Box sx={{ ...BOOKING_CARD, p: '22px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
 							<Box component="b" sx={{ fontSize: 16 }}>
 								Care checklist
 							</Box>
@@ -364,7 +379,7 @@ export default function NursingOrderPage() {
 
 					{/* Later: one card per visit */}
 					{scheduled ? (
-						<Box sx={{ ...LAB_CARD, p: '22px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+						<Box sx={{ ...BOOKING_CARD, p: '22px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 							<Box sx={{ display: 'flex', alignItems: 'center' }}>
 								<Box component="b" sx={{ fontSize: 18, flexGrow: 1 }}>
 									{visits.length > 1 ? 'Your visits' : 'Your visit'}
@@ -419,7 +434,7 @@ export default function NursingOrderPage() {
 							})}
 							{/* the code of the visit that is on */}
 							{focused && (focused.start_code || focused.completion_code) && focused.provider ? (
-								<Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', mt: '4px' }}>
+								<Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: '12px', mt: '4px' }}>
 									{focused.start_code && !isDoneStatus(focused.status) ? (
 										<Box sx={{ p: '14px', borderRadius: '14px', bgcolor: DESK.primaryTint, display: 'flex', flexDirection: 'column', gap: '4px' }}>
 											<Box component="span" sx={{ fontSize: 12, color: DESK.muted }}>
@@ -457,7 +472,7 @@ export default function NursingOrderPage() {
 					) : null}
 				</Box>
 
-				<Box component="aside" sx={{ ...LAB_CARD, position: 'sticky', top: 20, width: 380, flexShrink: 0, p: '22px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+				<Box component="aside" sx={{ ...BOOKING_CARD, gridColumn: { xs: 1, lg: 2 }, gridRow: { lg: 1 }, width: { xs: '100%', lg: 380 }, flexShrink: 0, p: '22px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 					<Box component="b" sx={{ fontSize: 18 }}>
 						Booking details
 					</Box>
@@ -486,8 +501,6 @@ export default function NursingOrderPage() {
 						</Box>
 					</Box>
 
-					{canCancelInstant || canCancelLegacy ? <DeskButton label="Cancel booking" kind="danger" onClick={() => setCancelAllOpen(true)} /> : null}
-					{canCancelVisits ? <DeskButton label="Cancel visits" kind="danger" onClick={() => setCancelVisitsOpen(true)} /> : null}
 					{completed && !review ? <DeskButton label={`Rate your ${care.noun}`} kind="primary" onClick={() => setRateOpen(true)} /> : null}
 					{review ? (
 						<Box sx={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -508,7 +521,8 @@ export default function NursingOrderPage() {
 							Free cancellation up to {policy.cancelCutoffMinutes / 60} hrs before each visit. A visit can be moved until a {care.noun} is assigned.
 						</Box>
 					) : null}
-					{focused ? (
+					{/* a Book now order has no day or time yet: only a dated visit is shown here */}
+					{focused?.date && focused.start_time ? (
 						<Box component="span" sx={{ fontSize: 12, color: DESK.muted }}>
 							Showing {dayLabel(focused.date)} · {rangeLabel(focused.start_time, focused.end_time)}
 							{order.created_at ?? order.createdAt ? ` · booked ${commaDate(String(order.created_at ?? order.createdAt).slice(0, 10))}` : ''}
@@ -516,6 +530,21 @@ export default function NursingOrderPage() {
 					) : null}
 				</Box>
 			</Box>
+
+			{canCancelInstant || canCancelLegacy || canCancelVisits ? (
+				<Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+					{canCancelInstant || canCancelLegacy ? (
+						<Box sx={{ width: 'min(480px, 100%)', '& > button': { width: '100%', height: 54, fontSize: 16, borderRadius: '12px' } }}>
+							<DeskButton label="Cancel booking" kind="danger" onClick={() => setCancelAllOpen(true)} />
+						</Box>
+					) : null}
+					{canCancelVisits ? (
+						<Box sx={{ width: 'min(480px, 100%)', '& > button': { width: '100%', height: 54, fontSize: 16, borderRadius: '12px' } }}>
+							<DeskButton label="Cancel visits" kind="danger" onClick={() => setCancelVisitsOpen(true)} />
+						</Box>
+					) : null}
+				</Box>
+			) : null}
 
 			{cancelVisitsOpen ? <NursingCancelVisitsDialog open visits={visits} policy={policy} busy={busy} onClose={() => setCancelVisitsOpen(false)} onConfirm={(ids, reason) => void handleCancelVisits(ids, reason)} /> : null}
 			{moving ? <NursingRescheduleDialog open visit={moving} visits={visits} policy={policy} busy={busy} onClose={() => setMoving(null)} onConfirm={(date, time) => void handleMove(date, time)} /> : null}
@@ -544,6 +573,6 @@ export default function NursingOrderPage() {
 					sx={{ width: '100%', boxSizing: 'border-box', p: '12px 14px', border: `1.5px solid ${DESK.lineStrong}`, borderRadius: '12px', fontFamily: 'inherit', fontSize: 14, resize: 'vertical', outline: 0, '&:focus': { borderColor: DESK.primary } }}
 				/>
 			</DeskDialog>
-		</LabPageShell>
+		</PatientPageShell>
 	)
 }

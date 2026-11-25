@@ -1,13 +1,13 @@
-// src/features/lab/components/LabCartSection.tsx
+// src/features/lab/components/CartSection.tsx
 //
 // The numbered white card each step of the cart page sits in (1 Who, 2 Where, 3 When): a teal number, a title with a grey line under it,
 // and the content. Also the round radio mark the choice cards use.
 import { Box } from '@mui/material'
 import type { ReactNode } from 'react'
-import { DESK } from '../../../styles/deskTokens'
-import { LAB_CARD } from '../labStyles'
+import { DESK } from '../../styles/deskTokens'
+import { BOOKING_CARD } from './bookingStyles'
 
-interface LabCartSectionProps {
+interface CartSectionProps {
 	step?: number
 	title: string
 	sub?: string
@@ -16,9 +16,9 @@ interface LabCartSectionProps {
 	children: ReactNode
 }
 
-export default function LabCartSection({ step, title, sub, right, children }: LabCartSectionProps) {
+export default function CartSection({ step, title, sub, right, children }: CartSectionProps) {
 	return (
-		<Box component="section" aria-label={title} sx={{ ...LAB_CARD, p: '22px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+		<Box component="section" aria-label={title} sx={{ ...BOOKING_CARD, p: '22px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 			<Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
 				{step ? (
 					<Box
@@ -58,7 +58,7 @@ export default function LabCartSection({ step, title, sub, right, children }: La
 }
 
 /** The round mark at the end of a choice card: a thick teal ring when chosen, a thin grey ring when not. */
-export function LabRadioDot({ on, size = 22 }: { on: boolean; size?: number }) {
+export function RadioDot({ on, size = 22 }: { on: boolean; size?: number }) {
 	return (
 		<Box
 			component="span"

@@ -127,9 +127,8 @@ export default function DoctorHospitalsTab({ hospitals, onChange, onRefresh }: D
 			const res = await updateHospital({ hospital_id: id, is_primary: true })
 			onChange(hospitals.map((h) => ({ ...h, isPrimary: h.id === id })))
 			toast.success(getSuccessMessage(res.data))
-		} catch (err) {
+		} catch {
 			// the shared API client already shows the server's reason
-			console.error('Failed to set the primary hospital:', err)
 		} finally {
 			setBusyHospitalId(null)
 		}
@@ -152,9 +151,8 @@ export default function DoctorHospitalsTab({ hospitals, onChange, onRefresh }: D
 			setHospitalToDeactivate(null)
 			// which hospital the server made primary is only known from the server
 			if (removed.isPrimary) onRefresh?.()
-		} catch (err) {
+		} catch {
 			// the shared API client already shows the server's reason
-			console.error('Failed to deactivate the hospital:', err)
 		} finally {
 			setBusyHospitalId(null)
 		}

@@ -65,13 +65,19 @@ type CommonProps = {
 	hideLegend?: boolean
 	dateLabel?: string
 	timeLabel?: string
-	hideNavigation?: boolean
 	disablePast?: boolean
 	/** How many days ahead (today included) can be chosen; unset = no limit. Later days are disabled and the strip cannot move past them. */
 	maxDaysAhead?: number
+	/** The date to count "today" from (default: the browser's). A booking in another time zone passes that zone's date, so past days and the end of the window are right whatever the browser's zone is. */
+	today?: Date
+	/**
+	 * Patient booking pages: the day strip starts at today and shows this many days from it (14 = two weeks), 7 to a row, every day
+	 * selectable and no past days; arrows move between the 7-day pages. It replaces the Sunday-to-Saturday week strip and `maxDaysAhead`. The days stretch to
+	 * fill the width, so it looks right in a narrow column (doctor details) and in a wide card (Lab, home care). Unset: the week strip.
+	 */
+	rollingDays?: number
 	compactAppointmentToggle?: boolean
 	timeSlotColumns?: number
-	timeSlotVariant?: 'default' | 'availability'
 	availableSlots?: SlotGroup[]
 	loading?: boolean
 	// Opt-in: shows AppSkeleton in place of the time slots ONLY (the date strip and the appointment-type toggle stay
@@ -93,8 +99,145 @@ type CommonProps = {
 
 type DateSlotPickerProps = CommonProps & (SingleProps | MultiProps)
 
-// -----------------------------------------------------------------------------
+// -- Rolling day strip (patient booking pages) ---------------------------------
+// The days from today, 7 to a page: one row as wide as the time grid under it (the edges line up), with arrows for the next 7 days.
+// The cells have a fixed low height, so a wide card gets short wide chips, not big tiles. The days are real buttons (keyboard, screen
+// readers) and the first one says "Today".
+const ROLLING_PER_PAGE = 7
 
+function RollingDayGrid({
+	dates,
+	isSelected,
+	onPick,
+}: {
+	dates: Date[]
+	isSelected: (date: Date) => boolean
+	onPick: (date: Date) => void
+}) {
+	const pages = Math.ceil(dates.length / ROLLING_PER_PAGE)
+	const picked = dates.findIndex(isSelected)
+	// open on the page of the picked day (it can be in the second week), and follow it when it is changed from outside (a "Today" button)
+	const [page, setPage] = useState(picked < 0 ? 0 : Math.floor(picked / ROLLING_PER_PAGE))
+	const [seenPicked, setSeenPicked] = useState(picked)
+	if (picked !== seenPicked) {
+		setSeenPicked(picked)
+		if (picked >= 0) setPage(Math.floor(picked / ROLLING_PER_PAGE))
+	}
+	const shown = dates.slice(page * ROLLING_PER_PAGE, (page + 1) * ROLLING_PER_PAGE)
+	const first = shown[0]
+	const last = shown[shown.length - 1]
+	const sameYear = first.getFullYear() === last.getFullYear()
+	// "Nov 2026" / "Nov \u2013 Dec 2026" / "Dec 2026 \u2013 Jan 2027"
+	const range =
+		first.getMonth() === last.getMonth() && sameYear
+			? `${MONTHS[first.getMonth()]} ${first.getFullYear()}`
+			: sameYear
+				? `${MONTHS[first.getMonth()]} \u2013 ${MONTHS[last.getMonth()]} ${last.getFullYear()}`
+				: `${MONTHS[first.getMonth()]} ${first.getFullYear()} \u2013 ${MONTHS[last.getMonth()]} ${last.getFullYear()}`
+
+	return (
+		<Box sx={{ mb: 2.25, containerType: 'inline-size' }}>
+			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, minHeight: 34 }}>
+				<Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', fontSize: '15px' }}>
+					{range}
+				</Typography>
+				{pages > 1 && (
+					<Box sx={{ display: 'flex', gap: 0.5 }}>
+						<IconButton
+							size="small"
+							aria-label="Previous days"
+							disabled={page === 0}
+							onClick={() => setPage((p) => p - 1)}
+							sx={{ color: 'text.secondary', '&:focus': { outline: 'none' } }}
+						>
+							<ChevronLeftIcon />
+						</IconButton>
+						<IconButton
+							size="small"
+							aria-label="Next days"
+							disabled={page >= pages - 1}
+							onClick={() => setPage((p) => p + 1)}
+							sx={{ color: 'text.secondary', '&:focus': { outline: 'none' } }}
+						>
+							<ChevronRightIcon />
+						</IconButton>
+					</Box>
+				)}
+			</Box>
+			<Box
+				role="group"
+				aria-label="Choose a day"
+				sx={{
+					display: 'grid',
+					gridTemplateColumns: `repeat(${ROLLING_PER_PAGE}, minmax(0, 1fr))`,
+					gap: { xs: 0.5, sm: 1 },
+					// a wide card (the Lab / home-care cart) gets more air between the days; the narrow doctor column keeps the tight gap
+					'@container (min-width: 600px)': { gap: 3.5 },
+				}}
+			>
+				{shown.map((date, i) => {
+					const isToday = page === 0 && i === 0
+					const selected = isSelected(date)
+					const isSat = date.getDay() === 6
+					return (
+						<Box
+							key={date.toISOString()}
+							component="button"
+							type="button"
+							aria-pressed={selected}
+							aria-label={`${DAYS[date.getDay()]} ${date.getDate()} ${MONTHS[date.getMonth()]}${isToday ? ', today' : ''}`}
+							onClick={() => onPick(date)}
+							sx={{
+								minHeight: 52,
+								p: 0,
+								borderRadius: '10px',
+								border: selected ? '1px solid #0c7c7c' : '1px solid #33333366',
+								bgcolor: selected ? '#0c7c7c' : 'transparent',
+								fontFamily: 'inherit',
+								cursor: 'pointer',
+								display: 'flex',
+								flexDirection: 'column',
+								alignItems: 'center',
+								justifyContent: 'center',
+								gap: '2px',
+								transition: 'background 0.2s',
+								'&:hover': { bgcolor: selected ? '#0c7c7c' : 'rgba(12,124,124,0.08)' },
+								'&:focus-visible': { outline: '2px solid #0c7c7c', outlineOffset: 2 },
+							}}
+						>
+							<Typography
+								component="span"
+								variant="caption"
+								sx={{
+									fontSize: '12px',
+									fontWeight: 600,
+									lineHeight: 1.2,
+									color: selected ? 'rgba(255,255,255,0.85)' : 'text.secondary',
+								}}
+							>
+								{isToday ? 'Today' : DAYS[date.getDay()]}
+							</Typography>
+							<Typography
+								component="span"
+								variant="body2"
+								sx={{
+									fontSize: '15px',
+									fontWeight: 700,
+									lineHeight: 1.2,
+									color: selected ? '#fff' : isSat ? 'error.main' : 'text.primary',
+								}}
+							>
+								{date.getDate()}
+							</Typography>
+						</Box>
+					)
+				})}
+			</Box>
+		</Box>
+	)
+}
+
+// -----------------------------------------------------------------------------
 export default function DateSlotPicker(props: DateSlotPickerProps) {
 	const {
 		selectedDate,
@@ -104,9 +247,9 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		hideLegend = false,
 		dateLabel = 'Select Date',
 		timeLabel = 'Select Time',
-		hideNavigation = false,
 		disablePast = true,
 		maxDaysAhead,
+		rollingDays,
 		compactAppointmentToggle = false,
 		timeSlotColumns = 4,
 		availableSlots,
@@ -122,7 +265,12 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 		slotVariant = 'pill',
 	} = props
 
-	const today = new Date()
+	const today = props.today ?? new Date()
+
+	// Rolling mode: the days from today, in order (local midnights).
+	const rollingDates = rollingDays
+		? Array.from({ length: rollingDays }, (_, i) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + i))
+		: null
 
 	const [weekStart, setWeekStart] = useState(() => {
 		const anchor = selectedDates?.[0] ?? selectedDate
@@ -275,18 +423,29 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 						</Typography>
 					)}
 
+					{/* Rolling days (patient booking pages): from today, 7 a page with arrows, no past days */}
+					{rollingDates && (
+						<RollingDayGrid
+							dates={rollingDates}
+							isSelected={(date) =>
+								selectedDates ? selectedDates.some((d) => isSameDay(d, date)) : isSameDay(date, selectedDate)
+							}
+							onPick={(date) => (onDateToggle ? onDateToggle(date) : onDateChange(date))}
+						/>
+					)}
+
 					{/* Week calendar */}
-					<Box sx={{ mb: 2.25 }}>
-						{/* Month nav */}
-						<Box
-							sx={{
-								display: 'flex',
-								alignItems: 'center',
-								justifyContent: hideNavigation ? 'center' : 'space-between',
-								mb: 1,
-							}}
-						>
-							{!hideNavigation && (
+					{!rollingDates && (
+						<Box sx={{ mb: 2.25 }}>
+							{/* Month nav */}
+							<Box
+								sx={{
+									display: 'flex',
+									alignItems: 'center',
+									justifyContent: 'space-between',
+									mb: 1,
+								}}
+							>
 								<IconButton
 									size="small"
 									onClick={() => {
@@ -298,20 +457,17 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 								>
 									<ChevronLeftIcon />
 								</IconButton>
-							)}
 
-							<Typography
-								variant="body2"
-								sx={{
-									fontWeight: 600,
-									color: 'text.primary',
-									fontSize: hideNavigation ? '15px' : undefined,
-								}}
-							>
-								{monthLabel}
-							</Typography>
+								<Typography
+									variant="body2"
+									sx={{
+										fontWeight: 600,
+										color: 'text.primary',
+									}}
+								>
+									{monthLabel}
+								</Typography>
 
-							{!hideNavigation && (
 								<IconButton
 									size="small"
 									disabled={nextWeekBlocked}
@@ -324,77 +480,77 @@ export default function DateSlotPicker(props: DateSlotPickerProps) {
 								>
 									<ChevronRightIcon />
 								</IconButton>
-							)}
-						</Box>
+							</Box>
 
-						{/* Day strip */}
-						<Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 0.5 }}>
-							{weekDates.map((date) => {
-								const isSelected = selectedDates ? selectedDates.some((d) => isSameDay(d, date)) : isSameDay(date, selectedDate)
-								const past = isPast(date) || isBeyondWindow(date)
-								const isSat = date.getDay() === 6
-								return (
-									<Box
-										key={date.toISOString()}
-										onClick={() => {
-											if (past) return
-											if (onDateToggle) onDateToggle(date)
-											else onDateChange(date)
-										}}
-										sx={{
-											flex: 1,
-											textAlign: 'center',
-											py: 0.6,
-											minHeight: '56px',
-											borderRadius: '10px',
-											bgcolor: isSelected ? '#0c7c7c' : 'transparent',
-											border: isSelected ? '' : '1px solid #33333366',
-											cursor: 'pointer',
-											maxWidth: '60px',
-											display: 'flex',
-											flexDirection: 'column',
-											alignItems: 'center',
-											justifyContent: 'center',
-											transition: 'background 0.2s',
-											'&:hover': { bgcolor: isSelected ? '#0c7c7c' : 'rgba(12,124,124,0.08)' },
-										}}
-									>
-										<Typography
-											variant="caption"
+							{/* Day strip */}
+							<Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 0.5 }}>
+								{weekDates.map((date) => {
+									const isSelected = selectedDates ? selectedDates.some((d) => isSameDay(d, date)) : isSameDay(date, selectedDate)
+									const past = isPast(date) || isBeyondWindow(date)
+									const isSat = date.getDay() === 6
+									return (
+										<Box
+											key={date.toISOString()}
+											onClick={() => {
+												if (past) return
+												if (onDateToggle) onDateToggle(date)
+												else onDateChange(date)
+											}}
 											sx={{
-												fontSize: '12px',
-												fontWeight: 600,
-												color: isSelected
-													? 'rgba(255,255,255,0.8)'
-													: past
-														? 'text.disabled'
-														: 'text.secondary',
+												flex: 1,
+												textAlign: 'center',
+												py: 0.6,
+												minHeight: '56px',
+												borderRadius: '10px',
+												bgcolor: isSelected ? '#0c7c7c' : 'transparent',
+												border: isSelected ? '' : '1px solid #33333366',
+												cursor: 'pointer',
+												maxWidth: '60px',
+												display: 'flex',
+												flexDirection: 'column',
+												alignItems: 'center',
+												justifyContent: 'center',
+												transition: 'background 0.2s',
+												'&:hover': { bgcolor: isSelected ? '#0c7c7c' : 'rgba(12,124,124,0.08)' },
 											}}
 										>
-											{DAYS[date.getDay()]}
-										</Typography>
+											<Typography
+												variant="caption"
+												sx={{
+													fontSize: '12px',
+													fontWeight: 600,
+													color: isSelected
+														? 'rgba(255,255,255,0.8)'
+														: past
+															? 'text.disabled'
+															: 'text.secondary',
+												}}
+											>
+												{DAYS[date.getDay()]}
+											</Typography>
 
-										<Typography
-											variant="body2"
-											sx={{
-												fontWeight: 700,
-												fontSize: '14px',
-												color: isSelected
-													? '#fff'
-													: past
-														? 'text.disabled'
-														: isSat
-															? 'error.main'
-															: 'text.primary',
-											}}
-										>
-											{date.getDate()}
-										</Typography>
-									</Box>
-								)
-							})}
+											<Typography
+												variant="body2"
+												sx={{
+													fontWeight: 700,
+													fontSize: '14px',
+													color: isSelected
+														? '#fff'
+														: past
+															? 'text.disabled'
+															: isSat
+																? 'error.main'
+																: 'text.primary',
+												}}
+											>
+												{date.getDate()}
+											</Typography>
+										</Box>
+									)
+								})}
+							</Box>
 						</Box>
-					</Box>
+					)}
 
 					{/* Appointment type pill toggle */}
 					{onAppointmentTypeChange && (

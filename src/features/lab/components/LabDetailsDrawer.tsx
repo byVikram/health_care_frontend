@@ -9,10 +9,10 @@ import DeskIcon from '../../../components/common/Icon/DeskIcon'
 import { DESK, DESK_ICONS } from '../../../styles/deskTokens'
 import type { LabItem } from '../labConstants'
 import { LAB_ICONS } from '../labConstants'
-import { inr } from '../labFormat'
+import { inr } from '../../booking/bookingFormat'
 import { fastingKnown, offLabel } from '../labStyles'
 import { useLabItemDetail } from '../labCatalogue'
-import LabAddButton from './LabAddButton'
+import AddToggleButton from '../../../components/common/Button/AddToggleButton'
 
 interface LabDetailsDrawerProps {
 	/** The card that was opened (undefined = closed). */
@@ -77,9 +77,13 @@ export default function LabDetailsDrawer({ item, addressId, added, onToggle, onC
 								</Box>
 							) : null}
 						</Box>
-						<LabAddButton
+						<AddToggleButton
 							added={added}
-							onClick={() => onToggle(shown)}
+							onClick={() => {
+								onToggle(shown)
+								// adding closes the drawer, so the patient is back on the list with the cart updated; removing keeps it open
+								if (!added) onClose()
+							}}
 							labels={['Add to cart', 'Remove from cart']}
 							height={48}
 							minWidth={150}

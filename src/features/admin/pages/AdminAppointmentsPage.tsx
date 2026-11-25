@@ -274,8 +274,6 @@ export default function AdminAppointmentsPage() {
 					placeholder="Search patient, doctor, or ID..."
 					value={searchInput}
 					onChange={handleSearchChange}
-					enableVoiceSearch
-					onVoiceResult={applySearch}
 					InputProps={{
 						startAdornment: (
 							<InputAdornment position="start">

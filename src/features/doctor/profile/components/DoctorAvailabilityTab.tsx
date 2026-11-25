@@ -7,6 +7,7 @@ import AppSkeleton from '../../../../components/common/Skeleton/AppSkeleton'
 import AppSegmentedToggle, { type SegmentedToggleOption } from '../../../../components/common/Switch/AppSegmentedToggle'
 import DateSlotPicker, { SlotGroup, TimeSlot } from '../../../../components/common/DateSlotPicker/DateSlotPicker'
 import { DoctorHospital, DoctorAvailability, DoctorHospitalHours } from '../../../../types/doctor-profile'
+import { BOOKING_WINDOW_DAYS } from '../../../../constants/constants'
 import { customCardStyle } from '../../../../styles/commonStyles'
 import {
 	getDoctorAvailability,
@@ -14,7 +15,7 @@ import {
 	createSlotOverrideBatch,
 	SlotOverridePayload,
 	SlotOverrideBatchPayload,
-} from '../../../../features/doctor/doctorService'
+} from '../../doctorService'
 import WorkingHoursScheduler from './WorkingHoursScheduler'
 
 interface DoctorAvailabilityTabProps {
@@ -453,9 +454,8 @@ export default function DoctorAvailabilityTab({
 							selectedTime={selectedSlots}
 							onTimeChange={handleTimeChange}
 							dateLabel="Select follow up date"
-							hideNavigation
+							rollingDays={BOOKING_WINDOW_DAYS}
 							timeSlotColumns={5}
-							timeSlotVariant="availability"
 							disableBookedSlots={false}
 							availableSlots={slotGroupsForPicker.length > 0 ? slotGroupsForPicker : undefined}
 							slotsLoading={slotsLoading || toggleRefreshing}

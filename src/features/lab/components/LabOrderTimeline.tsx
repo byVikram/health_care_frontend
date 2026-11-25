@@ -5,7 +5,7 @@
 import { Box } from '@mui/material'
 import DeskIcon from '../../../components/common/Icon/DeskIcon'
 import { DESK, DESK_ICONS } from '../../../styles/deskTokens'
-import { stampLabel } from '../labFormat'
+import { stampLabel } from '../../booking/bookingFormat'
 import type { ApiTimelineStep } from '../labService'
 
 export default function LabOrderTimeline({ steps }: { steps: ApiTimelineStep[] }) {
@@ -13,7 +13,7 @@ export default function LabOrderTimeline({ steps }: { steps: ApiTimelineStep[] }
 		<Box
 			component="section"
 			aria-label="Order progress"
-			sx={{ bgcolor: DESK.raised, border: '1px solid #E3EAEB', borderRadius: '18px', p: '22px 24px' }}
+			sx={{ bgcolor: DESK.raised, border: `1px solid ${DESK.cardLine}`, borderRadius: '18px', p: '22px 24px' }}
 		>
 			<Box component="ol" sx={{ m: 0, p: 0, listStyle: 'none', display: 'flex', alignItems: 'flex-start' }}>
 				{steps.map((step, index) => {
@@ -37,7 +37,7 @@ export default function LabOrderTimeline({ steps }: { steps: ApiTimelineStep[] }
 										boxSizing: 'border-box',
 										borderRadius: '9999px',
 										bgcolor: done ? DESK.primary : DESK.raised,
-										border: `2px solid ${done || current ? DESK.primary : '#C9D6D7'}`,
+										border: `2px solid ${done || current ? DESK.primary : DESK.lineChoice}`,
 										color: done ? '#FFFFFF' : current ? DESK.primary : DESK.faint,
 										display: 'flex',
 										alignItems: 'center',

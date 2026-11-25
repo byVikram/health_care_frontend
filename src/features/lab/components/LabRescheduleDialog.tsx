@@ -8,7 +8,7 @@ import { toast } from 'react-toastify'
 import DeskDialog from '../../../components/common/Modal/DeskDialog'
 import { DESK } from '../../../styles/deskTokens'
 import { RESCHEDULE_DAY_COUNT } from '../labConstants'
-import { addDays, commaDate, dayNum, dowShort, timeLabel, toIso } from '../labFormat'
+import { addDays, commaDate, dayNum, dowShort, timeLabel, toIso } from '../../booking/bookingFormat'
 import { fetchOrderSlots, labErrorMessage, rescheduleOrder, type ApiOrder } from '../labService'
 
 interface LabRescheduleDialogProps {

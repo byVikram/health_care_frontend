@@ -11,6 +11,7 @@ import CategoryIcon from '@mui/icons-material/Category'
 import AppButton from '../../../components/common/Button/AppButton'
 import ApiService from '../../../services/apiService'
 import { API_ENDPOINTS } from '../../../constants/apiUrls'
+import { safeUrl } from '../../../utils/sanitize'
 
 export interface EventItem {
 	id: string
@@ -120,6 +121,7 @@ export default function UpcomingEventsSection({ variant = 'row' }: UpcommingEven
 						fullWidth
 						variant="outlined"
 						label="View All"
+						onClick={() => navigate(ROUTES.EVENTS.LIST)}
 						borderRadius="30px"
 						sx={{ mt: { xs: 2, md: 0 } }}
 					/>
@@ -229,8 +231,11 @@ export default function UpcomingEventsSection({ variant = 'row' }: UpcommingEven
 										<AppButton
 											label="Register Now"
 											fullWidth
-											onClick={() => event.registration_link && window.open(event.registration_link, '_blank')}
-											disabled={!event.registration_link}
+											onClick={() => {
+												const link = safeUrl(event.registration_link)
+												if (link) window.open(link, '_blank', 'noopener,noreferrer')
+											}}
+											disabled={!safeUrl(event.registration_link)}
 											sx={{ bgcolor: '#0d9488', '&:hover': { bgcolor: '#0f766e' }, borderRadius: 2 }}
 										/>
 										<AppButton

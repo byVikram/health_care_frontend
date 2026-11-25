@@ -19,7 +19,7 @@ import {
 	type ApiCoverage,
 	type LabKind,
 } from './labService'
-import { registerSessionCache } from './labSession'
+import { registerSessionCache } from '../booking/sessionCache'
 
 const cache = new Map<string, LabItem>()
 

@@ -7,6 +7,8 @@
 //      area as a custom choice), and a footer with the summary and "Confirm location".
 // Confirming sets the location ("Indiranagar, Bengaluru"), closes the dialog and confirms with a toast.
 
+import { DESK } from '../../../styles/deskTokens'
+import { getBrowserPosition } from '../../../hooks/useCurrentLocation'
 import { useMemo, useState } from 'react'
 import { Box, Dialog, Typography } from '@mui/material'
 import { toast } from 'react-toastify'
@@ -194,20 +196,19 @@ export default function LocationPickerModal({ open, selected, onClose, onSelect 
 	}
 
 	// The doctor search keeps the user's coordinates in sessionStorage; share the same keys.
-	const detect = () => {
-		if (!navigator.geolocation) {
+	const detect = async () => {
+		const here = await getBrowserPosition({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 })
+		if (here.unsupported) {
 			toast.error('Location is not supported by this browser.')
 			return
 		}
-		navigator.geolocation.getCurrentPosition(
-			(pos) => {
-				sessionStorage.setItem('user_lat', pos.coords.latitude.toString())
-				sessionStorage.setItem('user_lon', pos.coords.longitude.toString())
-				pick('Current location', 'Using your current location')
-			},
-			() => toast.error('Could not detect your location. Allow location access or pick a city.'),
-			{ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-		)
+		if (!here.coords) {
+			toast.error('Could not detect your location. Allow location access or pick a city.')
+			return
+		}
+		sessionStorage.setItem('user_lat', here.coords.latitude.toString())
+		sessionStorage.setItem('user_lon', here.coords.longitude.toString())
+		pick('Current location', 'Using your current location')
 	}
 
 	return (
@@ -468,7 +469,7 @@ export default function LocationPickerModal({ open, selected, onClose, onSelect 
 										columnGap: '16px',
 										px: 1,
 										scrollbarWidth: 'thin',
-										scrollbarColor: '#C9D6D7 transparent',
+										scrollbarColor: `${DESK.lineChoice} transparent`,
 									}}
 								>
 									{listed.map((city) => {
@@ -702,7 +703,7 @@ function AreaStep({ city, area, query, onQuery, onArea, onBack, onConfirm }: Are
 					flexDirection: 'column',
 					gap: '12px',
 					scrollbarWidth: 'thin',
-					scrollbarColor: '#C9D6D7 transparent',
+					scrollbarColor: `${DESK.lineChoice} transparent`,
 				}}
 			>
 				{q && !exact && (

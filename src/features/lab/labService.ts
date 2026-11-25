@@ -90,10 +90,18 @@ export type ApiSlotLab = {
 	logo_url: string | null
 	service: LabServiceType
 	times: string[]
+	/** The same times with the offset ("2026-11-24T15:00:00+05:30"); older servers do not send it. */
+	starts_at?: string[]
 	distance_km: number | null
 }
 
-export type ApiSlots = { date: string; service: LabServiceType; labs: ApiSlotLab[] }
+export type ApiSlots = {
+	date: string
+	service: LabServiceType
+	labs: ApiSlotLab[]
+	/** What time the server thinks it is, with the offset (older servers do not send it). */
+	server_time?: string
+}
 
 export type ApiQuoteLab = ApiLab & {
 	total_mrp: string

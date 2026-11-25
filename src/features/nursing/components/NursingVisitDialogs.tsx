@@ -10,10 +10,10 @@ import { Box } from '@mui/material'
 import { useEffect, useState } from 'react'
 import DeskDialog from '../../../components/common/Modal/DeskDialog'
 import { DESK } from '../../../styles/deskTokens'
-import { dayNum, dowShort, monShort } from '../../lab/labFormat'
+import { dayNum, dowShort, monShort } from '../../booking/bookingFormat'
 import { VISIT_CANCEL_REASONS } from '../nursingConstants'
 import type { OrderVisit, VisitPolicy } from '../nursingService'
-import { SLOT_GROUPS, bookingDays, chipTime, minutesOf, rangeLabel, slotTooSoon } from '../nursingTime'
+import { SLOT_GROUPS, bookingDays, chipTime, dayLabel, minutesOf, rangeLabel, slotTooSoon } from '../nursingTime'
 import { isOpenVisit, lockedReason, visitTitle } from '../nursingVisit'
 import { useCareService } from '../useCareService'
 
@@ -22,7 +22,7 @@ const chipSx = (on: boolean, disabled = false) =>
 		height: 38,
 		px: '14px',
 		borderRadius: '9999px',
-		border: `1.5px solid ${on ? DESK.primary : '#C9D6D7'}`,
+		border: `1.5px solid ${on ? DESK.primary : DESK.lineChoice}`,
 		bgcolor: on ? DESK.primaryTint : DESK.raised,
 		color: on ? DESK.primary : DESK.ink,
 		fontFamily: 'inherit',
@@ -148,7 +148,7 @@ export function NursingRescheduleDialog({ open, visit, visits, policy, busy, onC
 		<DeskDialog
 			open={open && !!visit}
 			title="Reschedule visit"
-			sub={visit ? `Now: ${visit.date} · ${rangeLabel(visit.start_time, visit.end_time)}. The visit keeps its length.` : undefined}
+			sub={visit ? `Now: ${dayLabel(visit.date)} · ${rangeLabel(visit.start_time, visit.end_time)}. The visit keeps its length.` : undefined}
 			okLabel="Move visit"
 			busy={busy}
 			okDisabled={!date || !time}
@@ -172,7 +172,7 @@ export function NursingRescheduleDialog({ open, visit, visits, policy, busy, onC
 							sx={{
 								height: 62,
 								borderRadius: '10px',
-								border: `1.5px solid ${on ? DESK.primary : '#C9D6D7'}`,
+								border: `1.5px solid ${on ? DESK.primary : DESK.lineChoice}`,
 								bgcolor: on ? DESK.primary : DESK.raised,
 								color: on ? '#FFFFFF' : DESK.ink,
 								fontFamily: 'inherit',
@@ -202,7 +202,9 @@ export function NursingRescheduleDialog({ open, visit, visits, policy, busy, onC
 							</Box>
 							<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
 								{group.slots.map((slot) => {
-									const soon = slotTooSoon(date, minutesOf(slot), policy.assignLeadMinutes, now)
+									// too soon, or the visit's own day and time (moving a visit to where it already is does nothing)
+									const current = !!visit && date === visit.date && minutesOf(slot) === minutesOf(visit.start_time)
+									const soon = current || slotTooSoon(date, minutesOf(slot), policy.assignLeadMinutes, now)
 									return (
 										<Box key={slot} component="button" type="button" disabled={soon} aria-pressed={time === slot} onClick={() => setTime(slot)} sx={{ ...chipSx(time === slot, soon), textDecoration: soon ? 'line-through' : 'none' }}>
 											{chipTime(slot)}

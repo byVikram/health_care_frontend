@@ -9,11 +9,10 @@ import DeskIcon from '../../components/common/Icon/DeskIcon'
 import AppSkeleton from '../../components/common/Skeleton/AppSkeleton'
 import { ROUTES } from '../../constants/routes'
 import { DESK, DESK_ICONS } from '../../styles/deskTokens'
-import LabPageShell from '../lab/LabPageShell'
-import { downloadVisitCalendar } from '../lab/labCalendar'
-import { inr, plural, timeLabel } from '../lab/labFormat'
-import { LAB_CARD } from '../lab/labStyles'
-import NursingStepper from './components/NursingStepper'
+import PatientPageShell from '../../components/layout/PatientPageShell'
+import { downloadVisitCalendar } from '../booking/visitCalendar'
+import { inr, plural, timeLabel } from '../booking/bookingFormat'
+import { BOOKING_CARD } from '../booking/bookingStyles'
 import { dayLabel, leadText, rangeLabel } from './nursingTime'
 import { orderPolicyOf } from './nursingVisit'
 import { useNursingOrder } from './useNursingOrder'
@@ -24,24 +23,42 @@ export default function NursingBookedPage() {
 	const { requestId } = useParams()
 	const navigate = useNavigate()
 	const care = useCareService()
-	const { order, loading } = useNursingOrder(requestId, { pollMs: 30000, pollWithSocketMs: 30000 })
+	const { order, loading, error } = useNursingOrder(requestId, { pollMs: 30000, pollWithSocketMs: 30000 })
 
 	if (loading && !order) {
 		return (
-			<LabPageShell maxWidth={820}>
+			<PatientPageShell maxWidth={820}>
 				<AppSkeleton height={160} sx={{ borderRadius: '18px' }} />
-			</LabPageShell>
+			</PatientPageShell>
 		)
 	}
 
-	const visits = order?.visits ?? []
+	// An old link, or an order that cannot be found: no green check for a booking that is not there.
+	if (!order) {
+		return (
+			<PatientPageShell maxWidth={820}>
+				<Box sx={{ ...BOOKING_CARD, p: '48px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+					<Box component="b" sx={{ fontSize: 20 }}>
+						We could not find this booking
+					</Box>
+					<Box component="span" sx={{ fontSize: 14, color: DESK.muted }}>
+						{error ?? 'It may have been removed.'}
+					</Box>
+					<Box sx={{ mt: '6px', width: 220 }}>
+						<DeskButton label="Back to my bookings" kind="primary" onClick={() => navigate(`${ROUTES.BOOKINGS}?category=ancillary`)} />
+					</Box>
+				</Box>
+			</PatientPageShell>
+		)
+	}
+
+	const visits = order.visits ?? []
 	const policy = orderPolicyOf(order)
 	const serviceName = order?.package?.name ?? order?.services?.map((s) => s.name).join(', ') ?? care.sentence
 
 	return (
-		<LabPageShell maxWidth={820}>
-			<NursingStepper current={3} />
-			<Box component="section" sx={{ ...LAB_CARD, p: '32px 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', textAlign: 'center' }}>
+		<PatientPageShell maxWidth={820}>
+			<Box component="section" sx={{ ...BOOKING_CARD, p: '32px 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', textAlign: 'center' }}>
 				<Box component="span" sx={{ width: 64, height: 64, borderRadius: '9999px', bgcolor: DESK.success, color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 					<DeskIcon d={DESK_ICONS.check} size={30} strokeWidth={3} />
 				</Box>
@@ -54,7 +71,7 @@ export default function NursingBookedPage() {
 			</Box>
 
 			{visits.length > 0 ? (
-				<Box sx={{ ...LAB_CARD, p: '22px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+				<Box sx={{ ...BOOKING_CARD, p: '22px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
 					<Box component="b" sx={{ fontSize: 18 }}>
 						{plural(visits.length, 'visit', 'visits')}
 					</Box>
@@ -80,6 +97,7 @@ export default function NursingBookedPage() {
 										title: `${care.sentence} visit · ${serviceName}`,
 										date: v.date,
 										time: timeLabel(v.start_time),
+										end: v.end_time ? timeLabel(v.end_time) : undefined,
 										location: order?.address?.street_address,
 										notes: `A ${care.noun} is assigned an hour before the visit. Pay after the visit.`,
 									})
@@ -113,6 +131,6 @@ export default function NursingBookedPage() {
 			<Box component={Link} to={`${ROUTES.BOOKINGS}?category=ancillary`} sx={{ alignSelf: 'center', fontSize: 14, fontWeight: 800, color: DESK.primary, textDecoration: 'none' }}>
 				Go to my bookings
 			</Box>
-		</LabPageShell>
+		</PatientPageShell>
 	)
 }

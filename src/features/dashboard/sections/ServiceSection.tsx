@@ -4,7 +4,6 @@ import ServiceCard from '../../../components/common/Card/ServiceCard'
 import DoctorsService from '../../../assets/Services/doctors-service.png'
 import VideoConsultation from '../../../assets/Services/doctor-video-consultation.png'
 import Surgeries from '../../../assets/Services/serguries.png'
-import NursingCare from '../../../assets/Services/nursing-care.svg'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../../constants/routes'
 
@@ -24,9 +23,6 @@ export default function ServicesSection() {
 			navigate(`${ROUTES.DOCTORS.SEARCH}?nearby=true`)
 			return
 		}
-
-		// Ancillary Care: no navigation yet (the card is shown, a click does nothing for now).
-		if (service.id === 5) return
 
 		if (service.id === 2) {
 			navigate(`${ROUTES.SPECIALITIES}?consultation_type=video`)
@@ -50,13 +46,6 @@ export default function ServicesSection() {
 			title: 'Instant Video Consultation',
 			description: 'Connect within 60 sec',
 			bgColor: '#B98C8D',
-		},
-		{
-			id: 5,
-			image: NursingCare,
-			title: 'Ancillary Care',
-			description: 'Verified professionals visit you at home',
-			bgColor: '#2B6F71',
 		},
 		{
 			id: 4,

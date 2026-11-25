@@ -388,11 +388,6 @@ export default function AdminUsersPage() {
 						placeholder="Search by phone number..."
 						value={phoneNumber}
 						onChange={(e) => { setPhoneNumber(e.target.value); setPage(1) }}
-						enableVoiceSearch
-						onVoiceResult={(text) => {
-							setPhoneNumber(text.replace(/\D/g, ''))
-							setPage(1)
-						}}
 						InputProps={{
 							startAdornment: (
 								<InputAdornment position="start">

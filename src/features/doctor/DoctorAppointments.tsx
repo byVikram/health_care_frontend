@@ -403,8 +403,6 @@ export function DoctorAppointments({
 					placeholder="Search Patient ID, Name..."
 					value={searchQuery}
 					onChange={(e) => setSearchQuery(e.target.value)}
-					enableVoiceSearch
-					onVoiceResult={(text) => setSearchQuery(text)}
 					startIcon={<SearchIcon sx={{ color: 'text.disabled', fontSize: 20 }} />}
 					endIcon={
 						<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

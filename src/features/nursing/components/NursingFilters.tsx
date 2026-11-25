@@ -5,7 +5,7 @@
 import { Box } from '@mui/material'
 import DeskIcon from '../../../components/common/Icon/DeskIcon'
 import { DESK } from '../../../styles/deskTokens'
-import { LAB_CARD } from '../../lab/labStyles'
+import { BOOKING_CARD } from '../../booking/bookingStyles'
 import { CATEGORY_TINTS, NURSING_TYPES, iconFor, type NursingTypeId } from '../nursingConstants'
 import type { NursingCategory } from '../nursingService'
 
@@ -27,7 +27,7 @@ const groupSx = { m: 0, p: '14px 0', border: 0, borderTop: `1px solid ${DESK.lin
 
 export default function NursingFilters({ type, onType, typeCounts, categories, categoryId, onCategory, categoryCounts, hasFilters, onClear }: NursingFiltersProps) {
 	return (
-		<Box component="aside" aria-label="Filters" sx={{ ...LAB_CARD, position: 'sticky', top: 20, width: 260, flexShrink: 0, p: '6px 18px 12px', boxSizing: 'border-box' }}>
+		<Box component="aside" aria-label="Filters" sx={{ ...BOOKING_CARD, position: { lg: 'sticky' }, top: 20, width: { xs: '100%', lg: 260 }, flexShrink: 0, p: '6px 18px 12px', boxSizing: 'border-box' }}>
 			<Box sx={{ display: 'flex', alignItems: 'center', py: '12px' }}>
 				<Box component="b" sx={{ flexGrow: 1, fontSize: 17 }}>
 					Filters
@@ -100,22 +100,22 @@ export default function NursingFilters({ type, onType, typeCounts, categories, c
 								<Box
 									key={c.id}
 									component="label"
-									sx={{ height: 38, p: '0 6px', m: '0 -6px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: 14, cursor: 'pointer', '&:hover': { bgcolor: DESK.page } }}
+									sx={{ minHeight: 38, p: '6px', m: '0 -6px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: 14, lineHeight: '19px', textAlign: 'left', cursor: 'pointer', '&:hover': { bgcolor: DESK.page } }}
 								>
 									<Box
 										component="input"
 										type="checkbox"
 										checked={categoryId === c.id}
 										onChange={() => onCategory(categoryId === c.id ? null : c.id)}
-										sx={{ width: 18, height: 18, m: 0, accentColor: DESK.primary }}
+										sx={{ width: 18, height: 18, m: 0, flexShrink: 0, accentColor: DESK.primary }}
 									/>
-									<Box component="span" sx={{ width: 26, height: 26, borderRadius: '8px', bgcolor: tint.bg, color: tint.ink, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+									<Box component="span" sx={{ width: 26, height: 26, flexShrink: 0, borderRadius: '8px', bgcolor: tint.bg, color: tint.ink, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 										<DeskIcon d={iconFor(c.label)} size={15} />
 									</Box>
 									<Box component="span" sx={{ flexGrow: 1, minWidth: 0 }}>
 										{c.label}
 									</Box>
-									<Box component="span" sx={{ fontSize: 12, color: DESK.muted }}>
+									<Box component="span" sx={{ flexShrink: 0, minWidth: 14, textAlign: 'right', fontSize: 12, color: DESK.muted }}>
 										{categoryCounts[c.id] ? categoryCounts[c.id] : ''}
 									</Box>
 								</Box>

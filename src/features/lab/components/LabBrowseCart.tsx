@@ -8,8 +8,9 @@ import DeskIcon from '../../../components/common/Icon/DeskIcon'
 import { ROUTES } from '../../../constants/routes'
 import { DESK, DESK_ICONS } from '../../../styles/deskTokens'
 import { labBooking, totalsOf, useLabBooking } from '../labBookingStore'
-import { inr, plural } from '../labFormat'
-import { LAB_CARD, fastingKnown } from '../labStyles'
+import { inr, plural } from '../../booking/bookingFormat'
+import { BOOKING_CARD } from '../../booking/bookingStyles'
+import { fastingKnown } from '../labStyles'
 
 export default function LabBrowseCart() {
 	const navigate = useNavigate()
@@ -22,10 +23,10 @@ export default function LabBrowseCart() {
 			component="aside"
 			aria-label="Your cart"
 			sx={{
-				...LAB_CARD,
+				...BOOKING_CARD,
 				position: 'sticky',
 				top: 20,
-				width: 320,
+				width: { xs: '100%', lg: 320 },
 				flexShrink: 0,
 				p: '20px',
 				boxSizing: 'border-box',

@@ -1,18 +1,8 @@
 // src/features/lab/labStyles.ts
 //
-// Style pieces the Lab tests pages share (the card the design puts every block in, the section headings, the item panels' colours and icons).
-import { DESK, DESK_MEDIA } from '../../styles/deskTokens'
+// Style pieces the Lab tests pages share (the item panels' colours and icons; the card and headings every booking page shares are in features/booking/bookingStyles).
+import { DESK_MEDIA } from '../../styles/deskTokens'
 import { LAB_CONCERNS, LAB_ICONS, type LabItem } from './labConstants'
-
-/** The white, rounded, thin-bordered card of the Lab tests design. */
-export const LAB_CARD = {
-	bgcolor: DESK.raised,
-	border: `1px solid ${DESK.cardLine}`,
-	borderRadius: '18px',
-} as const
-
-/** The 22px section title ("Health packages", "Single tests", "Who is it for?"). */
-export const LAB_H2 = { m: 0, fontSize: 22, lineHeight: '28px', fontWeight: 800 } as const
 
 type MediaTone = keyof typeof DESK_MEDIA
 
@@ -51,14 +41,3 @@ export function offLabel(item: Pick<LabItem, 'price' | 'mrp'>) {
 
 /** Fasting is only known once an item's detail (its preparation notes) has been loaded. */
 export const fastingKnown = (item: LabItem) => item.preparations !== undefined
-
-/** A choice card's border / background for the chosen and not-chosen states (who, where, lab and address cards on the cart page). */
-export const choiceSx = (on: boolean) =>
-	({
-		border: `1.5px solid ${on ? DESK.primary : DESK.cardLine}`,
-		bgcolor: on ? DESK.primaryTint : DESK.raised,
-		fontFamily: 'inherit',
-		color: DESK.ink,
-		cursor: 'pointer',
-		textAlign: 'left',
-	}) as const

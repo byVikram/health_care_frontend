@@ -469,11 +469,6 @@ export default function AdminAncillaryCategoriesPage() {
 							setSearch(e.target.value)
 							setPage(1)
 						}}
-						enableVoiceSearch
-						onVoiceResult={(text) => {
-							setSearch(text)
-							setPage(1)
-						}}
 						sx={{ flex: 1, maxWidth: 420 }}
 						InputProps={{
 							startAdornment: (

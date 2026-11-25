@@ -1,28 +1,25 @@
 // src/features/nursing/components/NursingWhereSection.tsx
 //
-// Step 2 of the booking page: where the nurse comes. The patient's saved addresses (the default first), "Use current location" and
-// "Type an address". The nurse is matched by distance, so an address needs a position: a saved one without it uses the browser's location
+// Step 2 of the booking page: where the nurse comes. The patient's saved addresses (the default first), and
+// "Add an address". The nurse is matched by distance, so an address needs a position: a saved one without it uses the browser's location
 // when the booking is made (see useVisitAddress.ts).
 import { Box } from '@mui/material'
 import DeskIcon from '../../../components/common/Icon/DeskIcon'
 import { DESK, DESK_ICONS } from '../../../styles/deskTokens'
-import LabCartSection, { LabRadioDot } from '../../lab/components/LabCartSection'
-import { addressLineOf, type LabAddress } from '../../lab/useLabAddresses'
-import { choiceSx } from '../../lab/labStyles'
+import CartSection, { RadioDot } from '../../booking/CartSection'
+import { addressLineOf, type BookingAddress } from '../../booking/useBookingAddresses'
+import { choiceSx } from '../../booking/bookingStyles'
 import { useCareService } from '../useCareService'
 
 const WORK = 'M4 7h16v13H4zM9 7V4h6v3'
 
 interface NursingWhereSectionProps {
-	addresses: LabAddress[]
+	addresses: BookingAddress[]
 	loading: boolean
 	error: string | null
 	addressId: string | null
-	onAddress: (address: LabAddress) => void
+	onAddress: (address: BookingAddress) => void
 	onAddAddress: () => void
-	/** Asks the browser for the position and starts a new address from it. */
-	onUseCurrentLocation: () => void
-	locating?: boolean
 }
 
 const actionButtonSx = {
@@ -42,29 +39,23 @@ const actionButtonSx = {
 	'&:disabled': { opacity: 0.6, cursor: 'default' },
 } as const
 
-export default function NursingWhereSection({ addresses, loading, error, addressId, onAddress, onAddAddress, onUseCurrentLocation, locating = false }: NursingWhereSectionProps) {
+export default function NursingWhereSection({ addresses, loading, error, addressId, onAddress, onAddAddress }: NursingWhereSectionProps) {
 	const care = useCareService()
 	return (
-		<LabCartSection step={2} title={`Where should the ${care.noun} come?`} sub={`The ${care.noun} visits this address. Choose a saved one or add a new one.`}>
+		<CartSection step={2} title={`Where should the ${care.noun} come?`} sub={`The ${care.noun} visits this address. Choose a saved one or add a new one.`}>
 			<Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
 				<Box component="span" sx={{ flexGrow: 1, fontSize: 14, fontWeight: 800 }}>
 					Visit address
-				</Box>
-				<Box component="button" type="button" onClick={onUseCurrentLocation} disabled={locating} sx={actionButtonSx}>
-					<Box component="span" sx={{ display: 'flex', color: DESK.primary }}>
-						<DeskIcon d={DESK_ICONS.gps} size={15} strokeWidth={2.2} />
-					</Box>
-					{locating ? 'Finding you...' : 'Use current location'}
 				</Box>
 				<Box component="button" type="button" onClick={onAddAddress} sx={actionButtonSx}>
 					<Box component="span" sx={{ display: 'flex', color: DESK.primary }}>
 						<DeskIcon d={DESK_ICONS.plus} size={15} strokeWidth={2.4} />
 					</Box>
-					Type an address
+					Add an address
 				</Box>
 			</Box>
 			{addresses.length > 0 ? (
-				<Box role="radiogroup" aria-label="Address" sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px' }}>
+				<Box role="radiogroup" aria-label="Address" sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' }, gap: '10px' }}>
 					{addresses.map((a) => {
 						const on = a.id === addressId
 						return (
@@ -88,7 +79,7 @@ export default function NursingWhereSection({ addresses, loading, error, address
 										{addressLineOf(a)}
 									</Box>
 								</Box>
-								<LabRadioDot on={on} size={20} />
+								<RadioDot on={on} size={20} />
 							</Box>
 						)
 					})}
@@ -107,6 +98,6 @@ export default function NursingWhereSection({ addresses, loading, error, address
 					{error}
 				</Box>
 			) : null}
-		</LabCartSection>
+		</CartSection>
 	)
 }

@@ -2,11 +2,12 @@
 //
 // The sticky "Your booking" card on the right of the browse page (the design's cart): the items (remove with ×), the count, the total and the
 // saving, then "Book now" and "Schedule for later". Reads the booking store, so it stays in step with the later pages.
+import DeskButton from '../../../components/common/Button/DeskButton'
 import { Box } from '@mui/material'
 import DeskIcon from '../../../components/common/Icon/DeskIcon'
 import { DESK, DESK_ICONS } from '../../../styles/deskTokens'
-import { inr, plural } from '../../lab/labFormat'
-import { LAB_CARD } from '../../lab/labStyles'
+import { inr, plural } from '../../booking/bookingFormat'
+import { BOOKING_CARD } from '../../booking/bookingStyles'
 import { instantFee, nursingBooking, perVisitFee, useNursingBooking, type BookingMode } from '../nursingBookingStore'
 import { durationLabel } from '../nursingFormat'
 import { useCareService } from '../useCareService'
@@ -23,7 +24,7 @@ export default function NursingBrowseCart({ onContinue }: NursingBrowseCartProps
 	const visitFee = perVisitFee(items)
 
 	return (
-		<Box component="aside" aria-label="Your booking" sx={{ ...LAB_CARD, position: 'sticky', top: 20, width: 320, flexShrink: 0, p: '20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+		<Box component="aside" aria-label="Your booking" sx={{ ...BOOKING_CARD, position: { lg: 'sticky' }, top: 20, width: { xs: '100%', lg: 320 }, flexShrink: 0, p: '20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '14px' }}>
 			<Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
 				<Box component="b" sx={{ flexGrow: 1, fontSize: 18 }}>
 					Your booking
@@ -86,12 +87,8 @@ export default function NursingBrowseCart({ onContinue }: NursingBrowseCartProps
 							Pay after the visit. Nothing is charged now.
 						</Box>
 					</Box>
-					<Box component="button" type="button" onClick={() => onContinue('now')} sx={primarySx}>
-						Book now
-					</Box>
-					<Box component="button" type="button" onClick={() => onContinue('later')} sx={secondarySx}>
-						Schedule for later
-					</Box>
+					<DeskButton label="Book now" kind="primary" onClick={() => onContinue('now')} />
+					<DeskButton label="Schedule for later" kind="secondary" onClick={() => onContinue('later')} />
 				</>
 			)}
 			<Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px', pt: '4px', borderTop: `1px solid ${DESK.lineSoft}` }}>
@@ -107,35 +104,3 @@ export default function NursingBrowseCart({ onContinue }: NursingBrowseCartProps
 		</Box>
 	)
 }
-
-const primarySx = {
-	minHeight: 50,
-	px: '16px',
-	border: 0,
-	borderRadius: '12px',
-	bgcolor: DESK.primary,
-	color: '#FFFFFF',
-	fontFamily: 'inherit',
-	fontSize: 15,
-	fontWeight: 800,
-	display: 'flex',
-	alignItems: 'center',
-	justifyContent: 'center',
-	gap: '8px',
-	cursor: 'pointer',
-	'&:hover': { filter: 'brightness(0.97)' },
-} as const
-
-const secondarySx = {
-	height: 46,
-	px: '16px',
-	borderRadius: '12px',
-	border: `1.5px solid ${DESK.primary}`,
-	bgcolor: DESK.raised,
-	color: DESK.primary,
-	fontFamily: 'inherit',
-	fontSize: 15,
-	fontWeight: 800,
-	cursor: 'pointer',
-	'&:hover': { filter: 'brightness(0.97)' },
-} as const

@@ -7,19 +7,23 @@
 // doctor+clinic header and card layout of ConsultationNotes.tsx so the
 // patient sees a consistent "prescription" look, but has no editing
 // affordances (no toolbar, no canvas, no voice/text input).
+import { useRef, useState } from 'react'
 import { Box, Typography, Divider, Skeleton } from '@mui/material'
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import EventAvailableIcon from '@mui/icons-material/EventAvailable'
 
 import { ConsultationDoctor } from '../../../types/consultation'
-import { Treatment } from '../../../services/treatmentService'
+import { Treatment, getPrescriptionLink } from '../../../services/treatmentService'
 import { buildS3Url } from '../../../utils/s3'
+import { customScrollbar } from '../../../styles/commonStyles'
 
 interface PrescriptionViewProps {
 	doctor: ConsultationDoctor
 	treatment: Treatment | null
 	loading: boolean
+	/** The appointment's public id: used to ask for a fresh link when the prescription image's signed link has expired. */
+	appointmentId?: string
 }
 
 function formatFollowUpDate(dateStr: string): string {
@@ -38,9 +42,27 @@ function PrescriptionSkeleton() {
 	)
 }
 
-export default function PrescriptionView({ doctor, treatment, loading }: PrescriptionViewProps) {
+// The doctor / clinic strip that used to head this card is gone: the prescription page already carries both.
+export default function PrescriptionView({ treatment, loading, appointmentId }: PrescriptionViewProps) {
 	const prescriptionUrl = treatment?.prescription_s3_key ? buildS3Url(treatment.prescription_s3_key) : ''
-	const hasNotes = !!treatment?.notes?.trim()
+	// The page the doctor submitted (the notes drawn onto a prescription image): a signed link that lives about 5 minutes. When the
+	// image cannot be fetched (the link expired) a fresh one is asked for, once, the way the mobile app does.
+	const savedImage = treatment?.notes_image_url ?? null
+	const [fresh, setFresh] = useState<{ from: string; url: string } | null>(null)
+	const retriedFor = useRef<string | null>(null)
+	const imageUrl = savedImage ? (fresh?.from === savedImage ? fresh.url : savedImage) : null
+	const refreshImage = async () => {
+		if (!savedImage || !appointmentId || retriedFor.current === savedImage) return
+		retriedFor.current = savedImage
+		try {
+			const url = await getPrescriptionLink(appointmentId)
+			if (url) setFresh({ from: savedImage, url })
+		} catch {
+			// the image stays broken; the notes text below (when there is any) is still shown
+		}
+	}
+	// The typed notes are shown only when they are not already on the prescription page.
+	const hasNotes = !!treatment?.notes?.trim() && !imageUrl
 
 	return (
 		<Box
@@ -52,48 +74,34 @@ export default function PrescriptionView({ doctor, treatment, loading }: Prescri
 				overflow: 'hidden',
 				display: 'flex',
 				flexGrow: 1,
+				minHeight: 0,
 				flexDirection: 'column',
 			}}
 		>
-			{/* Doctor + Clinic header — mirrors ConsultationNotes.tsx */}
-			<Box
-				sx={{
-					px: 2.5,
-					py: 2,
-					display: 'flex',
-					justifyContent: 'space-between',
-					alignItems: 'flex-start',
-					background: '#DBE2E3',
-				}}
-			>
-				<Box>
-					<Typography variant="body1" sx={{ fontWeight: 600, color: 'primary.main', fontSize: '14px' }}>
-						{doctor.name}
-						{doctor.degree ? `, ${doctor.degree}` : ''}
-					</Typography>
-					<Typography variant="body1" sx={{ color: 'primary.main', fontSize: '11px' }}>
-						{doctor.specialization}
-					</Typography>
-				</Box>
-				<Box sx={{ textAlign: 'right' }}>
-					<Typography variant="body1" sx={{ fontWeight: 600, color: 'primary.main', fontSize: '14px' }}>
-						{doctor.clinicName}
-					</Typography>
-					<Typography variant="body1" sx={{ color: 'primary.main', fontSize: '11px' }}>
-						{doctor.clinicAddress}
-					</Typography>
-				</Box>
-			</Box>
-
-			<Divider />
-
 			{loading ? (
 				<PrescriptionSkeleton />
 			) : (
-				<Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+				<Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', ...customScrollbar, display: 'flex', flexDirection: 'column' }}>
 					{/* Notes body — read-only display of what the doctor recorded */}
-					<Box sx={{ p: 2.5, flex: 1 }}>
-						{hasNotes ? (
+					<Box sx={{ p: imageUrl ? 0 : 2.5, flex: 1 }}>
+						{imageUrl ? (
+							<Box
+								component="a"
+								href={imageUrl}
+								target="_blank"
+								rel="noopener noreferrer"
+								aria-label="Open the prescription in a new tab"
+								sx={{ display: 'block' }}
+							>
+								<Box
+									component="img"
+									src={imageUrl}
+									alt="Prescription and consultation notes written by your doctor"
+									onError={() => void refreshImage()}
+									sx={{ display: 'block', width: '100%', height: 'auto' }}
+								/>
+							</Box>
+						) : hasNotes ? (
 							<Typography
 								sx={{
 									fontSize: '14px',

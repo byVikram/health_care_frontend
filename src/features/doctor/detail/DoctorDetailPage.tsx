@@ -1,4 +1,5 @@
 // src/features/doctor/DoctorDetailPage.tsx
+import { getBrowserPosition } from '../../../hooks/useCurrentLocation'
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { Alert, Box, Container, Typography, Divider, Grid, Card, Avatar, Chip, Radio } from '@mui/material'
@@ -175,29 +176,10 @@ export default function DoctorDetailPage() {
 				let lon = cachedLon ? parseFloat(cachedLon) : undefined
 				
 				if (lat === undefined || lon === undefined) {
-					let position: GeolocationPosition | null = null
-					if (navigator.geolocation) {
-						position = await new Promise<GeolocationPosition>((resolve, reject) => {
-							navigator.geolocation.getCurrentPosition(resolve, reject, {
-								enableHighAccuracy: true,
-								timeout: 10000,
-								maximumAge: 0,
-							})
-						}).catch((err) => {
-							console.warn('Geolocation failed or denied on details page, using default coordinates.', err)
-							return null
-						})
-					}
-					if (!position) {
-						position = {
-							coords: {
-								latitude: 12.9716,
-								longitude: 77.5946,
-							}
-						} as GeolocationPosition
-					}
-					lat = position.coords.latitude
-					lon = position.coords.longitude
+					const here = await getBrowserPosition({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 })
+					// no position: the default one (Bengaluru)
+					lat = here.coords?.latitude ?? 12.9716
+					lon = here.coords?.longitude ?? 77.5946
 					sessionStorage.setItem('user_lat', lat.toString())
 					sessionStorage.setItem('user_lon', lon.toString())
 				}
@@ -665,7 +647,7 @@ export default function DoctorDetailPage() {
 								availableSlots={availableSlotGroups.length > 0 ? availableSlotGroups : undefined}
 								loading={slotsLoading || loading}
 								disableBookedSlots={true}
-								maxDaysAhead={BOOKING_WINDOW_DAYS}
+								rollingDays={BOOKING_WINDOW_DAYS}
 								selectedAppointmentType={selectedType}
 								onAppointmentTypeChange={setSelectedType}
 								clinicPrice={appointmentTypes[0]?.price}

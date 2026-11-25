@@ -65,6 +65,8 @@ export default function DashboardCarousel({ images = [], slides, height = 300, f
 
 	// auto-play: next slide, looping; stopped while hovered / focused and when there is nothing to slide to
 	useEffect(() => {
+		// no auto-play for people who asked their system for less motion (WCAG 2.2.2)
+		if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
 		if (!autoPlay || paused || count < 2) return
 		const id = setInterval(() => goTo((currentRef.current + 1) % count, 'left'), autoPlayInterval)
 		return () => clearInterval(id)

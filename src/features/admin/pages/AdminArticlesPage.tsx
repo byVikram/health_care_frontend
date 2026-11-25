@@ -375,8 +375,6 @@ export default function AdminArticlesPage() {
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
 							startIcon={<SearchIcon sx={{ color: '#94a3b8', fontSize: 18 }} />}
-							enableVoiceSearch
-							onVoiceResult={(text) => setSearchQuery(text)}
 							sx={{ width: { xs: '100%', sm: 260 } }}
 						/>
 						<AppSelect

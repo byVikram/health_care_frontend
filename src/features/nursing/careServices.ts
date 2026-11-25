@@ -139,12 +139,11 @@ export function careCopy(key: CareServiceKey): CareCopy {
 	}
 }
 
-export type CarePage = 'home' | 'schedule' | 'review' | 'matching' | 'booked' | 'order'
+export type CarePage = 'home' | 'schedule' | 'matching' | 'booked' | 'order'
 
 const SUFFIX: Record<CarePage, string> = {
 	home: '',
 	schedule: '/schedule',
-	review: '/review',
 	matching: '/finding/',
 	booked: '/booked/',
 	order: '/orders/',

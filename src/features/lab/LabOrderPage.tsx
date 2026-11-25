@@ -18,12 +18,12 @@ import { DESK, DESK_ICONS, type DeskTone } from '../../styles/deskTokens'
 import LabOrderTimeline from './components/LabOrderTimeline'
 import LabRescheduleDialog from './components/LabRescheduleDialog'
 import { labBooking, type LabOrder } from './labBookingStore'
-import { downloadVisitCalendar } from './labCalendar'
+import { downloadVisitCalendar } from '../booking/visitCalendar'
 import { CANCEL_REASONS, LAB_ICONS } from './labConstants'
-import { commaDate, inr, longDate, plural } from './labFormat'
+import { commaDate, inr, longDate, plural } from '../booking/bookingFormat'
 import { applyApi, orderFromApi } from './labOrder'
 import { cancelOrder, fetchOrder, labErrorMessage, type ApiOrder } from './labService'
-import LabPageShell from './LabPageShell'
+import PatientPageShell from '../../components/layout/PatientPageShell'
 
 const STATUS: Record<string, { label: string; tone: DeskTone }> = {
 	placed: { label: 'Order placed', tone: 'move' },
@@ -254,6 +254,23 @@ export default function LabOrderPage() {
 		}
 	}, [orderId, reload, merge])
 
+	// Follow the order while the page is open (like the home-care order page): a silent read every 15 s while the tab is shown, until the
+	// order is cancelled. A missed read is tried again at the next tick.
+	useEffect(() => {
+		if (!orderId) return
+		const id = setInterval(async () => {
+			if (document.visibilityState !== 'visible') return
+			try {
+				const api = await fetchOrder(orderId)
+				setOrder((prev) => merge(api, prev?.apiId === api.id ? prev : null))
+				if (api.status === 'cancelled') clearInterval(id)
+			} catch {
+				// tried again at the next tick
+			}
+		}, 15_000)
+		return () => clearInterval(id)
+	}, [orderId, merge])
+
 	// Follow what the lab does: read again when the tab is shown after being away.
 	useEffect(() => {
 		const onShow = () => {
@@ -295,7 +312,7 @@ export default function LabOrderPage() {
 
 	if (!order) {
 		return (
-			<LabPageShell>
+			<PatientPageShell>
 				<Box component={Link} to={ROUTES.BOOKINGS} sx={{ alignSelf: 'flex-start', fontSize: 14, fontWeight: 800, color: DESK.primary, textDecoration: 'none' }}>
 					‹ Back to my bookings
 				</Box>
@@ -316,7 +333,7 @@ export default function LabOrderPage() {
 						<DeskButton label="Try again" kind="primary" fullWidth={false} onClick={() => setReload((n) => n + 1)} />
 					</Box>
 				)}
-			</LabPageShell>
+			</PatientPageShell>
 		)
 	}
 
@@ -352,7 +369,7 @@ export default function LabOrderPage() {
 	}
 
 	return (
-		<LabPageShell>
+		<PatientPageShell>
 			<Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
 				<Box
 					component={Link}
@@ -408,7 +425,7 @@ export default function LabOrderPage() {
 				<Banner tone="warning" title="Fast for 10–12 hours" body="Stop eating by 9 PM the night before. Plain water is fine." />
 			) : null}
 
-			<Box sx={{ display: 'flex', gap: '28px', alignItems: 'flex-start' }}>
+			<Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: '28px', alignItems: { xs: 'stretch', lg: 'flex-start' } }}>
 				<Box sx={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '18px' }}>
 					<Card title="Tests in this order">
 						{order.items.map((item, index) => (
@@ -526,7 +543,7 @@ export default function LabOrderPage() {
 
 				<Box
 					component="aside"
-					sx={{ position: 'sticky', top: 88, width: 380, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '18px' }}
+					sx={{ position: { lg: 'sticky' }, top: 88, width: { xs: '100%', lg: 380 }, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '18px' }}
 				>
 					<Card title="Payment">
 						<PayRow label={`Tests (${order.items.length}, MRP)`} value={inr(order.mrpTotal)} />
@@ -603,6 +620,6 @@ export default function LabOrderPage() {
 				onClose={() => setCancelling(false)}
 				onConfirm={(reason) => void confirmCancel(reason)}
 			/>
-		</LabPageShell>
+		</PatientPageShell>
 	)
 }

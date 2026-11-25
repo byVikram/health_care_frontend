@@ -3,6 +3,7 @@
 // Step 2 of the lab booking, "Review & pay" (desktop designs 3 and "Visit a lab · 3"): what the patient pays with, and on the right the
 // amount, when and where, who the tests are for and the bill. Payment is on collection only (the backend takes no online payment), so
 // "Pay with" has the one option, the button places the order, and the order is booked without a payment step.
+import { slotStillOffered } from './labSlotCheck'
 import { Box } from '@mui/material'
 import axios from 'axios'
 import { useEffect, useState, type ChangeEvent } from 'react'
@@ -13,13 +14,12 @@ import DeskIcon from '../../components/common/Icon/DeskIcon'
 import { ROUTES } from '../../constants/routes'
 import { DESK, DESK_ICONS } from '../../styles/deskTokens'
 import LabReviewSummary from './components/LabReviewSummary'
-import LabStepper from './components/LabStepper'
 import { LAB_ICONS } from './labConstants'
-import { commaDate, inr, timeLabel } from './labFormat'
+import { commaDate, inr, timeLabel } from '../booking/bookingFormat'
 import { labBooking, totalsOf, useLabBooking } from './labBookingStore'
 import { orderFromApi } from './labOrder'
 import { labErrorMessage, placeOrder } from './labService'
-import LabPageShell from './LabPageShell'
+import PatientPageShell from '../../components/layout/PatientPageShell'
 
 const NOTE_MAX = 300
 
@@ -30,12 +30,19 @@ export default function LabReviewPage() {
 	const [placing, setPlacing] = useState(false)
 	const [problem, setProblem] = useState<{ message: string; conflict: boolean } | null>(null)
 
-	// Re-check on open: the picked time may have gone by while the page was away. Payment is on collection, nothing to choose.
+	// Re-check on open with the server: the picked time may have gone while the page was away. Payment is on collection, nothing to choose.
 	useEffect(() => {
-		const had = labBooking.get().slot
-		labBooking.dropExpired()
-		if (had && !labBooking.get().slot) toast.info('That time has passed. Please pick a new one.')
 		if (labBooking.get().method !== 'later') labBooking.set({ method: 'later' })
+		let active = true
+		void (async () => {
+			if (await slotStillOffered(labBooking.get())) return
+			if (!active) return
+			labBooking.set({ slot: null })
+			toast.info('That time is no longer available. Please pick a new one.')
+		})()
+		return () => {
+			active = false
+		}
 	}, [])
 
 	// An order already placed from this cart: never place a second one (Back from the confirmation lands here).
@@ -76,14 +83,23 @@ export default function LabReviewPage() {
 			// replace: Back from the confirmation must not return here and place a second order
 			navigate(ROUTES.LAB.BOOKED, { replace: true })
 		} catch (err) {
-			setProblem({ message: labErrorMessage(err), conflict: axios.isAxiosError(err) && err.response?.status === 409 })
+			const conflict = axios.isAxiosError(err) && err.response?.status === 409
+			setProblem({ message: labErrorMessage(err), conflict })
+			// 409: the time, the lab or the price changed. When the time is gone the pick is cleared (the cart page then shows the new times),
+			// asked of the server rather than read from the message; the cart is kept either way.
+			const code = axios.isAxiosError(err) ? (err.response?.data as { code?: string } | undefined)?.code : undefined
+			const gone = code === 'SLOT_UNAVAILABLE' || (code == null && !(await slotStillOffered(labBooking.get())))
+			if (conflict && gone) {
+				toast.error(labErrorMessage(err))
+				labBooking.set({ slot: null })
+			}
 		} finally {
 			setPlacing(false)
 		}
 	}
 
 	return (
-		<LabPageShell>
+		<PatientPageShell>
 			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
 				<Box
 					component={Link}
@@ -102,18 +118,16 @@ export default function LabReviewPage() {
 					<DeskIcon d={DESK_ICONS.chevronLeft} size={16} strokeWidth={2.4} />
 					Back to cart &amp; slot
 				</Box>
-				<LabStepper current={2} />
-				<Box sx={{ width: 160 }} />
 			</Box>
 
-			<Box sx={{ display: 'flex', gap: '28px', alignItems: 'flex-start' }}>
+			<Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: '28px', alignItems: { xs: 'stretch', lg: 'flex-start' } }}>
 				<Box
 					component="section"
 					sx={{
 						flexGrow: 1,
 						minWidth: 0,
 						bgcolor: DESK.raised,
-						border: '1px solid #E3EAEB',
+						border: `1px solid ${DESK.cardLine}`,
 						borderRadius: '18px',
 						p: '24px',
 						display: 'flex',
@@ -259,6 +273,6 @@ export default function LabReviewPage() {
 					</Box>
 				</Box>
 			</Box>
-		</LabPageShell>
+		</PatientPageShell>
 	)
 }

@@ -3,6 +3,9 @@
 // Lab tests, step 1 "Cart & slot": who the tests are for, home visit or visit a lab, the address, which lab, the day and time, the tests in
 // the cart and the booking summary (design: Desktop 2 and Visit a lab 2). Labs and prices come from /availability and /quote for the chosen
 // address; times from /slots. Choosing a time stores lab + slot + that lab's prices in the booking store, which the review page reads.
+import { slotStillOffered } from './labSlotCheck'
+import { istTodayIso } from '../../utils/istTime'
+import { useCurrentLocation as useCurrentLocationHook } from '../../hooks/useCurrentLocation'
 import { Box } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -11,22 +14,21 @@ import DeskButton from '../../components/common/Button/DeskButton'
 import DeskIcon from '../../components/common/Icon/DeskIcon'
 import { ROUTES } from '../../constants/routes'
 import { DESK, DESK_ICONS } from '../../styles/deskTokens'
-import LabAddressDialog from './components/LabAddressDialog'
+import AddressDialog from '../../components/common/Modal/AddressDialog'
 import LabBookingSummary from './components/LabBookingSummary'
 import LabCartItems, { type LabCartLine } from './components/LabCartItems'
 import LabChoiceList from './components/LabChoiceList'
-import LabStepper from './components/LabStepper'
 import LabWhenSection from './components/LabWhenSection'
 import LabWhereSection, { type LabAvailabilityStatus } from './components/LabWhereSection'
-import LabWhoSection from './components/LabWhoSection'
+import WhoSection from '../booking/WhoSection'
 import { labBooking, needsFasting, totalsOf, useLabBooking, type LabWhere } from './labBookingStore'
-import { addDays, longDate, plural, timeLabel, toIso } from './labFormat'
+import { addDays, longDate, plural, timeLabel, toIso } from '../booking/bookingFormat'
 import type { ApiQuoteLab, LabServiceType } from './labService'
-import { LAB_CARD } from './labStyles'
-import LabPageShell from './LabPageShell'
-import { addressLineOf, useLabAddresses } from './useLabAddresses'
+import { BOOKING_CARD } from '../booking/bookingStyles'
+import PatientPageShell from '../../components/layout/PatientPageShell'
+import { addressLineOf, useBookingAddresses } from '../booking/useBookingAddresses'
 import { useLabCartCheck } from './useLabCartCheck'
-import { labPatientKey, useLabPatients, type LabPatient } from './useLabPatients'
+import { bookingPatientKey, useBookingPatients, type BookingPatient } from '../booking/useBookingPatients'
 import { useLabSlots } from './useLabSlots'
 
 const DAY_COUNT = 14
@@ -36,28 +38,26 @@ const CLEARED_PICK = { lab: null, slot: null, lineAmounts: {}, quoteTotal: null 
 export default function LabCartPage() {
 	const navigate = useNavigate()
 	const booking = useLabBooking()
-	const { patients, loading: patientsLoading } = useLabPatients()
-	const { addresses, loading: addressesLoading, add } = useLabAddresses()
+	const { patients, loading: patientsLoading } = useBookingPatients()
+	const { addresses, loading: addressesLoading, add } = useBookingAddresses()
 	const [addressOpen, setAddressOpen] = useState(false)
 	const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null)
-	const [locating, setLocating] = useState(false)
 	const [addressDeclined, setAddressDeclined] = useState(false)
 
-	const days = useMemo(() => Array.from({ length: DAY_COUNT }, (_, i) => toIso(addDays(new Date(), i))), [])
+	// the days are counted from today in India, not from the browser's date (the server decides what can be booked)
+	const days = useMemo(() => {
+		const [y, m, d] = istTodayIso().split('-').map(Number)
+		return Array.from({ length: DAY_COUNT }, (_, i) => toIso(addDays(new Date(y, m - 1, d), i)))
+	}, [])
 	const [dayIdx, setDayIdx] = useState(() => Math.max(0, days.indexOf(booking.slot?.date ?? '')))
 	// The lab the patient clicked (null = none yet: the saved pick, else the cheapest, is used).
 	const [chosenLabId, setChosenLabId] = useState<number | null>(booking.lab?.id ?? null)
 
-	// The page can stay open for a long time: drop a time that has gone by.
-	useEffect(() => {
-		labBooking.dropExpired()
-	}, [])
-
-	const patient = patients.find((p) => labPatientKey(p) === booking.patientKey) ?? patients[0]
+	const patient = patients.find((p) => bookingPatientKey(p) === booking.patientKey) ?? patients[0]
 	const address = addresses.find((a) => a.id === booking.addressId) ?? addresses[0]
 
 	// Keep the booking store in step with who / where is shown as chosen (the review, booked and order pages read the store).
-	const patientKey = patient ? labPatientKey(patient) : null
+	const patientKey = patient ? bookingPatientKey(patient) : null
 	const patientName = patient?.name
 	const patientRelation = patient?.relationship
 	const addressId = address?.id
@@ -80,25 +80,10 @@ export default function LabCartPage() {
 	}
 
 	// "Use current location": the browser's position starts a new address (the street and PIN code are still typed).
-	const useCurrentLocation = () => {
-		if (!navigator.geolocation) {
-			toast.error('Your browser cannot share your location. Please type the address.')
-			return
-		}
-		setLocating(true)
-		navigator.geolocation.getCurrentPosition(
-			(position) => {
-				setLocating(false)
-				setCoords({ latitude: position.coords.latitude, longitude: position.coords.longitude })
-				setAddressOpen(true)
-			},
-			() => {
-				setLocating(false)
-				toast.error('We could not get your location. Allow location access, or type the address.')
-			},
-			{ timeout: 10_000 }
-		)
-	}
+	const { locating, start: startLocating } = useCurrentLocationHook((found) => {
+		setCoords(found)
+		setAddressOpen(true)
+	})
 
 	const { check, loading: checking, error: checkError, retry } = useLabCartCheck(booking.addressId, booking.cart)
 	const isHome = booking.where === 'home'
@@ -156,8 +141,8 @@ export default function LabCartPage() {
 		})
 	}
 
-	const selectPatient = (p: LabPatient) =>
-		labBooking.set({ patientKey: labPatientKey(p), patientName: p.name, patientRelation: p.relationship })
+	const selectPatient = (p: BookingPatient) =>
+		labBooking.set({ patientKey: bookingPatientKey(p), patientName: p.name, patientRelation: p.relationship })
 
 	const saveAddress = async (payload: Parameters<typeof add>[0]) => {
 		const saved = await add(payload)
@@ -221,14 +206,21 @@ export default function LabCartPage() {
 						? 'Pick a time to continue'
 						: ''
 
-	const goNext = () => {
-		const had = labBooking.get().slot
-		labBooking.dropExpired()
-		if (had && !labBooking.get().slot) {
-			toast.info('That time has passed. Please pick a new one.')
-			return
+	// Continue: the server says whether the picked time is still on offer (the page can stay open for a long time).
+	const [continuing, setContinuing] = useState(false)
+	const goNext = async () => {
+		if (continuing) return
+		setContinuing(true)
+		try {
+			if (!(await slotStillOffered(labBooking.get()))) {
+				labBooking.set({ slot: null })
+				toast.info('That time is no longer available. Please pick a new one.')
+				return
+			}
+			navigate(ROUTES.LAB.REVIEW)
+		} finally {
+			setContinuing(false)
 		}
-		navigate(ROUTES.LAB.REVIEW)
 	}
 
 	const whenSub = isHome
@@ -250,14 +242,12 @@ export default function LabCartPage() {
 
 	if (booking.cart.length === 0) {
 		return (
-			<LabPageShell>
+			<PatientPageShell>
 				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
 					{backLink}
-					<LabStepper current={1} />
-					<Box sx={{ width: 160 }} />
 				</Box>
 				<Box
-					sx={{ ...LAB_CARD, p: '56px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}
+					sx={{ ...BOOKING_CARD, p: '56px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}
 				>
 					<Box component="b" sx={{ fontSize: 20 }}>
 						Your cart is empty
@@ -269,23 +259,23 @@ export default function LabCartPage() {
 						<DeskButton label="Browse tests" kind="primary" onClick={() => navigate(ROUTES.LAB.HOME)} />
 					</Box>
 				</Box>
-			</LabPageShell>
+			</PatientPageShell>
 		)
 	}
 
 	return (
-		<LabPageShell>
+		<PatientPageShell>
 			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
 				{backLink}
-				<LabStepper current={1} />
-				<Box sx={{ width: 160 }} />
 			</Box>
-			<Box sx={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
+			<Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: '24px', alignItems: { xs: 'stretch', lg: 'flex-start' } }}>
 				<Box sx={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '18px' }}>
-					<LabWhoSection
+					<WhoSection
+						title="Who is this test for?"
+						sub="The report is saved to their health records."
 						patients={patients}
 						loading={patientsLoading}
-						selectedKey={patient ? labPatientKey(patient) : booking.patientKey}
+						selectedKey={patient ? bookingPatientKey(patient) : booking.patientKey}
 						onSelect={selectPatient}
 					/>
 					<LabWhereSection
@@ -296,7 +286,7 @@ export default function LabCartPage() {
 						addressId={booking.addressId}
 						onAddress={(a) => labBooking.set({ addressId: a.id, addressTag: a.label, addressLine: addressLineOf(a) })}
 						onAddAddress={() => setAddressOpen(true)}
-						onUseCurrentLocation={useCurrentLocation}
+						onUseCurrentLocation={() => void startLocating()}
 						locating={locating}
 						status={status}
 					>
@@ -328,11 +318,13 @@ export default function LabCartPage() {
 					savings={Math.max(0, estimateMrp - estimate)}
 					total={estimate}
 					blocker={blocker}
-					onContinue={goNext}
+					onContinue={() => void goNext()}
 				/>
 			</Box>
 			{addressOpen || askForAddress ? (
-				<LabAddressDialog
+				<AddressDialog
+					sub="Home collection and the labs shown to you depend on it."
+					foundText="We found your location. Add the street and PIN code so we can match labs near you."
 					hint={addresses[0]}
 					isFirst={addresses.length === 0}
 					coords={coords}
@@ -340,6 +332,6 @@ export default function LabCartPage() {
 					onClose={closeAddress}
 				/>
 			) : null}
-		</LabPageShell>
+		</PatientPageShell>
 	)
 }

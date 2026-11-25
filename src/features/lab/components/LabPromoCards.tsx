@@ -6,7 +6,7 @@ import { Box } from '@mui/material'
 import DashboardCarousel from '../../../components/common/Carousel/DashboardCarousel'
 import { DESK } from '../../../styles/deskTokens'
 import type { LabItem } from '../labConstants'
-import { inr } from '../labFormat'
+import { inr } from '../../booking/bookingFormat'
 import { offLabel } from '../labStyles'
 
 interface LabPromoCardsProps {

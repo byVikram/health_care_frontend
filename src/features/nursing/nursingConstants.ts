@@ -2,7 +2,7 @@
 //
 // Fixed pieces of the Nursing care flow: the filter tabs, the colours and icons of the cards (the API has no pictures, so a card gets a
 // tinted panel from its first matching keyword), the tip choices and the cancel reasons (the native app's lists).
-import { DESK_MEDIA } from '../../styles/deskTokens'
+import { DESK, DESK_MEDIA } from '../../styles/deskTokens'
 import type { NursingItem } from './nursingService'
 
 export type NursingTypeId = 'all' | 'packages' | 'procedures'
@@ -48,11 +48,11 @@ export function mediaOf(item: Pick<NursingItem, 'id' | 'kind' | 'name' | 'catego
 
 /** The "Care for" chips cycle through these (the design's mint / peach / sky / sand / lilac tints). */
 export const CATEGORY_TINTS = [
-	{ bg: '#E3EFEF', ink: '#2B6F71' },
-	{ bg: '#FDE8DC', ink: '#B4532A' },
-	{ bg: '#DDEBFA', ink: '#2463A8' },
-	{ bg: '#FBEFD5', ink: '#8A5300' },
-	{ bg: '#ECE6FA', ink: '#6A4BB5' },
+	{ bg: DESK.primarySoft, ink: DESK.primary },
+	{ bg: '#FDE8DC', ink: DESK.sand },
+	{ bg: DESK.infoSoft, ink: DESK.info },
+	{ bg: '#FBEFD5', ink: DESK.warning },
+	{ bg: DESK.lilacSoft, ink: DESK.lilac },
 ] as const
 
 export const NURSING_TYPES: { id: NursingTypeId; label: string; icon: string }[] = [

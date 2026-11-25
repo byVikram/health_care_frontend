@@ -1,34 +1,36 @@
-// src/features/nursing/components/NursingAddressDialog.tsx
+// src/components/common/Modal/AddressDialog.tsx
 //
-// "Add a new address" on the booking page: the street, area, city, state, PIN code and a label. It saves
+// "Add a new address" (Lab tests cart, home-care booking): the street, area, city, state, PIN code and a label. It saves
 // through the same call as the profile's Addresses tab and hands back the saved address. Mount it only while it is open, so each opening
 // starts from a clean form.
 import { Box } from '@mui/material'
 import { useState } from 'react'
-import AppInput from '../../../components/common/Input/AppInput'
-import AppSelect from '../../../components/common/Select/AppSelect'
-import DeskDialog from '../../../components/common/Modal/DeskDialog'
+import AppInput from '../Input/AppInput'
+import AppSelect from '../Select/AppSelect'
+import DeskDialog from './DeskDialog'
 import { DESK } from '../../../styles/deskTokens'
-import type { LabAddress } from '../../lab/useLabAddresses'
-import type { PatientAddressCreate } from '../../patient/patientService'
-import { useCareService } from '../useCareService'
+import type { BookingAddress } from '../../../features/booking/useBookingAddresses'
+import type { PatientAddressCreate } from '../../../features/patient/patientService'
 
 const LABELS = ['Home', 'Work', 'Other'].map((value) => ({ value, label: value }))
 
-interface NursingAddressDialogProps {
+interface AddressDialogProps {
+	/** The line under the title: what the address is used for. */
+	sub: string
+	/** Shown when a position was found ("Use current location"). */
+	foundText?: string
 	/** Fills the city and state (from the address the patient already has). */
-	hint?: Pick<LabAddress, 'city' | 'state'>
+	hint?: Pick<BookingAddress, 'city' | 'state'>
 	/** The first address the patient saves becomes their default. */
 	isFirst: boolean
 	/** The position the browser gave ("Use current location"): saved with the address; the street and PIN code are still typed. */
 	coords?: { latitude: number; longitude: number } | null
 	/** Saves it; resolves with the saved address, or null when it could not be saved (the dialog then stays open). */
-	onSave: (payload: PatientAddressCreate) => Promise<LabAddress | null>
+	onSave: (payload: PatientAddressCreate) => Promise<BookingAddress | null>
 	onClose: () => void
 }
 
-export default function NursingAddressDialog({ hint, isFirst, coords, onSave, onClose }: NursingAddressDialogProps) {
-	const care = useCareService()
+export default function AddressDialog({ sub, foundText, hint, isFirst, coords, onSave, onClose }: AddressDialogProps) {
 	const [line, setLine] = useState('')
 	const [area, setArea] = useState('')
 	const [city, setCity] = useState(hint?.city ?? '')
@@ -71,7 +73,7 @@ export default function NursingAddressDialog({ hint, isFirst, coords, onSave, on
 		<DeskDialog
 			open
 			title="Add a new address"
-			sub={`The ${care.noun} visits this address.`}
+			sub={sub}
 			okLabel="Save address"
 			busy={saving}
 			width={520}
@@ -80,7 +82,7 @@ export default function NursingAddressDialog({ hint, isFirst, coords, onSave, on
 		>
 			{coords ? (
 				<Box sx={{ p: '10px 12px', borderRadius: '10px', bgcolor: DESK.primarySoft, color: DESK.primary, fontSize: 13, fontWeight: 700 }}>
-					We found your location. Add the street and PIN code so we can match {care.nouns} near you.
+					{foundText ?? 'We found your location. Add the street and PIN code.'}
 				</Box>
 			) : null}
 			<Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>

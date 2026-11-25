@@ -6,9 +6,10 @@ import { Box } from '@mui/material'
 import DeskIcon from '../../../components/common/Icon/DeskIcon'
 import { DESK, DESK_ICONS } from '../../../styles/deskTokens'
 import { LAB_CONCERNS, LAB_ICONS, type LabItem } from '../labConstants'
-import { inr } from '../labFormat'
-import { LAB_CARD, fastingKnown, mediaOf, offLabel } from '../labStyles'
-import LabAddButton from './LabAddButton'
+import { inr } from '../../booking/bookingFormat'
+import { BOOKING_CARD } from '../../booking/bookingStyles'
+import { fastingKnown, mediaOf, offLabel } from '../labStyles'
+import AddToggleButton from '../../../components/common/Button/AddToggleButton'
 
 interface LabItemCardProps {
 	item: LabItem
@@ -170,7 +171,7 @@ export function LabPackageCard({ item, added, onToggle, onOpen }: LabItemCardPro
 		<Box
 			component="article"
 			sx={{
-				...LAB_CARD,
+				...BOOKING_CARD,
 				border: `1.5px solid ${added ? DESK.primary : DESK.cardLine}`,
 				p: '20px',
 				overflow: 'hidden',
@@ -230,14 +231,16 @@ export function LabPackageCard({ item, added, onToggle, onOpen }: LabItemCardPro
 				}}
 			>
 				<Price item={item} size={22} />
-				<LabAddButton added={added} onClick={() => onToggle(item)} name={item.name} />
-				<Box
-					component="button"
-					type="button"
-					onClick={() => onOpen(item)}
-					sx={{ p: 0, border: 0, bgcolor: 'transparent', color: DESK.primary, fontFamily: 'inherit', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}
-				>
-					View details
+				<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+					<AddToggleButton added={added} onClick={() => onToggle(item)} name={item.name} />
+					<Box
+						component="button"
+						type="button"
+						onClick={() => onOpen(item)}
+						sx={{ p: 0, border: 0, bgcolor: 'transparent', color: DESK.primary, fontFamily: 'inherit', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}
+					>
+						View details
+					</Box>
 				</Box>
 			</Box>
 		</Box>
@@ -249,7 +252,7 @@ export function LabTestCard({ item, added, onToggle, onOpen }: LabItemCardProps)
 		<Box
 			component="article"
 			sx={{
-				...LAB_CARD,
+				...BOOKING_CARD,
 				border: `1.5px solid ${added ? DESK.primary : DESK.cardLine}`,
 				p: '18px',
 				overflow: 'hidden',
@@ -269,8 +272,8 @@ export function LabTestCard({ item, added, onToggle, onOpen }: LabItemCardProps)
 				<Box sx={{ flexGrow: 1 }}>
 					<Price item={item} size={18} />
 				</Box>
-				<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-					<LabAddButton added={added} onClick={() => onToggle(item)} name={item.name} />
+				<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+					<AddToggleButton added={added} onClick={() => onToggle(item)} name={item.name} />
 					<Box
 						component="button"
 						type="button"
