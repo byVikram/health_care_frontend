@@ -288,13 +288,9 @@ export default function WorkingHoursScheduler({ hospital, others, onSaved }: Wor
 					[sessionKey]: blocks.map((slot, i) => {
 						if (i !== slotIndex) return slot
 						if (field === 'end' || !session) return { ...slot, [field]: value }
-						// The end the doctor chose is kept when it still fits (at least one slot after the new start, and before the next block or the
-						// session end); only when it does not fit does the new start bring the default end (the last whole slot before that limit).
+						// A new start time brings its default end: the last whole slot before the next block (or the session end)
 						const limit = blocks[slotIndex + 1] ? toMinutes(blocks[slotIndex + 1].start) : toMinutes(session.end)
-						const start = toMinutes(value)
-						const chosenEnd = toMinutes(slot.end)
-						const fits = chosenEnd >= start + current.slotDuration && chosenEnd <= limit
-						return { ...slot, start: value, end: fits ? slot.end : toTime(defaultBlockEnd(start, limit, current.slotDuration)) }
+						return { start: value, end: toTime(defaultBlockEnd(toMinutes(value), limit, current.slotDuration)) }
 					}),
 				},
 			}
