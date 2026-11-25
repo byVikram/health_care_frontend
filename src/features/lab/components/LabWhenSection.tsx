@@ -79,7 +79,7 @@ export default function LabWhenSection({ sub, days, dayIdx, onDay, fasting, hasL
 					}}
 					dateLabel=""
 					timeLabel="Select Time"
-					maxDaysAhead={days.length}
+					rollingDays={days.length}
 					// India's today (the first day offered), not the browser's
 					today={dateOf(days[0])}
 					timeSlotColumns={5}

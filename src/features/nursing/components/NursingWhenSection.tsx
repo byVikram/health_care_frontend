@@ -157,7 +157,7 @@ export default function NursingWhenSection({ mode, onMode, dates, onDates, sameT
 						}}
 						dateLabel={dates.length === 0 ? 'Which days?' : `Which days? · ${plural(dates.length, 'day', 'days')} picked`}
 						timeLabel="What time?"
-						maxDaysAhead={14}
+						rollingDays={14}
 						// India's date, not the browser's: the day grid and the 14-day window must match what the server accepts
 						today={dateOf(istTodayIso())}
 						timeSlotColumns={5}

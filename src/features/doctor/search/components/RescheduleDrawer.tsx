@@ -102,7 +102,7 @@ export default function RescheduleDrawer({
 				availableSlots={rescheduleSlots}
 				loading={rescheduleSlotsLoading}
 				disableBookedSlots={true}
-				maxDaysAhead={BOOKING_WINDOW_DAYS}
+				rollingDays={BOOKING_WINDOW_DAYS}
 				selectedAppointmentType={appointmentType}
 				onAppointmentTypeChange={setAppointmentType}
 			/>

@@ -647,7 +647,7 @@ export default function DoctorDetailPage() {
 								availableSlots={availableSlotGroups.length > 0 ? availableSlotGroups : undefined}
 								loading={slotsLoading || loading}
 								disableBookedSlots={true}
-								maxDaysAhead={BOOKING_WINDOW_DAYS}
+								rollingDays={BOOKING_WINDOW_DAYS}
 								selectedAppointmentType={selectedType}
 								onAppointmentTypeChange={setSelectedType}
 								clinicPrice={appointmentTypes[0]?.price}
