@@ -26,10 +26,6 @@ import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted'
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered'
 import FormatQuoteIcon from '@mui/icons-material/FormatQuote'
 import CodeIcon from '@mui/icons-material/Code'
-import FormatAlignLeftIcon from '@mui/icons-material/FormatAlignLeft'
-import FormatAlignCenterIcon from '@mui/icons-material/FormatAlignCenter'
-import FormatAlignRightIcon from '@mui/icons-material/FormatAlignRight'
-import FormatAlignJustifyIcon from '@mui/icons-material/FormatAlignJustify'
 import LinkIcon from '@mui/icons-material/Link'
 import ImageIcon from '@mui/icons-material/Image'
 import UndoIcon from '@mui/icons-material/Undo'
@@ -340,66 +336,6 @@ export default function RichTextEditor({
 							}}
 						>
 							<CodeIcon sx={{ fontSize: 18, color: '#475569' }} />
-						</IconButton>
-					</Tooltip>
-
-					<Divider orientation="vertical" flexItem sx={{ my: 0.5, mx: 0.5 }} />
-
-					{/* Alignment */}
-					<Tooltip title="Align Left">
-						<IconButton
-							size="small"
-							onClick={() => execCommand('justifyLeft')}
-							sx={{
-								borderRadius: 1.5,
-								border: '1px solid #e2e8f0',
-								bgcolor: '#fff',
-								'&:hover': { bgcolor: '#f1f5f9' },
-							}}
-						>
-							<FormatAlignLeftIcon sx={{ fontSize: 18 }} />
-						</IconButton>
-					</Tooltip>
-					<Tooltip title="Align Center">
-						<IconButton
-							size="small"
-							onClick={() => execCommand('justifyCenter')}
-							sx={{
-								borderRadius: 1.5,
-								border: '1px solid #e2e8f0',
-								bgcolor: '#fff',
-								'&:hover': { bgcolor: '#f1f5f9' },
-							}}
-						>
-							<FormatAlignCenterIcon sx={{ fontSize: 18 }} />
-						</IconButton>
-					</Tooltip>
-					<Tooltip title="Align Right">
-						<IconButton
-							size="small"
-							onClick={() => execCommand('justifyRight')}
-							sx={{
-								borderRadius: 1.5,
-								border: '1px solid #e2e8f0',
-								bgcolor: '#fff',
-								'&:hover': { bgcolor: '#f1f5f9' },
-							}}
-						>
-							<FormatAlignRightIcon sx={{ fontSize: 18 }} />
-						</IconButton>
-					</Tooltip>
-					<Tooltip title="Justify">
-						<IconButton
-							size="small"
-							onClick={() => execCommand('justifyFull')}
-							sx={{
-								borderRadius: 1.5,
-								border: '1px solid #e2e8f0',
-								bgcolor: '#fff',
-								'&:hover': { bgcolor: '#f1f5f9' },
-							}}
-						>
-							<FormatAlignJustifyIcon sx={{ fontSize: 18 }} />
 						</IconButton>
 					</Tooltip>
 

@@ -38,12 +38,16 @@ export interface ConsultationDoctor {
   clinicName: string;
   clinicAddress: string;
 }
+/** How a reading rates: normal / medium / high, decided by the backend (features/consultation/vitalRating.ts); unset = not rated. */
+export type VitalRating = "unset" | "normal" | "medium" | "high";
+
 export interface VitalStat {
   id: string;
   label: string;
   value: string;
   unit: string;
   date: string;
+  rating?: VitalRating;
 }
 
 export interface VitalReading {
@@ -56,6 +60,6 @@ export interface VitalHistoryRow {
   id: string;
   date: string;
   cells: Record<string, string>;
-  cellStatus?: Record<string, "normal" | "abnormal">;
+  cellStatus?: Record<string, VitalRating>;
   hasDownload?: boolean;
 }

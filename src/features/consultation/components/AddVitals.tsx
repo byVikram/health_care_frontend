@@ -1,9 +1,14 @@
-import { useState } from 'react'
-import { Box, Divider, Grid, Typography } from '@mui/material'
+import { useEffect, useRef, useState } from 'react'
+import { Box, Grid, Typography } from '@mui/material'
 import AppInput from '../../../components/common/Input/AppInput'
 import AppButton from '../../../components/common/Button/AppButton'
 import { toast } from 'react-toastify'
-import { createVital } from '../consultationService'
+import { createVital, getVitalRanges, type VitalRanges } from '../consultationService'
+import { RATING_LABELS, RATING_TONES, rateTyped, type RatedVital } from '../vitalRating'
+
+// The readings of a consultation, in the contract the backend keeps (docs/patient-vitals.md in the backend, the same the mobile app
+// sends): one record per vital type, every number a number, one unit each. Blood pressure is ONE reading (systolic + diastolic), sugar
+// is random blood sugar (RBS) only, temperature is in °F, and weight and height are taken at every visit.
 
 interface AddVitalsProps {
 	patientPublicId: string
@@ -11,157 +16,215 @@ interface AddVitalsProps {
 	onSaved?: () => void
 }
 
-// Single consolidated form state — replaces 13 individual useState calls
-interface VitalsForm {
-	morningBp: string
-	eveningBp: string
-	fastingSugar: string
-	randomSugar: string
-	weight: string
-	waist: string
-	ldl: string
-	hba1c: string
-	hdl: string
-	tgl: string
-	pulseRate: string
-	respRate: string
-	spo2: string
-	temperature: string
-}
+type FieldId = 'systolic' | 'diastolic' | 'pulse' | 'spo2' | 'temperature' | 'sugar' | 'weight' | 'height'
+
+type VitalsForm = Record<FieldId, string>
 
 const EMPTY_FORM: VitalsForm = {
-	morningBp: '',
-	eveningBp: '',
-	fastingSugar: '',
-	randomSugar: '',
-	weight: '',
-	waist: '',
-	ldl: '',
-	hba1c: '',
-	hdl: '',
-	tgl: '',
-	pulseRate: '',
-	respRate: '',
+	systolic: '',
+	diastolic: '',
+	pulse: '',
 	spo2: '',
 	temperature: '',
+	sugar: '',
+	weight: '',
+	height: '',
+}
+
+// The same ranges as the backend (patients/vitals.py), which refuses a value outside them too: checking here says it before saving.
+const FIELDS: Record<FieldId, { label: string; unit: string; min: number; max: number }> = {
+	systolic: { label: 'Blood Pressure (Systolic)', unit: 'mmHg', min: 50, max: 260 },
+	diastolic: { label: 'Blood Pressure (Diastolic)', unit: 'mmHg', min: 30, max: 160 },
+	pulse: { label: 'Pulse Rate', unit: 'bpm', min: 20, max: 250 },
+	spo2: { label: 'SpO2', unit: '%', min: 50, max: 100 },
+	temperature: { label: 'Temperature', unit: '°F', min: 90, max: 110 },
+	sugar: { label: 'Random Blood Sugar (RBS)', unit: 'mg/dL', min: 20, max: 800 },
+	weight: { label: 'Weight', unit: 'kg', min: 2, max: 400 },
+	height: { label: 'Height', unit: 'cm', min: 30, max: 260 },
+}
+
+const VITAL_FIELDS: FieldId[] = ['systolic', 'diastolic', 'pulse', 'spo2', 'temperature', 'sugar', 'weight', 'height']
+
+const isFilled = (text: string) => text.trim() !== ''
+
+// The fields coloured by the backend's bands while typing (key in GET /api/patients/vitals/ranges; see ../vitalRating.ts); weight,
+// height and the "other" measurements are not rated.
+const RATED: Partial<Record<FieldId, RatedVital>> = {
+	systolic: 'systolic',
+	diastolic: 'diastolic',
+	pulse: 'pulse_rate',
+	spo2: 'spo2',
+	temperature: 'temperature',
+	sugar: 'random',
+}
+
+/** A message to show when what was typed cannot be saved, or null when it can. */
+function validate(form: VitalsForm): string | null {
+	for (const id of Object.keys(FIELDS) as FieldId[]) {
+		if (!isFilled(form[id])) continue
+		const { label, unit, min, max } = FIELDS[id]
+		const n = Number(form[id].trim())
+		if (!Number.isFinite(n) || n <= 0) return `Enter a valid number for ${label}`
+		if (n < min || n > max) {
+			// A temperature typed in °C is the likeliest slip: say so, with what it comes to in °F.
+			if (id === 'temperature' && n >= 30 && n <= 45)
+				return `Temperature is in °F: ${n} °C is ${Math.round((n * 9) / 5 + 32)} °F`
+			return `${label} should be between ${min} and ${max} ${unit}`
+		}
+	}
+	if (isFilled(form.systolic) !== isFilled(form.diastolic)) return 'Enter both blood pressure values, or neither'
+	if (isFilled(form.systolic) && Number(form.systolic) <= Number(form.diastolic))
+		return 'Systolic must be higher than diastolic'
+	return null
+}
+
+interface Entry {
+	/** Which reading this is, so one that is already saved is not sent again when Save is pressed a second time. */
+	key: string
+	vital_type: string
+	value: Record<string, number>
+}
+
+/** One record per vital type, in the backend's stored shape. */
+function buildEntries(form: VitalsForm): Entry[] {
+	const n = (id: FieldId) => Number(form[id].trim())
+	const entries: Entry[] = []
+	if (isFilled(form.systolic) && isFilled(form.diastolic))
+		entries.push({
+			key: 'bp',
+			vital_type: 'blood_pressure',
+			value: { systolic: n('systolic'), diastolic: n('diastolic') },
+		})
+	if (isFilled(form.pulse)) entries.push({ key: 'pulse', vital_type: 'pulse', value: { pulse_rate: n('pulse') } })
+	if (isFilled(form.spo2)) entries.push({ key: 'spo2', vital_type: 'spo2', value: { spo2: n('spo2') } })
+	if (isFilled(form.temperature))
+		entries.push({ key: 'temperature', vital_type: 'temperature', value: { temperature: n('temperature') } })
+	if (isFilled(form.sugar)) entries.push({ key: 'sugar', vital_type: 'glucose_level', value: { random: n('sugar') } })
+	if (isFilled(form.weight)) entries.push({ key: 'weight', vital_type: 'weight', value: { weight: n('weight') } })
+	if (isFilled(form.height)) entries.push({ key: 'height', vital_type: 'height', value: { height: n('height') } })
+	return entries
+}
+
+interface FieldInputProps {
+	id: FieldId
+	form: VitalsForm
+	/** The backend's bands, to colour a field as it is typed; null while unknown (the fields are then not coloured). */
+	ranges: VitalRanges | null
+	onChange: (id: FieldId) => (e: React.ChangeEvent<HTMLInputElement>) => void
+}
+
+function FieldInput({ id, form, ranges, onChange }: FieldInputProps) {
+	const { label, unit } = FIELDS[id]
+	const rated = RATED[id]
+	const rating = rated ? rateTyped(ranges, rated, form[id]) : 'unset'
+	const flagged = rating === 'medium' || rating === 'high'
+	const tone = RATING_TONES[rating]
+	return (
+		<Grid size={{ xs: 12, sm: 6, md: 3 }}>
+			<Box>
+				<Typography sx={{ fontSize: '13px', fontWeight: 500, color: 'text.primary', mb: 0.75 }}>
+					{label}
+				</Typography>
+				<AppInput
+					placeholder={unit}
+					fullWidth
+					size="small"
+					value={form[id]}
+					onChange={onChange(id)}
+					endIcon={
+						rating !== 'unset' ? (
+							<Box
+								role="img"
+								aria-label={RATING_LABELS[rating]}
+								sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: tone.dot }}
+							/>
+						) : undefined
+					}
+					sx={flagged ? { '& .MuiOutlinedInput-notchedOutline': { borderColor: tone.border } } : undefined}
+				/>
+			</Box>
+		</Grid>
+	)
 }
 
 export default function AddVitals({ patientPublicId, onClose, onSaved }: AddVitalsProps) {
 	const [loading, setLoading] = useState(false)
 	const [form, setForm] = useState<VitalsForm>(EMPTY_FORM)
+	// One time for every reading of this form (a retry keeps it), so the readings of a consultation share a row in the history.
+	const recordedAt = useRef(new Date().toISOString())
+	// The readings already saved, with the value that was saved: after a partial failure Save sends only what is new or was changed
+	// since, so a reading the doctor edits after it was saved is saved again (never silently left at its old value).
+	const saved = useRef<Map<string, string>>(new Map())
+	// The backend's bands, fetched when the form opens. A failure leaves them null: the fields are simply not coloured (the saved
+	// readings are rated by the backend anyway).
+	const [ranges, setRanges] = useState<VitalRanges | null>(null)
 
-	const setField =
-		(field: keyof VitalsForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
-			setForm((prev) => ({ ...prev, [field]: e.target.value }))
+	useEffect(() => {
+		let active = true
+		const load = async () => {
+			try {
+				const loaded = await getVitalRanges()
+				if (active && Object.keys(loaded).length) setRanges(loaded)
+			} catch {
+				// no colour while typing
+			}
+		}
+		void load()
+		return () => {
+			active = false
+		}
+	}, [])
+
+	const setField = (field: FieldId) => (e: React.ChangeEvent<HTMLInputElement>) =>
+		setForm((prev) => ({ ...prev, [field]: e.target.value }))
 
 	const handleSave = async () => {
-		// Timestamp used as recorded_at for all vitals in this submission
-		const recorded_at = new Date().toISOString()
-		const requests: Promise<unknown>[] = []
-
-		// Blood Pressure
-		if (form.morningBp.trim() || form.eveningBp.trim()) {
-			const parts = form.morningBp.split('/')
-			requests.push(
-				createVital({
-					patient_public_id: patientPublicId,
-					vital_type: 'blood_pressure',
-					recorded_at,
-					value: {
-						morning: form.morningBp.trim() || null,
-						evening: form.eveningBp.trim() || null,
-						systolic: parts[0]?.trim() ?? null,
-						diastolic: parts[1]?.trim() ?? null,
-					},
-				})
-			)
+		const invalid = validate(form)
+		if (invalid) {
+			toast.error(invalid)
+			return
 		}
 
-		// Glucose level
-		if (form.fastingSugar.trim() || form.randomSugar.trim()) {
-			requests.push(
-				createVital({
-					patient_public_id: patientPublicId,
-					vital_type: 'glucose_level',
-					recorded_at,
-					value: {
-						fasting: form.fastingSugar.trim() || null,
-						random: form.randomSugar.trim() || null,
-					},
-				})
-			)
-		}
-
-		// Weight
-		if (form.weight.trim()) {
-			requests.push(
-				createVital({
-					patient_public_id: patientPublicId,
-					vital_type: 'weight',
-					recorded_at,
-					value: { weight: Number(form.weight.trim()) },
-				})
-			)
-		}
-
-		// Temperature
-		if (form.temperature.trim()) {
-			requests.push(
-				createVital({
-					patient_public_id: patientPublicId,
-					vital_type: 'temperature',
-					recorded_at,
-					value: { temperature: Number(form.temperature.trim()) },
-				})
-			)
-		}
-
-		// SpO2
-		if (form.spo2.trim()) {
-			requests.push(
-				createVital({
-					patient_public_id: patientPublicId,
-					vital_type: 'spo2',
-					recorded_at,
-					value: { spo2: Number(form.spo2.trim()) },
-				})
-			)
-		}
-
-		// Others (waist, ldl, hba1c, hdl, tgl, pulse rate, resp rate)
-		const othersValue: Record<string, unknown> = {}
-		if (form.waist.trim()) othersValue.waist = Number(form.waist)
-		if (form.ldl.trim()) othersValue.ldl = Number(form.ldl)
-		if (form.hba1c.trim()) othersValue.hba1c = Number(form.hba1c)
-		if (form.hdl.trim()) othersValue.hdl = Number(form.hdl)
-		if (form.tgl.trim()) othersValue.tgl = Number(form.tgl)
-		if (form.pulseRate.trim()) othersValue.pulse_rate = Number(form.pulseRate)
-		if (form.respRate.trim()) othersValue.resp_rate = Number(form.respRate)
-
-		if (Object.keys(othersValue).length > 0) {
-			requests.push(
-				createVital({
-					patient_public_id: patientPublicId,
-					vital_type: 'others',
-					recorded_at,
-					value: othersValue,
-				})
-			)
-		}
-
-		if (requests.length === 0) {
-			toast.info('Please fill in at least one vital value.')
+		const entries = buildEntries(form).filter(
+			(entry) => saved.current.get(entry.key) !== JSON.stringify(entry.value)
+		)
+		if (entries.length === 0) {
+			if (saved.current.size === 0) {
+				toast.info('Please fill in at least one vital value.')
+			} else {
+				toast.info('No changes to save.') // everything typed is already saved
+				onClose()
+			}
 			return
 		}
 
 		setLoading(true)
 		try {
-			await Promise.all(requests)
-			toast.success('Vitals saved successfully!')
-			onSaved?.()
-			onClose()
-		} catch {
-			// errors handled globally by apiService interceptor
+			const results = await Promise.allSettled(
+				entries.map((entry) =>
+					createVital({
+						patient_public_id: patientPublicId,
+						vital_type: entry.vital_type,
+						recorded_at: recordedAt.current,
+						value: entry.value,
+					})
+				)
+			)
+			results.forEach((result, i) => {
+				if (result.status === 'fulfilled') saved.current.set(entries[i].key, JSON.stringify(entries[i].value))
+			})
+			const failed = results.filter((result) => result.status === 'rejected').length
+			if (failed === 0) {
+				toast.success('Vitals saved successfully!')
+				onSaved?.()
+				onClose()
+			} else {
+				// The server's reason for each is shown by the global error handler; the ones that went through stay saved.
+				if (failed < entries.length) onSaved?.()
+				toast.error(
+					`${failed} of ${entries.length} readings could not be saved. Fix them and press Save to try again.`
+				)
+			}
 		} finally {
 			setLoading(false)
 		}
@@ -177,113 +240,36 @@ export default function AddVitals({ patientPublicId, onClose, onSaved }: AddVita
 				Enter Patient Vitals Value
 			</Typography>
 
-			{/* Top Section */}
+			{/* The consultation's vitals */}
 			<Grid container spacing={2}>
-				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-					<Box>
-						<Typography sx={{ fontSize: '13px', fontWeight: 500, color: 'text.primary', mb: 0.75 }}>
-							Blood Pressure (Morning)
-						</Typography>
-						<AppInput placeholder="mm/Hg" fullWidth size="small" value={form.morningBp} onChange={setField('morningBp')} />
-					</Box>
-				</Grid>
-				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-					<Box>
-						<Typography sx={{ fontSize: '13px', fontWeight: 500, color: 'text.primary', mb: 0.75 }}>
-							Blood Pressure (Evening)
-						</Typography>
-						<AppInput placeholder="mm/Hg" fullWidth size="small" value={form.eveningBp} onChange={setField('eveningBp')} />
-					</Box>
-				</Grid>
-				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-					<Box>
-						<Typography sx={{ fontSize: '13px', fontWeight: 500, color: 'text.primary', mb: 0.75 }}>
-							Fasting Sugar
-						</Typography>
-						<AppInput placeholder="mg/dL" fullWidth size="small" value={form.fastingSugar} onChange={setField('fastingSugar')} />
-					</Box>
-				</Grid>
-				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-					<Box>
-						<Typography sx={{ fontSize: '13px', fontWeight: 500, color: 'text.primary', mb: 0.75 }}>
-							Random Sugar
-						</Typography>
-						<AppInput placeholder="mg/dL" fullWidth size="small" value={form.randomSugar} onChange={setField('randomSugar')} />
-					</Box>
-				</Grid>
-				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-					<Box>
-						<Typography sx={{ fontSize: '13px', fontWeight: 500, color: 'text.primary', mb: 0.75 }}>
-							Weight
-						</Typography>
-						<AppInput placeholder="Kg" fullWidth size="small" value={form.weight} onChange={setField('weight')} />
-					</Box>
-				</Grid>
+				{VITAL_FIELDS.map((id) => (
+					<FieldInput key={id} id={id} form={form} ranges={ranges} onChange={setField} />
+				))}
 			</Grid>
 
-			<Divider sx={{ my: 2.5 }} />
-
-			{/* Other Vitals */}
-			<Typography sx={{ color: 'primary.main', fontWeight: 500, fontSize: '15px', mb: 2 }}>
-				Other Vitals
-			</Typography>
-
-			<Grid container spacing={2}>
-				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-					<Box>
-						<Typography sx={{ fontSize: '13px', fontWeight: 500, color: 'text.primary', mb: 0.75 }}>Waist</Typography>
-						<AppInput placeholder="cms" fullWidth size="small" value={form.waist} onChange={setField('waist')} />
+			{/* What the colours mean (the dot and border of a field as it is typed) */}
+			<Box
+				sx={{
+					mt: 2,
+					px: 1.5,
+					py: 1,
+					display: 'flex',
+					flexWrap: 'wrap',
+					alignItems: 'center',
+					gap: 2,
+					borderRadius: '8px',
+					bgcolor: 'action.hover',
+				}}
+			>
+				{(['normal', 'medium', 'high'] as const).map((rating) => (
+					<Box key={rating} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+						<Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: RATING_TONES[rating].dot }} />
+						<Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>
+							{RATING_LABELS[rating]}
+						</Typography>
 					</Box>
-				</Grid>
-				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-					<Box>
-						<Typography sx={{ fontSize: '13px', fontWeight: 500, color: 'text.primary', mb: 0.75 }}>LDL</Typography>
-						<AppInput placeholder="mg/dL" fullWidth size="small" value={form.ldl} onChange={setField('ldl')} />
-					</Box>
-				</Grid>
-				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-					<Box>
-						<Typography sx={{ fontSize: '13px', fontWeight: 500, color: 'text.primary', mb: 0.75 }}>HbA1C</Typography>
-						<AppInput placeholder="%" fullWidth size="small" value={form.hba1c} onChange={setField('hba1c')} />
-					</Box>
-				</Grid>
-				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-					<Box>
-						<Typography sx={{ fontSize: '13px', fontWeight: 500, color: 'text.primary', mb: 0.75 }}>HDL</Typography>
-						<AppInput placeholder="mg/dL" fullWidth size="small" value={form.hdl} onChange={setField('hdl')} />
-					</Box>
-				</Grid>
-				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-					<Box>
-						<Typography sx={{ fontSize: '13px', fontWeight: 500, color: 'text.primary', mb: 0.75 }}>TGL</Typography>
-						<AppInput placeholder="mg/dL" fullWidth size="small" value={form.tgl} onChange={setField('tgl')} />
-					</Box>
-				</Grid>
-				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-					<Box>
-						<Typography sx={{ fontSize: '13px', fontWeight: 500, color: 'text.primary', mb: 0.75 }}>Pulse Rate</Typography>
-						<AppInput placeholder="bpm" fullWidth size="small" value={form.pulseRate} onChange={setField('pulseRate')} />
-					</Box>
-				</Grid>
-				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-					<Box>
-						<Typography sx={{ fontSize: '13px', fontWeight: 500, color: 'text.primary', mb: 0.75 }}>Respiration rate</Typography>
-						<AppInput placeholder="bpm" fullWidth size="small" value={form.respRate} onChange={setField('respRate')} />
-					</Box>
-				</Grid>
-				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-					<Box>
-						<Typography sx={{ fontSize: '13px', fontWeight: 500, color: 'text.primary', mb: 0.75 }}>SpO2</Typography>
-						<AppInput placeholder="%" fullWidth size="small" value={form.spo2} onChange={setField('spo2')} />
-					</Box>
-				</Grid>
-				<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-					<Box>
-						<Typography sx={{ fontSize: '13px', fontWeight: 500, color: 'text.primary', mb: 0.75 }}>Temperature</Typography>
-						<AppInput placeholder="F" fullWidth size="small" value={form.temperature} onChange={setField('temperature')} />
-					</Box>
-				</Grid>
-			</Grid>
+				))}
+			</Box>
 
 			{/* Buttons */}
 			<Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
