@@ -10,6 +10,7 @@ import type { LookupHospital } from '../../hooks/useAuth'
 import { USER_ROLES } from '../../constants/constants'
 import { useMemo } from 'react'
 import ChatBot from '../ChatBot'
+import AppFooter from './AppFooter'
 import { buildS3Url } from '../../utils/s3'
 import { getPatientDetails } from '../../features/patient/patientService'
 import FamilyMemberModal from '../../features/patient/components/FamilyMemberModal'
@@ -21,9 +22,10 @@ const NAVBAR_HEIGHT = 64
 // ---- Layout ----
 interface NavbarLayoutProps {
 	children?: ReactNode
+	showFooter?: boolean
 }
 
-export default function NavbarLayout({ children }: NavbarLayoutProps) {
+export default function NavbarLayout({ children, showFooter = false }: NavbarLayoutProps) {
 	const { role, user, lookupData } = useAuth()
 	const { members } = useFamilyMembers() // the signed-in patient and their family (a patient only)
 	const familyMembers = members.filter((m) => !m.isSelf)
@@ -156,6 +158,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 						activeHospital,
 					})}
 			</Box>
+			{showFooter && <AppFooter />}
 			<ChatBot />
 		</Box>
 	)

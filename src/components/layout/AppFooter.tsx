@@ -4,26 +4,56 @@ import FacebookIcon from "@mui/icons-material/Facebook";
 import TwitterIcon from "@mui/icons-material/Twitter";
 import LinkedInIcon from "@mui/icons-material/LinkedIn";
 import InstagramIcon from "@mui/icons-material/Instagram";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../constants/routes";
 
 const services = ["Doctor Portal", "Patient Portal", "Pharmacy", "Lab And Radiology", "Ancillary Services"];
 const resources = ["Blog", "Podcasts", "Events", "Community"];
-const company = ["About Us", "Contact", "Careers", "Privacy Policy"];
+const company = ["About Us", "Contact", "Careers"];
+
+// Footer links that have a page; the others are still plain text.
+const linkPaths: Record<string, string> = {
+  "About Us": ROUTES.PUBLIC.ABOUT,
+  Contact: ROUTES.PUBLIC.CONTACT,
+  "Terms of use": ROUTES.PUBLIC.TERMS,
+  "Privacy policy": ROUTES.PUBLIC.PRIVACY,
+  "Data security": ROUTES.PUBLIC.DATA_SECURITY,
+};
+
+const legal = ["Terms of use", "Privacy policy", "Data security"];
 
 interface FooterColumnProps {
   title: string;
   links: string[];
+  legal?: boolean;
 }
 
-function FooterColumn({ title, links }: FooterColumnProps) {
+function FooterColumn({ title, links, legal = false }: FooterColumnProps) {
+  const navigate = useNavigate();
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.2 }}>
-      <Typography variant="body2" sx={{ color: "#fff", fontWeight: 600, fontSize: "15px", mb: 0.5 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: legal ? 1.5 : 1.2 }}>
+      <Typography
+        variant="body2"
+        sx={{
+          color: "#fff",
+          fontWeight: legal ? 700 : 600,
+          fontSize: "15px",
+          mb: 0.5,
+          ...(legal && { textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "14px", mb: 1 }),
+        }}
+      >
         {title}
       </Typography>
       {links.map((link) => (
         <Typography
           key={link}
           variant="body2"
+          {...(linkPaths[link] && {
+            role: "link",
+            tabIndex: 0,
+            onClick: () => navigate(linkPaths[link]),
+            onKeyDown: (e: React.KeyboardEvent) => e.key === "Enter" && navigate(linkPaths[link]),
+          })}
           sx={{
             color: "rgba(255,255,255,0.7)",
             fontSize: "13.5px",
@@ -88,6 +118,7 @@ export default function AppFooter() {
             <FooterColumn title="Services" links={services} />
             <FooterColumn title="Resources" links={resources} />
             <FooterColumn title="Company" links={company} />
+            <FooterColumn title="Legal" links={legal}  />
           </Box>
         </Box>
         <Divider sx={{ borderColor: "rgba(255,255,255,0.15)", mb: 2.5 }} />

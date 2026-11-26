@@ -83,6 +83,11 @@ import CommunityForumPage from '../features/portal/CommunityForumPage'
 import CommunityThreadPage from '../features/portal/CommunityThreadPage'
 import EventDetailsPage from '../features/portal/EventDetailsPage'
 import EventsListPage from '../features/portal/EventsListPage'
+import ContactPage from '../features/contact/ContactPage'
+import AboutPage from '../features/about/AboutPage'
+import TermsOfUsePage from '../features/legal/TermsOfUsePage'
+import PrivacyPolicyPage from '../features/legal/PrivacyPolicyPage'
+import DataSecurityPage from '../features/legal/DataSecurityPage'
 import HealthQuestionsPage from '../features/portal/HealthQuestionsPage'
 import QuestionDetailPage from '../features/portal/QuestionDetailPage'
 
@@ -104,10 +109,11 @@ function HomeRoute() {
 
 function PublicOrAuthenticatedLayout() {
 	const { accessToken } = useAuth()
+	const { pathname } = useLocation()
 
 	if (accessToken) {
 		return (
-			<NavbarLayout>
+			<NavbarLayout showFooter={pathname !== ROUTES.DOCTORS.SEARCH}>
 				<Outlet />
 			</NavbarLayout>
 		)
@@ -172,6 +178,11 @@ export default function AppRoutes() {
 					<Route path={ROUTES.ROOT} element={<HomeRoute />} />
 					<Route path={ROUTES.PUBLIC.HEALTH_QUESTIONS} element={<HealthQuestionsPage />} />
 					<Route path={ROUTES.PUBLIC.HEALTH_QUESTION_DETAIL} element={<QuestionDetailPage />} />
+					<Route path={ROUTES.PUBLIC.ABOUT} element={<AboutPage />} />
+					<Route path={ROUTES.PUBLIC.CONTACT} element={<ContactPage />} />
+					<Route path={ROUTES.PUBLIC.TERMS} element={<TermsOfUsePage />} />
+					<Route path={ROUTES.PUBLIC.PRIVACY} element={<PrivacyPolicyPage />} />
+					<Route path={ROUTES.PUBLIC.DATA_SECURITY} element={<DataSecurityPage />} />
 					<Route path={ROUTES.BLOGS.LIST} element={<BlogListPage />} />
 					<Route path={ROUTES.BLOGS.DETAIL} element={<BlogArticlePage />} />
 					<Route path={ROUTES.COMMUNITIES.LIST} element={<CommunityForumPage />} />
