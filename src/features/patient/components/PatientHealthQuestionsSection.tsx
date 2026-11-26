@@ -14,11 +14,6 @@ import {
 	CardContent,
 	Button,
 	CircularProgress,
-	Stack,
-	Dialog,
-	DialogTitle,
-	DialogContent,
-	DialogActions,
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined'
@@ -27,19 +22,16 @@ import SortIcon from '@mui/icons-material/Sort'
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety'
 
 import { customScrollbar } from '../../../styles/commonStyles'
-import { useAuth, accountHolderId } from '../../../hooks/useAuth'
 import {
 	listHealthQuestions,
 	likeDoctorAnswer,
 	submitAnswerReply,
 	submitDoctorAnswer,
-	submitHealthQuestion,
 	type PatientQuestion,
 	type DoctorAnswer,
 	type DoctorAnswerReply,
 } from '../../../services/qaService'
 import { toast } from 'react-toastify'
-import { getPatientDetails } from '../patientService'
 import { useQuestionAccess } from '../../../hooks/useQuestionAccess'
 import VoiceMicButton from '../../../components/common/Voice/VoiceMicButton'
 
@@ -486,27 +478,9 @@ interface QuestionsSectionProps {
 	isPortalPage?: boolean
 }
 
-const formatProfileAge = (dateOfBirth?: string) => {
-	if (!dateOfBirth) return ''
-
-	const birthDate = new Date(dateOfBirth)
-	if (Number.isNaN(birthDate.getTime())) return ''
-
-	const today = new Date()
-	let age = today.getFullYear() - birthDate.getFullYear()
-	const monthDiff = today.getMonth() - birthDate.getMonth()
-	if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-		age -= 1
-	}
-
-	return age >= 0 ? `${age} Years` : ''
-}
-
 export default function PatientHealthQuestionsSection({ isPortalPage = false }: QuestionsSectionProps) {
-	const { user, lookupData } = useAuth()
 	// What this persona may do here: patients ask, verified doctors answer, an unverified doctor only reads.
 	const { canAsk, canAnswer, canReply, awaitingVerification } = useQuestionAccess()
-	const holderId = accountHolderId({ lookupData, user }) // the signed-in patient (the account holder)
 	const navigate = useNavigate()
 	const [searchParams] = useSearchParams()
 
@@ -514,16 +488,6 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 	const [loading, setLoading] = useState(true)
 	const [search, setSearch] = useState('')
 	const [selectedId, setSelectedId] = useState<string | null>(null)
-
-	// Submission state variables
-	const [askDialogOpen, setAskDialogOpen] = useState(false)
-	const [askGender, setAskGender] = useState('')
-	const [askAge, setAskAge] = useState('')
-	const [askTag, setAskTag] = useState('General')
-	const [askQuestion, setAskQuestion] = useState('')
-	const [askDesc, setAskDesc] = useState('')
-	const [askHistory, setAskHistory] = useState('')
-	const [profileLoading, setProfileLoading] = useState(false)
 
 	const loadQuestions = useCallback(async (query = '') => {
 		setLoading(true)
@@ -552,29 +516,6 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 	useEffect(() => {
 		loadQuestions(search)
 	}, [loadQuestions, search])
-
-	useEffect(() => {
-		const loadPatientProfile = async () => {
-			const patientId = holderId
-			if (!patientId) return
-
-			setProfileLoading(true)
-			try {
-				const res = await getPatientDetails(patientId)
-				const personal = res.data?.personal
-				setAskGender(personal?.gender || '')
-				setAskAge(formatProfileAge(personal?.date_of_birth))
-			} catch (err) {
-				console.error('Failed to load patient profile for question form:', err)
-			} finally {
-				setProfileLoading(false)
-			}
-		}
-
-		if (askDialogOpen) {
-			loadPatientProfile()
-		}
-	}, [askDialogOpen, holderId])
 
 	const handleSearchChange = (val: string) => {
 		setSearch(val)
@@ -627,98 +568,7 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 		)
 	}
 
-	const handleAskSubmit = async () => {
-		if (!askQuestion.trim() || !askDesc.trim()) {
-			toast.warning('Please enter both the question and description.')
-			return
-		}
-		try {
-			await submitHealthQuestion({
-				gender: askGender,
-				age: askAge,
-				tag: askTag,
-				question: askQuestion,
-				short_description: askQuestion.substring(0, 80) + '...',
-				full_description: askDesc,
-				history: askHistory || undefined,
-			})
-			toast.success('Your health question has been posted successfully!')
-			setAskDialogOpen(false)
-			setAskQuestion('')
-			setAskDesc('')
-			setAskHistory('')
-			await loadQuestions()
-		} catch (err) {
-			console.error('Error posting question:', err)
-			toast.error('Failed to submit question')
-		}
-	}
-
 	const selectedQuestion = questions.find((q) => q.id === selectedId) || questions[0]
-
-	const askQuestionDialog = (
-		<Dialog open={askDialogOpen} onClose={() => setAskDialogOpen(false)} maxWidth="sm" fullWidth>
-			<DialogTitle sx={{ fontWeight: 800 }}>Ask a Medical Question</DialogTitle>
-			<DialogContent>
-				<Stack spacing={3} sx={{ pt: 1.5 }}>
-					<Grid container spacing={2}>
-						<Grid size={{ xs: 6 }}>
-							<TextField
-								fullWidth
-								label="Gender"
-								value={profileLoading ? 'Loading...' : askGender}
-								disabled
-							/>
-						</Grid>
-						<Grid size={{ xs: 6 }}>
-							<TextField
-								fullWidth
-								label="Age"
-								value={profileLoading ? 'Loading...' : askAge}
-								disabled
-							/>
-						</Grid>
-					</Grid>
-					<TextField
-						fullWidth
-						label="Question Tag / Speciality"
-						value={askTag}
-						placeholder="e.g. Cardiology, Pediatrics"
-						onChange={(e) => setAskTag(e.target.value)}
-					/>
-					<TextField
-						fullWidth
-						label="Subject Question"
-						value={askQuestion}
-						placeholder="What is your main question or symptom?"
-						onChange={(e) => setAskQuestion(e.target.value)}
-					/>
-					<TextField
-						fullWidth
-						multiline
-						rows={4}
-						label="Detailed Description"
-						placeholder="Explain when it started, details of symptoms..."
-						value={askDesc}
-						onChange={(e) => setAskDesc(e.target.value)}
-					/>
-					{/* <TextField
-						fullWidth
-						label="Medical History (Optional)"
-						value={askHistory}
-						placeholder="e.g. Family Hx, GERD, Hypertension"
-						onChange={(e) => setAskHistory(e.target.value)}
-					/> */}
-				</Stack>
-			</DialogContent>
-			<DialogActions sx={{ p: 3, pt: 1 }}>
-				<Button onClick={() => setAskDialogOpen(false)}>Cancel</Button>
-				<Button variant="contained" onClick={handleAskSubmit} sx={{ bgcolor: '#0c7c7c', '&:hover': { bgcolor: '#0f766e' } }}>
-					Submit Question
-				</Button>
-			</DialogActions>
-		</Dialog>
-	)
 
 	// â”€â”€â”€ Rendering Portal Page (Master-Detail) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	if (isPortalPage) {
@@ -938,7 +788,7 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 						{canAsk && (
 							<Button
 								variant="contained"
-								onClick={() => setAskDialogOpen(true)}
+								onClick={() => navigate('/health-questions')}
 								sx={{ bgcolor: '#0c7c7c', textTransform: 'none', px: 4, py: 1.2, borderRadius: 2, fontWeight: 700, '&:hover': { bgcolor: '#0f766e' } }}
 							>
 								Ask a Free Question
@@ -950,7 +800,6 @@ export default function PatientHealthQuestionsSection({ isPortalPage = false }: 
 					</Box>
 				</>
 			)}
-			{canAsk && askQuestionDialog}
 		</Box>
 	)
 }

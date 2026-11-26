@@ -11,6 +11,11 @@ export const ROUTES = {
 		WELCOME_DOCTOR: '/welcome-doctor',
 		HEALTH_QUESTIONS: '/health-questions',
 		HEALTH_QUESTION_DETAIL: '/health-questions/:id',
+		ABOUT: '/about',
+		CONTACT: '/contact',
+		TERMS: '/terms',
+		PRIVACY: '/privacy',
+		DATA_SECURITY: '/data-security',
 	},
 
 	DOCTORS: {

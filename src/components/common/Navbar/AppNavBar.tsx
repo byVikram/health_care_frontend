@@ -30,7 +30,7 @@ const navItems = [
 	{ label: 'Lab tests', href: '/lab-tests' },
 	{ label: 'Community', href: '/communities' },
 	{ label: 'Blogs', href: '/blogs' },
-	{ label: 'Contact', href: '/#contact' },
+	{ label: 'Contact', href: '/contact' },
 ]
 
 const hashSectionIds = navItems.filter((item) => item.href.startsWith('/#')).map((item) => item.href.replace('/#', ''))

@@ -74,7 +74,7 @@ export function ReadsSubNav({ active }: { active: SubNavKey }) {
 								aria-current={on ? 'page' : undefined}
 								sx={{
 									height: 36, px: '14px', borderRadius: '9999px', fontSize: 14, fontWeight: 800, textDecoration: 'none', whiteSpace: 'nowrap',
-									display: 'inline-flex', alignItems: 'center', bgcolor: on ? DESK.ink : DESK.chip, color: on ? '#fff' : DESK.ink, ...focusSx,
+									display: 'inline-flex', alignItems: 'center', bgcolor: on ? DESK.primary : DESK.chip, color: on ? '#fff' : DESK.ink, ...focusSx,
 								}}
 							>
 								{n.label}
@@ -158,7 +158,7 @@ export function Chip({ label, on, onClick, height = 36 }: { label: string; on: b
 			aria-pressed={on}
 			onClick={onClick}
 			sx={{
-				flexShrink: 0, height, px: '14px', borderRadius: '9999px', border: `1.5px solid ${on ? DESK.ink : DESK.lineStrong}`, bgcolor: on ? DESK.ink : '#fff',
+				flexShrink: 0, height, px: '14px', borderRadius: '9999px', border: `1.5px solid ${on ? DESK.primary : DESK.lineStrong}`, bgcolor: on ? DESK.primary : '#fff',
 				color: on ? '#fff' : DESK.ink, fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap', cursor: 'pointer', fontFamily: 'inherit', ...focusSx,
 			}}
 		>
@@ -298,7 +298,7 @@ function PageBtn({ children, label, current, disabled, onClick }: { children: Re
 			disabled={disabled}
 			onClick={onClick}
 			sx={{
-				minWidth: 40, height: 40, px: '10px', borderRadius: '10px', border: `1px solid ${current ? DESK.ink : DESK.lineStrong}`, bgcolor: current ? DESK.ink : '#fff',
+				minWidth: 40, height: 40, px: '10px', borderRadius: '10px', border: `1px solid ${current ? DESK.primary : DESK.lineStrong}`, bgcolor: current ? DESK.primary : '#fff',
 				color: current ? '#fff' : disabled ? '#A3B0B2' : DESK.ink, fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
 				cursor: disabled ? 'default' : 'pointer', fontFamily: 'inherit', ...focusSx,
 			}}

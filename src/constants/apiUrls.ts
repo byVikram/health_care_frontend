@@ -1,5 +1,9 @@
 // src/constants/apiUrls.ts
 export const API_ENDPOINTS = {
+	CONTACT_INQUIRIES: {
+		/** POST (public): a message from the Contact us page. */
+		CREATE: '/api/contact-inquiries',
+	},
 	AUTH: {
 		SEND_OTP: '/api/auth/send-otp',
 		VERIFY_OTP: '/api/auth/verify-otp',
